@@ -1,0 +1,62 @@
+Got it — 500 Internal Server Error means the route exists and is being hit, but the server is crashing while handling it (usually DB/schema/null-data/serialization).
+
+Do this in order so we can pinpoint it fast:
+	1.	Tell me which URL returned the 500
+Was it:
+
+	•	/public/report/latest
+	•	/public/tickets/latest
+	•	/public/health
+	•	/public/status
+
+	2.	Quick triage checks (open these and tell me the HTTP status)
+
+	•	https://traffic-doctor-ai–providers2.replit.app/api/health
+(Should be 200 JSON. If this is also 500, it’s a backend boot/config/db issue.)
+	•	https://traffic-doctor-ai–providers2.replit.app/public/health
+(If this is 500, the public router itself is broken.)
+
+	3.	Open Replit Logs and copy/paste the top error block
+In Replit → Logs (production), copy:
+
+	•	the error message line
+	•	the stack trace header (first ~10 lines)
+That will tell us exactly what’s failing.
+
+Most common causes (and the fix)
+A) No data yet (lastRunAt null) → code crashes
+	•	Fix: if no report/tickets exist, return 404 with “No runs yet” instead of throwing.
+
+B) DB table missing in production (migrations didn’t run)
+	•	Fix: run migrations automatically on boot (or ensure schema applied to prod DB).
+
+C) Query expects a column that doesn’t exist / wrong table name
+	•	Fix: align schema + query; add a safe fallback.
+
+D) Route order issue (frontend handler catching /public, or middleware throws)
+	•	Fix: register /public/* routes before the frontend static handler.
+
+Here’s the exact instruction to paste into Replit Agent (Traffic Doctor AI)
+Fix the 500 on /public/* endpoints:
+	1.	Add robust error handling to all /public routes:
+
+	•	If no data exists yet (no report/tickets in DB), return 404 JSON: { error: “No runs yet”, hint: “Trigger a run or wait for scheduler” }.
+	•	Never throw on null/undefined results.
+
+	2.	Ensure DB schema exists in production:
+
+	•	Run migrations automatically on server startup (idempotent).
+	•	Log a clear message if a required table is missing.
+
+	3.	Ensure routing order:
+
+	•	Register /public/* routes before any frontend static catch-all.
+
+	4.	Add a /public/health endpoint that does not query report tables; it should only confirm server time + db connectivity and never 500.
+
+After applying, redeploy and verify:
+	•	/public/health returns 200
+	•	/public/report/latest returns 404 (if no runs) or 200 with markdown
+	•	/public/tickets/latest returns 404 (if no runs) or 200 with JSON
+
+Once you paste the log error block (or tell me which endpoint 500’d), I’ll tell you the precise fix without guessing.
