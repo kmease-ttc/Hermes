@@ -109,3 +109,82 @@ DATABASE_URL=postgresql://...
 - `express`: HTTP server
 - `@tanstack/react-query`: Frontend data fetching
 - `recharts`: Dashboard charts
+
+## Public API Reference
+
+### Authentication
+All API endpoints (except `/api/health`) require an API key via:
+- Header: `X-API-Key: <your-key>` 
+- Header: `Authorization: Bearer <your-key>`
+
+Set `TRAFFIC_DOCTOR_API_KEY` in Replit Secrets.
+
+### Endpoints
+
+#### GET /api/health (Public)
+Returns server health status. No authentication required.
+
+```bash
+curl https://your-app.replit.app/api/health
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "version": "1.0.0",
+  "env": "production",
+  "serverTime": "2024-12-19T12:00:00.000Z",
+  "dbConnected": true,
+  "lastRunAt": "2024-12-19T07:00:00.000Z",
+  "lastRunStatus": "completed"
+}
+```
+
+#### GET /api/status
+Returns detailed source connection status.
+
+```bash
+curl -H "X-API-Key: YOUR_KEY" https://your-app.replit.app/api/status
+```
+
+#### POST /api/run
+Triggers a full diagnostic run with 30-day analysis.
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_KEY" https://your-app.replit.app/api/run
+```
+
+Response:
+```json
+{
+  "runId": "run_1702987200000_abc12345",
+  "startedAt": "2024-12-19T12:00:00.000Z",
+  "finishedAt": "2024-12-19T12:00:45.000Z",
+  "summary": "Detected 2 traffic anomalies",
+  "anomaliesDetected": 2,
+  "reportId": 15,
+  "ticketCount": 3
+}
+```
+
+#### POST /api/run/smoke
+Quick connectivity test for all data sources.
+
+```bash
+curl -X POST -H "X-API-Key: YOUR_KEY" https://your-app.replit.app/api/run/smoke
+```
+
+#### GET /api/report/latest
+Returns the most recent diagnostic report.
+
+```bash
+curl -H "X-API-Key: YOUR_KEY" https://your-app.replit.app/api/report/latest
+```
+
+#### GET /api/tickets/latest
+Returns recent tickets. Optional `?limit=N` parameter.
+
+```bash
+curl -H "X-API-Key: YOUR_KEY" https://your-app.replit.app/api/tickets/latest?limit=5
+```
