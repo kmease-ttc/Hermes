@@ -283,16 +283,18 @@ export class AdsConnector {
         primaryStatusReasons: row.campaign?.primary_status_reasons || [],
       }));
     } catch (error: any) {
-      logger.error('Ads', 'Failed to fetch campaign statuses', { error: error.message });
+      const errorMsg = error.message || error.errors?.[0]?.message || JSON.stringify(error);
+      const errorCode = error.code || error.errors?.[0]?.error_code?.authorization_error || 'UNKNOWN';
+      logger.error('Ads', 'Failed to fetch campaign statuses', { error: errorMsg, code: errorCode, stack: error.stack?.slice(0, 300) });
       return [{
         id: 'error',
         name: 'Error fetching campaigns',
         status: 'ERROR',
         budget: 0,
         budgetType: 'UNKNOWN',
-        servingStatus: error.message,
+        servingStatus: `${errorCode}: ${errorMsg}`,
         primaryStatus: 'ERROR',
-        primaryStatusReasons: [error.message],
+        primaryStatusReasons: [errorMsg],
       }];
     }
   }

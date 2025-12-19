@@ -10,6 +10,7 @@ import { analysisEngine } from "./analysis";
 import { logger } from "./utils/logger";
 import { apiKeyAuth } from "./middleware/apiAuth";
 import { randomUUID } from "crypto";
+import OpenAI from "openai";
 
 const APP_VERSION = "1.0.0";
 
@@ -531,6 +532,103 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       logger.error("API", "Failed to fetch latest tickets", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ai/ask", async (req, res) => {
+    try {
+      const { question } = req.body;
+      
+      if (!question || typeof question !== 'string') {
+        return res.status(400).json({ error: "Question is required" });
+      }
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const [report, tickets, status] = await Promise.all([
+        storage.getLatestReport(),
+        storage.getLatestTickets(20),
+        (async () => {
+          const campaigns = await adsConnector.getCampaignStatuses().catch(() => []);
+          return {
+            campaigns: campaigns.length,
+            authenticated: await googleAuth.isAuthenticated(),
+          };
+        })(),
+      ]);
+
+      if (!report) {
+        return res.json({ 
+          response: "No diagnostic data available yet. Please run a diagnostic first using the 'Run Diagnostics' button on the dashboard." 
+        });
+      }
+
+      const ticketsJson = tickets.map(t => ({
+        id: t.ticketId,
+        title: t.title,
+        owner: t.owner,
+        priority: t.priority,
+        status: t.status,
+        expectedImpact: t.expectedImpact,
+      }));
+
+      const systemPrompt = `You are Traffic Doctor AI, an expert at diagnosing web traffic and advertising performance issues for empathyhealthclinic.com. You have access to the latest system analysis, metrics, and recommended fixes below. Answer the user's question using only this data. Be concrete, actionable, and prioritize the highest-impact fixes. If data is missing or inconclusive, say so explicitly.
+
+## Latest Diagnostic Report
+${report.markdownReport || report.summary || 'No report available'}
+
+## Active Tickets (${tickets.length} total)
+${JSON.stringify(ticketsJson, null, 2)}
+
+## System Status
+- Google Ads Campaigns: ${status.campaigns}
+- Google Auth: ${status.authenticated ? 'Connected' : 'Not connected'}
+- Report Date: ${report.date}
+- Report Type: ${report.reportType}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question },
+        ],
+        max_tokens: 2048,
+        temperature: 0.7,
+      });
+
+      const response = completion.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+
+      logger.info("AI", "Answered question", { question: question.slice(0, 100) });
+
+      res.json({ response });
+    } catch (error: any) {
+      logger.error("AI", "Failed to answer question", { error: error.message });
+      res.status(500).json({ error: "Failed to get AI response. Please try again." });
+    }
+  });
+
+  app.get("/api/campaigns", async (req, res) => {
+    try {
+      const campaigns = await adsConnector.getCampaignStatuses();
+      res.json({
+        count: campaigns.length,
+        campaigns: campaigns.map(c => ({
+          id: c.id,
+          name: c.name,
+          status: c.status,
+          budget: c.budget,
+          budgetType: c.budgetType,
+          servingStatus: c.servingStatus,
+          primaryStatus: c.primaryStatus,
+          primaryStatusReasons: c.primaryStatusReasons,
+        })),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch campaigns", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });

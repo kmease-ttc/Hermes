@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { SummaryStats } from "@/components/dashboard/SummaryStats";
 import { TicketList } from "@/components/dashboard/TicketList";
 import { ConnectorsStatus } from "@/components/dashboard/ConnectorsStatus";
+import { AskAI } from "@/components/dashboard/AskAI";
 import { Button } from "@/components/ui/button";
 import { Play, Download, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -138,6 +139,10 @@ export default function Dashboard() {
 
         <section>
           <TicketList />
+        </section>
+
+        <section>
+          <AskAI />
         </section>
 
       </div>

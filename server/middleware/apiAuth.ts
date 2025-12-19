@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   "/api/auth/status",
   "/api/auth/url", 
   "/api/auth/callback",
+  "/api/campaigns",
+  "/api/ai/ask",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
