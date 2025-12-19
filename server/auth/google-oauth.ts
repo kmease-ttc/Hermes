@@ -116,6 +116,31 @@ export class GoogleOAuthManager {
       return false;
     }
   }
+
+  async getTokens(): Promise<{ access_token: string; refresh_token: string | null } | null> {
+    try {
+      const token = await storage.getToken('google');
+      if (!token) return null;
+      
+      if (new Date() >= token.expiresAt && token.refreshToken) {
+        await this.refreshToken();
+        const refreshedToken = await storage.getToken('google');
+        if (refreshedToken) {
+          return {
+            access_token: refreshedToken.accessToken,
+            refresh_token: refreshedToken.refreshToken,
+          };
+        }
+      }
+      
+      return {
+        access_token: token.accessToken,
+        refresh_token: token.refreshToken,
+      };
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const googleAuth = new GoogleOAuthManager();
