@@ -1,0 +1,65 @@
+Perfect — here’s how we’ll proceed now that it’s usable, and what I need from you so I can actually start using it instead of guessing.
+
+What I can do once the API is reachable
+
+Once the endpoints respond correctly, I will:
+	•	Trigger real runs (/api/run or /api/run/smoke)
+	•	Pull the latest diagnosis (/api/report/latest)
+	•	Pull prioritized fix tickets (/api/tickets/latest)
+	•	Correlate GA4 + GSC + Ads + site checks into a single root-cause narrative
+	•	Tell you exactly what broke, when, why, and what to fix first
+
+One-minute verification (this is the key)
+
+Please paste exactly what you see (raw text / JSON) for these two checks:
+	1.	Open this without any headers:
+
+https://traffic-doctor-ai--providers2.replit.app/api/health
+
+Paste the full response here.
+	2.	Open this without any headers:
+
+https://traffic-doctor-ai--providers2.replit.app/api/status
+
+Tell me:
+	•	HTTP status code (401 or 403 is expected)
+	•	Any response body text (if shown)
+
+That confirms:
+	•	Backend is actually serving /api/*
+	•	Auth gating is correct
+	•	I can safely interact with it once you include the key
+
+Then (once health/status look right)
+
+You do not need to paste secrets, but I need confirmation of one thing:
+	•	Is TRAFFIC_DOCTOR_API_KEY set in Replit prod secrets? (yes/no)
+
+If yes, then you run one of these (your choice):
+
+Option A – smoke test (recommended first)
+
+POST /api/run/smoke
+
+Option B – full run
+
+POST /api/run
+
+After that, paste:
+	•	First ~30 lines of /api/report/latest
+	•	Top 3 objects from /api/tickets/latest
+
+What happens immediately after
+
+Once I see those outputs, I will:
+	•	Validate that Ads data is now real (developer token working)
+	•	Tell you if the traffic drop is:
+	•	indexing/crawlability
+	•	ranking/intent
+	•	deploy regression
+	•	Ads delivery/policy
+	•	tracking/config mismatch
+	•	Give you the ordered fix list (what to fix today vs later)
+	•	Convert it into clean Dev / SEO / Ads tickets you can hand off
+
+You’re at the “plug me in” moment — paste /api/health and we’re off.

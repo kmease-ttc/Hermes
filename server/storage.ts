@@ -74,6 +74,7 @@ export interface IStorage {
   getLatestRun(): Promise<Run | undefined>;
   getRunById(runId: string): Promise<Run | undefined>;
   getRunsByDateRange(startDate: Date, endDate: Date): Promise<Run[]>;
+  getCompletedRunForDate(date: string): Promise<Run | undefined>;
 }
 
 class DBStorage implements IStorage {
@@ -275,6 +276,24 @@ class DBStorage implements IStorage {
       .from(runs)
       .where(and(gte(runs.startedAt, startDate), sql`${runs.startedAt} <= ${endDate}`))
       .orderBy(desc(runs.startedAt));
+  }
+
+  async getCompletedRunForDate(date: string): Promise<Run | undefined> {
+    const startOfDay = new Date(`${date}T00:00:00.000Z`);
+    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    
+    const [run] = await db
+      .select()
+      .from(runs)
+      .where(and(
+        eq(runs.runType, "full"),
+        eq(runs.status, "completed"),
+        gte(runs.startedAt, startOfDay),
+        sql`${runs.startedAt} <= ${endOfDay}`
+      ))
+      .orderBy(desc(runs.startedAt))
+      .limit(1);
+    return run;
   }
 }
 

@@ -17,17 +17,7 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  const apiKey = process.env.TRAFFIC_DOCTOR_API_KEY;
-  
-  if (!apiKey) {
-    logger.warn("API", "TRAFFIC_DOCTOR_API_KEY not configured");
-    return res.status(500).json({ 
-      error: "API key not configured on server",
-      hint: "Set TRAFFIC_DOCTOR_API_KEY in secrets"
-    });
-  }
-
-  const providedKey = req.headers["x-api-key"] || 
+  const providedKey = req.headers["x-api-key"] as string || 
     (req.headers.authorization?.startsWith("Bearer ") 
       ? req.headers.authorization.slice(7) 
       : null);
@@ -37,6 +27,16 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ 
       error: "API key required",
       hint: "Provide X-API-Key header or Authorization: Bearer <key>"
+    });
+  }
+
+  const apiKey = process.env.TRAFFIC_DOCTOR_API_KEY;
+  
+  if (!apiKey) {
+    logger.warn("API", "TRAFFIC_DOCTOR_API_KEY not configured");
+    return res.status(401).json({ 
+      error: "API key required",
+      hint: "Server API key not configured"
     });
   }
 

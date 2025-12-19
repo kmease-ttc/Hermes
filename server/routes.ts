@@ -104,11 +104,32 @@ export async function registerRoutes(
   });
 
   app.post("/api/run", async (req, res) => {
+    const forceRun = req.query.force === "true" || req.body?.force === true;
+    const today = new Date().toISOString().split("T")[0];
+
+    if (!forceRun) {
+      const existingRun = await storage.getCompletedRunForDate(today);
+      if (existingRun) {
+        logger.info("API", "Returning existing run for today", { runId: existingRun.runId });
+        return res.json({
+          runId: existingRun.runId,
+          cached: true,
+          startedAt: existingRun.startedAt,
+          finishedAt: existingRun.finishedAt,
+          summary: existingRun.summary,
+          anomaliesDetected: existingRun.anomaliesDetected,
+          reportId: existingRun.reportId,
+          ticketCount: existingRun.ticketCount,
+          hint: "Use ?force=true to run a new analysis",
+        });
+      }
+    }
+
     const runId = generateRunId();
     const startedAt = new Date();
 
     try {
-      logger.info("API", "Starting diagnostic run", { runId });
+      logger.info("API", "Starting diagnostic run", { runId, forced: forceRun });
 
       await storage.saveRun({
         runId,
@@ -223,29 +244,50 @@ export async function registerRoutes(
         startedAt,
       });
 
-      const results: Record<string, any> = {
-        env: {
-          GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-          GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-          GA4_PROPERTY_ID: !!process.env.GA4_PROPERTY_ID,
-          GSC_SITE: !!process.env.GSC_SITE,
-          ADS_CUSTOMER_ID: !!process.env.ADS_CUSTOMER_ID,
-          GOOGLE_ADS_DEVELOPER_TOKEN: !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
-          DATABASE_URL: !!process.env.DATABASE_URL,
-          TRAFFIC_DOCTOR_API_KEY: !!process.env.TRAFFIC_DOCTOR_API_KEY,
-        },
-        sources: {},
+      const envChecks: Record<string, { ok: boolean; message: string }> = {
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID
+          ? { ok: true, message: "Set" }
+          : { ok: false, message: "Missing GOOGLE_CLIENT_ID" },
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET
+          ? { ok: true, message: "Set" }
+          : { ok: false, message: "Missing GOOGLE_CLIENT_SECRET" },
+        GA4_PROPERTY_ID: process.env.GA4_PROPERTY_ID
+          ? { ok: true, message: `Set: ${process.env.GA4_PROPERTY_ID}` }
+          : { ok: false, message: "Missing GA4_PROPERTY_ID" },
+        GSC_SITE: process.env.GSC_SITE
+          ? { ok: true, message: `Set: ${process.env.GSC_SITE}` }
+          : { ok: false, message: "Missing GSC_SITE: check GSC_SITE format (e.g., sc-domain:example.com)" },
+        ADS_CUSTOMER_ID: process.env.ADS_CUSTOMER_ID
+          ? { ok: true, message: `Set: ${process.env.ADS_CUSTOMER_ID}` }
+          : { ok: false, message: "Missing ADS_CUSTOMER_ID" },
+        GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN
+          ? { ok: true, message: "Set" }
+          : { ok: false, message: "Missing GOOGLE_ADS_DEVELOPER_TOKEN" },
+        DATABASE_URL: process.env.DATABASE_URL
+          ? { ok: true, message: "Set" }
+          : { ok: false, message: "Missing DATABASE_URL" },
       };
+
+      const results: Record<string, any> = {
+        env: envChecks,
+        sources: {},
+        issues: [] as string[],
+      };
+
+      for (const [key, val] of Object.entries(envChecks)) {
+        if (!val.ok) results.issues.push(val.message);
+      }
 
       const isAuthenticated = await googleAuth.isAuthenticated();
       results.authenticated = isAuthenticated;
 
       if (!isAuthenticated) {
         results.sources = {
-          ga4: { ok: false, error: "Not authenticated" },
-          gsc: { ok: false, error: "Not authenticated" },
-          ads: { ok: false, error: "Not authenticated" },
+          ga4: { ok: false, error: "OAuth refresh failed: not authenticated - visit /api/auth/url to authenticate" },
+          gsc: { ok: false, error: "OAuth refresh failed: not authenticated - visit /api/auth/url to authenticate" },
+          ads: { ok: false, error: "OAuth refresh failed: not authenticated - visit /api/auth/url to authenticate" },
         };
+        results.issues.push("OAuth not authenticated - visit /api/auth/url to start authentication");
       } else {
         const yesterday = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
         const today = new Date().toISOString().split("T")[0];
@@ -256,30 +298,45 @@ export async function registerRoutes(
           adsConnector.fetchDailyData(yesterday, today),
         ]);
 
+        const formatError = (err: any, source: string): string => {
+          const msg = err?.message || String(err);
+          if (msg.includes("invalid_grant")) return `OAuth refresh failed: invalid_grant - re-authenticate via /api/auth/url`;
+          if (msg.includes("developer token")) return `Ads API error: developer token not approved`;
+          if (msg.includes("not found") && source === "gsc") return `GSC site not found: check GSC_SITE format`;
+          if (msg.includes("property") && source === "ga4") return `GA4 property not found: check GA4_PROPERTY_ID`;
+          return msg;
+        };
+
         results.sources.ga4 = ga4Result.status === "fulfilled"
           ? { ok: true, sampleCount: ga4Result.value.length }
-          : { ok: false, error: (ga4Result as PromiseRejectedResult).reason?.message };
+          : { ok: false, error: formatError((ga4Result as PromiseRejectedResult).reason, "ga4") };
 
         results.sources.gsc = gscResult.status === "fulfilled"
           ? { ok: true, sampleCount: gscResult.value.length }
-          : { ok: false, error: (gscResult as PromiseRejectedResult).reason?.message };
+          : { ok: false, error: formatError((gscResult as PromiseRejectedResult).reason, "gsc") };
 
         results.sources.ads = adsResult.status === "fulfilled"
           ? { ok: true, sampleCount: adsResult.value.length }
-          : { ok: false, error: (adsResult as PromiseRejectedResult).reason?.message };
+          : { ok: false, error: formatError((adsResult as PromiseRejectedResult).reason, "ads") };
+
+        for (const [source, status] of Object.entries(results.sources)) {
+          if (!status.ok) results.issues.push(`${source}: ${status.error}`);
+        }
       }
 
       const finishedAt = new Date();
+      const allOk = results.issues.length === 0;
 
       await storage.updateRun(runId, {
-        status: "completed",
+        status: allOk ? "completed" : "completed",
         finishedAt,
-        summary: "Smoke test completed",
+        summary: allOk ? "All systems operational" : `Found ${results.issues.length} issue(s)`,
         sourceStatuses: results.sources,
       });
 
       res.json({
         runId,
+        ok: allOk,
         startedAt: startedAt.toISOString(),
         finishedAt: finishedAt.toISOString(),
         ...results,
@@ -295,6 +352,7 @@ export async function registerRoutes(
 
       res.status(500).json({
         runId,
+        ok: false,
         error: error.message,
         startedAt: startedAt.toISOString(),
         finishedAt: new Date().toISOString(),
