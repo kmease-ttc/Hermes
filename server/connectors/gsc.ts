@@ -69,7 +69,13 @@ export class GSCConnector {
           position: row.position || 0,
           query: row.keys?.[1] || null,
           page: row.keys?.[2] || null,
-          rawData: row as any,
+          rawData: JSON.parse(JSON.stringify({
+            keys: row.keys,
+            clicks: row.clicks,
+            impressions: row.impressions,
+            ctr: row.ctr,
+            position: row.position,
+          })),
         }));
 
         await storage.saveGSCData(results);
