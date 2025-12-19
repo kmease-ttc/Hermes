@@ -28,7 +28,8 @@ export function TicketList() {
     queryFn: async () => {
       const res = await fetch('/api/tickets/latest?limit=10');
       if (!res.ok) throw new Error('Failed to fetch tickets');
-      return res.json();
+      const data = await res.json();
+      return data.tickets || data;
     },
     refetchInterval: 30000,
   });

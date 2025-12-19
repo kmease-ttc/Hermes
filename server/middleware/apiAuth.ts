@@ -3,6 +3,9 @@ import { logger } from "../utils/logger";
 
 const PUBLIC_PATHS = [
   "/api/health",
+  "/api/status",
+  "/api/report/latest",
+  "/api/tickets/latest",
   "/api/auth/status",
   "/api/auth/url", 
   "/api/auth/callback",
