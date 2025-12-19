@@ -35,19 +35,20 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/callback", async (req, res) => {
+  app.get("/api/auth/callback", async (req, res) => {
     try {
-      const { code } = req.body;
+      const code = req.query.code as string;
       
       if (!code) {
-        return res.status(400).json({ error: 'Authorization code required' });
+        return res.redirect('/dashboard?auth=error&message=Authorization+code+required');
       }
 
       await googleAuth.exchangeCodeForTokens(code);
-      res.json({ success: true, message: 'Authentication successful' });
+      logger.info('API', 'OAuth authentication successful');
+      res.redirect('/dashboard?auth=success');
     } catch (error: any) {
       logger.error('API', 'OAuth callback failed', { error: error.message });
-      res.status(500).json({ error: error.message });
+      res.redirect('/dashboard?auth=error&message=' + encodeURIComponent(error.message));
     }
   });
 
