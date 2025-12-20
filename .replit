@@ -47,3 +47,4 @@ integrations = ["javascript_openai_ai_integrations:2.0.0"]
 [userenv.shared]
 GOOGLE_REDIRECT_URI = "https://b4e16f48-8d48-42ea-921a-7d6fa71e03be-00-3r1scxqb8rygj.picard.replit.dev/api/auth/callback"
 CLARITY_PROJECT_ID = ""
+DOMAIN = "empathyhealthclinic.com"
