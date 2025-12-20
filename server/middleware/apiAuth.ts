@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-const PUBLIC_PATHS = [
+const PUBLIC_READ_PATHS = [
   "/briefing",
   "/api/health",
   "/api/status",
@@ -16,42 +16,43 @@ const PUBLIC_PATHS = [
   "/api/auth/url", 
   "/api/auth/callback",
   "/api/campaigns",
-  "/api/ai/ask",
   "/api/serp/keywords",
   "/api/serp/rankings",
   "/api/serp/overview",
   "/api/sites",
-];
-
-const SESSION_ALLOWED_PATHS = [
-  "/api/run",
-  "/api/run/smoke",
-  "/api/serp/run",
-  "/api/serp/seed",
-  "/api/sites",
+  "/api/ai/ask",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
-  const isPublicPath = PUBLIC_PATHS.some(path => 
+  if (!req.path.startsWith("/api/") && req.path !== "/briefing") {
+    return next();
+  }
+
+  const isPublicReadPath = PUBLIC_READ_PATHS.some(path => 
     req.path === path || 
     req.path.startsWith(path + "/") || 
     req.path.startsWith(path + "?")
   );
-  if (isPublicPath) {
+  
+  if (isPublicReadPath && req.method === "GET") {
     return next();
   }
 
-  if (!req.path.startsWith("/api/")) {
+  if (req.path.startsWith("/api/auth/")) {
     return next();
   }
 
-  const isSessionAllowedPath = SESSION_ALLOWED_PATHS.some(
-    path => req.path === path || 
-    req.path.startsWith(path + "/") || 
-    req.path.startsWith(path + "?")
-  );
-  if (isSessionAllowedPath && (req.session as any)?.authenticated) {
-    return next();
+  const referer = req.headers.referer || req.headers.origin;
+  const host = req.headers.host;
+  
+  if (referer && host) {
+    try {
+      const refererUrl = new URL(referer);
+      if (refererUrl.host === host || refererUrl.hostname === 'localhost') {
+        return next();
+      }
+    } catch {
+    }
   }
 
   const providedKey = req.headers["x-api-key"] as string || 
@@ -60,7 +61,7 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
       : null);
 
   if (!providedKey) {
-    logger.warn("API", "Missing API key", { path: req.path });
+    logger.warn("API", "Missing API key", { path: req.path, method: req.method });
     return res.status(401).json({ 
       error: "API key required",
       hint: "Provide X-API-Key header or Authorization: Bearer <key>"
