@@ -22,6 +22,8 @@ import {
   siteIntegrations,
   vaultConfig,
   actionRuns,
+  integrations,
+  integrationChecks,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -66,6 +68,10 @@ import {
   type InsertVaultConfig,
   type ActionRun,
   type InsertActionRun,
+  type Integration,
+  type InsertIntegration,
+  type IntegrationCheck,
+  type InsertIntegrationCheck,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc } from "drizzle-orm";
 
@@ -193,6 +199,18 @@ export interface IStorage {
   
   // GSC Daily for ActionRunner
   getGSCDailyByDateRange(startDate: string, endDate: string): Promise<GSCDaily[]>;
+  
+  // Platform Integrations
+  getIntegrations(): Promise<Integration[]>;
+  getIntegrationById(integrationId: string): Promise<Integration | undefined>;
+  createIntegration(integration: InsertIntegration): Promise<Integration>;
+  updateIntegration(integrationId: string, updates: Partial<InsertIntegration>): Promise<Integration | undefined>;
+  deleteIntegration(integrationId: string): Promise<void>;
+  
+  // Integration Health Checks
+  saveIntegrationCheck(check: InsertIntegrationCheck): Promise<IntegrationCheck>;
+  getIntegrationChecks(integrationId: string, limit?: number): Promise<IntegrationCheck[]>;
+  getLatestIntegrationChecks(): Promise<IntegrationCheck[]>;
 }
 
 class DBStorage implements IStorage {
@@ -812,6 +830,61 @@ class DBStorage implements IStorage {
   // GSC Daily for ActionRunner (alias)
   async getGSCDailyByDateRange(startDate: string, endDate: string): Promise<GSCDaily[]> {
     return this.getGSCDataByDateRange(startDate, endDate);
+  }
+
+  // Platform Integrations
+  async getIntegrations(): Promise<Integration[]> {
+    return db.select().from(integrations).orderBy(asc(integrations.name));
+  }
+
+  async getIntegrationById(integrationId: string): Promise<Integration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(integrations)
+      .where(eq(integrations.integrationId, integrationId))
+      .limit(1);
+    return integration;
+  }
+
+  async createIntegration(integration: InsertIntegration): Promise<Integration> {
+    const [newIntegration] = await db.insert(integrations).values(integration).returning();
+    return newIntegration;
+  }
+
+  async updateIntegration(integrationId: string, updates: Partial<InsertIntegration>): Promise<Integration | undefined> {
+    const [updated] = await db
+      .update(integrations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(integrations.integrationId, integrationId))
+      .returning();
+    return updated;
+  }
+
+  async deleteIntegration(integrationId: string): Promise<void> {
+    await db.delete(integrations).where(eq(integrations.integrationId, integrationId));
+  }
+
+  // Integration Health Checks
+  async saveIntegrationCheck(check: InsertIntegrationCheck): Promise<IntegrationCheck> {
+    const [newCheck] = await db.insert(integrationChecks).values(check).returning();
+    return newCheck;
+  }
+
+  async getIntegrationChecks(integrationId: string, limit = 10): Promise<IntegrationCheck[]> {
+    return db
+      .select()
+      .from(integrationChecks)
+      .where(eq(integrationChecks.integrationId, integrationId))
+      .orderBy(desc(integrationChecks.checkedAt))
+      .limit(limit);
+  }
+
+  async getLatestIntegrationChecks(): Promise<IntegrationCheck[]> {
+    return db
+      .select()
+      .from(integrationChecks)
+      .orderBy(desc(integrationChecks.checkedAt))
+      .limit(50);
   }
 }
 

@@ -597,3 +597,69 @@ export const ActionCodes = {
 } as const;
 
 export type ActionCode = typeof ActionCodes[keyof typeof ActionCodes];
+
+// Integration Categories
+export const IntegrationCategories = {
+  DATA: 'data',
+  ANALYSIS: 'analysis',
+  EXECUTION: 'execution',
+  INFRASTRUCTURE: 'infrastructure',
+} as const;
+
+export type IntegrationCategory = typeof IntegrationCategories[keyof typeof IntegrationCategories];
+
+// Integration Health Statuses
+export const IntegrationStatuses = {
+  HEALTHY: 'healthy',
+  DEGRADED: 'degraded',
+  DISCONNECTED: 'disconnected',
+  ERROR: 'error',
+} as const;
+
+export type IntegrationStatus = typeof IntegrationStatuses[keyof typeof IntegrationStatuses];
+
+// Platform Integrations Registry - Global service definitions
+export const integrations = pgTable("integrations", {
+  id: serial("id").primaryKey(),
+  integrationId: text("integration_id").notNull().unique(), // google_data_connector, crawl_render, serp_intel, etc.
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // data, analysis, execution, infrastructure
+  enabled: boolean("enabled").default(true),
+  healthStatus: text("health_status").default("disconnected"), // healthy, degraded, disconnected, error
+  lastSuccessAt: timestamp("last_success_at"),
+  lastErrorAt: timestamp("last_error_at"),
+  lastError: text("last_error"),
+  contractVersion: text("contract_version").default("1.0"),
+  expectedSignals: jsonb("expected_signals"), // Array of signal names this integration should provide
+  receivedSignals: jsonb("received_signals"), // Object mapping signal -> { received: boolean, stale: boolean, lastValue: any }
+  configJson: jsonb("config_json"), // Non-sensitive configuration
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertIntegrationSchema = createInsertSchema(integrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
+export type Integration = typeof integrations.$inferSelect;
+
+// Integration Health Checks - Per-site integration check history
+export const integrationChecks = pgTable("integration_checks", {
+  id: serial("id").primaryKey(),
+  integrationId: text("integration_id").notNull(),
+  siteId: text("site_id"), // null for global checks
+  checkType: text("check_type").notNull(), // auth, data, freshness, completeness, contract
+  status: text("status").notNull(), // pass, fail, warning
+  details: jsonb("details"), // { message, data, duration_ms }
+  durationMs: integer("duration_ms"),
+  checkedAt: timestamp("checked_at").defaultNow().notNull(),
+});
+
+export const insertIntegrationCheckSchema = createInsertSchema(integrationChecks).omit({
+  id: true,
+});
+export type InsertIntegrationCheck = z.infer<typeof insertIntegrationCheckSchema>;
+export type IntegrationCheck = typeof integrationChecks.$inferSelect;
