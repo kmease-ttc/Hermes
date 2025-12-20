@@ -1294,5 +1294,148 @@ When answering:
     }
   });
 
+  // ========== SITES REGISTRY ENDPOINTS ==========
+  
+  app.get("/api/sites", async (req, res) => {
+    try {
+      const activeOnly = req.query.active !== "false";
+      const sites = await storage.getSites(activeOnly);
+      res.json(sites);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch sites", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sites/:siteId", async (req, res) => {
+    try {
+      const site = await storage.getSiteById(req.params.siteId);
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+      res.json(site);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch site", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/sites", async (req, res) => {
+    try {
+      const { displayName, baseUrl, category, techStack, repoProvider, repoIdentifier, deployMethod, crawlSettings, sitemaps, keyPages, integrations, guardrails, cadence, ownerName, ownerContact, status } = req.body;
+      
+      if (!displayName || !baseUrl) {
+        return res.status(400).json({ error: "displayName and baseUrl are required" });
+      }
+
+      const siteId = `site_${Date.now()}_${randomUUID().slice(0, 8)}`;
+      
+      const newSite = await storage.createSite({
+        siteId,
+        displayName,
+        baseUrl,
+        category,
+        techStack,
+        repoProvider,
+        repoIdentifier,
+        deployMethod,
+        crawlSettings,
+        sitemaps,
+        keyPages,
+        integrations,
+        guardrails,
+        cadence,
+        ownerName,
+        ownerContact,
+        status: status || "onboarding",
+        active: true,
+        healthScore: null,
+      });
+
+      await storage.saveAuditLog({
+        siteId: newSite.siteId,
+        action: "site_created",
+        actor: "api",
+        details: { displayName, baseUrl },
+      });
+
+      logger.info("API", "Site created", { siteId: newSite.siteId, displayName });
+      res.status(201).json(newSite);
+    } catch (error: any) {
+      logger.error("API", "Failed to create site", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/sites/:siteId", async (req, res) => {
+    try {
+      const existing = await storage.getSiteById(req.params.siteId);
+      if (!existing) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      const updated = await storage.updateSite(req.params.siteId, req.body);
+      
+      await storage.saveAuditLog({
+        siteId: req.params.siteId,
+        action: "site_updated",
+        actor: "api",
+        details: { updatedFields: Object.keys(req.body) },
+      });
+
+      logger.info("API", "Site updated", { siteId: req.params.siteId });
+      res.json(updated);
+    } catch (error: any) {
+      logger.error("API", "Failed to update site", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/sites/:siteId", async (req, res) => {
+    try {
+      const existing = await storage.getSiteById(req.params.siteId);
+      if (!existing) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      await storage.deleteSite(req.params.siteId);
+      
+      await storage.saveAuditLog({
+        siteId: req.params.siteId,
+        action: "site_deleted",
+        actor: "api",
+        details: { displayName: existing.displayName },
+      });
+
+      logger.info("API", "Site soft-deleted", { siteId: req.params.siteId });
+      res.json({ success: true, message: "Site archived" });
+    } catch (error: any) {
+      logger.error("API", "Failed to delete site", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sites/:siteId/findings", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const findings = await storage.getFindingsBySite(req.params.siteId, status);
+      res.json(findings);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch findings", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sites/:siteId/audit-logs", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const logs = await storage.getAuditLogsBySite(req.params.siteId, limit);
+      res.json(logs);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch audit logs", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
