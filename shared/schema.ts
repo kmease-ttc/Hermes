@@ -514,3 +514,48 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
 });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Site Integrations (Vault-backed credentials)
+export const siteIntegrations = pgTable("site_integrations", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  integrationType: text("integration_type").notNull(), // ga4, gsc, google_ads, serp, clarity, crawler
+  status: text("status").default("pending"), // connected, missing, error, pending
+  vaultProvider: text("vault_provider"), // bitwarden, env, manual
+  vaultItemId: text("vault_item_id"), // Bitwarden secret ID or item reference
+  vaultCollectionId: text("vault_collection_id"),
+  vaultOrgId: text("vault_org_id"),
+  metaJson: jsonb("meta_json"), // Non-sensitive metadata (propertyId, customerId, etc.)
+  lastCheckedAt: timestamp("last_checked_at"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSiteIntegrationSchema = createInsertSchema(siteIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSiteIntegration = z.infer<typeof insertSiteIntegrationSchema>;
+export type SiteIntegration = typeof siteIntegrations.$inferSelect;
+
+// Vault Configuration (Global)
+export const vaultConfig = pgTable("vault_config", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull().default("bitwarden"), // bitwarden, hashicorp, aws_secrets
+  orgId: text("org_id"),
+  defaultCollectionId: text("default_collection_id"),
+  status: text("status").default("disconnected"), // connected, disconnected, error
+  lastHealthCheck: timestamp("last_health_check"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertVaultConfigSchema = createInsertSchema(vaultConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertVaultConfig = z.infer<typeof insertVaultConfigSchema>;
+export type VaultConfig = typeof vaultConfig.$inferSelect;
