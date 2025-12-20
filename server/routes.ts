@@ -1489,5 +1489,172 @@ When answering:
     }
   });
 
+  // =============== VAULT & INTEGRATIONS ===============
+  
+  // Get vault status
+  app.get("/api/vault/status", async (req, res) => {
+    try {
+      const { checkVaultHealth } = await import("./vault");
+      const healthStatus = await checkVaultHealth();
+      const vaultConfigRecord = await storage.getVaultConfig();
+      
+      res.json({
+        health: healthStatus,
+        config: vaultConfigRecord ? {
+          provider: vaultConfigRecord.provider,
+          status: vaultConfigRecord.status,
+          lastHealthCheck: vaultConfigRecord.lastHealthCheck,
+        } : null,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to check vault status", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test vault connection
+  app.post("/api/vault/test", async (req, res) => {
+    try {
+      const { checkVaultHealth } = await import("./vault");
+      const healthStatus = await checkVaultHealth();
+      
+      const status = healthStatus.bitwarden.connected ? "connected" : "disconnected";
+      await storage.saveVaultConfig({
+        provider: "bitwarden",
+        status,
+        lastHealthCheck: new Date(),
+      });
+      
+      res.json({
+        success: healthStatus.bitwarden.connected,
+        health: healthStatus,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to test vault connection", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get site integrations
+  app.get("/api/sites/:siteId/integrations", async (req, res) => {
+    try {
+      const integrations = await storage.getSiteIntegrations(req.params.siteId);
+      
+      // Mask sensitive data
+      const masked = integrations.map(i => ({
+        id: i.id,
+        siteId: i.siteId,
+        integrationType: i.integrationType,
+        status: i.status,
+        vaultProvider: i.vaultProvider,
+        vaultItemId: i.vaultItemId ? `...${i.vaultItemId.slice(-4)}` : null,
+        metaJson: i.metaJson,
+        lastCheckedAt: i.lastCheckedAt,
+        lastError: i.lastError,
+        createdAt: i.createdAt,
+        updatedAt: i.updatedAt,
+      }));
+      
+      res.json(masked);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch site integrations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Save/update site integration
+  app.post("/api/sites/:siteId/integrations", async (req, res) => {
+    try {
+      const { integrationType, vaultProvider, vaultItemId, metaJson } = req.body;
+      
+      if (!integrationType) {
+        return res.status(400).json({ error: "integrationType is required" });
+      }
+      
+      const integration = await storage.saveSiteIntegration({
+        siteId: req.params.siteId,
+        integrationType,
+        vaultProvider: vaultProvider || "env",
+        vaultItemId,
+        metaJson,
+        status: "pending",
+      });
+      
+      res.json(integration);
+    } catch (error: any) {
+      logger.error("API", "Failed to save site integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test a specific integration
+  app.post("/api/sites/:siteId/integrations/:type/test", async (req, res) => {
+    try {
+      const { siteId, type } = req.params;
+      const integration = await storage.getSiteIntegration(siteId, type);
+      
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not configured" });
+      }
+      
+      let success = false;
+      let message = "";
+      
+      // Test based on integration type
+      switch (type) {
+        case "ga4":
+          try {
+            const ga4Result = await ga4Connector.fetchRealtimeUsers?.();
+            success = ga4Result !== undefined;
+            message = success ? "GA4 connection successful" : "GA4 connection failed";
+          } catch (e: any) {
+            message = e.message;
+          }
+          break;
+          
+        case "gsc":
+          try {
+            const gscResult = await gscConnector.getSitemaps?.();
+            success = gscResult !== undefined;
+            message = success ? "GSC connection successful" : "GSC connection failed";
+          } catch (e: any) {
+            message = e.message;
+          }
+          break;
+          
+        case "serp":
+          success = !!process.env.SERP_API_KEY;
+          message = success ? "SERP API key configured" : "SERP API key missing";
+          break;
+          
+        default:
+          message = "Unknown integration type";
+      }
+      
+      // Update integration status
+      await storage.updateSiteIntegration(integration.id, {
+        status: success ? "connected" : "error",
+        lastCheckedAt: new Date(),
+        lastError: success ? null : message,
+      });
+      
+      res.json({ success, message });
+    } catch (error: any) {
+      logger.error("API", "Failed to test integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete site integration
+  app.delete("/api/sites/:siteId/integrations/:id", async (req, res) => {
+    try {
+      await storage.deleteSiteIntegration(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error("API", "Failed to delete integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
