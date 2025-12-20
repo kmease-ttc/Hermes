@@ -19,6 +19,8 @@ import {
   sites,
   findings,
   auditLogs,
+  siteIntegrations,
+  vaultConfig,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -57,6 +59,10 @@ import {
   type InsertFinding,
   type AuditLog,
   type InsertAuditLog,
+  type SiteIntegration,
+  type InsertSiteIntegration,
+  type VaultConfig,
+  type InsertVaultConfig,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc } from "drizzle-orm";
 
@@ -162,6 +168,18 @@ export interface IStorage {
   // Audit Logs
   saveAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogsBySite(siteId: string, limit?: number): Promise<AuditLog[]>;
+  
+  // Site Integrations
+  getSiteIntegrations(siteId: string): Promise<SiteIntegration[]>;
+  getSiteIntegration(siteId: string, integrationType: string): Promise<SiteIntegration | undefined>;
+  saveSiteIntegration(integration: InsertSiteIntegration): Promise<SiteIntegration>;
+  updateSiteIntegration(id: number, updates: Partial<InsertSiteIntegration>): Promise<SiteIntegration | undefined>;
+  deleteSiteIntegration(id: number): Promise<void>;
+  
+  // Vault Config
+  getVaultConfig(): Promise<VaultConfig | undefined>;
+  saveVaultConfig(configData: InsertVaultConfig): Promise<VaultConfig>;
+  updateVaultConfig(id: number, updates: Partial<InsertVaultConfig>): Promise<VaultConfig | undefined>;
 }
 
 class DBStorage implements IStorage {
@@ -669,6 +687,76 @@ class DBStorage implements IStorage {
 
   async getAuditLogsBySite(siteId: string, limit = 50): Promise<AuditLog[]> {
     return db.select().from(auditLogs).where(eq(auditLogs.siteId, siteId)).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  // Site Integrations
+  async getSiteIntegrations(siteId: string): Promise<SiteIntegration[]> {
+    return db.select().from(siteIntegrations).where(eq(siteIntegrations.siteId, siteId)).orderBy(siteIntegrations.integrationType);
+  }
+
+  async getSiteIntegration(siteId: string, integrationType: string): Promise<SiteIntegration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(siteIntegrations)
+      .where(and(eq(siteIntegrations.siteId, siteId), eq(siteIntegrations.integrationType, integrationType)))
+      .limit(1);
+    return integration;
+  }
+
+  async saveSiteIntegration(integration: InsertSiteIntegration): Promise<SiteIntegration> {
+    const existing = await this.getSiteIntegration(integration.siteId, integration.integrationType);
+    if (existing) {
+      const [updated] = await db
+        .update(siteIntegrations)
+        .set({ ...integration, updatedAt: new Date() })
+        .where(eq(siteIntegrations.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [newIntegration] = await db.insert(siteIntegrations).values(integration).returning();
+    return newIntegration;
+  }
+
+  async updateSiteIntegration(id: number, updates: Partial<InsertSiteIntegration>): Promise<SiteIntegration | undefined> {
+    const [updated] = await db
+      .update(siteIntegrations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(siteIntegrations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSiteIntegration(id: number): Promise<void> {
+    await db.delete(siteIntegrations).where(eq(siteIntegrations.id, id));
+  }
+
+  // Vault Config
+  async getVaultConfig(): Promise<VaultConfig | undefined> {
+    const [config] = await db.select().from(vaultConfig).orderBy(desc(vaultConfig.createdAt)).limit(1);
+    return config;
+  }
+
+  async saveVaultConfig(configData: InsertVaultConfig): Promise<VaultConfig> {
+    const existing = await this.getVaultConfig();
+    if (existing) {
+      const [updated] = await db
+        .update(vaultConfig)
+        .set({ ...configData, updatedAt: new Date() })
+        .where(eq(vaultConfig.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [newConfig] = await db.insert(vaultConfig).values(configData).returning();
+    return newConfig;
+  }
+
+  async updateVaultConfig(id: number, updates: Partial<InsertVaultConfig>): Promise<VaultConfig | undefined> {
+    const [updated] = await db
+      .update(vaultConfig)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(vaultConfig.id, id))
+      .returning();
+    return updated;
   }
 }
 
