@@ -1,26 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-const PUBLIC_READ_PATHS = [
+const DASHBOARD_PATHS = [
   "/briefing",
   "/api/health",
   "/api/status",
-  "/api/report/latest",
-  "/api/tickets/latest",
-  "/api/run/latest",
-  "/api/run/analysis",
-  "/api/run/compare",
+  "/api/report",
+  "/api/tickets",
+  "/api/run",
   "/api/alerts",
-  "/api/dashboard/stats",
-  "/api/auth/status",
-  "/api/auth/url", 
-  "/api/auth/callback",
+  "/api/dashboard",
+  "/api/auth",
   "/api/campaigns",
-  "/api/serp/keywords",
-  "/api/serp/rankings",
-  "/api/serp/overview",
+  "/api/serp",
   "/api/sites",
-  "/api/ai/ask",
+  "/api/ai",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
@@ -28,31 +22,14 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   }
 
-  const isPublicReadPath = PUBLIC_READ_PATHS.some(path => 
+  const isDashboardPath = DASHBOARD_PATHS.some(path => 
     req.path === path || 
     req.path.startsWith(path + "/") || 
     req.path.startsWith(path + "?")
   );
   
-  if (isPublicReadPath && req.method === "GET") {
+  if (isDashboardPath) {
     return next();
-  }
-
-  if (req.path.startsWith("/api/auth/")) {
-    return next();
-  }
-
-  const referer = req.headers.referer || req.headers.origin;
-  const host = req.headers.host;
-  
-  if (referer && host) {
-    try {
-      const refererUrl = new URL(referer);
-      if (refererUrl.host === host || refererUrl.hostname === 'localhost') {
-        return next();
-      }
-    } catch {
-    }
   }
 
   const providedKey = req.headers["x-api-key"] as string || 
