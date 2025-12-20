@@ -1771,5 +1771,195 @@ When answering:
     }
   });
 
+  // ==========================================
+  // Platform Integrations API
+  // ==========================================
+  
+  // Get all platform integrations
+  app.get("/api/integrations", async (req, res) => {
+    try {
+      const integrationsList = await storage.getIntegrations();
+      res.json(integrationsList);
+    } catch (error: any) {
+      logger.error("API", "Failed to get integrations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get single integration details
+  app.get("/api/integrations/:integrationId", async (req, res) => {
+    try {
+      const integration = await storage.getIntegrationById(req.params.integrationId);
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not found" });
+      }
+      
+      // Get recent health checks
+      const checks = await storage.getIntegrationChecks(req.params.integrationId, 10);
+      
+      res.json({
+        ...integration,
+        recentChecks: checks,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Test an integration connection
+  app.post("/api/integrations/:integrationId/test", async (req, res) => {
+    try {
+      const integration = await storage.getIntegrationById(req.params.integrationId);
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not found" });
+      }
+
+      const startTime = Date.now();
+      let checkResult: { status: string; details: any; sampleData?: any } = {
+        status: "fail",
+        details: { message: "Unknown integration type" },
+      };
+
+      // Test based on integration type
+      switch (integration.integrationId) {
+        case "google_data_connector": {
+          // Test GA4 + GSC connections
+          const ga4Status = await ga4Connector.testConnection();
+          const gscStatus = await gscConnector.testConnection();
+          
+          checkResult = {
+            status: ga4Status.success && gscStatus.success ? "pass" : ga4Status.success || gscStatus.success ? "warning" : "fail",
+            details: {
+              ga4: ga4Status,
+              gsc: gscStatus,
+            },
+          };
+          break;
+        }
+        case "google_ads_connector": {
+          const adsStatus = await adsConnector.testConnection();
+          checkResult = {
+            status: adsStatus.success ? "pass" : "fail",
+            details: adsStatus,
+          };
+          break;
+        }
+        case "serp_intel": {
+          const serpStatus = await serpConnector.testConnection();
+          checkResult = {
+            status: serpStatus.success ? "pass" : "fail",
+            details: serpStatus,
+          };
+          break;
+        }
+        case "crawl_render": {
+          const websiteStatus = await websiteChecker.checkRobotsTxt("https://example.com");
+          checkResult = {
+            status: websiteStatus ? "pass" : "fail",
+            details: { message: "Website health check capability verified" },
+          };
+          break;
+        }
+        default:
+          checkResult = {
+            status: "warning",
+            details: { message: `No test handler for integration: ${integration.integrationId}` },
+          };
+      }
+
+      const durationMs = Date.now() - startTime;
+
+      // Save the check result
+      await storage.saveIntegrationCheck({
+        integrationId: integration.integrationId,
+        checkType: "connection",
+        status: checkResult.status,
+        details: checkResult.details,
+        durationMs,
+        checkedAt: new Date(),
+      });
+
+      // Update integration status
+      const newHealthStatus = checkResult.status === "pass" ? "healthy" : checkResult.status === "warning" ? "degraded" : "error";
+      await storage.updateIntegration(integration.integrationId, {
+        healthStatus: newHealthStatus,
+        lastSuccessAt: checkResult.status === "pass" ? new Date() : integration.lastSuccessAt,
+        lastErrorAt: checkResult.status === "fail" ? new Date() : integration.lastErrorAt,
+        lastError: checkResult.status === "fail" ? JSON.stringify(checkResult.details) : integration.lastError,
+      });
+
+      res.json({
+        integrationId: integration.integrationId,
+        ...checkResult,
+        durationMs,
+        testedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to test integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Seed default platform integrations
+  app.post("/api/integrations/seed", async (req, res) => {
+    try {
+      const defaultIntegrations = [
+        {
+          integrationId: "google_data_connector",
+          name: "Google Data Connector",
+          description: "Connects to GA4 and Google Search Console for traffic and search analytics",
+          category: "data",
+          expectedSignals: ["impressions", "clicks", "ctr", "position", "sessions", "users", "conversions"],
+        },
+        {
+          integrationId: "google_ads_connector",
+          name: "Google Ads",
+          description: "Connects to Google Ads for campaign performance and policy status",
+          category: "data",
+          expectedSignals: ["spend", "impressions", "clicks", "cpc", "conversions", "policy_issues"],
+        },
+        {
+          integrationId: "serp_intel",
+          name: "SERP & Keyword Intelligence",
+          description: "Real-time SERP tracking and keyword ranking verification via SerpApi",
+          category: "analysis",
+          expectedSignals: ["keyword_rankings", "serp_features", "position_changes"],
+        },
+        {
+          integrationId: "crawl_render",
+          name: "Crawl & Render Engine",
+          description: "Website health checks, robots.txt, sitemap validation, and page rendering",
+          category: "analysis",
+          expectedSignals: ["crawl_status", "render_status", "robots_txt", "sitemap", "meta_tags"],
+        },
+        {
+          integrationId: "bitwarden_vault",
+          name: "Bitwarden Secrets Manager",
+          description: "Secure credential storage for API keys and OAuth tokens",
+          category: "infrastructure",
+          expectedSignals: ["vault_status", "secrets_available"],
+        },
+      ];
+
+      const created = [];
+      for (const integration of defaultIntegrations) {
+        const existing = await storage.getIntegrationById(integration.integrationId);
+        if (!existing) {
+          const newIntegration = await storage.createIntegration(integration);
+          created.push(newIntegration);
+        }
+      }
+
+      res.json({ 
+        message: `Seeded ${created.length} integrations`,
+        created,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to seed integrations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
