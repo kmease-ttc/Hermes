@@ -13,7 +13,8 @@ import {
   Globe,
   ChevronDown,
   Plus,
-  Check
+  Check,
+  Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,6 +94,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/tickets", label: "Tickets", icon: FileText },
     { href: "/analysis", label: "Analysis", icon: Activity },
     { href: "/serp", label: "SERP Tracking", icon: Search },
+    { href: "/integrations", label: "Integrations", icon: Link2 },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
