@@ -90,6 +90,8 @@ export interface IStorage {
   getRunById(runId: string): Promise<Run | undefined>;
   getRunsByDateRange(startDate: Date, endDate: Date): Promise<Run[]>;
   getCompletedRunForDate(date: string): Promise<Run | undefined>;
+  getRecentRuns(limit: number): Promise<Run[]>;
+  getReportById(id: number): Promise<Report | undefined>;
   
   // GSC Page Daily
   saveGscPageData(data: InsertGscPageDaily[]): Promise<void>;
@@ -332,6 +334,27 @@ class DBStorage implements IStorage {
       .orderBy(desc(runs.startedAt))
       .limit(1);
     return run;
+  }
+
+  async getRecentRuns(limit: number): Promise<Run[]> {
+    return db
+      .select()
+      .from(runs)
+      .where(and(
+        eq(runs.runType, "full"),
+        eq(runs.status, "completed")
+      ))
+      .orderBy(desc(runs.createdAt))
+      .limit(limit);
+  }
+
+  async getReportById(id: number): Promise<Report | undefined> {
+    const [report] = await db
+      .select()
+      .from(reports)
+      .where(eq(reports.id, id))
+      .limit(1);
+    return report;
   }
 
   async saveGscPageData(data: InsertGscPageDaily[]): Promise<void> {

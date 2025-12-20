@@ -3,6 +3,9 @@ import { SummaryStats } from "@/components/dashboard/SummaryStats";
 import { TicketList } from "@/components/dashboard/TicketList";
 import { ConnectorsStatus } from "@/components/dashboard/ConnectorsStatus";
 import { ClassificationBadge } from "@/components/dashboard/ClassificationBadge";
+import { TopLosers } from "@/components/dashboard/TopLosers";
+import { AlertsBanner } from "@/components/dashboard/AlertsBanner";
+import { RunComparison } from "@/components/dashboard/RunComparison";
 import { AskAI } from "@/components/dashboard/AskAI";
 import { Button } from "@/components/ui/button";
 import { Play, Download, AlertCircle } from "lucide-react";
@@ -53,6 +56,9 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['latest-report'] });
       queryClient.invalidateQueries({ queryKey: ['latest-run'] });
+      queryClient.invalidateQueries({ queryKey: ['analysis-data'] });
+      queryClient.invalidateQueries({ queryKey: ['run-compare'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
       setIsRunning(false);
     },
     onError: (error: Error) => {
@@ -95,6 +101,8 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
+        <AlertsBanner />
+
         {!authStatus?.authenticated && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
@@ -133,7 +141,10 @@ export default function Dashboard() {
 
         <section>
           <h3 className="text-lg font-semibold mb-3">Current Status</h3>
-          <ClassificationBadge />
+          <div className="grid md:grid-cols-2 gap-4">
+            <ClassificationBadge />
+            <RunComparison />
+          </div>
         </section>
 
         <section>
@@ -142,6 +153,10 @@ export default function Dashboard() {
 
         <section>
           <SummaryStats stats={stats} />
+        </section>
+
+        <section>
+          <TopLosers />
         </section>
 
         <section>

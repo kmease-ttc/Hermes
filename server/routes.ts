@@ -363,6 +363,188 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/run/analysis", async (req, res) => {
+    try {
+      const latestRun = await storage.getLatestRun();
+      
+      if (!latestRun) {
+        return res.status(404).json({ error: "No runs found" });
+      }
+
+      const [anomalies, hypotheses, report] = await Promise.all([
+        storage.getAnomaliesByRunId(latestRun.runId),
+        storage.getHypothesesByRunId(latestRun.runId),
+        latestRun.reportId ? storage.getReportById(latestRun.reportId) : null,
+      ]);
+
+      const parseJsonField = (field: any): any[] => {
+        if (!field) return [];
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'string') {
+          try {
+            const parsed = JSON.parse(field);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      };
+
+      const topLosingPages = parseJsonField(report?.topLosingPages);
+      const topLosingQueries = parseJsonField(report?.topLosingQueries);
+      const clusterLosses = parseJsonField(report?.clusterLosses);
+
+      res.json({
+        runId: latestRun.runId,
+        classification: latestRun.primaryClassification || 'INCONCLUSIVE',
+        confidence: latestRun.confidenceOverall || 'low',
+        incidentDate: anomalies[0]?.startDate || null,
+        topLosingPages: topLosingPages.slice(0, 10),
+        topLosingQueries: topLosingQueries.slice(0, 10),
+        clusterLosses: clusterLosses.slice(0, 5),
+        hypotheses: hypotheses.slice(0, 5).map(h => ({
+          rank: h.rank,
+          key: h.hypothesisKey,
+          confidence: h.confidence,
+          summary: h.summary,
+        })),
+        anomalies: anomalies.map(a => ({
+          type: a.anomalyType,
+          metric: a.metric,
+          deltaPct: a.deltaPct,
+          startDate: a.startDate,
+        })),
+        deltas: latestRun.deltas,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch analysis data", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/run/compare", async (req, res) => {
+    try {
+      const runs = await storage.getRecentRuns(2);
+      
+      if (runs.length < 2) {
+        return res.json({ 
+          hasPreviousRun: false, 
+          message: "Need at least 2 runs for comparison" 
+        });
+      }
+
+      const [current, previous] = runs;
+      const currentDeltas = current.deltas as any;
+      const previousDeltas = previous.deltas as any;
+
+      const changes: Array<{ metric: string; current: number; previous: number; change: string }> = [];
+
+      if (currentDeltas && previousDeltas) {
+        if (currentDeltas.ga4?.sessionsDelta !== undefined && previousDeltas.ga4?.sessionsDelta !== undefined) {
+          changes.push({
+            metric: 'GA4 Sessions Delta',
+            current: currentDeltas.ga4.sessionsDelta,
+            previous: previousDeltas.ga4.sessionsDelta,
+            change: currentDeltas.ga4.sessionsDelta > previousDeltas.ga4.sessionsDelta ? 'improved' : 
+                   currentDeltas.ga4.sessionsDelta < previousDeltas.ga4.sessionsDelta ? 'worsened' : 'unchanged',
+          });
+        }
+        if (currentDeltas.gsc?.clicksDelta !== undefined && previousDeltas.gsc?.clicksDelta !== undefined) {
+          changes.push({
+            metric: 'GSC Clicks Delta',
+            current: currentDeltas.gsc.clicksDelta,
+            previous: previousDeltas.gsc.clicksDelta,
+            change: currentDeltas.gsc.clicksDelta > previousDeltas.gsc.clicksDelta ? 'improved' : 
+                   currentDeltas.gsc.clicksDelta < previousDeltas.gsc.clicksDelta ? 'worsened' : 'unchanged',
+          });
+        }
+        if (currentDeltas.gsc?.impressionsDelta !== undefined && previousDeltas.gsc?.impressionsDelta !== undefined) {
+          changes.push({
+            metric: 'GSC Impressions Delta',
+            current: currentDeltas.gsc.impressionsDelta,
+            previous: previousDeltas.gsc.impressionsDelta,
+            change: currentDeltas.gsc.impressionsDelta > previousDeltas.gsc.impressionsDelta ? 'improved' : 
+                   currentDeltas.gsc.impressionsDelta < previousDeltas.gsc.impressionsDelta ? 'worsened' : 'unchanged',
+          });
+        }
+      }
+
+      res.json({
+        hasPreviousRun: true,
+        current: {
+          runId: current.runId,
+          finishedAt: current.finishedAt,
+          classification: current.primaryClassification,
+          confidence: current.confidenceOverall,
+          anomaliesDetected: current.anomaliesDetected,
+        },
+        previous: {
+          runId: previous.runId,
+          finishedAt: previous.finishedAt,
+          classification: previous.primaryClassification,
+          confidence: previous.confidenceOverall,
+          anomaliesDetected: previous.anomaliesDetected,
+        },
+        changes,
+        classificationChanged: current.primaryClassification !== previous.primaryClassification,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to compare runs", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/alerts", async (req, res) => {
+    try {
+      const latestRun = await storage.getLatestRun();
+      
+      if (!latestRun) {
+        return res.json({ alerts: [] });
+      }
+
+      const alerts: Array<{ type: string; severity: string; title: string; message: string }> = [];
+
+      if (latestRun.primaryClassification === 'VISIBILITY_LOSS') {
+        alerts.push({
+          type: 'anomaly',
+          severity: 'high',
+          title: 'Visibility Loss Detected',
+          message: 'Search impressions have dropped significantly. Pages may not be appearing in search results.',
+        });
+      }
+
+      if (latestRun.primaryClassification === 'TRACKING_OR_ATTRIBUTION_GAP') {
+        alerts.push({
+          type: 'tracking',
+          severity: 'high', 
+          title: 'Tracking Gap Detected',
+          message: 'GA4 sessions dropped but search traffic is stable. This may indicate a tracking issue.',
+        });
+      }
+
+      const tickets = await storage.getLatestTickets(10);
+      const p0Tickets = tickets.filter(t => t.priority === 'P0' || t.priority === 'High');
+      
+      if (p0Tickets.length > 0) {
+        alerts.push({
+          type: 'ticket',
+          severity: 'critical',
+          title: `${p0Tickets.length} Critical Issue(s) Found`,
+          message: `${p0Tickets.map(t => t.title).slice(0, 2).join('; ')}`,
+        });
+      }
+
+      res.json({ 
+        alerts,
+        lastChecked: latestRun.finishedAt || latestRun.startedAt,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch alerts", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/run/smoke", async (req, res) => {
     const runId = generateRunId();
     const startedAt = new Date();
