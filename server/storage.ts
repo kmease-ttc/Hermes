@@ -14,6 +14,8 @@ import {
   ga4LandingDaily,
   anomalies,
   hypotheses,
+  serpKeywords,
+  serpRankings,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -42,8 +44,12 @@ import {
   type InsertAnomaly,
   type Hypothesis,
   type InsertHypothesis,
+  type SerpKeyword,
+  type InsertSerpKeyword,
+  type SerpRanking,
+  type InsertSerpRanking,
 } from "@shared/schema";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql, asc } from "drizzle-orm";
 
 export interface IStorage {
   // OAuth Token Management
@@ -115,6 +121,20 @@ export interface IStorage {
   
   // Tickets by Run
   getTicketsByRunId(runId: string): Promise<Ticket[]>;
+  
+  // SERP Keywords
+  getSerpKeywords(activeOnly?: boolean): Promise<SerpKeyword[]>;
+  getSerpKeywordById(id: number): Promise<SerpKeyword | undefined>;
+  saveSerpKeyword(keyword: InsertSerpKeyword): Promise<SerpKeyword>;
+  saveSerpKeywords(keywords: InsertSerpKeyword[]): Promise<SerpKeyword[]>;
+  updateSerpKeyword(id: number, updates: Partial<InsertSerpKeyword>): Promise<void>;
+  deleteSerpKeyword(id: number): Promise<void>;
+  
+  // SERP Rankings
+  saveSerpRankings(rankings: InsertSerpRanking[]): Promise<SerpRanking[]>;
+  getLatestRankings(): Promise<(SerpRanking & { keyword: string })[]>;
+  getRankingHistoryByKeyword(keywordId: number, limit?: number): Promise<SerpRanking[]>;
+  getRankingsByDate(date: string): Promise<SerpRanking[]>;
 }
 
 class DBStorage implements IStorage {
@@ -428,6 +448,104 @@ class DBStorage implements IStorage {
       .from(tickets)
       .where(eq(tickets.runId, runId))
       .orderBy(tickets.priority);
+  }
+
+  // SERP Keywords
+  async getSerpKeywords(activeOnly = true): Promise<SerpKeyword[]> {
+    if (activeOnly) {
+      return db
+        .select()
+        .from(serpKeywords)
+        .where(eq(serpKeywords.active, true))
+        .orderBy(desc(serpKeywords.priority));
+    }
+    return db
+      .select()
+      .from(serpKeywords)
+      .orderBy(desc(serpKeywords.priority));
+  }
+
+  async getSerpKeywordById(id: number): Promise<SerpKeyword | undefined> {
+    const [keyword] = await db
+      .select()
+      .from(serpKeywords)
+      .where(eq(serpKeywords.id, id))
+      .limit(1);
+    return keyword;
+  }
+
+  async saveSerpKeyword(keyword: InsertSerpKeyword): Promise<SerpKeyword> {
+    const [newKeyword] = await db.insert(serpKeywords).values(keyword).returning();
+    return newKeyword;
+  }
+
+  async saveSerpKeywords(keywords: InsertSerpKeyword[]): Promise<SerpKeyword[]> {
+    if (keywords.length === 0) return [];
+    return db.insert(serpKeywords).values(keywords).onConflictDoNothing().returning();
+  }
+
+  async updateSerpKeyword(id: number, updates: Partial<InsertSerpKeyword>): Promise<void> {
+    await db.update(serpKeywords).set(updates).where(eq(serpKeywords.id, id));
+  }
+
+  async deleteSerpKeyword(id: number): Promise<void> {
+    await db.delete(serpKeywords).where(eq(serpKeywords.id, id));
+  }
+
+  // SERP Rankings
+  async saveSerpRankings(rankings: InsertSerpRanking[]): Promise<SerpRanking[]> {
+    if (rankings.length === 0) return [];
+    return db.insert(serpRankings).values(rankings).returning();
+  }
+
+  async getLatestRankings(): Promise<(SerpRanking & { keyword: string })[]> {
+    const latestDate = await db
+      .select({ date: serpRankings.date })
+      .from(serpRankings)
+      .orderBy(desc(serpRankings.date))
+      .limit(1);
+    
+    if (latestDate.length === 0) return [];
+    
+    const results = await db
+      .select({
+        id: serpRankings.id,
+        keywordId: serpRankings.keywordId,
+        date: serpRankings.date,
+        searchEngine: serpRankings.searchEngine,
+        location: serpRankings.location,
+        device: serpRankings.device,
+        position: serpRankings.position,
+        url: serpRankings.url,
+        change: serpRankings.change,
+        volume: serpRankings.volume,
+        serpFeatures: serpRankings.serpFeatures,
+        createdAt: serpRankings.createdAt,
+        keyword: serpKeywords.keyword,
+      })
+      .from(serpRankings)
+      .innerJoin(serpKeywords, eq(serpRankings.keywordId, serpKeywords.id))
+      .where(eq(serpRankings.date, latestDate[0].date))
+      .orderBy(asc(serpRankings.position));
+    
+    return results;
+  }
+
+  async getRankingHistoryByKeyword(keywordId: number, limit = 30): Promise<SerpRanking[]> {
+    return db
+      .select()
+      .from(serpRankings)
+      .where(eq(serpRankings.keywordId, keywordId))
+      .orderBy(desc(serpRankings.date))
+      .limit(limit);
+  }
+
+  async getRankingsByDate(date: string): Promise<SerpRanking[]> {
+    return db
+      .select()
+      .from(serpRankings)
+      .where(eq(serpRankings.date, date))
+      .orderBy(asc(serpRankings.position));
   }
 }
 
