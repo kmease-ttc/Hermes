@@ -8,7 +8,8 @@ import {
   FileText, 
   LogOut,
   Menu,
-  X
+  X,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoImage from "@assets/generated_images/minimalist_cross_symbol_with_data_graph_lines.png";
@@ -25,6 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/tickets", label: "Tickets", icon: FileText },
     { href: "/analysis", label: "Analysis", icon: Activity },
+    { href: "/serp", label: "SERP Tracking", icon: Search },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 

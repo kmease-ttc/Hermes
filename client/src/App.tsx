@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Tickets from "@/pages/Tickets";
 import Analysis from "@/pages/Analysis";
 import Settings from "@/pages/Settings";
+import SERP from "@/pages/SERP";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/tickets" component={Tickets} />
       <Route path="/analysis" component={Analysis} />
+      <Route path="/serp" component={SERP} />
       <Route path="/settings" component={Settings} />
       <Route path="/">
         <Redirect to="/dashboard" />
