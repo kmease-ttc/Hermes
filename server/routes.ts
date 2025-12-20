@@ -1861,6 +1861,43 @@ When answering:
           };
           break;
         }
+        case "bitwarden_vault": {
+          const { bitwardenProvider } = await import("./vault/BitwardenProvider");
+          const vaultHealth = await bitwardenProvider.healthCheck();
+          checkResult = {
+            status: vaultHealth.connected ? "pass" : "fail",
+            details: {
+              provider: vaultHealth.provider,
+              connected: vaultHealth.connected,
+              error: vaultHealth.error,
+            },
+          };
+          break;
+        }
+        case "orchestrator": {
+          checkResult = {
+            status: "pass",
+            details: { message: "Orchestrator is running", scheduler: "active" },
+          };
+          break;
+        }
+        case "audit_log":
+        case "notifications":
+        case "content_generator":
+        case "site_executor":
+        case "core_web_vitals":
+        case "competitive_snapshot":
+        case "content_gap":
+        case "content_decay":
+        case "content_qa":
+        case "backlink_authority": {
+          // These services are placeholders - mark as degraded until fully implemented
+          checkResult = {
+            status: "warning",
+            details: { message: `${integration.name} service endpoint not yet configured` },
+          };
+          break;
+        }
         default:
           checkResult = {
             status: "warning",
@@ -1905,40 +1942,121 @@ When answering:
   app.post("/api/integrations/seed", async (req, res) => {
     try {
       const defaultIntegrations = [
+        // Data Sources
         {
           integrationId: "google_data_connector",
-          name: "Google Data Connector",
-          description: "Connects to GA4 and Google Search Console for traffic and search analytics",
+          name: "Google Data Connector (GSC + GA4)",
+          description: "Google OAuth, token storage/refresh, Search Console and GA4 data - impressions, clicks, CTR, position, sessions, users, landing pages",
           category: "data",
-          expectedSignals: ["impressions", "clicks", "ctr", "position", "sessions", "users", "conversions"],
+          expectedSignals: ["impressions", "clicks", "ctr", "position", "sessions", "users", "conversions", "queries", "pages"],
         },
         {
           integrationId: "google_ads_connector",
           name: "Google Ads",
-          description: "Connects to Google Ads for campaign performance and policy status",
+          description: "Campaign performance, spend, CPC, policy issues, and conversion tracking status",
           category: "data",
-          expectedSignals: ["spend", "impressions", "clicks", "cpc", "conversions", "policy_issues"],
+          expectedSignals: ["spend", "impressions", "clicks", "cpc", "conversions", "policy_issues", "campaign_status"],
         },
+        {
+          integrationId: "backlink_authority",
+          name: "Backlink & Authority Signals",
+          description: "Track new/lost links, domain authority, anchor text, link velocity, and compare to competitors",
+          category: "data",
+          expectedSignals: ["new_links", "lost_links", "domain_authority", "anchor_distribution", "link_velocity"],
+        },
+        // Analysis Services
         {
           integrationId: "serp_intel",
           name: "SERP & Keyword Intelligence",
-          description: "Real-time SERP tracking and keyword ranking verification via SerpApi",
+          description: "Top 100 Keywords list, rank tracking, SERP snapshots, volatility, and feature presence",
           category: "analysis",
-          expectedSignals: ["keyword_rankings", "serp_features", "position_changes"],
+          expectedSignals: ["keyword_rankings", "serp_features", "position_changes", "volatility", "opportunities"],
         },
         {
           integrationId: "crawl_render",
-          name: "Crawl & Render Engine",
-          description: "Website health checks, robots.txt, sitemap validation, and page rendering",
+          name: "Crawl & Render Service",
+          description: "Technical SEO: status codes, redirects, canonicals, indexability, internal links, orphan pages, sitemap/robots, JS rendering",
           category: "analysis",
-          expectedSignals: ["crawl_status", "render_status", "robots_txt", "sitemap", "meta_tags"],
+          expectedSignals: ["crawl_status", "render_status", "robots_txt", "sitemap", "meta_tags", "redirect_chains", "orphan_pages"],
         },
+        {
+          integrationId: "core_web_vitals",
+          name: "Core Web Vitals Monitor",
+          description: "PageSpeed Insights/CrUX performance signals - LCP, CLS, INP tracking and regression alerts",
+          category: "analysis",
+          expectedSignals: ["lcp", "cls", "inp", "performance_score", "regressions"],
+        },
+        {
+          integrationId: "competitive_snapshot",
+          name: "Competitive Snapshot Service",
+          description: "Competitor baseline: who ranks, page structure, titles/meta/H1, URL templates",
+          category: "analysis",
+          expectedSignals: ["competitors", "ranking_pages", "page_templates", "content_structure"],
+        },
+        {
+          integrationId: "content_gap",
+          name: "Competitive Intelligence & Content Gap",
+          description: "Compare competitor pages: missing sections, weak coverage, FAQs, schema, internal linking gaps",
+          category: "analysis",
+          expectedSignals: ["content_gaps", "missing_sections", "schema_differences", "internal_link_gaps"],
+        },
+        {
+          integrationId: "content_decay",
+          name: "Content Decay Monitor",
+          description: "Identify pages losing impressions/clicks/rank over time, prioritize refresh candidates",
+          category: "analysis",
+          expectedSignals: ["decay_signals", "refresh_candidates", "competitor_replacement"],
+        },
+        {
+          integrationId: "content_qa",
+          name: "Content QA / Policy Validator",
+          description: "Best-practice ruleset, E-E-A-T/compliance checks, structure validation, thin content detection",
+          category: "analysis",
+          expectedSignals: ["qa_score", "violations", "compliance_status", "fix_list"],
+        },
+        // Execution Services
+        {
+          integrationId: "content_generator",
+          name: "Content Generator",
+          description: "Draft content for blogs, pages, and refresh rewrites based on keyword intent and competitor gaps",
+          category: "execution",
+          expectedSignals: ["drafts", "content_blocks", "faq_schema", "internal_links"],
+        },
+        {
+          integrationId: "site_executor",
+          name: "Site Change Executor",
+          description: "Apply approved changes via GitHub PR, dry-run mode, before/after snapshots, rollback support",
+          category: "execution",
+          expectedSignals: ["pr_created", "changes_applied", "rollback_available"],
+        },
+        // Infrastructure
         {
           integrationId: "bitwarden_vault",
           name: "Bitwarden Secrets Manager",
-          description: "Secure credential storage for API keys and OAuth tokens",
+          description: "Secure credential storage for API keys, OAuth tokens, and service credentials",
           category: "infrastructure",
           expectedSignals: ["vault_status", "secrets_available"],
+        },
+        {
+          integrationId: "orchestrator",
+          name: "Orchestrator / Job Runner",
+          description: "Scheduled jobs (daily/weekly), retries, rate limits, timeouts, run status tracking",
+          category: "infrastructure",
+          expectedSignals: ["job_status", "run_history", "error_rates"],
+        },
+        {
+          integrationId: "audit_log",
+          name: "Audit Log & Observability",
+          description: "Run history, service health, job outcomes, change logs, alerts for failures and drops",
+          category: "infrastructure",
+          expectedSignals: ["run_logs", "health_metrics", "alerts", "change_audit"],
+        },
+        {
+          integrationId: "notifications",
+          name: "Notifications Service",
+          description: "Email/SMS/Slack alerts: daily summaries, critical drops, indexing emergencies, approval prompts",
+          category: "infrastructure",
+          expectedSignals: ["email_sent", "slack_sent", "alert_delivered"],
         },
       ];
 

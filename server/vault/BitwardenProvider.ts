@@ -14,7 +14,7 @@ export class BitwardenProvider implements VaultProvider {
   private secretCache: Map<string, CachedSecret> = new Map();
 
   constructor() {
-    this.accessToken = process.env.BITWARDEN_ACCESS_TOKEN || '';
+    this.accessToken = process.env.BWS_ACCESS_TOKEN || process.env.BITWARDEN_ACCESS_TOKEN || '';
     this.baseUrl = process.env.BITWARDEN_API_URL || 'https://api.bitwarden.com';
   }
 
