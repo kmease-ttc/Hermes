@@ -136,13 +136,16 @@ export type Report = typeof reports.$inferSelect;
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   ticketId: text("ticket_id").notNull().unique(), // e.g., "TICK-1024"
+  runId: text("run_id"), // Link to run
   title: text("title").notNull(),
-  owner: text("owner").notNull(), // 'SEO', 'Dev', 'Ads'
-  priority: text("priority").notNull(), // 'High', 'Medium', 'Low'
-  status: text("status").notNull().default('Open'), // 'Open', 'In Progress', 'Resolved'
+  owner: text("owner").notNull(), // 'SEO', 'DEV', 'ADS'
+  priority: text("priority").notNull(), // 'P0', 'P1', 'P2', 'P3'
+  status: text("status").notNull().default('open'), // 'open', 'dismissed', 'done'
   steps: jsonb("steps").notNull(), // Array of action steps
-  expectedImpact: text("expected_impact").notNull(),
+  expectedImpact: text("expected_impact").notNull(), // 'high', 'medium', 'low'
+  impactEstimate: jsonb("impact_estimate"), // { affected_pages_count, recoverable_clicks_est }
   evidence: jsonb("evidence"), // Links and metrics
+  hypothesisKey: text("hypothesis_key"), // Link to hypothesis
   reportId: integer("report_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -185,6 +188,9 @@ export const runs = pgTable("runs", {
   ticketCount: integer("ticket_count").default(0),
   errors: jsonb("errors"),
   sourceStatuses: jsonb("source_statuses"),
+  primaryClassification: text("primary_classification"), // VISIBILITY_LOSS, CTR_LOSS, PAGE_CLUSTER_REGRESSION, TRACKING_OR_ATTRIBUTION_GAP, INCONCLUSIVE
+  confidenceOverall: text("confidence_overall"), // high, medium, low
+  deltas: jsonb("deltas"), // Computed deltas for this run
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -194,3 +200,103 @@ export const insertRunSchema = createInsertSchema(runs).omit({
 });
 export type InsertRun = z.infer<typeof insertRunSchema>;
 export type Run = typeof runs.$inferSelect;
+
+// GSC Page-level Daily Rollups
+export const gscPageDaily = pgTable("gsc_page_daily", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  pagePath: text("page_path").notNull(),
+  clicks: integer("clicks").notNull(),
+  impressions: integer("impressions").notNull(),
+  ctr: real("ctr").notNull(),
+  position: real("position").notNull(),
+  cluster: text("cluster"), // Computed page cluster
+});
+
+export const insertGscPageDailySchema = createInsertSchema(gscPageDaily).omit({
+  id: true,
+});
+export type InsertGscPageDaily = z.infer<typeof insertGscPageDailySchema>;
+export type GscPageDaily = typeof gscPageDaily.$inferSelect;
+
+// GSC Query-level Daily Rollups
+export const gscQueryDaily = pgTable("gsc_query_daily", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  query: text("query").notNull(),
+  clicks: integer("clicks").notNull(),
+  impressions: integer("impressions").notNull(),
+  ctr: real("ctr").notNull(),
+  position: real("position").notNull(),
+});
+
+export const insertGscQueryDailySchema = createInsertSchema(gscQueryDaily).omit({
+  id: true,
+});
+export type InsertGscQueryDaily = z.infer<typeof insertGscQueryDailySchema>;
+export type GscQueryDaily = typeof gscQueryDaily.$inferSelect;
+
+// GA4 Landing Page Daily Rollups
+export const ga4LandingDaily = pgTable("ga4_landing_daily", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  landingPath: text("landing_path").notNull(),
+  sessions: integer("sessions").notNull(),
+  users: integer("users").notNull(),
+  engagedSessions: integer("engaged_sessions"),
+  conversions: integer("conversions"),
+  cluster: text("cluster"), // Computed page cluster
+});
+
+export const insertGa4LandingDailySchema = createInsertSchema(ga4LandingDaily).omit({
+  id: true,
+});
+export type InsertGa4LandingDaily = z.infer<typeof insertGa4LandingDailySchema>;
+export type Ga4LandingDaily = typeof ga4LandingDaily.$inferSelect;
+
+// Anomalies detected per run
+export const anomalies = pgTable("anomalies", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  anomalyType: text("anomaly_type").notNull(), // traffic_drop, impressions_drop, ctr_drop, page_cluster_drop, tracking_gap
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date"),
+  metric: text("metric").notNull(),
+  baselineValue: real("baseline_value").notNull(),
+  observedValue: real("observed_value").notNull(),
+  deltaPct: real("delta_pct").notNull(),
+  zScore: real("z_score"),
+  scope: jsonb("scope"), // e.g., { channel: "Organic Search", page_cluster: "/services/*" }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAnomalySchema = createInsertSchema(anomalies).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAnomaly = z.infer<typeof insertAnomalySchema>;
+export type Anomaly = typeof anomalies.$inferSelect;
+
+// Hypotheses with evidence
+export const hypotheses = pgTable("hypotheses", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  rank: integer("rank").notNull(),
+  hypothesisKey: text("hypothesis_key").notNull(), // ROBOTS_OR_NOINDEX, CANONICAL_MISMATCH, etc.
+  confidence: text("confidence").notNull(), // high, medium, low
+  summary: text("summary").notNull(),
+  evidence: jsonb("evidence").notNull(), // Array of evidence blocks
+  disconfirmedBy: jsonb("disconfirmed_by"), // Evidence that weakens it
+  missingData: jsonb("missing_data"), // What would increase confidence
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertHypothesisSchema = createInsertSchema(hypotheses).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertHypothesis = z.infer<typeof insertHypothesisSchema>;
+export type Hypothesis = typeof hypotheses.$inferSelect;

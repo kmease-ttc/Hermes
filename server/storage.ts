@@ -9,6 +9,11 @@ import {
   tickets,
   config,
   runs,
+  gscPageDaily,
+  gscQueryDaily,
+  ga4LandingDaily,
+  anomalies,
+  hypotheses,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -26,7 +31,17 @@ import {
   type Config,
   type InsertConfig,
   type Run,
-  type InsertRun
+  type InsertRun,
+  type GscPageDaily,
+  type InsertGscPageDaily,
+  type GscQueryDaily,
+  type InsertGscQueryDaily,
+  type Ga4LandingDaily,
+  type InsertGa4LandingDaily,
+  type Anomaly,
+  type InsertAnomaly,
+  type Hypothesis,
+  type InsertHypothesis,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 
@@ -75,6 +90,29 @@ export interface IStorage {
   getRunById(runId: string): Promise<Run | undefined>;
   getRunsByDateRange(startDate: Date, endDate: Date): Promise<Run[]>;
   getCompletedRunForDate(date: string): Promise<Run | undefined>;
+  
+  // GSC Page Daily
+  saveGscPageData(data: InsertGscPageDaily[]): Promise<void>;
+  getGscPageDataByRunId(runId: string): Promise<GscPageDaily[]>;
+  
+  // GSC Query Daily
+  saveGscQueryData(data: InsertGscQueryDaily[]): Promise<void>;
+  getGscQueryDataByRunId(runId: string): Promise<GscQueryDaily[]>;
+  
+  // GA4 Landing Daily
+  saveGa4LandingData(data: InsertGa4LandingDaily[]): Promise<void>;
+  getGa4LandingDataByRunId(runId: string): Promise<Ga4LandingDaily[]>;
+  
+  // Anomalies
+  saveAnomalies(data: InsertAnomaly[]): Promise<Anomaly[]>;
+  getAnomaliesByRunId(runId: string): Promise<Anomaly[]>;
+  
+  // Hypotheses
+  saveHypotheses(data: InsertHypothesis[]): Promise<Hypothesis[]>;
+  getHypothesesByRunId(runId: string): Promise<Hypothesis[]>;
+  
+  // Tickets by Run
+  getTicketsByRunId(runId: string): Promise<Ticket[]>;
 }
 
 class DBStorage implements IStorage {
@@ -294,6 +332,79 @@ class DBStorage implements IStorage {
       .orderBy(desc(runs.startedAt))
       .limit(1);
     return run;
+  }
+
+  async saveGscPageData(data: InsertGscPageDaily[]): Promise<void> {
+    if (data.length === 0) return;
+    await db.insert(gscPageDaily).values(data);
+  }
+
+  async getGscPageDataByRunId(runId: string): Promise<GscPageDaily[]> {
+    return db
+      .select()
+      .from(gscPageDaily)
+      .where(eq(gscPageDaily.runId, runId))
+      .orderBy(desc(gscPageDaily.date));
+  }
+
+  async saveGscQueryData(data: InsertGscQueryDaily[]): Promise<void> {
+    if (data.length === 0) return;
+    await db.insert(gscQueryDaily).values(data);
+  }
+
+  async getGscQueryDataByRunId(runId: string): Promise<GscQueryDaily[]> {
+    return db
+      .select()
+      .from(gscQueryDaily)
+      .where(eq(gscQueryDaily.runId, runId))
+      .orderBy(desc(gscQueryDaily.date));
+  }
+
+  async saveGa4LandingData(data: InsertGa4LandingDaily[]): Promise<void> {
+    if (data.length === 0) return;
+    await db.insert(ga4LandingDaily).values(data);
+  }
+
+  async getGa4LandingDataByRunId(runId: string): Promise<Ga4LandingDaily[]> {
+    return db
+      .select()
+      .from(ga4LandingDaily)
+      .where(eq(ga4LandingDaily.runId, runId))
+      .orderBy(desc(ga4LandingDaily.date));
+  }
+
+  async saveAnomalies(data: InsertAnomaly[]): Promise<Anomaly[]> {
+    if (data.length === 0) return [];
+    return db.insert(anomalies).values(data).returning();
+  }
+
+  async getAnomaliesByRunId(runId: string): Promise<Anomaly[]> {
+    return db
+      .select()
+      .from(anomalies)
+      .where(eq(anomalies.runId, runId))
+      .orderBy(desc(anomalies.createdAt));
+  }
+
+  async saveHypotheses(data: InsertHypothesis[]): Promise<Hypothesis[]> {
+    if (data.length === 0) return [];
+    return db.insert(hypotheses).values(data).returning();
+  }
+
+  async getHypothesesByRunId(runId: string): Promise<Hypothesis[]> {
+    return db
+      .select()
+      .from(hypotheses)
+      .where(eq(hypotheses.runId, runId))
+      .orderBy(hypotheses.rank);
+  }
+
+  async getTicketsByRunId(runId: string): Promise<Ticket[]> {
+    return db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.runId, runId))
+      .orderBy(tickets.priority);
   }
 }
 
