@@ -20,6 +20,7 @@ const PUBLIC_PATHS = [
   "/api/serp/keywords",
   "/api/serp/rankings",
   "/api/serp/overview",
+  "/api/sites",
 ];
 
 const SESSION_ALLOWED_PATHS = [
@@ -27,10 +28,16 @@ const SESSION_ALLOWED_PATHS = [
   "/api/run/smoke",
   "/api/serp/run",
   "/api/serp/seed",
+  "/api/sites",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
-  if (PUBLIC_PATHS.some(path => req.path === path || req.path.startsWith(path + "?"))) {
+  const isPublicPath = PUBLIC_PATHS.some(path => 
+    req.path === path || 
+    req.path.startsWith(path + "/") || 
+    req.path.startsWith(path + "?")
+  );
+  if (isPublicPath) {
     return next();
   }
 
@@ -39,7 +46,9 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const isSessionAllowedPath = SESSION_ALLOWED_PATHS.some(
-    path => req.path === path || req.path.startsWith(path + "?")
+    path => req.path === path || 
+    req.path.startsWith(path + "/") || 
+    req.path.startsWith(path + "?")
   );
   if (isSessionAllowedPath && (req.session as any)?.authenticated) {
     return next();
