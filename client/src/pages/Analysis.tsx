@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -17,7 +18,11 @@ import {
   Lightbulb,
   ArrowRight,
   Sparkles,
-  Info
+  Info,
+  Wrench,
+  Search,
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +33,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface HealthCheck {
   name: string;
@@ -220,9 +238,92 @@ function getSuggestedActions(drop: Drop): { primary: string; secondary: string[]
   };
 }
 
+function dropToAnomalyId(drop: Drop): string {
+  return `${drop.date}_${drop.source}_${drop.metric}`.replace(/\s+/g, '_').toLowerCase();
+}
+
+interface ActionOutput {
+  findings: Array<{ type: string; data: any; summary: string }>;
+  changes: Array<{ type: string; url: string; before: any; after: any }>;
+  nextSteps: string[];
+  summary: string;
+}
+
+interface ActionRun {
+  runId: string;
+  status: string;
+  outputJson: ActionOutput | null;
+  createdAt: string;
+}
+
+function DropActionResults({ actionRun }: { actionRun: ActionRun }) {
+  const output = actionRun.outputJson;
+  if (!output) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-3">
+      <div className="flex items-center gap-2">
+        <CheckCircle className="w-4 h-4 text-green-600" />
+        <span className="font-medium text-sm text-green-700 dark:text-green-400">Analysis Complete</span>
+        <Badge variant="outline" className="text-xs">{actionRun.status}</Badge>
+      </div>
+      
+      {output.summary && (
+        <p className="text-sm text-foreground">{output.summary}</p>
+      )}
+
+      {output.findings && output.findings.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary hover:underline">
+            <Search className="w-3 h-3" />
+            View {output.findings.length} finding(s)
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {output.findings.map((finding, i) => (
+              <div key={i} className="p-3 bg-white dark:bg-gray-800 rounded border text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="secondary" className="text-xs">{finding.type}</Badge>
+                </div>
+                <p className="text-muted-foreground">{finding.summary}</p>
+                {finding.type === 'page_meta' && finding.data && Array.isArray(finding.data) && (
+                  <div className="mt-2 space-y-1">
+                    {finding.data.slice(0, 3).map((page: any, j: number) => (
+                      <div key={j} className="text-xs p-2 bg-muted rounded">
+                        <p className="font-medium truncate">{page.url}</p>
+                        <p className="text-muted-foreground truncate">Title: {page.title || '(missing)'}</p>
+                        <p className="text-muted-foreground truncate">Desc: {page.description || '(missing)'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {output.nextSteps && output.nextSteps.length > 0 && (
+        <div className="pt-2 border-t border-green-200 dark:border-green-800">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Recommended Next Steps:</p>
+          <ul className="space-y-1">
+            {output.nextSteps.map((step, i) => (
+              <li key={i} className="text-sm flex items-start gap-2">
+                <ArrowRight className="w-3 h-3 mt-1 text-primary shrink-0" />
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Analysis() {
   const queryClient = useQueryClient();
   const { currentSite } = useSiteContext();
+  const [actionResults, setActionResults] = useState<Record<string, ActionRun>>({});
+  const [runningActions, setRunningActions] = useState<Record<string, boolean>>({});
   
   const { data: report, isLoading } = useQuery({
     queryKey: ['report'],
@@ -247,6 +348,49 @@ export default function Analysis() {
       toast.error("Failed to run analysis");
     },
   });
+
+  const runFixAction = async (drop: Drop) => {
+    if (!currentSite) {
+      toast.error("Please select a site first");
+      return;
+    }
+    
+    const anomalyId = dropToAnomalyId(drop);
+    setRunningActions(prev => ({ ...prev, [anomalyId]: true }));
+    
+    try {
+      const res = await fetch('/api/actions/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: currentSite.siteId,
+          drop,
+          enrichOnly: true,
+        }),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to run action');
+      }
+      
+      const result = await res.json();
+      setActionResults(prev => ({
+        ...prev,
+        [anomalyId]: {
+          runId: result.runId,
+          status: result.status,
+          outputJson: result.output,
+          createdAt: new Date().toISOString(),
+        },
+      }));
+      toast.success("Analysis complete! See results below.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to run action");
+    } finally {
+      setRunningActions(prev => ({ ...prev, [anomalyId]: false }));
+    }
+  };
 
   const parsed = report?.markdownReport ? parseReport(report.markdownReport) : null;
 
@@ -464,7 +608,37 @@ export default function Analysis() {
                                 <p key={j} className="text-sm text-muted-foreground">• {action}</p>
                               ))}
                             </div>
+                            
+                            {/* Fix This Button */}
+                            <div className="mt-4 flex items-center gap-2">
+                              <Button
+                                onClick={() => runFixAction(drop)}
+                                disabled={runningActions[dropToAnomalyId(drop)]}
+                                size="sm"
+                                data-testid={`button-fix-drop-${i}`}
+                              >
+                                {runningActions[dropToAnomalyId(drop)] ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Wrench className="w-4 h-4 mr-2" />
+                                    Get More Data
+                                  </>
+                                )}
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                Fetch page meta, indexing status, and query data
+                              </span>
+                            </div>
                           </div>
+                          
+                          {/* Action Results */}
+                          {actionResults[dropToAnomalyId(drop)] && (
+                            <DropActionResults actionRun={actionResults[dropToAnomalyId(drop)]} />
+                          )}
                         </CardContent>
                       </Card>
                     );
