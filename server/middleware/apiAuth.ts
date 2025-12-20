@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   "/api/status",
   "/api/report/latest",
   "/api/tickets/latest",
+  "/api/run/latest",
   "/api/dashboard/stats",
   "/api/auth/status",
   "/api/auth/url", 

@@ -48,7 +48,7 @@ const confidenceColors: Record<string, string> = {
 };
 
 export function ClassificationBadge() {
-  const { data: latestRun } = useQuery({
+  const { data: latestRun, isLoading, isError } = useQuery({
     queryKey: ['latest-run'],
     queryFn: async () => {
       const res = await fetch('/api/run/latest');
@@ -61,7 +61,23 @@ export function ClassificationBadge() {
     retry: false,
   });
 
-  if (!latestRun) {
+  if (isLoading) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center animate-pulse">
+            <Activity className="w-5 h-5 text-slate-400" />
+          </div>
+          <div className="flex-1">
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-32 animate-pulse"></div>
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-48 mt-2 animate-pulse"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError || !latestRun) {
     return (
       <Card className="border-dashed">
         <CardContent className="p-4 flex items-center gap-4">
