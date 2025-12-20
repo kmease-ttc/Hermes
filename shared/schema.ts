@@ -344,3 +344,173 @@ export const insertSerpRankingSchema = createInsertSchema(serpRankings).omit({
 });
 export type InsertSerpRanking = z.infer<typeof insertSerpRankingSchema>;
 export type SerpRanking = typeof serpRankings.$inferSelect;
+
+// Sites Registry for Multi-Site Orchestration
+export const sites = pgTable("sites", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  baseUrl: text("base_url").notNull(),
+  category: text("category"), // clinic, seo_tool, property_mgmt, farm_shop, etc.
+  techStack: text("tech_stack"), // nextjs, remix, react-static, wordpress, webflow, unknown
+  repoProvider: text("repo_provider"), // github, replit, other
+  repoIdentifier: text("repo_identifier"), // GitHub org/repo OR Replit project id
+  deployMethod: text("deploy_method"), // replit_deploy, vercel, netlify, cloudflare_pages, manual
+  crawlSettings: jsonb("crawl_settings"), // { crawl_depth_limit, max_pages, respect_robots, user_agent }
+  sitemaps: text("sitemaps").array(), // Array of sitemap URLs
+  keyPages: text("key_pages").array(), // login, pricing, contact, location pages
+  integrations: jsonb("integrations"), // { ga4: { property_id }, gsc: { property }, google_ads: { customer_id }, clarity: { site_id } }
+  guardrails: jsonb("guardrails"), // { allowed_edit_paths[], blocked_edit_paths[], max_files_changed_per_run, max_lines_changed_per_run, require_human_approval, auto_merge_categories[] }
+  cadence: jsonb("cadence"), // { diagnose_frequency, auto_fix_frequency, content_frequency, quiet_hours }
+  ownerName: text("owner_name"),
+  ownerContact: text("owner_contact"), // Email or Slack
+  healthScore: integer("health_score"), // 0-100
+  lastDiagnosisAt: timestamp("last_diagnosis_at"),
+  lastDeployAt: timestamp("last_deploy_at"),
+  status: text("status").default("active"), // active, paused, onboarding
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSiteSchema = createInsertSchema(sites).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastDiagnosisAt: true,
+  lastDeployAt: true,
+});
+export type InsertSite = z.infer<typeof insertSiteSchema>;
+export type Site = typeof sites.$inferSelect;
+
+// Site Crawl Runs
+export const crawlRuns = pgTable("crawl_runs", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  runId: text("run_id").notNull().unique(),
+  status: text("status").notNull(), // running, completed, failed
+  pagesScanned: integer("pages_scanned").default(0),
+  errorsFound: integer("errors_found").default(0),
+  startedAt: timestamp("started_at").notNull(),
+  finishedAt: timestamp("finished_at"),
+  summary: jsonb("summary"), // Quick stats
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCrawlRunSchema = createInsertSchema(crawlRuns).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCrawlRun = z.infer<typeof insertCrawlRunSchema>;
+export type CrawlRun = typeof crawlRuns.$inferSelect;
+
+// SEO Findings from Diagnostics
+export const findings = pgTable("findings", {
+  id: serial("id").primaryKey(),
+  findingId: text("finding_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  crawlRunId: text("crawl_run_id"),
+  category: text("category").notNull(), // crawlability, indexation, content, performance, structured_data, internal_links, analytics, ads, security_headers
+  severity: text("severity").notNull(), // critical, high, medium, low
+  impactScore: integer("impact_score").default(50), // 0-100
+  confidence: real("confidence").default(0.5), // 0-1
+  title: text("title").notNull(),
+  description: text("description"),
+  evidence: jsonb("evidence"), // Array of { type, value }
+  recommendedActions: text("recommended_actions").array(),
+  status: text("status").default("open"), // open, accepted, fixed, ignored
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertFindingSchema = createInsertSchema(findings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertFinding = z.infer<typeof insertFindingSchema>;
+export type Finding = typeof findings.$inferSelect;
+
+// Fix Plans
+export const plans = pgTable("plans", {
+  id: serial("id").primaryKey(),
+  planId: text("plan_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  buckets: jsonb("buckets"), // { quick_wins: [], structural_fixes: [], content_opportunities: [], technical_debt: [] }
+  status: text("status").default("draft"), // draft, approved, in_progress, completed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPlanSchema = createInsertSchema(plans).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertPlan = z.infer<typeof insertPlanSchema>;
+export type Plan = typeof plans.$inferSelect;
+
+// Generated Patches
+export const patches = pgTable("patches", {
+  id: serial("id").primaryKey(),
+  patchId: text("patch_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  planId: text("plan_id"),
+  findingId: text("finding_id"),
+  changes: jsonb("changes"), // Array of { file_path, diff_unified }
+  rationale: text("rationale"),
+  acceptanceCriteria: text("acceptance_criteria").array(),
+  riskLevel: text("risk_level").default("low"), // low, medium, high
+  status: text("status").default("queued"), // queued, applied, failed, deployed, rolled_back
+  prUrl: text("pr_url"), // GitHub PR URL if using PR workflow
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPatchSchema = createInsertSchema(patches).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPatch = z.infer<typeof insertPatchSchema>;
+export type Patch = typeof patches.$inferSelect;
+
+// Deployments
+export const deployments = pgTable("deployments", {
+  id: serial("id").primaryKey(),
+  deploymentId: text("deployment_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  patchId: text("patch_id"),
+  status: text("status").notNull(), // queued, deploying, success, failed, rolled_back
+  deployedAt: timestamp("deployed_at"),
+  rollbackAt: timestamp("rollback_at"),
+  preDeployChecks: jsonb("pre_deploy_checks"), // { build_pass, lint_pass, seo_sanity }
+  postDeployChecks: jsonb("post_deploy_checks"),
+  logs: text("logs"),
+  previousCommitSha: text("previous_commit_sha"),
+  newCommitSha: text("new_commit_sha"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDeploymentSchema = createInsertSchema(deployments).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type Deployment = typeof deployments.$inferSelect;
+
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id"),
+  action: text("action").notNull(), // site_created, diagnosis_run, patch_applied, deploy_started, etc.
+  actor: text("actor"), // system, user email, api
+  details: jsonb("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
