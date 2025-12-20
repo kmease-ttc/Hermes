@@ -1,9 +1,33 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, AlertTriangle, XCircle, TrendingDown, Calendar, Clock, Globe, Activity, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  TrendingDown, 
+  Calendar, 
+  Clock, 
+  Globe, 
+  Activity, 
+  FileText,
+  RefreshCw,
+  Lightbulb,
+  ArrowRight,
+  Sparkles,
+  Info
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useSiteContext } from "@/hooks/useSiteContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface HealthCheck {
   name: string;
@@ -122,13 +146,105 @@ function StatusIcon({ status }: { status: 'healthy' | 'warning' | 'error' }) {
   return <XCircle className="w-5 h-5 text-red-500" />;
 }
 
+function getSeverity(zScore: number): 'severe' | 'moderate' | 'mild' {
+  const absZ = Math.abs(zScore);
+  if (absZ >= 3) return 'severe';
+  if (absZ >= 2) return 'moderate';
+  return 'mild';
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getAIInterpretation(drop: Drop): string {
+  const metric = drop.metric.toLowerCase();
+  const percentDrop = parseFloat(drop.dropPercent.replace('%', '').replace('-', ''));
+  
+  if (metric.includes('click') && percentDrop > 50) {
+    return "Search clicks dropped sharply while impressions may have remained stable, suggesting a ranking or CTR issue rather than a demand drop. This often happens after SERP layout changes or title/meta mismatches.";
+  }
+  if (metric.includes('click') && percentDrop <= 50) {
+    return "Moderate decline in search clicks. This could indicate seasonal fluctuations, algorithm updates, or competitor activity. Review your top performing pages for any changes.";
+  }
+  if (metric.includes('session') || metric.includes('user')) {
+    return "Traffic decline detected. Check for technical issues like slow page load, broken tracking, or crawl errors. Also verify no significant content was removed or modified.";
+  }
+  if (metric.includes('impression')) {
+    return "Visibility in search results has decreased. This may indicate indexing issues, ranking drops, or reduced search demand for your target keywords.";
+  }
+  return "Anomaly detected in this metric. Review recent changes to your site, check Google Search Console for any notifications, and compare with industry trends.";
+}
+
+function getSuggestedActions(drop: Drop): { primary: string; secondary: string[] } {
+  const metric = drop.metric.toLowerCase();
+  
+  if (metric.includes('click')) {
+    return {
+      primary: "Review recent ranking changes for top 5 affected queries",
+      secondary: [
+        "Check title/meta changes in the last 7 days",
+        "Verify no indexing or crawl errors for ranking pages"
+      ]
+    };
+  }
+  if (metric.includes('session') || metric.includes('user')) {
+    return {
+      primary: "Check GA4 realtime to verify tracking is working",
+      secondary: [
+        "Review page speed metrics for any degradation",
+        "Check for any 4xx/5xx errors on key landing pages"
+      ]
+    };
+  }
+  if (metric.includes('impression')) {
+    return {
+      primary: "Review Search Console for manual actions or penalties",
+      secondary: [
+        "Check URL Inspection for indexing issues",
+        "Analyze keyword rankings for your target terms"
+      ]
+    };
+  }
+  return {
+    primary: "Investigate the root cause of this anomaly",
+    secondary: [
+      "Check for any recent site changes",
+      "Compare with industry trends and seasonality"
+    ]
+  };
+}
+
 export default function Analysis() {
+  const queryClient = useQueryClient();
+  const { currentSite } = useSiteContext();
+  
   const { data: report, isLoading } = useQuery({
     queryKey: ['report'],
     queryFn: async () => {
       const res = await fetch('/api/report/latest');
       if (!res.ok) return null;
       return res.json();
+    },
+  });
+
+  const rerunMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/run', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to run analysis');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['report'] });
+      toast.success("Analysis complete! Report updated.");
+    },
+    onError: () => {
+      toast.error("Failed to run analysis");
     },
   });
 
@@ -140,14 +256,26 @@ export default function Analysis() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Analysis</h1>
-            <p className="text-muted-foreground">Latest diagnostic report and insights</p>
+            <p className="text-muted-foreground">
+              {currentSite ? `Diagnostic report for ${currentSite.displayName}` : 'Latest diagnostic report and insights'}
+            </p>
           </div>
-          {report && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span>{new Date(report.createdAt).toLocaleString()}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {report && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>{new Date(report.createdAt).toLocaleString()}</span>
+              </div>
+            )}
+            <Button 
+              onClick={() => rerunMutation.mutate()}
+              disabled={rerunMutation.isPending}
+              data-testid="button-rerun-analysis"
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", rerunMutation.isPending && "animate-spin")} />
+              {rerunMutation.isPending ? "Running..." : "Re-run Analysis"}
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -158,19 +286,24 @@ export default function Analysis() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">
-                No reports yet. Run diagnostics from the dashboard to generate a report.
+              <p className="text-muted-foreground text-center mb-4">
+                No reports yet. Run analysis to generate a diagnostic report.
               </p>
+              <Button onClick={() => rerunMutation.mutate()} disabled={rerunMutation.isPending}>
+                <RefreshCw className={cn("w-4 h-4 mr-2", rerunMutation.isPending && "animate-spin")} />
+                Run Analysis Now
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Report Header */}
             <Card className="border-l-4 border-l-primary">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-primary" />
-                    <CardTitle>Report: {report.date}</CardTitle>
+                    <CardTitle>Report: {formatDate(report.date)}</CardTitle>
                   </div>
                   {parsed?.domain && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -188,83 +321,171 @@ export default function Analysis() {
               </CardContent>
             </Card>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-green-600" />
-                    Health Check
-                  </CardTitle>
-                  <CardDescription>System status at time of analysis</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {parsed?.healthChecks && parsed.healthChecks.length > 0 ? (
-                    <div className="space-y-3">
-                      {parsed.healthChecks.map((check, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <span className="font-medium">{check.name}</span>
-                          <div className="flex items-center gap-2">
-                            <StatusIcon status={check.status} />
-                            <span className={cn(
-                              "text-sm font-medium",
-                              check.status === 'healthy' && "text-green-600",
-                              check.status === 'warning' && "text-yellow-600",
-                              check.status === 'error' && "text-red-600",
-                            )}>
-                              {check.status === 'healthy' ? 'Healthy' : check.status === 'warning' ? 'Warning' : 'Error'}
-                            </span>
-                          </div>
+            {/* Health Check Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-green-600" />
+                  Health Check
+                </CardTitle>
+                <CardDescription>System status at time of analysis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {parsed?.healthChecks && parsed.healthChecks.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {parsed.healthChecks.map((check, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <span className="font-medium">{check.name}</span>
+                        <div className="flex items-center gap-2">
+                          <StatusIcon status={check.status} />
+                          <span className={cn(
+                            "text-sm font-medium",
+                            check.status === 'healthy' && "text-green-600",
+                            check.status === 'warning' && "text-yellow-600",
+                            check.status === 'error' && "text-red-600",
+                          )}>
+                            {check.status === 'healthy' ? 'Healthy' : check.status === 'warning' ? 'Warning' : 'Error'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No health checks available</p>
-                  )}
-                </CardContent>
-              </Card>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">No health checks available</p>
+                )}
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 text-red-600" />
-                    Detected Drops
-                    {parsed && parsed.totalDrops > 0 && (
-                      <Badge variant="destructive" className="ml-2">{parsed.totalDrops}</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>Significant traffic or metric declines</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {parsed?.drops && parsed.drops.length > 0 ? (
-                    <div className="space-y-3">
-                      {parsed.drops.map((drop, i) => (
-                        <div key={i} className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">{drop.source}</Badge>
-                              <span className="font-medium text-sm">{drop.metric}</span>
+            {/* Detected Drops - Enhanced Cards */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <TrendingDown className="w-5 h-5 text-red-600" />
+                <h2 className="text-lg font-semibold">Detected Drops</h2>
+                {parsed && parsed.totalDrops > 0 && (
+                  <Badge variant="destructive">{parsed.totalDrops} anomalies</Badge>
+                )}
+              </div>
+              
+              {parsed?.drops && parsed.drops.length > 0 ? (
+                <div className="space-y-4">
+                  {parsed.drops.map((drop, i) => {
+                    const severity = getSeverity(drop.zScore);
+                    const interpretation = getAIInterpretation(drop);
+                    const actions = getSuggestedActions(drop);
+                    
+                    return (
+                      <Card key={i} className={cn(
+                        "border-l-4",
+                        severity === 'severe' && "border-l-red-500",
+                        severity === 'moderate' && "border-l-yellow-500",
+                        severity === 'mild' && "border-l-blue-500",
+                      )}>
+                        <CardContent className="pt-6 space-y-4">
+                          {/* Header Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="font-medium">{drop.source}</Badge>
+                              <span className="font-semibold text-lg">{drop.metric}</span>
                             </div>
-                            <span className="text-red-600 font-bold">{drop.dropPercent}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge className={cn(
+                                severity === 'severe' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                                severity === 'moderate' && "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                severity === 'mild' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                              )}>
+                                {severity === 'severe' ? 'Severe' : severity === 'moderate' ? 'Moderate' : 'Mild'}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">{formatDate(drop.date)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>{drop.date}</span>
-                            <span>Value: {drop.value.toLocaleString()}</span>
-                            <span>7d Avg: {drop.avg7d.toLocaleString()}</span>
-                            <span>Z-Score: {drop.zScore.toFixed(2)}</span>
+                          
+                          {/* Impact Row - Most Prominent */}
+                          <div className="flex items-center gap-3">
+                            <TrendingDown className="w-6 h-6 text-red-500" />
+                            <span className={cn(
+                              "text-3xl font-bold",
+                              severity === 'severe' ? "text-red-600" : severity === 'moderate' ? "text-yellow-600" : "text-blue-600"
+                            )}>
+                              {drop.dropPercent}
+                            </span>
+                            <span className="text-muted-foreground">vs 7-day average</span>
                           </div>
-                        </div>
-                      ))}
+                          
+                          {/* Context Row */}
+                          <div className="grid grid-cols-3 gap-4 p-3 bg-muted/50 rounded-lg">
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Current Value</p>
+                              <p className="font-semibold">{drop.value.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">7-Day Average</p>
+                              <p className="font-semibold">{drop.avg7d.toLocaleString()}</p>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Anomaly Score</p>
+                                <p className="font-semibold">{drop.zScore.toFixed(2)}</p>
+                              </div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-muted-foreground mt-1" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>How unusual this change is compared to recent history (Z-Score)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                          
+                          {/* AI Interpretation */}
+                          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 text-primary" />
+                              <span className="font-medium text-sm text-primary">AI Interpretation</span>
+                            </div>
+                            <p className="text-sm text-foreground">{interpretation}</p>
+                          </div>
+                          
+                          {/* Suggested Actions */}
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Lightbulb className="w-4 h-4 text-yellow-500" />
+                              <span className="font-medium text-sm">Suggested Action</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <ArrowRight className="w-4 h-4 text-primary" />
+                              <span className="font-medium">{actions.primary}</span>
+                            </div>
+                            <div className="ml-6 space-y-1">
+                              <p className="text-xs text-muted-foreground mb-1">Also check:</p>
+                              {actions.secondary.map((action, j) => (
+                                <p key={j} className="text-sm text-muted-foreground">• {action}</p>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="flex items-center gap-2 justify-center text-green-600">
+                      <CheckCircle className="w-6 h-6" />
+                      <span className="font-medium">No significant drops detected</span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-green-700 dark:text-green-400">No significant drops detected</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <p className="text-center text-muted-foreground text-sm mt-2">
+                      Your metrics are within normal ranges for the analysis period.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
+            {/* Root Cause Analysis */}
             {parsed?.rootCauses && parsed.rootCauses.length > 0 && (
               <Card>
                 <CardHeader>
@@ -303,6 +524,7 @@ export default function Analysis() {
               </Card>
             )}
 
+            {/* Full Report (Collapsed) */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Full Report</CardTitle>

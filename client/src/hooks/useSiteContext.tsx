@@ -18,6 +18,7 @@ interface Site {
 interface SiteContextType {
   sites: Site[];
   selectedSite: Site | null;
+  currentSite: Site | null;
   selectedSiteId: string | null;
   setSelectedSiteId: (siteId: string) => void;
   isLoading: boolean;
@@ -73,6 +74,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     <SiteContext.Provider value={{
       sites,
       selectedSite,
+      currentSite: selectedSite,
       selectedSiteId,
       setSelectedSiteId,
       isLoading,

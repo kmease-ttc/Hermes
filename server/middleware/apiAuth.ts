@@ -15,6 +15,7 @@ const DASHBOARD_PATHS = [
   "/api/serp",
   "/api/sites",
   "/api/ai",
+  "/api/vault",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
