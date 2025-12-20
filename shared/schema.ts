@@ -300,3 +300,47 @@ export const insertHypothesisSchema = createInsertSchema(hypotheses).omit({
 });
 export type InsertHypothesis = z.infer<typeof insertHypothesisSchema>;
 export type Hypothesis = typeof hypotheses.$inferSelect;
+
+// SERP Keywords to Track
+export const serpKeywords = pgTable("serp_keywords", {
+  id: serial("id").primaryKey(),
+  keyword: text("keyword").notNull().unique(),
+  intent: text("intent"), // informational, transactional, navigational
+  priority: integer("priority").default(50), // 1-100
+  targetUrl: text("target_url"), // Expected landing page
+  tags: text("tags").array(), // e.g., ["therapy", "local", "branded"]
+  active: boolean("active").default(true),
+  lastChecked: timestamp("last_checked"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSerpKeywordSchema = createInsertSchema(serpKeywords).omit({
+  id: true,
+  createdAt: true,
+  lastChecked: true,
+});
+export type InsertSerpKeyword = z.infer<typeof insertSerpKeywordSchema>;
+export type SerpKeyword = typeof serpKeywords.$inferSelect;
+
+// SERP Rankings History
+export const serpRankings = pgTable("serp_rankings", {
+  id: serial("id").primaryKey(),
+  keywordId: integer("keyword_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  searchEngine: text("search_engine").default("google"),
+  location: text("location").default("Orlando, Florida, United States"),
+  device: text("device").default("desktop"),
+  position: integer("position"), // null if not found in top 100
+  url: text("url"), // Which URL is ranking
+  change: integer("change"), // Change from previous check
+  volume: integer("volume"), // Monthly search volume if available
+  serpFeatures: jsonb("serp_features"), // e.g., { featured_snippet: false, local_pack: true }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSerpRankingSchema = createInsertSchema(serpRankings).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSerpRanking = z.infer<typeof insertSerpRankingSchema>;
+export type SerpRanking = typeof serpRankings.$inferSelect;
