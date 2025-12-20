@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { SummaryStats } from "@/components/dashboard/SummaryStats";
 import { TicketList } from "@/components/dashboard/TicketList";
 import { ConnectorsStatus } from "@/components/dashboard/ConnectorsStatus";
+import { ClassificationBadge } from "@/components/dashboard/ClassificationBadge";
 import { AskAI } from "@/components/dashboard/AskAI";
 import { Button } from "@/components/ui/button";
 import { Play, Download, AlertCircle } from "lucide-react";
@@ -46,11 +47,12 @@ export default function Dashboard() {
     onSuccess: (data) => {
       toast({
         title: "Diagnostics Completed",
-        description: data.summary,
+        description: `${data.classification || 'Analysis'}: ${data.summary}`,
       });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['latest-report'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-run'] });
       setIsRunning(false);
     },
     onError: (error: Error) => {
@@ -128,6 +130,11 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        <section>
+          <h3 className="text-lg font-semibold mb-3">Current Status</h3>
+          <ClassificationBadge />
+        </section>
 
         <section>
           <ConnectorsStatus authenticated={authStatus?.authenticated} />

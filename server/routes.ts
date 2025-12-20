@@ -7,6 +7,7 @@ import { gscConnector } from "./connectors/gsc";
 import { adsConnector } from "./connectors/ads";
 import { websiteChecker } from "./website_checks";
 import { analysisEngine } from "./analysis";
+import { runFullDiagnostic } from "./analysis/orchestrator";
 import { logger } from "./utils/logger";
 import { apiKeyAuth } from "./middleware/apiAuth";
 import { randomUUID } from "crypto";
@@ -292,49 +293,28 @@ export async function registerRoutes(
       await websiteChecker.runDailyChecks();
       sourceStatuses.websiteChecks = { ok: true };
 
-      const report = await analysisEngine.generateReport(startDate, endDate);
-
-      let rootCauses: any[] = [];
-      try {
-        rootCauses = typeof report.rootCauses === "string"
-          ? JSON.parse(report.rootCauses)
-          : (report.rootCauses || []);
-      } catch {
-        rootCauses = [];
-      }
-
-      let ticketCount = 0;
-      if (rootCauses.length > 0) {
-        const tickets = await analysisEngine.generateTickets(report.id, rootCauses);
-        ticketCount = tickets.length;
-      }
-
-      const dropDates = typeof report.dropDates === "string"
-        ? JSON.parse(report.dropDates)
-        : (report.dropDates || []);
+      const result = await runFullDiagnostic(runId, 30);
 
       const finishedAt = new Date();
 
-      await storage.updateRun(runId, {
-        status: "completed",
-        finishedAt,
-        summary: report.summary,
-        anomaliesDetected: dropDates.length,
-        reportId: report.id,
-        ticketCount,
-        sourceStatuses,
+      logger.info("API", "Diagnostic run completed", { 
+        runId, 
+        reportId: result.reportId,
+        classification: result.analysis.classification,
+        confidence: result.analysis.confidenceOverall,
       });
-
-      logger.info("API", "Diagnostic run completed", { runId, reportId: report.id });
 
       res.json({
         runId,
         startedAt: startedAt.toISOString(),
         finishedAt: finishedAt.toISOString(),
-        summary: report.summary,
-        anomaliesDetected: dropDates.length,
-        reportId: report.id,
-        ticketCount,
+        summary: result.summary,
+        anomaliesDetected: Object.values(result.analysis.anomalyFlags).filter(Boolean).length,
+        reportId: result.reportId,
+        ticketCount: result.tickets.length,
+        classification: result.analysis.classification,
+        confidence: result.analysis.confidenceOverall,
+        topHypothesis: result.hypotheses[0]?.hypothesisKey || null,
       });
     } catch (error: any) {
       logger.error("API", "Diagnostic run failed", { runId, error: error.message });
@@ -351,6 +331,35 @@ export async function registerRoutes(
         startedAt: startedAt.toISOString(),
         finishedAt: new Date().toISOString(),
       });
+    }
+  });
+
+  app.get("/api/run/latest", async (req, res) => {
+    try {
+      const latestRun = await storage.getLatestRun();
+      
+      if (!latestRun) {
+        return res.status(404).json({ error: "No runs found" });
+      }
+
+      res.json({
+        runId: latestRun.runId,
+        runType: latestRun.runType,
+        status: latestRun.status,
+        startedAt: latestRun.startedAt,
+        finishedAt: latestRun.finishedAt,
+        summary: latestRun.summary,
+        anomaliesDetected: latestRun.anomaliesDetected,
+        reportId: latestRun.reportId,
+        ticketCount: latestRun.ticketCount,
+        primaryClassification: latestRun.primaryClassification,
+        confidenceOverall: latestRun.confidenceOverall,
+        deltas: latestRun.deltas,
+        sourceStatuses: latestRun.sourceStatuses,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch latest run", { error: error.message });
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -549,9 +558,13 @@ export async function registerRoutes(
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
-      const [report, tickets, status] = await Promise.all([
+      const latestRun = await storage.getLatestRun();
+      
+      const [report, tickets, hypothesesData, anomaliesData, status] = await Promise.all([
         storage.getLatestReport(),
         storage.getLatestTickets(20),
+        latestRun ? storage.getHypothesesByRunId(latestRun.runId) : Promise.resolve([]),
+        latestRun ? storage.getAnomaliesByRunId(latestRun.runId) : Promise.resolve([]),
         (async () => {
           const campaigns = await adsConnector.getCampaignStatuses().catch(() => []);
           return {
@@ -563,7 +576,9 @@ export async function registerRoutes(
 
       if (!report) {
         return res.json({ 
-          response: "No diagnostic data available yet. Please run a diagnostic first using the 'Run Diagnostics' button on the dashboard." 
+          response: "No diagnostic data available yet. Please run a diagnostic first using the 'Run Diagnostics' button on the dashboard.",
+          runId: null,
+          citations: [],
         });
       }
 
@@ -574,21 +589,66 @@ export async function registerRoutes(
         priority: t.priority,
         status: t.status,
         expectedImpact: t.expectedImpact,
+        hypothesisKey: t.hypothesisKey,
       }));
 
-      const systemPrompt = `You are Traffic Doctor AI, an expert at diagnosing web traffic and advertising performance issues for empathyhealthclinic.com. You have access to the latest system analysis, metrics, and recommended fixes below. Answer the user's question using only this data. Be concrete, actionable, and prioritize the highest-impact fixes. If data is missing or inconclusive, say so explicitly.
+      const hypothesesJson = hypothesesData.map(h => ({
+        rank: h.rank,
+        key: h.hypothesisKey,
+        confidence: h.confidence,
+        summary: h.summary,
+        evidence: h.evidence,
+        missingData: h.missingData,
+      }));
 
-## Latest Diagnostic Report
-${report.markdownReport || report.summary || 'No report available'}
+      const anomaliesJson = anomaliesData.map(a => ({
+        type: a.anomalyType,
+        metric: a.metric,
+        deltaPct: a.deltaPct,
+        scope: a.scope,
+      }));
 
-## Active Tickets (${tickets.length} total)
+      const classification = latestRun?.primaryClassification || 'INCONCLUSIVE';
+      const confidence = latestRun?.confidenceOverall || 'low';
+      const deltas = latestRun?.deltas as any || {};
+
+      const systemPrompt = `You are Traffic Doctor AI, an expert at diagnosing web traffic and advertising performance issues for empathyhealthclinic.com.
+
+IMPORTANT: Use ONLY the provided facts below. If data is missing, explicitly state what data is needed. Do not make assumptions.
+
+## Primary Classification
+**${classification}** (${confidence} confidence)
+
+## Metric Deltas (Current 3 days vs Previous 14 days)
+- GA4 Sessions: ${deltas?.ga4?.sessionsDelta?.toFixed(1) || 'N/A'}%
+- GA4 Users: ${deltas?.ga4?.usersDelta?.toFixed(1) || 'N/A'}%
+- GSC Clicks: ${deltas?.gsc?.clicksDelta?.toFixed(1) || 'N/A'}%
+- GSC Impressions: ${deltas?.gsc?.impressionsDelta?.toFixed(1) || 'N/A'}%
+- GSC CTR: ${deltas?.gsc?.ctrDelta?.toFixed(1) || 'N/A'}%
+
+## Anomalies Detected (${anomaliesJson.length})
+${anomaliesJson.length > 0 ? JSON.stringify(anomaliesJson, null, 2) : 'No significant anomalies'}
+
+## Root Cause Hypotheses (${hypothesesJson.length})
+${hypothesesJson.length > 0 ? JSON.stringify(hypothesesJson, null, 2) : 'No hypotheses generated'}
+
+## Action Tickets (${ticketsJson.length})
 ${JSON.stringify(ticketsJson, null, 2)}
 
+## Full Report
+${report.markdownReport || report.summary}
+
 ## System Status
-- Google Ads Campaigns: ${status.campaigns}
+- Run ID: ${latestRun?.runId || 'N/A'}
+- Run Date: ${report.date}
 - Google Auth: ${status.authenticated ? 'Connected' : 'Not connected'}
-- Report Date: ${report.date}
-- Report Type: ${report.reportType}`;
+- Google Ads Campaigns: ${status.campaigns}
+
+When answering:
+1. Reference specific evidence from the data above
+2. Prioritize high-confidence hypotheses and P0/P1 tickets
+3. If the classification is INCONCLUSIVE, explain what additional data would help
+4. Be actionable and specific`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -602,9 +662,19 @@ ${JSON.stringify(ticketsJson, null, 2)}
 
       const response = completion.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
 
-      logger.info("AI", "Answered question", { question: question.slice(0, 100) });
+      const citations = [
+        ...(hypothesesJson.length > 0 ? [{ type: 'hypothesis', ref: hypothesesJson[0].key }] : []),
+        ...(ticketsJson.length > 0 ? [{ type: 'ticket', ref: ticketsJson[0].id }] : []),
+        { type: 'report', ref: report.id },
+      ];
 
-      res.json({ response });
+      logger.info("AI", "Answered question", { question: question.slice(0, 100), runId: latestRun?.runId });
+
+      res.json({ 
+        response,
+        runId: latestRun?.runId || null,
+        citations,
+      });
     } catch (error: any) {
       logger.error("AI", "Failed to answer question", { error: error.message });
       res.status(500).json({ error: "Failed to get AI response. Please try again." });
