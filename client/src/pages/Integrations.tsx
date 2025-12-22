@@ -2148,9 +2148,9 @@ export default function Integrations() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-green-600">Received</p>
-                        {selectedCatalogService.lastRun.actualOutputs.length > 0 ? (
+                        {(selectedCatalogService.lastRun.actualOutputs?.length ?? 0) > 0 ? (
                           <div className="space-y-1">
-                            {selectedCatalogService.lastRun.actualOutputs.map(slug => (
+                            {selectedCatalogService.lastRun.actualOutputs?.map(slug => (
                               <div key={slug} className="text-sm flex items-center gap-1 text-green-700">
                                 <CheckCircle className="w-3 h-3" />
                                 {getSlugLabel(slug)}
@@ -2163,9 +2163,9 @@ export default function Integrations() {
                       </div>
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-red-600">Missing</p>
-                        {selectedCatalogService.lastRun.missingOutputs.length > 0 ? (
+                        {(selectedCatalogService.lastRun.missingOutputs?.length ?? 0) > 0 ? (
                           <div className="space-y-1">
-                            {selectedCatalogService.lastRun.missingOutputs.map(slug => (
+                            {selectedCatalogService.lastRun.missingOutputs?.map(slug => (
                               <div key={slug} className="text-sm flex items-center gap-1 text-red-700">
                                 <XCircle className="w-3 h-3" />
                                 {getSlugLabel(slug)}
