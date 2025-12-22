@@ -1832,6 +1832,66 @@ When answering:
     }
   });
 
+  // Get service catalog with combined run data (self-describing services)
+  app.get("/api/services/catalog", async (req, res) => {
+    try {
+      const { servicesCatalog, getSlugLabel, computeMissingOutputs } = await import("@shared/servicesCatalog");
+      const integrations = await storage.getIntegrations();
+      const recentRuns = await storage.getLatestServiceRuns(100);
+      
+      // Build a map of slug -> last run
+      const lastRunBySlug: Record<string, any> = {};
+      for (const run of recentRuns) {
+        if (!lastRunBySlug[run.serviceId]) {
+          lastRunBySlug[run.serviceId] = run;
+        }
+      }
+      
+      // Combine catalog with integration state and last run
+      const services = servicesCatalog.map(def => {
+        const integration = integrations.find(i => i.integrationId === def.slug);
+        const lastRun = lastRunBySlug[def.slug];
+        
+        // Compute missing outputs if we have run data
+        let missingOutputs: string[] = [];
+        if (lastRun?.outputsJson?.actualOutputs) {
+          missingOutputs = computeMissingOutputs(def.outputs, lastRun.outputsJson.actualOutputs);
+        }
+        
+        return {
+          ...def,
+          buildState: integration?.buildState || 'planned',
+          configState: integration?.configState || 'missing_config',
+          runState: integration?.runState || 'never_ran',
+          lastRun: lastRun ? {
+            runId: lastRun.runId,
+            status: lastRun.status,
+            summary: lastRun.summary,
+            startedAt: lastRun.startedAt,
+            finishedAt: lastRun.finishedAt,
+            durationMs: lastRun.durationMs,
+            trigger: lastRun.trigger,
+            metrics: lastRun.metricsJson,
+            actualOutputs: lastRun.outputsJson?.actualOutputs || [],
+            missingOutputs,
+            errorCode: lastRun.errorCode,
+            errorDetail: lastRun.errorDetail,
+          } : null,
+        };
+      });
+      
+      res.json({
+        services,
+        slugLabels: Object.fromEntries(
+          Object.entries(await import("@shared/servicesCatalog").then(m => m.slugLabels))
+        ),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get service catalog", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Bitwarden status endpoint - single source of truth for vault connectivity
   app.get("/api/integrations/bitwarden/status", async (req, res) => {
     try {

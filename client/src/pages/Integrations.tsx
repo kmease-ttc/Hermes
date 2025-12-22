@@ -93,6 +93,43 @@ interface Integration {
   lastRunMetrics: any | null;
 }
 
+interface CatalogService {
+  slug: string;
+  displayName: string;
+  category: string;
+  description: string;
+  purpose: string;
+  inputs: string[];
+  outputs: string[];
+  keyMetrics: string[];
+  commonFailures: string[];
+  runTriggers: string[];
+  testMode: string;
+  secretKeyName?: string;
+  buildState: string;
+  configState: string;
+  runState: string;
+  lastRun: {
+    runId: string;
+    status: string;
+    summary: string | null;
+    startedAt: string;
+    finishedAt: string | null;
+    durationMs: number | null;
+    trigger: string;
+    metrics: Record<string, any> | null;
+    actualOutputs: string[];
+    missingOutputs: string[];
+    errorCode: string | null;
+    errorDetail: string | null;
+  } | null;
+}
+
+interface ServiceCatalogResponse {
+  services: CatalogService[];
+  slugLabels: Record<string, string>;
+}
+
 interface IntegrationCheck {
   id: number;
   integrationId: string;
@@ -321,6 +358,7 @@ export default function Integrations() {
   const [healthCheckingId, setHealthCheckingId] = useState<string | null>(null);
   const [authTestingId, setAuthTestingId] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [selectedCatalogService, setSelectedCatalogService] = useState<CatalogService | null>(null);
   const [selectedRun, setSelectedRun] = useState<ServiceRun | null>(null);
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [viewMode, setViewMode] = useState<'operational' | 'diagnostics'>('operational');
@@ -391,6 +429,23 @@ export default function Integrations() {
       return res.json();
     },
   });
+
+  // Fetch service catalog with combined run data
+  const { data: catalogData } = useQuery<ServiceCatalogResponse>({
+    queryKey: ["serviceCatalog"],
+    queryFn: async () => {
+      const res = await fetch("/api/services/catalog");
+      if (!res.ok) return { services: [], slugLabels: {} };
+      return res.json();
+    },
+  });
+
+  const catalogServices = catalogData?.services || [];
+  const slugLabels = catalogData?.slugLabels || {};
+  
+  const getSlugLabel = (slug: string): string => {
+    return slugLabels[slug] || slug.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   // Auto-select first site if none selected
   useEffect(() => {
@@ -1274,7 +1329,14 @@ export default function Integrations() {
                             runState === "never_ran" && configState === "blocked" && "border-l-4 border-l-orange-400",
                             runState === "never_ran" && configState !== "blocked" && "border-l-4 border-l-gray-300",
                           )}
-                          onClick={() => fetchIntegrationDetails(integration.integrationId)}
+                          onClick={() => {
+                            const catalogService = catalogServices.find(s => s.slug === integration.integrationId);
+                            if (catalogService) {
+                              setSelectedCatalogService(catalogService);
+                            } else {
+                              fetchIntegrationDetails(integration.integrationId);
+                            }
+                          }}
                           data-testid={`card-integration-${integration.integrationId}`}
                         >
                           <CardHeader className="pb-2">
@@ -1784,6 +1846,251 @@ export default function Integrations() {
                 <div className="flex justify-end pt-4 border-t">
                   <Button variant="outline" onClick={() => setSelectedRun(null)}>
                     Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Self-Describing Service Detail Dialog */}
+      <Dialog open={!!selectedCatalogService} onOpenChange={() => setSelectedCatalogService(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" data-testid="dialog-catalog-service">
+          {selectedCatalogService && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  {getRunStateIcon(selectedCatalogService.runState)}
+                  <div className="flex-1">
+                    <DialogTitle>{selectedCatalogService.displayName}</DialogTitle>
+                    <DialogDescription className="text-sm mt-1">
+                      {selectedCatalogService.purpose}
+                    </DialogDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {getBuildStateBadge(selectedCatalogService.buildState)}
+                    {getConfigStateBadge(selectedCatalogService.configState)}
+                  </div>
+                </div>
+              </DialogHeader>
+              
+              <div className="space-y-6 mt-4">
+                {/* A) What this service does */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    What this service does
+                  </p>
+                  <p className="text-sm">{selectedCatalogService.description}</p>
+                </div>
+
+                {/* B) What it expects to do */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Expected Inputs</p>
+                    <div className="space-y-1">
+                      {selectedCatalogService.inputs.map(slug => (
+                        <div key={slug} className="text-sm flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                          {getSlugLabel(slug)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Expected Outputs</p>
+                    <div className="space-y-1">
+                      {selectedCatalogService.outputs.map(slug => (
+                        <div key={slug} className="text-sm flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                          {getSlugLabel(slug)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Key Metrics</p>
+                    <div className="space-y-1">
+                      {selectedCatalogService.keyMetrics.map(slug => (
+                        <div key={slug} className="text-sm flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                          {getSlugLabel(slug)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* C) What it last did */}
+                {selectedCatalogService.lastRun ? (
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      What it last did
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Status</p>
+                        <Badge 
+                          variant="outline"
+                          className={cn(
+                            "mt-1",
+                            selectedCatalogService.lastRun.status === 'success' ? 'bg-green-100 text-green-700' :
+                            selectedCatalogService.lastRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                            selectedCatalogService.lastRun.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          )}
+                        >
+                          {selectedCatalogService.lastRun.status}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Trigger</p>
+                        <p className="text-sm font-medium mt-1">{selectedCatalogService.lastRun.trigger}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">When</p>
+                        <p className="text-sm mt-1">{formatTimeAgo(selectedCatalogService.lastRun.startedAt)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Duration</p>
+                        <p className="text-sm mt-1">
+                          {selectedCatalogService.lastRun.durationMs 
+                            ? `${(selectedCatalogService.lastRun.durationMs / 1000).toFixed(2)}s` 
+                            : 'Running...'}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedCatalogService.lastRun.summary && (
+                      <div className="mt-3">
+                        <p className="text-xs text-muted-foreground">Summary</p>
+                        <p className="text-sm mt-1">{selectedCatalogService.lastRun.summary}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/50">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      This service has never run
+                    </p>
+                  </div>
+                )}
+
+                {/* D) What it returned (expectations vs actuals) */}
+                {selectedCatalogService.lastRun && (
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
+                      What it returned (Expected vs Actual)
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-green-600">Received</p>
+                        {selectedCatalogService.lastRun.actualOutputs.length > 0 ? (
+                          <div className="space-y-1">
+                            {selectedCatalogService.lastRun.actualOutputs.map(slug => (
+                              <div key={slug} className="text-sm flex items-center gap-1 text-green-700">
+                                <CheckCircle className="w-3 h-3" />
+                                {getSlugLabel(slug)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No outputs recorded</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-red-600">Missing</p>
+                        {selectedCatalogService.lastRun.missingOutputs.length > 0 ? (
+                          <div className="space-y-1">
+                            {selectedCatalogService.lastRun.missingOutputs.map(slug => (
+                              <div key={slug} className="text-sm flex items-center gap-1 text-red-700">
+                                <XCircle className="w-3 h-3" />
+                                {getSlugLabel(slug)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-green-600">All expected outputs received</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Metrics */}
+                    {selectedCatalogService.lastRun.metrics && Object.keys(selectedCatalogService.lastRun.metrics).length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Metrics</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(selectedCatalogService.lastRun.metrics).map(([key, value]) => (
+                            <Badge key={key} variant="outline" className="text-xs">
+                              {getSlugLabel(key)}: {String(value)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* E) What went wrong */}
+                {selectedCatalogService.lastRun?.errorCode && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-xs text-red-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      What went wrong
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-red-100 text-red-700">
+                          {getSlugLabel(selectedCatalogService.lastRun.errorCode)}
+                        </Badge>
+                      </div>
+                      {selectedCatalogService.lastRun.errorDetail && (
+                        <p className="text-sm text-red-700 dark:text-red-300">
+                          {selectedCatalogService.lastRun.errorDetail}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
+                      <p className="text-xs text-muted-foreground mb-1">Common failures for this service:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedCatalogService.commonFailures.map(slug => (
+                          <Badge 
+                            key={slug} 
+                            variant="outline" 
+                            className={cn(
+                              "text-xs",
+                              slug === selectedCatalogService.lastRun?.errorCode 
+                                ? "bg-red-100 text-red-700" 
+                                : "bg-gray-100 text-gray-600"
+                            )}
+                          >
+                            {getSlugLabel(slug)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setSelectedCatalogService(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      testMutation.mutate(selectedCatalogService.slug);
+                    }}
+                    disabled={testingId === selectedCatalogService.slug || selectedCatalogService.configState === 'blocked'}
+                    data-testid="button-test-catalog-service"
+                  >
+                    {testingId === selectedCatalogService.slug ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Activity className="w-4 h-4 mr-2" />
+                    )}
+                    {selectedCatalogService.configState === 'blocked' ? 'Blocked' : 'Test Connection'}
                   </Button>
                 </div>
               </div>
