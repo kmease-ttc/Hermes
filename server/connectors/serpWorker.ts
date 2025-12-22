@@ -195,7 +195,27 @@ export class SerpWorkerClient {
       }
 
       debug.baseUrl = this.baseUrl;
-      const site = testSite || "empathyhealthclinic.com";
+      
+      // Dynamically discover sites from the worker, or use provided site
+      let site = testSite;
+      if (!site) {
+        try {
+          const sites = await this.getSites();
+          if (sites && sites.length > 0) {
+            site = sites[0].domain;
+            logger.info("SerpWorker", `Using discovered site: ${site}`);
+          }
+        } catch (err: any) {
+          logger.warn("SerpWorker", `Could not discover sites: ${err.message}`);
+        }
+      }
+      
+      // Fallback to default if no site discovered
+      if (!site) {
+        site = "empathyhealthclinic.com";
+        logger.info("SerpWorker", `Using fallback site: ${site}`);
+      }
+      
       const actualOutputs: string[] = [];
 
       // Test 1: Call /api/serp/top-keywords (proves connection works)
