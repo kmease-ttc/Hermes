@@ -1732,27 +1732,31 @@ When answering:
         };
       });
       
-      // Compute rollups
+      // Filter out platform dependencies for service inventory and rollups
+      const inventoryServices = services.filter(s => s.category !== 'platform_dependency');
+      const platformDependencies = services.filter(s => s.category === 'platform_dependency');
+      
+      // Compute rollups (only for inventory services, not platform dependencies)
       const rollups = {
-        totalServices: services.length,
-        built: services.filter(s => s.buildState === 'built').length,
-        planned: services.filter(s => s.buildState === 'planned').length,
-        ready: services.filter(s => s.configState === 'ready').length,
-        blocked: services.filter(s => s.configState === 'blocked').length,
-        needsConfig: services.filter(s => s.configState === 'needs_config').length,
-        ran24h: services.filter(s => {
+        totalServices: inventoryServices.length,
+        built: inventoryServices.filter(s => s.buildState === 'built').length,
+        planned: inventoryServices.filter(s => s.buildState === 'planned').length,
+        ready: inventoryServices.filter(s => s.configState === 'ready').length,
+        blocked: inventoryServices.filter(s => s.configState === 'blocked').length,
+        needsConfig: inventoryServices.filter(s => s.configState === 'needs_config').length,
+        ran24h: inventoryServices.filter(s => {
           if (!s.lastRun?.finishedAt) return false;
           return new Date(s.lastRun.finishedAt) > oneDayAgo;
         }).length,
-        neverRan: services.filter(s => s.runState === 'never_ran').length,
-        failed: services.filter(s => s.runState === 'failed').length,
-        stale: services.filter(s => s.runState === 'stale').length,
+        neverRan: inventoryServices.filter(s => s.runState === 'never_ran').length,
+        failed: inventoryServices.filter(s => s.runState === 'failed').length,
+        stale: inventoryServices.filter(s => s.runState === 'stale').length,
       };
       
-      // Generate next actions (prioritized)
+      // Generate next actions (prioritized) - only for inventory services
       const nextActions: Array<{ priority: number; serviceSlug: string; reason: string; cta: string }> = [];
       
-      for (const service of services) {
+      for (const service of inventoryServices) {
         // Priority 1: Built+Ready but never ran
         if (service.buildState === 'built' && service.configState === 'ready' && service.runState === 'never_ran') {
           nextActions.push({
@@ -1819,7 +1823,7 @@ When answering:
         },
         rollups,
         nextActions: nextActions.slice(0, 10), // Top 10 actions
-        services,
+        services: inventoryServices, // Only inventory services, not platform dependencies
         slugLabels,
       });
     } catch (error: any) {
@@ -1920,23 +1924,26 @@ When answering:
         };
       });
       
-      // Compute rollups
+      // Filter out platform dependencies for service inventory and rollups
+      const inventoryServices = services.filter(s => s.category !== 'platform_dependency');
+      
+      // Compute rollups (only for inventory services, not platform dependencies)
       const rollups = {
-        totalServices: services.length,
-        built: services.filter(s => s.buildState === 'built').length,
-        planned: services.filter(s => s.buildState === 'planned').length,
-        ready: services.filter(s => s.configState === 'ready').length,
-        blocked: services.filter(s => s.configState === 'blocked').length,
-        needsConfig: services.filter(s => s.configState === 'needs_config').length,
-        ran24h: services.filter(s => s.lastRunAt && new Date(s.lastRunAt) > oneDayAgo).length,
-        neverRan: services.filter(s => s.runState === 'never_ran').length,
-        failed: services.filter(s => s.runState === 'failed').length,
-        stale: services.filter(s => s.runState === 'stale').length,
+        totalServices: inventoryServices.length,
+        built: inventoryServices.filter(s => s.buildState === 'built').length,
+        planned: inventoryServices.filter(s => s.buildState === 'planned').length,
+        ready: inventoryServices.filter(s => s.configState === 'ready').length,
+        blocked: inventoryServices.filter(s => s.configState === 'blocked').length,
+        needsConfig: inventoryServices.filter(s => s.configState === 'needs_config').length,
+        ran24h: inventoryServices.filter(s => s.lastRunAt && new Date(s.lastRunAt) > oneDayAgo).length,
+        neverRan: inventoryServices.filter(s => s.runState === 'never_ran').length,
+        failed: inventoryServices.filter(s => s.runState === 'failed').length,
+        stale: inventoryServices.filter(s => s.runState === 'stale').length,
       };
       
-      // Generate next actions
+      // Generate next actions (only for inventory services)
       const nextActions: Array<{ service: string; reason: string; action: string }> = [];
-      for (const service of services) {
+      for (const service of inventoryServices) {
         if (service.buildState === 'built' && service.configState === 'ready' && service.runState === 'never_ran') {
           nextActions.push({ service: service.displayName, reason: 'Ready but never ran', action: 'Run test' });
         } else if (service.configState === 'blocked') {
@@ -1957,7 +1964,7 @@ When answering:
           database: { connected: true },
         },
         rollups,
-        services: services.map(s => ({
+        services: inventoryServices.map(s => ({
           name: s.displayName,
           category: s.category,
           buildState: s.buildState,
@@ -1994,17 +2001,17 @@ Be concise but specific.
 
 ### Services by Category
 ${Object.entries(
-  services.reduce((acc, s) => {
+  inventoryServices.reduce((acc, s) => {
     if (!acc[s.category]) acc[s.category] = [];
     acc[s.category].push(s);
     return acc;
-  }, {} as Record<string, typeof services>)
+  }, {} as Record<string, typeof inventoryServices>)
 ).map(([cat, svcs]) => 
   `**${cat}**: ${svcs.map(s => `${s.displayName} (${s.buildState}/${s.configState}/${s.runState})`).join(', ')}`
 ).join('\n')}
 
 ### Blocked Services
-${services.filter(s => s.configState === 'blocked').map(s => `- ${s.displayName}: ${s.blockingReason}`).join('\n') || 'None'}
+${inventoryServices.filter(s => s.configState === 'blocked').map(s => `- ${s.displayName}: ${s.blockingReason}`).join('\n') || 'None'}
 
 ### Next Priority Actions
 ${nextActions.slice(0, 5).map((a, i) => `${i+1}. ${a.service}: ${a.reason} → ${a.action}`).join('\n') || 'All services are configured and running'}

@@ -15,6 +15,9 @@ export interface ServiceDefinition {
   
   testMode: 'worker' | 'connector' | 'platform';
   secretKeyName?: string;
+  
+  /** If false, exclude from Service Inventory (use for platform dependencies) */
+  showInServiceInventory?: boolean;
 }
 
 export const slugLabels: Record<string, string> = {
@@ -373,6 +376,7 @@ export const servicesCatalog: ServiceDefinition[] = [
     runTriggers: ["manual"],
     testMode: "platform",
     secretKeyName: "BWS_ACCESS_TOKEN",
+    showInServiceInventory: false,
   },
   {
     slug: "postgres_db",
@@ -386,6 +390,7 @@ export const servicesCatalog: ServiceDefinition[] = [
     commonFailures: ["db_connection_failed", "timeout", "permission_denied"],
     runTriggers: ["manual"],
     testMode: "platform",
+    showInServiceInventory: false,
   },
 ];
 
