@@ -11,11 +11,11 @@ export interface ServiceDefinition {
 export const servicesCatalog: ServiceDefinition[] = [
   {
     slug: "google_data_connector",
-    displayName: "Google Data Connector",
+    displayName: "Google Data Connector (GSC + GA4)",
     category: "data",
     testMode: "connector",
     secretKeyName: "GOOGLE_CLIENT_SECRET",
-    expectedSignals: ["ga4_sessions", "ga4_users", "gsc_clicks", "gsc_impressions"],
+    expectedSignals: ["impressions", "clicks", "ctr", "position", "sessions", "users"],
     descriptionMd: `Unified OAuth connector that pulls data from GA4, Google Search Console, and Google Ads using a single authenticated session. This is the primary data ingestion point for all Google-sourced metrics.
 
 **Capabilities:**
@@ -26,12 +26,12 @@ export const servicesCatalog: ServiceDefinition[] = [
 **Test Connection:** Validates OAuth tokens exist and can refresh, then fetches a small sample of data from each API.`
   },
   {
-    slug: "google_ads",
+    slug: "google_ads_connector",
     displayName: "Google Ads",
     category: "data",
     testMode: "connector",
     secretKeyName: "GOOGLE_ADS_DEVELOPER_TOKEN",
-    expectedSignals: ["ads_spend", "ads_clicks", "ads_impressions", "ads_cpc"],
+    expectedSignals: ["spend", "impressions", "clicks", "cpc", "conversions", "policy_issues"],
     descriptionMd: `Connects to Google Ads API to fetch campaign performance data including spend, clicks, impressions, and policy issues. Requires Developer Token approval from Google.
 
 **Capabilities:**
@@ -45,10 +45,10 @@ export const servicesCatalog: ServiceDefinition[] = [
   {
     slug: "serp_intel",
     displayName: "SERP & Keyword Intelligence",
-    category: "data",
+    category: "analysis",
     testMode: "worker",
     secretKeyName: "SERP_API_KEY",
-    expectedSignals: ["keyword_positions", "serp_features", "competitor_rankings"],
+    expectedSignals: ["keyword_rankings", "serp_features", "position_changes", "volatility"],
     descriptionMd: `Tracks keyword rankings and SERP features using SerpAPI. Monitors your position for target keywords and detects changes in search results over time.
 
 **Capabilities:**
@@ -62,9 +62,9 @@ export const servicesCatalog: ServiceDefinition[] = [
   {
     slug: "crawl_render",
     displayName: "Crawl & Render Service",
-    category: "execution",
+    category: "analysis",
     testMode: "worker",
-    expectedSignals: ["page_status_codes", "redirect_chains", "indexability"],
+    expectedSignals: ["crawl_status", "render_status", "robots_txt", "sitemap", "redirect_chains"],
     descriptionMd: `Performs technical SEO checks on your website including status codes, redirects, canonicals, and indexability. Can be configured for shallow or deep crawls.
 
 **Capabilities:**
@@ -77,91 +77,155 @@ export const servicesCatalog: ServiceDefinition[] = [
 **Test Connection:** Fetches robots.txt and checks homepage status code.`
   },
   {
-    slug: "anomaly_detector",
-    displayName: "Anomaly Detector",
+    slug: "core_web_vitals",
+    displayName: "Core Web Vitals Monitor",
     category: "analysis",
     testMode: "worker",
-    expectedSignals: ["traffic_drops", "z_scores", "rolling_averages"],
-    descriptionMd: `Detects significant drops in traffic and engagement using statistical analysis. Uses 7-day rolling averages and z-score calculations to identify anomalies.
+    expectedSignals: ["lcp", "cls", "inp", "performance_score", "regressions"],
+    descriptionMd: `Monitors PageSpeed Insights and CrUX performance signals including LCP, CLS, and INP. Tracks performance regressions and alerts on significant drops.
 
 **Capabilities:**
-- Calculate 7-day rolling averages
-- Compute z-scores for statistical significance (-2 threshold)
-- Multi-source diagnostic context
-- Generate ranked root cause hypotheses
+- LCP, CLS, INP tracking
+- Performance score monitoring
+- Regression detection
+- Mobile vs Desktop comparison
 
-**Test Connection:** Runs analysis on recent data to verify calculation pipeline.`
+**Test Connection:** Fetches a PageSpeed report for the configured domain.`
   },
   {
-    slug: "hypothesis_engine",
-    displayName: "Hypothesis Engine",
+    slug: "competitive_snapshot",
+    displayName: "Competitive Snapshot Service",
     category: "analysis",
     testMode: "worker",
-    expectedSignals: ["root_causes", "confidence_levels", "recommendations"],
-    descriptionMd: `Takes detected anomalies and generates ranked root cause hypotheses with confidence levels. Categories include Tracking, Server Errors, Missing Pages, Indexing, Canonicalization, and Paid Traffic issues.
+    expectedSignals: ["competitors", "ranking_pages", "page_templates", "content_structure"],
+    descriptionMd: `Creates competitive baselines by analyzing who ranks for your target keywords, their page structures, titles/meta/H1 patterns, and URL templates.
 
 **Capabilities:**
-- Generate ranked root cause hypotheses
-- Assign confidence levels to each hypothesis
-- Categorize issues by type
-- Link evidence to hypotheses
+- Competitor identification
+- Page structure analysis
+- Content template comparison
+- SERP feature capture
 
-**Test Connection:** Generates test hypothesis from sample data.`
+**Test Connection:** Analyzes a sample SERP to verify capability.`
   },
   {
-    slug: "ticket_generator",
-    displayName: "Ticket Generator",
+    slug: "content_gap",
+    displayName: "Competitive Intelligence & Content Gap",
+    category: "analysis",
+    testMode: "worker",
+    expectedSignals: ["content_gaps", "missing_sections", "schema_differences", "internal_link_gaps"],
+    descriptionMd: `Compares your pages against competitors to identify missing sections, weak coverage areas, FAQ opportunities, schema gaps, and internal linking improvements.
+
+**Capabilities:**
+- Content gap identification
+- Missing section detection
+- Schema comparison
+- Internal link opportunity finding
+
+**Test Connection:** Runs a sample comparison to verify pipeline.`
+  },
+  {
+    slug: "content_decay",
+    displayName: "Content Decay Monitor",
+    category: "analysis",
+    testMode: "worker",
+    expectedSignals: ["decay_signals", "refresh_candidates", "competitor_replacement"],
+    descriptionMd: `Identifies pages losing impressions, clicks, or rankings over time. Prioritizes content refresh candidates and detects when competitors are replacing your rankings.
+
+**Capabilities:**
+- Decay signal detection
+- Refresh prioritization
+- Competitor replacement alerts
+- Historical trend analysis
+
+**Test Connection:** Analyzes recent GSC data for decay patterns.`
+  },
+  {
+    slug: "content_qa",
+    displayName: "Content QA / Policy Validator",
+    category: "analysis",
+    testMode: "worker",
+    expectedSignals: ["qa_score", "violations", "compliance_status", "fix_list"],
+    descriptionMd: `Validates content against best-practice rulesets including E-E-A-T guidelines, compliance requirements, structure standards, and thin content detection.
+
+**Capabilities:**
+- Quality score calculation
+- Compliance checking
+- Structure validation
+- Thin content detection
+
+**Test Connection:** Runs validation on a sample page.`
+  },
+  {
+    slug: "backlink_authority",
+    displayName: "Backlink & Authority Signals",
+    category: "data",
+    testMode: "worker",
+    expectedSignals: ["new_links", "lost_links", "domain_authority", "anchor_distribution", "link_velocity"],
+    descriptionMd: `Tracks backlink acquisition and loss, domain authority changes, anchor text distribution, link velocity trends, and compares metrics against competitors.
+
+**Capabilities:**
+- New/lost link tracking
+- Domain authority monitoring
+- Anchor text analysis
+- Competitor comparison
+
+**Test Connection:** Fetches backlink sample for configured domain.`
+  },
+  {
+    slug: "content_generator",
+    displayName: "Content Generator",
     category: "execution",
     testMode: "worker",
-    expectedSignals: ["tickets_created", "priority_assignments"],
-    descriptionMd: `Creates actionable tickets from hypotheses and assigns them to appropriate teams (SEO, Dev, Ads). Each ticket includes steps, priority, and expected impact.
+    expectedSignals: ["drafts", "content_blocks", "faq_schema", "internal_links"],
+    descriptionMd: `Drafts content for blogs, pages, and content refreshes based on keyword intent, competitor gaps, and SEO best practices.
 
 **Capabilities:**
-- Create prioritized tickets (P0-P3)
-- Assign to SEO, Dev, or Ads teams
-- Include action steps and evidence
-- Track ticket status
+- Blog post drafting
+- Page content generation
+- FAQ schema creation
+- Internal link suggestions
 
-**Test Connection:** Creates a test ticket to verify pipeline.`
+**Test Connection:** Generates a sample content block.`
   },
   {
-    slug: "report_generator",
-    displayName: "Report Generator",
+    slug: "site_executor",
+    displayName: "Site Change Executor",
     category: "execution",
     testMode: "worker",
-    expectedSignals: ["reports_generated", "markdown_output"],
-    descriptionMd: `Generates comprehensive diagnostic reports in markdown format. Reports include executive summary, detected issues, recommendations, and evidence links.
+    expectedSignals: ["pr_created", "changes_applied", "rollback_available"],
+    descriptionMd: `Applies approved changes to your website via GitHub PR. Supports dry-run mode, before/after snapshots, and rollback capability.
 
 **Capabilities:**
-- Generate markdown reports
-- Include executive summary
-- Link to evidence and Clarity recordings
-- Create action items
+- GitHub PR creation
+- Dry-run mode
+- Change snapshots
+- Rollback support
 
-**Test Connection:** Generates a sample report from test data.`
+**Test Connection:** Verifies GitHub access and repo connectivity.`
   },
   {
-    slug: "scheduler",
-    displayName: "Scheduler Service",
+    slug: "orchestrator",
+    displayName: "Orchestrator / Job Runner",
     category: "infrastructure",
     testMode: "worker",
-    expectedSignals: ["scheduled_runs", "cron_status"],
-    descriptionMd: `Manages scheduled diagnostic runs. Default schedule is daily at 7am America/Chicago timezone. Can be configured for different frequencies or disabled entirely.
+    expectedSignals: ["job_status", "run_history", "error_rates"],
+    descriptionMd: `The core coordination service that manages scheduled jobs, retries, rate limits, timeouts, and run status tracking across the entire diagnostic pipeline.
 
 **Capabilities:**
-- Daily automated diagnostics
-- Configurable timezone
-- Manual trigger support
-- Run history tracking
+- Pipeline orchestration
+- Service coordination
+- Error handling and recovery
+- Status aggregation
 
-**Test Connection:** Verifies scheduler is running and next run time.`
+**Test Connection:** Runs a health check on all connected services.`
   },
   {
-    slug: "audit_log_observability",
+    slug: "audit_log",
     displayName: "Audit Log & Observability",
     category: "infrastructure",
     testMode: "worker",
-    expectedSignals: ["run_history", "health_status", "change_logs"],
+    expectedSignals: ["run_logs", "health_metrics", "alerts", "change_audit"],
     descriptionMd: `Stores run history, service health, job outcomes, and change logs across the entire system, enabling you to trace any recommendation back to inputs and see what actually changed.
 
 It also powers alerts (run failed, API quota hit, big traffic drop, indexing issue detected) and becomes essential once you scale beyond a single site.
@@ -175,12 +239,28 @@ It also powers alerts (run failed, API quota hit, big traffic drop, indexing iss
 **Test Connection:** Writes a test log entry and reads it back.`
   },
   {
+    slug: "notifications",
+    displayName: "Notifications Service",
+    category: "infrastructure",
+    testMode: "worker",
+    expectedSignals: ["email_sent", "slack_sent", "alert_delivered"],
+    descriptionMd: `Sends Email, SMS, and Slack alerts including daily summaries, critical drop notifications, indexing emergencies, and approval prompts for pending changes.
+
+**Capabilities:**
+- Email notifications
+- Slack integration
+- SMS alerts
+- Approval workflows
+
+**Test Connection:** Sends a test notification to configured channel.`
+  },
+  {
     slug: "bitwarden_vault",
     displayName: "Bitwarden Secrets Manager",
     category: "platform_dependency",
     testMode: "platform",
     secretKeyName: "BWS_ACCESS_TOKEN",
-    expectedSignals: ["secrets_count", "vault_health"],
+    expectedSignals: ["vault_status", "secrets_available"],
     descriptionMd: `Integrates with Bitwarden Secrets Manager for secure credential storage. All API keys and sensitive configuration are stored here and retrieved at runtime.
 
 **Capabilities:**
@@ -206,54 +286,6 @@ It also powers alerts (run failed, API quota hit, big traffic drop, indexing iss
 - Automatic backups
 
 **Test Connection:** Runs SELECT 1 to verify connectivity.`
-  },
-  {
-    slug: "clarity_connector",
-    displayName: "Microsoft Clarity",
-    category: "data",
-    testMode: "worker",
-    secretKeyName: "CLARITY_API_KEY",
-    expectedSignals: ["session_recordings", "heatmaps"],
-    descriptionMd: `Integrates with Microsoft Clarity for user behavior analytics. Provides session recordings and heatmaps as evidence in diagnostic reports.
-
-**Capabilities:**
-- Dashboard link generation
-- Session recording references
-- Heatmap evidence links
-
-**Test Connection:** Validates API key format and connectivity.`
-  },
-  {
-    slug: "openai_integration",
-    displayName: "OpenAI Integration",
-    category: "infrastructure",
-    testMode: "connector",
-    secretKeyName: "OPENAI_API_KEY",
-    expectedSignals: ["ai_responses", "token_usage"],
-    descriptionMd: `Powers AI-assisted analysis and report generation using OpenAI models via Replit AI Integrations.
-
-**Capabilities:**
-- Natural language analysis
-- Report summarization
-- Recommendation generation
-
-**Test Connection:** Sends a minimal API request to verify connectivity.`
-  },
-  {
-    slug: "orchestrator",
-    displayName: "Orchestrator (Hermes)",
-    category: "infrastructure",
-    testMode: "worker",
-    expectedSignals: ["orchestration_health", "pipeline_status"],
-    descriptionMd: `The core coordination service that ties all other services together. Manages the diagnostic pipeline from data collection through ticket generation.
-
-**Capabilities:**
-- Pipeline orchestration
-- Service coordination
-- Error handling and recovery
-- Status aggregation
-
-**Test Connection:** Runs a health check on all connected services.`
   },
 ];
 

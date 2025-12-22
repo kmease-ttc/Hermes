@@ -27,7 +27,8 @@ import {
   Key,
   Server,
   HelpCircle,
-  Edit
+  Edit,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1185,22 +1186,39 @@ export default function Integrations() {
               <DialogHeader>
                 <div className="flex items-center gap-3">
                   {getStatusIcon(selectedIntegration.healthStatus)}
-                  <div>
+                  <div className="flex-1">
                     <DialogTitle>{selectedIntegration.name}</DialogTitle>
-                    <DialogDescription>{selectedIntegration.description}</DialogDescription>
+                    <DialogDescription className="text-xs">{selectedIntegration.category}</DialogDescription>
                   </div>
+                  {getStatusBadge(selectedIntegration.healthStatus)}
                 </div>
               </DialogHeader>
               
               <div className="space-y-6 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Status</p>
-                    {getStatusBadge(selectedIntegration.healthStatus)}
+                {selectedIntegration.descriptionMd && (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      What this service is
+                    </p>
+                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none whitespace-pre-line">
+                      {selectedIntegration.descriptionMd}
+                    </div>
                   </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Last Success</p>
                     <p className="font-medium">{formatTimeAgo(selectedIntegration.lastSuccessAt)}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Last Run</p>
+                    <p className="font-medium">
+                      {selectedIntegration.recentRuns?.length > 0 
+                        ? formatTimeAgo(selectedIntegration.recentRuns[0].finishedAt || selectedIntegration.recentRuns[0].startedAt)
+                        : "Never"}
+                    </p>
                   </div>
                 </div>
 
