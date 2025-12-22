@@ -96,6 +96,28 @@ interface IntegrationCheck {
   checkedAt: string;
 }
 
+interface ServiceRun {
+  id: number;
+  runId: string;
+  siteId: string | null;
+  siteName?: string;
+  integrationId: string;
+  trigger: string;
+  status: string;
+  summary: string | null;
+  inputs: any;
+  outputs: any;
+  metricsCollected: any;
+  durationMs: number | null;
+  startedAt: string;
+  finishedAt: string | null;
+  errorMessage: string | null;
+}
+
+interface IntegrationWithRun extends Integration {
+  lastRun?: ServiceRun | null;
+}
+
 const CATEGORY_ICONS: Record<string, typeof Database> = {
   data: Database,
   analysis: Search,
@@ -209,6 +231,7 @@ export default function Integrations() {
   const [healthCheckingId, setHealthCheckingId] = useState<string | null>(null);
   const [authTestingId, setAuthTestingId] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [selectedRun, setSelectedRun] = useState<ServiceRun | null>(null);
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [editForm, setEditForm] = useState<{
     baseUrl: string;
@@ -244,6 +267,26 @@ export default function Integrations() {
       return res.json();
     },
   });
+
+  // Fetch service runs to show last run info per service
+  const { data: serviceRuns } = useQuery<ServiceRun[]>({
+    queryKey: ["serviceRuns"],
+    queryFn: async () => {
+      const res = await fetch("/api/runs?limit=100");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // Build a map of integrationId -> last run
+  const lastRunByService: Record<string, ServiceRun> = {};
+  if (serviceRuns) {
+    for (const run of serviceRuns) {
+      if (!lastRunByService[run.integrationId]) {
+        lastRunByService[run.integrationId] = run;
+      }
+    }
+  }
 
   const seedMutation = useMutation({
     mutationFn: async () => {
@@ -723,6 +766,14 @@ export default function Integrations() {
                             </Tooltip>
                           </TooltipProvider>
                         </th>
+                        <th className="text-left p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>Last Run</TooltipTrigger>
+                              <TooltipContent>Most recent service execution</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
                         <th className="text-left p-3 font-medium">Notes</th>
                         <th className="text-center p-3 font-medium">Actions</th>
                       </tr>
@@ -775,6 +826,47 @@ export default function Integrations() {
                           </td>
                           <td className="p-3 text-center">
                             <StatusCell status={integration.calledSuccessfully} />
+                          </td>
+                          <td className="p-3">
+                            {(() => {
+                              const lastRun = lastRunByService[integration.integrationId];
+                              if (!lastRun) {
+                                return <span className="text-xs text-muted-foreground">No runs</span>;
+                              }
+                              const statusColor = lastRun.status === 'success' 
+                                ? 'text-green-600' 
+                                : lastRun.status === 'running' 
+                                  ? 'text-blue-600' 
+                                  : lastRun.status === 'partial' 
+                                    ? 'text-yellow-600' 
+                                    : 'text-red-600';
+                              return (
+                                <button
+                                  onClick={() => setSelectedRun(lastRun)}
+                                  className="text-xs space-y-0.5 text-left hover:bg-muted/50 rounded p-1 -m-1 transition-colors cursor-pointer"
+                                  data-testid={`button-run-detail-${integration.integrationId}`}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className={cn("text-[10px] px-1 py-0", statusColor)}>
+                                      {lastRun.status}
+                                    </Badge>
+                                    <span className="text-muted-foreground">
+                                      {formatTimeAgo(lastRun.finishedAt || lastRun.startedAt)}
+                                    </span>
+                                  </div>
+                                  {lastRun.siteId && (
+                                    <div className="text-muted-foreground truncate max-w-[150px]">
+                                      {lastRun.siteId}
+                                    </div>
+                                  )}
+                                  {lastRun.summary && (
+                                    <div className="text-muted-foreground truncate max-w-[150px]" title={lastRun.summary}>
+                                      {lastRun.summary}
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })()}
                           </td>
                           <td className="p-3">
                             <span className="text-xs text-muted-foreground line-clamp-1">
@@ -1186,6 +1278,185 @@ export default function Integrations() {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : null}
                     Save Changes
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Run Detail Dialog */}
+      <Dialog open={!!selectedRun} onOpenChange={() => setSelectedRun(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" data-testid="dialog-run-detail">
+          {selectedRun && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Run Details
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedRun.runId}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* Run Overview */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        selectedRun.status === 'success' ? 'bg-green-100 text-green-700' :
+                        selectedRun.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                        selectedRun.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      )}
+                    >
+                      {selectedRun.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Trigger</p>
+                    <p className="text-sm font-medium">{selectedRun.trigger || 'Unknown'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Service</p>
+                    <p className="text-sm font-medium">{selectedRun.integrationId}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Site</p>
+                    <p className="text-sm font-medium">{selectedRun.siteId || '—'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Started</p>
+                    <p className="text-sm">{new Date(selectedRun.startedAt).toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Duration</p>
+                    <p className="text-sm">{selectedRun.durationMs ? `${(selectedRun.durationMs / 1000).toFixed(2)}s` : 'Running...'}</p>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                {selectedRun.summary && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Summary</p>
+                    <p className="text-sm bg-muted p-2 rounded">{selectedRun.summary}</p>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {selectedRun.errorMessage && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-red-500 font-medium">Error</p>
+                    <pre className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">
+                      {selectedRun.errorMessage}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Inputs */}
+                {selectedRun.inputs && Object.keys(selectedRun.inputs).length > 0 && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
+                      <ChevronRight className="w-4 h-4 transition-transform group-data-[state=open]:rotate-90" />
+                      Inputs
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                        {JSON.stringify(selectedRun.inputs, null, 2)}
+                      </pre>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Outputs */}
+                {selectedRun.outputs && Object.keys(selectedRun.outputs).length > 0 && (
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
+                      <ChevronRight className="w-4 h-4 transition-transform group-data-[state=open]:rotate-90" />
+                      Outputs (Actual Results)
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-48">
+                        {JSON.stringify(selectedRun.outputs, null, 2)}
+                      </pre>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Metrics Collected */}
+                {selectedRun.metricsCollected && Object.keys(selectedRun.metricsCollected).length > 0 && (
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
+                      <ChevronRight className="w-4 h-4 transition-transform group-data-[state=open]:rotate-90" />
+                      Metrics Collected
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {Object.entries(selectedRun.metricsCollected).map(([key, value]) => (
+                          <div key={key} className="bg-muted p-2 rounded text-xs">
+                            <p className="text-muted-foreground">{key}</p>
+                            <p className="font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Expected vs Actual Comparison */}
+                {(() => {
+                  const integration = integrations?.find(i => i.integrationId === selectedRun.integrationId);
+                  if (!integration?.expectedSignals?.length) return null;
+                  
+                  const actualSignals = selectedRun.metricsCollected ? Object.keys(selectedRun.metricsCollected) : [];
+                  const matched = integration.expectedSignals.filter(s => actualSignals.includes(s));
+                  const missing = integration.expectedSignals.filter(s => !actualSignals.includes(s));
+                  const extra = actualSignals.filter(s => !integration.expectedSignals?.includes(s));
+                  
+                  return (
+                    <div className="space-y-2 border-t pt-4">
+                      <p className="text-sm font-medium">Expected vs Actual Signals</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="space-y-1">
+                          <p className="text-green-600 font-medium">Matched ({matched.length})</p>
+                          {matched.map(s => (
+                            <div key={s} className="flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3 text-green-500" />
+                              <span>{s}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-red-600 font-medium">Missing ({missing.length})</p>
+                          {missing.map(s => (
+                            <div key={s} className="flex items-center gap-1">
+                              <XCircle className="w-3 h-3 text-red-500" />
+                              <span>{s}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-blue-600 font-medium">Extra ({extra.length})</p>
+                          {extra.map(s => (
+                            <div key={s} className="flex items-center gap-1">
+                              <Activity className="w-3 h-3 text-blue-500" />
+                              <span>{s}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={() => setSelectedRun(null)}>
+                    Close
                   </Button>
                 </div>
               </div>

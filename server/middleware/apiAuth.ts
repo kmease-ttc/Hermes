@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-const DASHBOARD_PATHS = [
+// Paths that allow unauthenticated GET access (dashboard/frontend)
+const DASHBOARD_GET_PATHS = [
   "/briefing",
   "/api/health",
   "/api/status",
   "/api/report",
   "/api/tickets",
   "/api/run",
+  "/api/runs",
+  "/api/services",
   "/api/alerts",
   "/api/dashboard",
   "/api/auth",
@@ -20,18 +23,43 @@ const DASHBOARD_PATHS = [
   "/api/integrations",
 ];
 
+// Paths that allow unauthenticated POST access (specific safe operations)
+const DASHBOARD_POST_PATHS = [
+  "/api/run",
+  "/api/auth",
+  "/api/integrations",
+  "/api/sites",
+];
+
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.path.startsWith("/api/") && req.path !== "/briefing") {
     return next();
   }
 
-  const isDashboardPath = DASHBOARD_PATHS.some(path => 
+  const isGetRequest = req.method === "GET" || req.method === "HEAD";
+  const isPostRequest = req.method === "POST";
+  
+  // Check if path matches dashboard GET paths (for GET requests)
+  const matchesGetPath = DASHBOARD_GET_PATHS.some(path => 
     req.path === path || 
     req.path.startsWith(path + "/") || 
     req.path.startsWith(path + "?")
   );
   
-  if (isDashboardPath) {
+  // Check if path matches dashboard POST paths (for POST requests)
+  const matchesPostPath = DASHBOARD_POST_PATHS.some(path => 
+    req.path === path || 
+    req.path.startsWith(path + "/") || 
+    req.path.startsWith(path + "?")
+  );
+  
+  // Allow unauthenticated GET on dashboard paths
+  if (isGetRequest && matchesGetPath) {
+    return next();
+  }
+  
+  // Allow unauthenticated POST on specific safe paths
+  if (isPostRequest && matchesPostPath) {
     return next();
   }
 
