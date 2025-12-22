@@ -20,11 +20,17 @@ import {
   Zap,
   Activity,
   Link2,
-  ExternalLink
+  ExternalLink,
+  Table,
+  LayoutGrid,
+  Play,
+  Key,
+  Server,
+  HelpCircle,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +43,15 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Integration {
   id: number;
@@ -52,6 +67,23 @@ interface Integration {
   expectedSignals: string[] | null;
   receivedSignals: Record<string, { received: boolean; stale: boolean; lastValue?: any }> | null;
   recentChecks?: IntegrationCheck[];
+  replitProjectUrl: string | null;
+  baseUrl: string | null;
+  healthEndpoint: string | null;
+  metaEndpoint: string | null;
+  deploymentStatus: string | null;
+  hasRequiredEndpoints: boolean | null;
+  authRequired: boolean | null;
+  secretKeyName: string | null;
+  secretExists: boolean | null;
+  lastHealthCheckAt: string | null;
+  healthCheckStatus: string | null;
+  healthCheckResponse: any | null;
+  lastAuthTestAt: string | null;
+  authTestStatus: string | null;
+  authTestDetails: any | null;
+  calledSuccessfully: boolean | null;
+  notes: string | null;
 }
 
 interface IntegrationCheck {
@@ -76,6 +108,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   analysis: "Analysis",
   execution: "Execution",
   infrastructure: "Infrastructure",
+};
+
+const DEPLOYMENT_STATUS_COLORS: Record<string, string> = {
+  not_built: "bg-gray-100 text-gray-700",
+  building: "bg-blue-100 text-blue-700",
+  built: "bg-yellow-100 text-yellow-700",
+  deploying: "bg-blue-100 text-blue-700",
+  deployed: "bg-green-100 text-green-700",
+  failed: "bg-red-100 text-red-700",
 };
 
 function getStatusIcon(status: string | null | undefined) {
@@ -104,6 +145,47 @@ function getStatusBadge(status: string | null | undefined) {
   }
 }
 
+function StatusCell({ status, label }: { status: string | null | undefined; label?: string }) {
+  if (status === "pass" || status === true) {
+    return (
+      <div className="flex items-center gap-1">
+        <CheckCircle className="w-4 h-4 text-green-500" />
+        {label && <span className="text-xs text-green-600">{label}</span>}
+      </div>
+    );
+  }
+  if (status === "fail" || status === false) {
+    return (
+      <div className="flex items-center gap-1">
+        <XCircle className="w-4 h-4 text-red-500" />
+        {label && <span className="text-xs text-red-600">{label}</span>}
+      </div>
+    );
+  }
+  if (status === "warning") {
+    return (
+      <div className="flex items-center gap-1">
+        <AlertTriangle className="w-4 h-4 text-yellow-500" />
+        {label && <span className="text-xs text-yellow-600">{label}</span>}
+      </div>
+    );
+  }
+  if (status === "not_configured" || status === "unknown") {
+    return (
+      <div className="flex items-center gap-1">
+        <HelpCircle className="w-4 h-4 text-gray-400" />
+        {label && <span className="text-xs text-gray-500">{label}</span>}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1">
+      <span className="w-4 h-4 rounded-full bg-gray-200" />
+      <span className="text-xs text-gray-400">—</span>
+    </div>
+  );
+}
+
 function formatTimeAgo(date: string | null): string {
   if (!date) return "Never";
   const now = new Date();
@@ -124,7 +206,26 @@ function formatTimeAgo(date: string | null): string {
 export default function Integrations() {
   const queryClient = useQueryClient();
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [healthCheckingId, setHealthCheckingId] = useState<string | null>(null);
+  const [authTestingId, setAuthTestingId] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
+  const [editForm, setEditForm] = useState<{
+    baseUrl: string;
+    healthEndpoint: string;
+    metaEndpoint: string;
+    secretKeyName: string;
+    notes: string;
+    authRequired: boolean;
+  }>({
+    baseUrl: "",
+    healthEndpoint: "/health",
+    metaEndpoint: "/meta",
+    secretKeyName: "",
+    notes: "",
+    authRequired: true,
+  });
+  const [testingAll, setTestingAll] = useState(false);
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["platformIntegrations"],
@@ -173,10 +274,107 @@ export default function Integrations() {
     },
   });
 
+  const healthCheckMutation = useMutation({
+    mutationFn: async (integrationId: string) => {
+      setHealthCheckingId(integrationId);
+      const res = await fetch(`/api/integrations/${integrationId}/health-check`, { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      setHealthCheckingId(null);
+      
+      if (data.health?.status === "pass") {
+        toast.success(`${data.integrationId} health check passed`);
+      } else if (data.health?.status === "not_configured") {
+        toast.warning(`${data.integrationId} has no base URL configured`);
+      } else {
+        toast.error(`${data.integrationId} health check failed`);
+      }
+    },
+    onError: (error: any) => {
+      setHealthCheckingId(null);
+      toast.error(error.message || "Health check failed");
+    },
+  });
+
+  const authTestMutation = useMutation({
+    mutationFn: async (integrationId: string) => {
+      setAuthTestingId(integrationId);
+      const res = await fetch(`/api/integrations/${integrationId}/auth-test`, { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      setAuthTestingId(null);
+      
+      if (data.authStatus === "pass") {
+        toast.success(`${data.integrationId} auth test passed`);
+      } else if (data.authStatus === "unknown") {
+        toast.warning(`${data.integrationId} auth not configured`);
+      } else {
+        toast.error(`${data.integrationId} auth test failed`);
+      }
+    },
+    onError: (error: any) => {
+      setAuthTestingId(null);
+      toast.error(error.message || "Auth test failed");
+    },
+  });
+
+  const testAllMutation = useMutation({
+    mutationFn: async () => {
+      setTestingAll(true);
+      const res = await fetch("/api/integrations/test-all", { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      setTestingAll(false);
+      const passed = data.results?.filter((r: any) => r.healthResult?.status === "pass").length || 0;
+      toast.success(`Tested ${data.tested} services: ${passed} passed`);
+    },
+    onError: (error: any) => {
+      setTestingAll(false);
+      toast.error(error.message || "Test all failed");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ integrationId, updates }: { integrationId: string; updates: any }) => {
+      const res = await fetch(`/api/integrations/${integrationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      setEditingIntegration(null);
+      toast.success("Integration updated");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Update failed");
+    },
+  });
+
   const fetchIntegrationDetails = async (integrationId: string) => {
     const res = await fetch(`/api/integrations/${integrationId}`);
     const data = await res.json();
     setSelectedIntegration(data);
+  };
+
+  const openEditDialog = (integration: Integration) => {
+    setEditForm({
+      baseUrl: integration.baseUrl || "",
+      healthEndpoint: integration.healthEndpoint || "/health",
+      metaEndpoint: integration.metaEndpoint || "/meta",
+      secretKeyName: integration.secretKeyName || "",
+      notes: integration.notes || "",
+      authRequired: integration.authRequired ?? true,
+    });
+    setEditingIntegration(integration);
   };
 
   const groupedIntegrations = integrations?.reduce((acc, integration) => {
@@ -240,96 +438,349 @@ export default function Integrations() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-            {Object.entries(groupedIntegrations).map(([category, categoryIntegrations]) => {
-              const CategoryIcon = CATEGORY_ICONS[category] || Globe;
-              return (
-                <div key={category} className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    <CategoryIcon className="w-4 h-4" />
-                    {CATEGORY_LABELS[category] || category}
-                  </div>
-                  
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {categoryIntegrations.map((integration) => {
-                      const status = integration.healthStatus || "disconnected";
-                      return (
-                      <Card 
-                        key={integration.integrationId}
-                        className={cn(
-                          "transition-all hover:shadow-md cursor-pointer",
-                          status === "healthy" && "border-l-4 border-l-green-500",
-                          status === "degraded" && "border-l-4 border-l-yellow-500",
-                          status === "error" && "border-l-4 border-l-red-500",
-                          status === "disconnected" && "border-l-4 border-l-gray-300",
-                        )}
-                        onClick={() => fetchIntegrationDetails(integration.integrationId)}
-                        data-testid={`card-integration-${integration.integrationId}`}
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
+          <Tabs defaultValue="inventory" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="inventory" className="gap-2">
+                <Table className="w-4 h-4" />
+                Service Inventory
+              </TabsTrigger>
+              <TabsTrigger value="cards" className="gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Cards View
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="inventory" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Truth table: each service showing build status, endpoints, auth, secrets, and connectivity
+                </p>
+                <Button
+                  onClick={() => testAllMutation.mutate()}
+                  disabled={testingAll}
+                  data-testid="button-test-all"
+                >
+                  {testingAll ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 mr-2" />
+                  )}
+                  Test All Services
+                </Button>
+              </div>
+
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left p-3 font-medium">Service</th>
+                        <th className="text-left p-3 font-medium">Base URL</th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>Deploy</TooltipTrigger>
+                              <TooltipContent>Deployment Status</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>/health</TooltipTrigger>
+                              <TooltipContent>Health endpoint check</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>Auth</TooltipTrigger>
+                              <TooltipContent>Auth enforced? (401 without key)</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>Secret</TooltipTrigger>
+                              <TooltipContent>API key/secret exists?</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>E2E</TooltipTrigger>
+                              <TooltipContent>Called successfully end-to-end?</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-left p-3 font-medium">Notes</th>
+                        <th className="text-center p-3 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {integrations.map((integration) => (
+                        <tr 
+                          key={integration.integrationId} 
+                          className="border-b hover:bg-muted/30 transition-colors"
+                          data-testid={`row-integration-${integration.integrationId}`}
+                        >
+                          <td className="p-3">
                             <div className="flex items-center gap-2">
                               {getStatusIcon(integration.healthStatus)}
-                              <CardTitle className="text-base">{integration.name}</CardTitle>
-                            </div>
-                            {getStatusBadge(integration.healthStatus)}
-                          </div>
-                          <CardDescription className="text-sm">
-                            {integration.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Last Success</span>
-                              <span className="font-medium">{formatTimeAgo(integration.lastSuccessAt)}</span>
-                            </div>
-                            
-                            {integration.expectedSignals && integration.expectedSignals.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {integration.expectedSignals.slice(0, 4).map((signal) => (
-                                  <Badge key={signal} variant="outline" className="text-xs">
-                                    {signal}
-                                  </Badge>
-                                ))}
-                                {integration.expectedSignals.length > 4 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{integration.expectedSignals.length - 4}
-                                  </Badge>
-                                )}
+                              <div>
+                                <div className="font-medium">{integration.name}</div>
+                                <div className="text-xs text-muted-foreground">{integration.category}</div>
                               </div>
-                            )}
-                            
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  testMutation.mutate(integration.integrationId);
-                                }}
-                                disabled={testingId === integration.integrationId}
-                                data-testid={`button-test-${integration.integrationId}`}
-                              >
-                                {testingId === integration.integrationId ? (
-                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                                ) : (
-                                  <Activity className="w-4 h-4 mr-1" />
-                                )}
-                                Test
-                              </Button>
-                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                    })}
-                  </div>
+                          </td>
+                          <td className="p-3">
+                            {integration.baseUrl ? (
+                              <a 
+                                href={integration.baseUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline flex items-center gap-1"
+                              >
+                                {integration.baseUrl.replace(/^https?:\/\//, '').slice(0, 30)}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Not configured</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge className={cn("text-xs", DEPLOYMENT_STATUS_COLORS[integration.deploymentStatus || "not_built"])}>
+                              {integration.deploymentStatus || "not_built"}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-center">
+                            <StatusCell status={integration.healthCheckStatus} />
+                          </td>
+                          <td className="p-3 text-center">
+                            <StatusCell status={integration.authTestStatus} />
+                          </td>
+                          <td className="p-3 text-center">
+                            <StatusCell status={integration.secretExists} />
+                          </td>
+                          <td className="p-3 text-center">
+                            <StatusCell status={integration.calledSuccessfully} />
+                          </td>
+                          <td className="p-3">
+                            <span className="text-xs text-muted-foreground line-clamp-1">
+                              {integration.notes || "—"}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center justify-center gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => healthCheckMutation.mutate(integration.integrationId)}
+                                      disabled={healthCheckingId === integration.integrationId}
+                                      data-testid={`button-health-${integration.integrationId}`}
+                                    >
+                                      {healthCheckingId === integration.integrationId ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Server className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Test health endpoint</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => authTestMutation.mutate(integration.integrationId)}
+                                      disabled={authTestingId === integration.integrationId}
+                                      data-testid={`button-auth-${integration.integrationId}`}
+                                    >
+                                      {authTestingId === integration.integrationId ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Key className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Test auth wiring</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => openEditDialog(integration)}
+                                      data-testid={`button-edit-${integration.integrationId}`}
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit service details</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              );
-            })}
-          </div>
+              </Card>
+
+              <div className="grid grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {integrations.filter(i => i.healthCheckStatus === "pass").length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Healthy</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {integrations.filter(i => i.healthCheckStatus === "fail").length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Failed</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {integrations.filter(i => i.secretExists).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Secrets Set</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {integrations.filter(i => !i.baseUrl).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Not Configured</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="cards" className="space-y-8">
+              {Object.entries(groupedIntegrations).map(([category, categoryIntegrations]) => {
+                const CategoryIcon = CATEGORY_ICONS[category] || Globe;
+                return (
+                  <div key={category} className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      <CategoryIcon className="w-4 h-4" />
+                      {CATEGORY_LABELS[category] || category}
+                    </div>
+                    
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {categoryIntegrations.map((integration) => {
+                        const status = integration.healthStatus || "disconnected";
+                        return (
+                        <Card 
+                          key={integration.integrationId}
+                          className={cn(
+                            "transition-all hover:shadow-md cursor-pointer",
+                            status === "healthy" && "border-l-4 border-l-green-500",
+                            status === "degraded" && "border-l-4 border-l-yellow-500",
+                            status === "error" && "border-l-4 border-l-red-500",
+                            status === "disconnected" && "border-l-4 border-l-gray-300",
+                          )}
+                          onClick={() => fetchIntegrationDetails(integration.integrationId)}
+                          data-testid={`card-integration-${integration.integrationId}`}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(integration.healthStatus)}
+                                <CardTitle className="text-base">{integration.name}</CardTitle>
+                              </div>
+                              {getStatusBadge(integration.healthStatus)}
+                            </div>
+                            <CardDescription className="text-sm">
+                              {integration.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Last Success</span>
+                                <span className="font-medium">{formatTimeAgo(integration.lastSuccessAt)}</span>
+                              </div>
+                              
+                              {integration.expectedSignals && integration.expectedSignals.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {integration.expectedSignals.slice(0, 4).map((signal) => (
+                                    <Badge key={signal} variant="outline" className="text-xs">
+                                      {signal}
+                                    </Badge>
+                                  ))}
+                                  {integration.expectedSignals.length > 4 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{integration.expectedSignals.length - 4}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    testMutation.mutate(integration.integrationId);
+                                  }}
+                                  disabled={testingId === integration.integrationId}
+                                  data-testid={`button-test-${integration.integrationId}`}
+                                >
+                                  {testingId === integration.integrationId ? (
+                                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Activity className="w-4 h-4 mr-1" />
+                                  )}
+                                  Test
+                                </Button>
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
@@ -356,6 +807,21 @@ export default function Integrations() {
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Last Success</p>
                     <p className="font-medium">{formatTimeAgo(selectedIntegration.lastSuccessAt)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Health Check</p>
+                    <StatusCell status={selectedIntegration.healthCheckStatus} label={selectedIntegration.healthCheckStatus || "—"} />
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Auth Test</p>
+                    <StatusCell status={selectedIntegration.authTestStatus} label={selectedIntegration.authTestStatus || "—"} />
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Secret Exists</p>
+                    <StatusCell status={selectedIntegration.secretExists} label={selectedIntegration.secretExists ? "Yes" : "No"} />
                   </div>
                 </div>
                 
@@ -449,6 +915,113 @@ export default function Integrations() {
                       <Activity className="w-4 h-4 mr-2" />
                     )}
                     Test Connection
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingIntegration} onOpenChange={() => setEditingIntegration(null)}>
+        <DialogContent className="max-w-lg">
+          {editingIntegration && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Edit {editingIntegration.name}</DialogTitle>
+                <DialogDescription>Configure service inventory details</DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="baseUrl">Base URL</Label>
+                  <Input
+                    id="baseUrl"
+                    placeholder="https://service.replit.app"
+                    value={editForm.baseUrl}
+                    onChange={(e) => setEditForm({ ...editForm, baseUrl: e.target.value })}
+                    data-testid="input-base-url"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="healthEndpoint">Health Endpoint</Label>
+                    <Input
+                      id="healthEndpoint"
+                      placeholder="/health"
+                      value={editForm.healthEndpoint}
+                      onChange={(e) => setEditForm({ ...editForm, healthEndpoint: e.target.value })}
+                      data-testid="input-health-endpoint"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="metaEndpoint">Meta Endpoint</Label>
+                    <Input
+                      id="metaEndpoint"
+                      placeholder="/meta"
+                      value={editForm.metaEndpoint}
+                      onChange={(e) => setEditForm({ ...editForm, metaEndpoint: e.target.value })}
+                      data-testid="input-meta-endpoint"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secretKeyName">Secret Key Name (env var)</Label>
+                  <Input
+                    id="secretKeyName"
+                    placeholder="SERVICE_API_KEY"
+                    value={editForm.secretKeyName}
+                    onChange={(e) => setEditForm({ ...editForm, secretKeyName: e.target.value })}
+                    data-testid="input-secret-key"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="authRequired"
+                    checked={editForm.authRequired}
+                    onChange={(e) => setEditForm({ ...editForm, authRequired: e.target.checked })}
+                    className="rounded"
+                    data-testid="checkbox-auth-required"
+                  />
+                  <Label htmlFor="authRequired">Auth Required</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    placeholder="Next action or notes..."
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                    data-testid="input-notes"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingIntegration(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      updateMutation.mutate({
+                        integrationId: editingIntegration.integrationId,
+                        updates: editForm,
+                      });
+                    }}
+                    disabled={updateMutation.isPending}
+                    data-testid="button-save-integration"
+                  >
+                    {updateMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    Save Changes
                   </Button>
                 </div>
               </div>
