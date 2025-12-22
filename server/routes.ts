@@ -1938,6 +1938,321 @@ When answering:
     }
   });
 
+  // Update integration inventory details
+  app.put("/api/integrations/:integrationId", async (req, res) => {
+    try {
+      const integration = await storage.getIntegrationById(req.params.integrationId);
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not found" });
+      }
+
+      const updates = req.body;
+      const updated = await storage.updateIntegration(req.params.integrationId, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+
+      res.json(updated);
+    } catch (error: any) {
+      logger.error("API", "Failed to update integration", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run health check for a service (GET baseUrl + healthEndpoint)
+  app.post("/api/integrations/:integrationId/health-check", async (req, res) => {
+    try {
+      const integration = await storage.getIntegrationById(req.params.integrationId);
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not found" });
+      }
+
+      const { baseUrl, healthEndpoint, metaEndpoint } = integration;
+      const startTime = Date.now();
+      let healthResult: any = { status: "unknown", response: null, error: null };
+      let metaResult: any = { status: "unknown", response: null, error: null };
+
+      // Check if service has a base URL configured
+      if (!baseUrl) {
+        healthResult = { status: "not_configured", error: "No base URL configured" };
+        metaResult = { status: "not_configured", error: "No base URL configured" };
+      } else {
+        // Test health endpoint
+        try {
+          const healthUrl = `${baseUrl}${healthEndpoint || '/health'}`;
+          const healthRes = await fetch(healthUrl, { 
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          });
+          const healthData = await healthRes.json().catch(() => null);
+          healthResult = {
+            status: healthRes.ok ? "pass" : "fail",
+            statusCode: healthRes.status,
+            response: healthData,
+          };
+        } catch (err: any) {
+          healthResult = { status: "fail", error: err.message };
+        }
+
+        // Test meta endpoint
+        try {
+          const metaUrl = `${baseUrl}${metaEndpoint || '/meta'}`;
+          const metaRes = await fetch(metaUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          });
+          const metaData = await metaRes.json().catch(() => null);
+          metaResult = {
+            status: metaRes.ok ? "pass" : "fail",
+            statusCode: metaRes.status,
+            response: metaData,
+          };
+        } catch (err: any) {
+          metaResult = { status: "fail", error: err.message };
+        }
+      }
+
+      const durationMs = Date.now() - startTime;
+      const overallStatus = healthResult.status === "pass" ? "pass" : healthResult.status === "not_configured" ? "unknown" : "fail";
+      const hasEndpoints = healthResult.status === "pass" && metaResult.status === "pass";
+
+      // Update integration with health check results
+      await storage.updateIntegration(integration.integrationId, {
+        lastHealthCheckAt: new Date(),
+        healthCheckStatus: overallStatus,
+        healthCheckResponse: { health: healthResult, meta: metaResult },
+        hasRequiredEndpoints: hasEndpoints,
+        healthStatus: overallStatus === "pass" ? "healthy" : overallStatus === "unknown" ? "disconnected" : "error",
+      });
+
+      // Save check to history
+      await storage.saveIntegrationCheck({
+        integrationId: integration.integrationId,
+        checkType: "health",
+        status: overallStatus,
+        details: { health: healthResult, meta: metaResult },
+        durationMs,
+        checkedAt: new Date(),
+      });
+
+      res.json({
+        integrationId: integration.integrationId,
+        health: healthResult,
+        meta: metaResult,
+        hasRequiredEndpoints: hasEndpoints,
+        durationMs,
+        checkedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to run health check", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run auth test for a service (no-key should 401, with-key should succeed)
+  app.post("/api/integrations/:integrationId/auth-test", async (req, res) => {
+    try {
+      const integration = await storage.getIntegrationById(req.params.integrationId);
+      if (!integration) {
+        return res.status(404).json({ error: "Integration not found" });
+      }
+
+      const { baseUrl, healthEndpoint, authRequired, secretKeyName } = integration;
+      const startTime = Date.now();
+      let noKeyResult: any = { status: "unknown", error: null };
+      let withKeyResult: any = { status: "unknown", error: null };
+      let secretExists = false;
+
+      if (!baseUrl) {
+        noKeyResult = { status: "not_configured", error: "No base URL configured" };
+        withKeyResult = { status: "not_configured", error: "No base URL configured" };
+      } else if (!authRequired) {
+        // If auth not required, just verify the endpoint works
+        try {
+          const testUrl = `${baseUrl}${healthEndpoint || '/health'}`;
+          const testRes = await fetch(testUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          });
+          noKeyResult = { status: "not_required", statusCode: testRes.status, message: "Auth not required for this service" };
+          withKeyResult = { status: "not_required", statusCode: testRes.status, message: "Auth not required for this service" };
+        } catch (err: any) {
+          noKeyResult = { status: "fail", error: err.message };
+        }
+      } else {
+        const testUrl = `${baseUrl}${healthEndpoint || '/health'}`;
+
+        // Test without auth key - should get 401/403
+        try {
+          const noKeyRes = await fetch(testUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          });
+          noKeyResult = {
+            status: noKeyRes.status === 401 || noKeyRes.status === 403 ? "pass" : "fail",
+            statusCode: noKeyRes.status,
+            expected: "401 or 403",
+            message: noKeyRes.status === 401 || noKeyRes.status === 403 
+              ? "Correctly rejected unauthenticated request" 
+              : "Warning: endpoint accessible without auth",
+          };
+        } catch (err: any) {
+          noKeyResult = { status: "fail", error: err.message };
+        }
+
+        // Check if secret exists in environment
+        if (secretKeyName) {
+          secretExists = !!process.env[secretKeyName];
+          
+          if (secretExists) {
+            // Test with auth key
+            try {
+              const secretValue = process.env[secretKeyName];
+              const withKeyRes = await fetch(testUrl, {
+                method: 'GET',
+                headers: { 
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${secretValue}`,
+                  'X-API-Key': secretValue || '',
+                },
+                signal: AbortSignal.timeout(10000),
+              });
+              withKeyResult = {
+                status: withKeyRes.ok ? "pass" : "fail",
+                statusCode: withKeyRes.status,
+                message: withKeyRes.ok ? "Authenticated request succeeded" : "Authenticated request failed",
+              };
+            } catch (err: any) {
+              withKeyResult = { status: "fail", error: err.message };
+            }
+          } else {
+            withKeyResult = { status: "missing_secret", error: `Secret ${secretKeyName} not found in environment` };
+          }
+        } else {
+          withKeyResult = { status: "no_secret_configured", error: "No secret key name configured for this service" };
+        }
+      }
+
+      const durationMs = Date.now() - startTime;
+      const overallStatus = noKeyResult.status === "pass" && withKeyResult.status === "pass" ? "pass" 
+        : noKeyResult.status === "not_required" ? "pass"
+        : noKeyResult.status === "not_configured" ? "unknown" 
+        : "fail";
+
+      // Update integration with auth test results
+      await storage.updateIntegration(integration.integrationId, {
+        lastAuthTestAt: new Date(),
+        authTestStatus: overallStatus,
+        authTestDetails: { noKeyResult, withKeyResult },
+        secretExists,
+      });
+
+      // Save check to history
+      await storage.saveIntegrationCheck({
+        integrationId: integration.integrationId,
+        checkType: "auth",
+        status: overallStatus,
+        details: { noKeyResult, withKeyResult, secretExists },
+        durationMs,
+        checkedAt: new Date(),
+      });
+
+      res.json({
+        integrationId: integration.integrationId,
+        noKeyResult,
+        withKeyResult,
+        secretExists,
+        authStatus: overallStatus,
+        durationMs,
+        checkedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to run auth test", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run all inventory checks across all integrations
+  app.post("/api/integrations/test-all", async (req, res) => {
+    try {
+      const integrationsList = await storage.getIntegrations();
+      const results = [];
+
+      for (const integration of integrationsList) {
+        const startTime = Date.now();
+        let healthResult: any = null;
+        let authResult: any = null;
+
+        // Only test if baseUrl is configured
+        if (integration.baseUrl) {
+          // Health check
+          try {
+            const healthUrl = `${integration.baseUrl}${integration.healthEndpoint || '/health'}`;
+            const healthRes = await fetch(healthUrl, {
+              method: 'GET',
+              headers: { 'Accept': 'application/json' },
+              signal: AbortSignal.timeout(5000),
+            });
+            healthResult = { status: healthRes.ok ? "pass" : "fail", statusCode: healthRes.status };
+          } catch (err: any) {
+            healthResult = { status: "fail", error: err.message };
+          }
+
+          // Quick auth check (no-key test only for speed)
+          if (integration.authRequired) {
+            try {
+              const testUrl = `${integration.baseUrl}${integration.healthEndpoint || '/health'}`;
+              const noKeyRes = await fetch(testUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                signal: AbortSignal.timeout(5000),
+              });
+              authResult = {
+                status: noKeyRes.status === 401 || noKeyRes.status === 403 ? "pass" : "warning",
+                statusCode: noKeyRes.status,
+              };
+            } catch (err: any) {
+              authResult = { status: "fail", error: err.message };
+            }
+          }
+        }
+
+        const durationMs = Date.now() - startTime;
+        const healthStatus = !integration.baseUrl ? "not_configured" 
+          : healthResult?.status === "pass" ? "pass" : "fail";
+
+        // Update integration
+        await storage.updateIntegration(integration.integrationId, {
+          lastHealthCheckAt: new Date(),
+          healthCheckStatus: healthStatus,
+          healthStatus: healthStatus === "pass" ? "healthy" : healthStatus === "not_configured" ? "disconnected" : "error",
+        });
+
+        results.push({
+          integrationId: integration.integrationId,
+          name: integration.name,
+          baseUrl: integration.baseUrl,
+          healthResult,
+          authResult,
+          durationMs,
+        });
+      }
+
+      res.json({
+        tested: results.length,
+        results,
+        testedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to test all integrations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Seed default platform integrations
   app.post("/api/integrations/seed", async (req, res) => {
     try {
