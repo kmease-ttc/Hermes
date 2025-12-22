@@ -460,6 +460,7 @@ export default function Integrations() {
     }>;
   } | null>(null);
   const [showQaResults, setShowQaResults] = useState(false);
+  const [qaMode, setQaMode] = useState<"connection" | "smoke" | "full">("connection");
   const [lastRefreshInfo, setLastRefreshInfo] = useState<{
     refreshedAt: string | null;
     vaultConnected: boolean;
@@ -598,7 +599,13 @@ export default function Integrations() {
       setRunningQa(false);
       
       const statusIcon = data.status === "pass" ? "✓" : data.status === "partial" ? "⚠" : "✗";
-      toast.success(`QA Complete: ${statusIcon} ${data.summary}`);
+      if (data.status === "pass") {
+        toast.success(`QA Complete: ${statusIcon} ${data.summary}`);
+      } else if (data.status === "partial") {
+        toast.warning(`QA Complete: ${statusIcon} ${data.summary}`);
+      } else {
+        toast.error(`QA Failed: ${statusIcon} ${data.summary}`);
+      }
     },
     onError: (error: Error) => {
       toast.error(`QA failed: ${error.message}`);
@@ -874,19 +881,33 @@ export default function Integrations() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="default"
-              onClick={() => runQaMutation.mutate("connection")}
-              disabled={runningQa}
-              data-testid="button-run-qa"
-            >
-              {runningQa ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 mr-2" />
-              )}
-              {runningQa ? "Running QA..." : "Run QA"}
-            </Button>
+            <div className="flex items-center border rounded-md">
+              <select
+                value={qaMode}
+                onChange={(e) => setQaMode(e.target.value as "connection" | "smoke" | "full")}
+                disabled={runningQa}
+                className="h-9 px-2 text-sm bg-transparent border-r focus:outline-none"
+                data-testid="select-qa-mode"
+              >
+                <option value="connection">Connection Only</option>
+                <option value="smoke">Smoke Test</option>
+                <option value="full">Full QA</option>
+              </select>
+              <Button
+                variant="default"
+                onClick={() => runQaMutation.mutate(qaMode)}
+                disabled={runningQa}
+                className="rounded-l-none"
+                data-testid="button-run-qa"
+              >
+                {runningQa ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                {runningQa ? "Running..." : "Run QA"}
+              </Button>
+            </div>
             <Button
               variant="outline"
               onClick={() => refreshMutation.mutate()}
