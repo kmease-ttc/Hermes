@@ -2901,56 +2901,53 @@ When answering:
             break;
           }
           case "serp_intel": {
-            // Use the SERP worker client to test connection
+            // Use the SERP worker client to test connection with actual endpoints
             const { serpWorkerClient } = await import("./connectors/serpWorker");
             
-            // Helper: Fall back to legacy SerpAPI
-            const tryLegacyMode = async (reason: string) => {
-              const serpStatus = await serpConnector.testConnection();
-              const legacyOutputs = serpStatus.success 
-                ? ["serp_rank_snapshots", "serp_tracked_keywords"]
-                : [];
-              return {
-                status: serpStatus.success ? "pass" : "fail" as "pass" | "fail",
-                summary: serpStatus.success 
-                  ? `SerpAPI connected (legacy mode: ${reason})` 
-                  : `SerpAPI connection failed: ${reason}`,
-                metrics: { 
-                  connected: serpStatus.success, 
-                  mode: "legacy",
-                  outputs_available: legacyOutputs.length,
-                },
-                details: { 
-                  ...serpStatus, 
-                  fallbackReason: reason,
-                  actualOutputs: legacyOutputs,
-                },
-              };
-            };
-            
-            // Try the worker client first
+            // Test connection by calling actual SERP endpoints (not /health)
             const workerResult = await serpWorkerClient.testConnection();
             
-            if (workerResult.success) {
-              // Worker connected - report full outputs
-              const workerOutputs = ["serp_rank_snapshots", "serp_serp_snapshots", "serp_tracked_keywords", "serp_top_keywords"];
+            if (workerResult.success && workerResult.actualOutputs && workerResult.actualOutputs.length > 0) {
+              // Worker connected - use the actual outputs it returned
+              const outputsCount = workerResult.actualOutputs.length;
               checkResult = {
-                status: "pass",
+                status: outputsCount === 4 ? "pass" : "partial",
                 summary: workerResult.message,
                 metrics: { 
                   connected: true, 
                   mode: "worker",
-                  sites_tracked: workerResult.sites?.length || 0,
-                  outputs_available: workerOutputs.length,
+                  outputs_available: outputsCount,
+                  outputs_missing: 4 - outputsCount,
                 },
                 details: { 
-                  sites: workerResult.sites,
-                  actualOutputs: workerOutputs,
+                  actualOutputs: workerResult.actualOutputs,
+                  debug: workerResult.debug,
                 },
               };
             } else {
-              // Worker failed - try legacy SerpAPI
-              checkResult = await tryLegacyMode(workerResult.message);
+              // Worker failed - try legacy SerpAPI as fallback
+              const serpStatus = await serpConnector.testConnection();
+              const legacyOutputs = serpStatus.success 
+                ? ["serp_rank_snapshots", "serp_tracked_keywords"]
+                : [];
+              checkResult = {
+                status: serpStatus.success ? "partial" : "fail",
+                summary: serpStatus.success 
+                  ? `SerpAPI legacy fallback (Worker issue: ${workerResult.message})` 
+                  : `Connection failed: ${workerResult.message}`,
+                metrics: { 
+                  connected: serpStatus.success, 
+                  mode: "legacy",
+                  outputs_available: legacyOutputs.length,
+                  outputs_missing: 4 - legacyOutputs.length,
+                },
+                details: { 
+                  ...serpStatus, 
+                  fallbackReason: workerResult.message,
+                  actualOutputs: legacyOutputs,
+                  debug: workerResult.debug,
+                },
+              };
             }
             break;
           }

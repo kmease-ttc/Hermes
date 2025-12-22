@@ -164,21 +164,170 @@ export class SerpWorkerClient {
     return this.request<SerpSummary>("/api/serp/summary", { site });
   }
 
-  async testConnection(): Promise<{ success: boolean; message: string; sites?: string[] }> {
+  async testConnection(testSite?: string): Promise<{ 
+    success: boolean; 
+    message: string; 
+    actualOutputs?: string[];
+    debug?: {
+      baseUrl: string;
+      requestedUrls: string[];
+      responses: Array<{ url: string; status: number; bodySnippet?: string }>;
+    };
+  }> {
+    const debug: {
+      baseUrl: string;
+      requestedUrls: string[];
+      responses: Array<{ url: string; status: number; bodySnippet?: string }>;
+    } = {
+      baseUrl: "",
+      requestedUrls: [],
+      responses: [],
+    };
+    
     try {
       const initialized = await this.init();
-      if (!initialized) {
-        return { success: false, message: "Failed to initialize - check Bitwarden secret SEO_SERP_&_Keyword" };
+      if (!initialized || !this.baseUrl) {
+        return { 
+          success: false, 
+          message: "Failed to initialize - check Bitwarden secret SEO_SERP_&_Keyword (needs JSON with base_url and api_key)",
+          debug,
+        };
       }
 
-      const sites = await this.getSites();
-      return {
-        success: true,
-        message: `Connected to SERP Worker, tracking ${sites.length} sites`,
-        sites: sites.map(s => s.domain),
-      };
+      debug.baseUrl = this.baseUrl;
+      const site = testSite || "empathyhealthclinic.com";
+      const actualOutputs: string[] = [];
+
+      // Test 1: Call /api/serp/top-keywords (proves connection works)
+      const topKeywordsUrl = `${this.baseUrl}/api/serp/top-keywords?site=${encodeURIComponent(site)}`;
+      debug.requestedUrls.push(topKeywordsUrl);
+      
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (this.apiKey) headers["X-Api-Key"] = this.apiKey;
+        
+        const response = await fetch(topKeywordsUrl, { headers, signal: AbortSignal.timeout(15000) });
+        const bodyText = await response.text();
+        debug.responses.push({ 
+          url: topKeywordsUrl, 
+          status: response.status, 
+          bodySnippet: bodyText.substring(0, 200) 
+        });
+        
+        if (response.ok) {
+          actualOutputs.push("serp_top_keywords");
+          logger.info("SerpWorker", `top-keywords endpoint OK (${response.status})`);
+        } else {
+          logger.warn("SerpWorker", `top-keywords returned ${response.status}: ${bodyText.substring(0, 100)}`);
+        }
+      } catch (err: any) {
+        debug.responses.push({ url: topKeywordsUrl, status: 0, bodySnippet: err.message });
+        logger.error("SerpWorker", `top-keywords failed: ${err.message}`);
+      }
+
+      // Test 2: Call /api/serp/snapshot with a test keyword
+      const testKeyword = "psychiatrist near me";
+      const snapshotUrl = `${this.baseUrl}/api/serp/snapshot?site=${encodeURIComponent(site)}&keyword=${encodeURIComponent(testKeyword)}`;
+      debug.requestedUrls.push(snapshotUrl);
+      
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (this.apiKey) headers["X-Api-Key"] = this.apiKey;
+        
+        const response = await fetch(snapshotUrl, { headers, signal: AbortSignal.timeout(15000) });
+        const bodyText = await response.text();
+        debug.responses.push({ 
+          url: snapshotUrl, 
+          status: response.status, 
+          bodySnippet: bodyText.substring(0, 200) 
+        });
+        
+        if (response.ok) {
+          actualOutputs.push("serp_serp_snapshots");
+          logger.info("SerpWorker", `snapshot endpoint OK (${response.status})`);
+        } else {
+          logger.warn("SerpWorker", `snapshot returned ${response.status}: ${bodyText.substring(0, 100)}`);
+        }
+      } catch (err: any) {
+        debug.responses.push({ url: snapshotUrl, status: 0, bodySnippet: err.message });
+        logger.error("SerpWorker", `snapshot failed: ${err.message}`);
+      }
+
+      // Test 3: Call /api/serp/keywords (tracked keywords list)
+      const keywordsUrl = `${this.baseUrl}/api/serp/keywords?site=${encodeURIComponent(site)}`;
+      debug.requestedUrls.push(keywordsUrl);
+      
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (this.apiKey) headers["X-Api-Key"] = this.apiKey;
+        
+        const response = await fetch(keywordsUrl, { headers, signal: AbortSignal.timeout(15000) });
+        const bodyText = await response.text();
+        debug.responses.push({ 
+          url: keywordsUrl, 
+          status: response.status, 
+          bodySnippet: bodyText.substring(0, 200) 
+        });
+        
+        if (response.ok) {
+          actualOutputs.push("serp_tracked_keywords");
+          logger.info("SerpWorker", `keywords endpoint OK (${response.status})`);
+        } else {
+          logger.warn("SerpWorker", `keywords returned ${response.status}: ${bodyText.substring(0, 100)}`);
+        }
+      } catch (err: any) {
+        debug.responses.push({ url: keywordsUrl, status: 0, bodySnippet: err.message });
+        logger.error("SerpWorker", `keywords failed: ${err.message}`);
+      }
+
+      // Test 4: Call /api/serp/rankings-over-time (rank snapshots)
+      const rankingsUrl = `${this.baseUrl}/api/serp/rankings-over-time?site=${encodeURIComponent(site)}`;
+      debug.requestedUrls.push(rankingsUrl);
+      
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (this.apiKey) headers["X-Api-Key"] = this.apiKey;
+        
+        const response = await fetch(rankingsUrl, { headers, signal: AbortSignal.timeout(15000) });
+        const bodyText = await response.text();
+        debug.responses.push({ 
+          url: rankingsUrl, 
+          status: response.status, 
+          bodySnippet: bodyText.substring(0, 200) 
+        });
+        
+        if (response.ok) {
+          actualOutputs.push("serp_rank_snapshots");
+          logger.info("SerpWorker", `rankings-over-time endpoint OK (${response.status})`);
+        } else {
+          logger.warn("SerpWorker", `rankings-over-time returned ${response.status}: ${bodyText.substring(0, 100)}`);
+        }
+      } catch (err: any) {
+        debug.responses.push({ url: rankingsUrl, status: 0, bodySnippet: err.message });
+        logger.error("SerpWorker", `rankings-over-time failed: ${err.message}`);
+      }
+
+      if (actualOutputs.length > 0) {
+        return {
+          success: true,
+          message: `Connected to SERP Worker: ${actualOutputs.length}/4 endpoints responding`,
+          actualOutputs,
+          debug,
+        };
+      } else {
+        return {
+          success: false,
+          message: `SERP Worker not responding - check base_url and endpoints`,
+          actualOutputs: [],
+          debug,
+        };
+      }
     } catch (error: any) {
-      return { success: false, message: error.message };
+      return { 
+        success: false, 
+        message: error.message,
+        debug,
+      };
     }
   }
 
