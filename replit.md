@@ -1,8 +1,8 @@
-# SEO Doctor Orchestrator
+# Hermes - SEO Orchestrator
 
 ## Overview
 
-SEO Doctor Orchestrator is a production-ready multi-site SEO monitoring and diagnosis platform. Originally built for empathyhealthclinic.com, it now supports multiple sites through a comprehensive site registry system. The system collects data from multiple sources (GA4, Search Console, Google Ads, SERP tracking), performs automated analysis using rolling averages and z-score detection, generates root cause hypotheses, and creates actionable tickets for SEO, Dev, and Ads teams.
+Hermes is a production-ready multi-site SEO monitoring and diagnosis platform. Originally built for empathyhealthclinic.com, it now supports multiple sites through a comprehensive site registry system. The system collects data from multiple sources (GA4, Search Console, Google Ads, SERP tracking), performs automated analysis using rolling averages and z-score detection, generates root cause hypotheses, and creates actionable tickets for SEO, Dev, and Ads teams.
 
 Key capabilities:
 - **Multi-Site Registry**: Configure and manage multiple websites with full config including tech stack, repo/deploy settings, integrations, and guardrails
