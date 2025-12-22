@@ -19,6 +19,7 @@ export interface ServiceSecretMapping {
   type: ServiceType;
   requiresBaseUrl: boolean;        // Workers need base_url, infrastructure does not
   category: "google" | "analysis" | "content" | "infrastructure" | "execution";
+  fallbackEnvVar?: string;         // Optional: env var for fallback when Bitwarden secret not JSON
 }
 
 /**
@@ -67,11 +68,12 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   // Analysis Workers (need base_url + api_key)
   {
     serviceSlug: "serp_intel",  // Matches catalog
-    displayName: "Worker: SERP & Keyword Intelligence Service",
+    displayName: "SERP & Keyword Intelligence",
     bitwardenSecret: "SEO_SERP_&_Keyword",
-    type: "worker",
-    requiresBaseUrl: true,
-    category: "analysis"
+    type: "connector",  // Works with either worker mode (JSON with base_url) or legacy SerpAPI mode
+    requiresBaseUrl: false,  // Can fall back to SERP_API_KEY env var
+    category: "analysis",
+    fallbackEnvVar: "SERP_API_KEY"  // Legacy mode fallback
   },
   {
     serviceSlug: "crawl_render",  // Matches catalog
