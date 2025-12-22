@@ -455,6 +455,22 @@ export default function Integrations() {
     return acc;
   }, {} as Record<string, Integration[]>) || {};
 
+  // Separate platform dependencies from worker services
+  const platformDependencies = integrations?.filter(i => i.category === 'platform_dependency') || [];
+  const workerServices = integrations?.filter(i => i.category !== 'platform_dependency') || [];
+  
+  // Calculate summary stats for worker services only
+  const summaryStats = {
+    total: workerServices.length,
+    enabled: workerServices.filter(i => i.enabled).length,
+    configured: workerServices.filter(i => i.baseUrl).length,
+    secretsSet: workerServices.filter(i => i.secretExists).length,
+    secretsMissing: workerServices.filter(i => i.secretKeyName && !i.secretExists).length,
+    healthy: workerServices.filter(i => i.healthCheckStatus === "pass").length,
+    failing: workerServices.filter(i => i.healthCheckStatus === "fail").length,
+    notConfigured: workerServices.filter(i => !i.baseUrl).length,
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -522,39 +538,54 @@ export default function Integrations() {
             </TabsList>
 
             <TabsContent value="inventory" className="space-y-4">
-              {lastRefreshInfo.refreshedAt && (
-                <div className={cn(
-                  "flex flex-col gap-2 p-3 rounded-lg text-sm",
-                  lastRefreshInfo.vaultConnected 
-                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
-                    : "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
-                )} data-testid="status-refresh-banner">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {lastRefreshInfo.vaultConnected ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                      )}
-                      <span>
-                        Last checked: {formatTimeAgo(lastRefreshInfo.refreshedAt)} · 
-                        {lastRefreshInfo.vaultConnected 
-                          ? ` Bitwarden: ${lastRefreshInfo.secretsCount} secrets` 
-                          : " Bitwarden: not connected"}
-                      </span>
-                    </div>
-                    {lastRefreshInfo.summary && (
-                      <div className="flex items-center gap-4 text-xs">
-                        <span className="text-green-600">{lastRefreshInfo.summary.healthy} healthy</span>
-                        {lastRefreshInfo.summary.failed > 0 && (
-                          <span className="text-red-600">{lastRefreshInfo.summary.failed} failed</span>
-                        )}
-                        <span className="text-muted-foreground">{lastRefreshInfo.summary.secretsFound} secrets found</span>
+              {/* Platform Dependencies Panel */}
+              <Card className="bg-slate-50 dark:bg-slate-900/50">
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Platform Dependencies
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Bitwarden Status */}
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center",
+                        lastRefreshInfo.vaultConnected 
+                          ? "bg-green-100 text-green-600" 
+                          : "bg-yellow-100 text-yellow-600"
+                      )}>
+                        <Key className="w-5 h-5" />
                       </div>
-                    )}
+                      <div>
+                        <p className="text-sm font-medium">Bitwarden</p>
+                        <p className="text-xs text-muted-foreground">
+                          {lastRefreshInfo.vaultConnected 
+                            ? `${lastRefreshInfo.secretsCount} secrets` 
+                            : "Not connected"}
+                        </p>
+                      </div>
+                      {lastRefreshInfo.vaultConnected ? (
+                        <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-yellow-500 ml-auto" />
+                      )}
+                    </div>
+                    {/* Database Status */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                        <Database className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">PostgreSQL</p>
+                        <p className="text-xs text-muted-foreground">Connected</p>
+                      </div>
+                      <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                    </div>
                   </div>
                   {!lastRefreshInfo.vaultConnected && lastRefreshInfo.vaultReason && (
-                    <div className="text-xs text-yellow-700 dark:text-yellow-400 ml-6">
+                    <div className="mt-3 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
                       {lastRefreshInfo.vaultReason === "MISSING_TOKEN" && "BWS_ACCESS_TOKEN not set in environment"}
                       {lastRefreshInfo.vaultReason === "MISSING_PROJECT_ID" && "BWS_PROJECT_ID not set. Add it to Replit Secrets."}
                       {lastRefreshInfo.vaultReason === "UNAUTHORIZED" && "Token invalid or expired. Rotate BWS_ACCESS_TOKEN."}
@@ -565,8 +596,59 @@ export default function Integrations() {
                       {lastRefreshInfo.vaultReason === "NETWORK_ERROR" && (lastRefreshInfo.vaultError || "Network error occurred")}
                     </div>
                   )}
-                </div>
-              )}
+                </CardContent>
+              </Card>
+
+              {/* Summary Stats Bar */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Card className="p-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <p className="text-lg font-bold">{summaryStats.total}</p>
+                      <p className="text-xs text-muted-foreground">Services</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-purple-500" />
+                    <div>
+                      <p className="text-lg font-bold">{summaryStats.configured}</p>
+                      <p className="text-xs text-muted-foreground">Configured</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <div>
+                      <p className="text-lg font-bold">{summaryStats.healthy}</p>
+                      <p className="text-xs text-muted-foreground">Reachable</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <p className="text-lg font-bold">{summaryStats.secretsSet}</p>
+                      <p className="text-xs text-muted-foreground">Secrets Set</p>
+                    </div>
+                  </div>
+                </Card>
+                {summaryStats.secretsMissing > 0 && (
+                  <Card className="p-3 border-red-200 bg-red-50 dark:bg-red-900/20">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                      <div>
+                        <p className="text-lg font-bold text-red-600">{summaryStats.secretsMissing}</p>
+                        <p className="text-xs text-red-600">Secrets Missing</p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </div>
 
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -596,8 +678,16 @@ export default function Integrations() {
                         <th className="text-center p-3 font-medium">
                           <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger>Deploy</TooltipTrigger>
-                              <TooltipContent>Deployment Status</TooltipContent>
+                              <TooltipTrigger>Configured</TooltipTrigger>
+                              <TooltipContent>Base URL configured?</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </th>
+                        <th className="text-center p-3 font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>Reachable</TooltipTrigger>
+                              <TooltipContent>Can Hermes reach this service?</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </th>
@@ -638,7 +728,7 @@ export default function Integrations() {
                       </tr>
                     </thead>
                     <tbody>
-                      {integrations.map((integration) => (
+                      {workerServices.map((integration) => (
                         <tr 
                           key={integration.integrationId} 
                           className="border-b hover:bg-muted/30 transition-colors"
@@ -669,9 +759,10 @@ export default function Integrations() {
                             )}
                           </td>
                           <td className="p-3 text-center">
-                            <Badge className={cn("text-xs", DEPLOYMENT_STATUS_COLORS[integration.deploymentStatus || "not_built"])}>
-                              {integration.deploymentStatus || "not_built"}
-                            </Badge>
+                            <StatusCell status={integration.baseUrl ? "pass" : "not_configured"} />
+                          </td>
+                          <td className="p-3 text-center">
+                            <StatusCell status={integration.healthCheckStatus === "pass" ? "pass" : integration.baseUrl ? "fail" : "not_configured"} />
                           </td>
                           <td className="p-3 text-center">
                             <StatusCell status={integration.healthCheckStatus} />
@@ -759,56 +850,12 @@ export default function Integrations() {
                 </div>
               </Card>
 
-              <div className="grid grid-cols-4 gap-4">
-                <Card className="p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {integrations.filter(i => i.healthCheckStatus === "pass").length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Healthy</p>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-2">
-                    <XCircle className="w-5 h-5 text-red-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {integrations.filter(i => i.healthCheckStatus === "fail").length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Failed</p>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-5 h-5 text-blue-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {integrations.filter(i => i.secretExists).length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Secrets Set</p>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {integrations.filter(i => !i.baseUrl).length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Not Configured</p>
-                    </div>
-                  </div>
-                </Card>
-              </div>
             </TabsContent>
 
             <TabsContent value="cards" className="space-y-8">
-              {Object.entries(groupedIntegrations).map(([category, categoryIntegrations]) => {
+              {Object.entries(groupedIntegrations)
+                .filter(([category]) => category !== 'platform_dependency')
+                .map(([category, categoryIntegrations]) => {
                 const CategoryIcon = CATEGORY_ICONS[category] || Globe;
                 return (
                   <div key={category} className="space-y-4">
