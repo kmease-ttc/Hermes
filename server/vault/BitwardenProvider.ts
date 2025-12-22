@@ -42,6 +42,7 @@ interface SecretData {
 export class BitwardenProvider implements VaultProvider {
   private accessToken: string;
   private projectId: string;
+  private organizationId: string;
   private secretCache: Map<string, CachedSecret> = new Map();
   private client: any = null;
   private initialized: boolean = false;
@@ -49,6 +50,9 @@ export class BitwardenProvider implements VaultProvider {
   constructor() {
     this.accessToken = process.env.BWS_ACCESS_TOKEN || process.env.BITWARDEN_ACCESS_TOKEN || '';
     this.projectId = process.env.BWS_PROJECT_ID || '';
+    // Organization ID can be in env or extracted from token (second part of token is org ID)
+    this.organizationId = process.env.BWS_ORGANIZATION_ID || 
+      (this.accessToken ? this.accessToken.split('.')[1] : '');
   }
 
   isConfigured(): boolean {
@@ -63,23 +67,27 @@ export class BitwardenProvider implements VaultProvider {
     return this.projectId || null;
   }
 
+  getOrganizationId(): string | null {
+    return this.organizationId || null;
+  }
+
   private async getClient(): Promise<any> {
     if (this.client && this.initialized) {
       return this.client;
     }
 
     try {
-      const { BitwardenClient, ClientSettings, DeviceType, LogLevel } = await import("@bitwarden/sdk-napi");
+      const { BitwardenClient, DeviceType } = await import("@bitwarden/sdk-napi");
       
       const settings: any = {
-        apiUrl: process.env.BWS_API_URL || "https://api.bitwarden.com",
-        identityUrl: process.env.BWS_IDENTITY_URL || "https://identity.bitwarden.com",
+        apiUrl: process.env.BWS_API_URL || "https://vault.bitwarden.com/api",
+        identityUrl: process.env.BWS_IDENTITY_URL || "https://vault.bitwarden.com/identity",
         userAgent: "Hermes-SEO-Orchestrator/1.0.0",
         deviceType: DeviceType.SDK,
       };
 
-      this.client = new BitwardenClient(settings, LogLevel.Error);
-      await this.client.accessTokenLogin(this.accessToken);
+      this.client = new BitwardenClient(settings);
+      await this.client.auth().loginAccessToken(this.accessToken, null);
       this.initialized = true;
       
       logger.info("Vault", "Bitwarden SDK client initialized successfully");
@@ -114,13 +122,14 @@ export class BitwardenProvider implements VaultProvider {
     try {
       const client = await this.getClient();
       
-      logger.info("Vault", `Listing secrets for project: ${this.projectId.slice(0, 4)}...${this.projectId.slice(-4)}`);
-      const secretsResponse = await client.secrets().list(this.projectId);
+      // List secrets using organization ID (SDK requires org ID, not project ID)
+      logger.info("Vault", `Listing secrets for org: ${this.organizationId.slice(0, 4)}...${this.organizationId.slice(-4)}`);
+      const secretsResponse = await client.secrets().list(this.organizationId);
       
       const secrets: SecretData[] = secretsResponse?.data || [];
       const secretKeys = secrets.map((s: SecretData) => s.key);
       
-      logger.info("Vault", `Found ${secrets.length} secrets in Bitwarden project`);
+      logger.info("Vault", `Found ${secrets.length} secrets in Bitwarden organization`);
 
       if (secrets.length === 0) {
         return {
@@ -199,7 +208,7 @@ export class BitwardenProvider implements VaultProvider {
     try {
       const client = await this.getClient();
       
-      const secretsResponse = await client.secrets().list(this.projectId);
+      const secretsResponse = await client.secrets().list(this.organizationId);
       const secrets: SecretData[] = secretsResponse?.data || [];
       
       const secret = secrets.find((s: SecretData) => s.key === secretKey);
@@ -230,14 +239,14 @@ export class BitwardenProvider implements VaultProvider {
   async getSecrets(secretKeys: string[]): Promise<Map<string, string>> {
     const results = new Map<string, string>();
     
-    if (!this.accessToken || !this.projectId) {
+    if (!this.accessToken || !this.organizationId) {
       return results;
     }
 
     try {
       const client = await this.getClient();
       
-      const secretsResponse = await client.secrets().list(this.projectId);
+      const secretsResponse = await client.secrets().list(this.organizationId);
       const secrets: SecretData[] = secretsResponse?.data || [];
 
       for (const key of secretKeys) {
@@ -281,14 +290,14 @@ export class BitwardenProvider implements VaultProvider {
   }
 
   async listSecrets(): Promise<VaultSecretMeta[]> {
-    if (!this.accessToken || !this.projectId) {
+    if (!this.accessToken || !this.organizationId) {
       return [];
     }
 
     try {
       const client = await this.getClient();
       
-      const secretsResponse = await client.secrets().list(this.projectId);
+      const secretsResponse = await client.secrets().list(this.organizationId);
       const secrets: SecretData[] = secretsResponse?.data || [];
 
       return secrets.map((s: SecretData) => ({
@@ -306,14 +315,14 @@ export class BitwardenProvider implements VaultProvider {
   async getAllSecretValues(): Promise<Map<string, string>> {
     const results = new Map<string, string>();
     
-    if (!this.accessToken || !this.projectId) {
+    if (!this.accessToken || !this.organizationId) {
       return results;
     }
 
     try {
       const client = await this.getClient();
       
-      const secretsResponse = await client.secrets().list(this.projectId);
+      const secretsResponse = await client.secrets().list(this.organizationId);
       const secrets: SecretData[] = secretsResponse?.data || [];
 
       for (const secret of secrets) {
