@@ -226,6 +226,13 @@ export default function Integrations() {
     authRequired: true,
   });
   const [testingAll, setTestingAll] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshInfo, setLastRefreshInfo] = useState<{
+    refreshedAt: string | null;
+    vaultConnected: boolean;
+    secretsCount: number;
+    summary: { total: number; healthy: number; failed: number; secretsFound: number } | null;
+  }>({ refreshedAt: null, vaultConnected: false, secretsCount: 0, summary: null });
 
   const { data: integrations, isLoading } = useQuery<Integration[]>({
     queryKey: ["platformIntegrations"],
@@ -247,6 +254,46 @@ export default function Integrations() {
     },
     onError: () => {
       toast.error("Failed to seed integrations");
+    },
+  });
+
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      setIsRefreshing(true);
+      const res = await fetch("/api/integrations/refresh", { method: "POST" });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(errorData.error || `Refresh failed: ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      setLastRefreshInfo({
+        refreshedAt: data.refreshedAt,
+        vaultConnected: data.vaultStatus?.connected || false,
+        secretsCount: data.vaultStatus?.secretsCount || 0,
+        summary: data.summary,
+      });
+      
+      const summary = data.summary;
+      if (data.vaultStatus?.connected) {
+        toast.success(
+          `Refresh complete: ${summary.healthy}/${summary.total} healthy, ${summary.secretsFound} secrets found`,
+          { description: `Bitwarden connected with ${data.vaultStatus.secretsCount} secrets` }
+        );
+      } else {
+        toast.warning(
+          `Refresh complete: ${summary.healthy}/${summary.total} healthy`,
+          { description: data.vaultStatus?.error || "Bitwarden not connected" }
+        );
+      }
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to refresh integrations", { description: error.message });
+    },
+    onSettled: () => {
+      setIsRefreshing(false);
     },
   });
 
@@ -403,12 +450,12 @@ export default function Integrations() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] })}
-              disabled={isLoading}
+              onClick={() => refreshMutation.mutate()}
+              disabled={isLoading || isRefreshing}
               data-testid="button-refresh-integrations"
             >
-              <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
+              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
             </Button>
             {(!integrations || integrations.length === 0) && (
               <Button
@@ -455,6 +502,38 @@ export default function Integrations() {
             </TabsList>
 
             <TabsContent value="inventory" className="space-y-4">
+              {lastRefreshInfo.refreshedAt && (
+                <div className={cn(
+                  "flex items-center justify-between p-3 rounded-lg text-sm",
+                  lastRefreshInfo.vaultConnected 
+                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+                    : "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
+                )} data-testid="status-refresh-banner">
+                  <div className="flex items-center gap-2">
+                    {lastRefreshInfo.vaultConnected ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    )}
+                    <span>
+                      Last checked: {formatTimeAgo(lastRefreshInfo.refreshedAt)} · 
+                      {lastRefreshInfo.vaultConnected 
+                        ? ` Bitwarden: ${lastRefreshInfo.secretsCount} secrets` 
+                        : " Bitwarden not connected"}
+                    </span>
+                  </div>
+                  {lastRefreshInfo.summary && (
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-green-600">{lastRefreshInfo.summary.healthy} healthy</span>
+                      {lastRefreshInfo.summary.failed > 0 && (
+                        <span className="text-red-600">{lastRefreshInfo.summary.failed} failed</span>
+                      )}
+                      <span className="text-muted-foreground">{lastRefreshInfo.summary.secretsFound} secrets found</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Truth table: each service showing build status, endpoints, auth, secrets, and connectivity

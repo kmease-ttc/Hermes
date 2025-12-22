@@ -1803,12 +1803,25 @@ When answering:
 
       // Step 2: Fetch all secrets from Bitwarden (if connected)
       let availableSecrets: string[] = [];
+      const secretValuesMap: Map<string, string> = new Map();
+      
       if (vaultHealth.connected) {
         const secretsList = await bitwardenProvider.listSecrets();
         availableSecrets = secretsList.map(s => s.key);
         logger.info("API", `Bitwarden secrets found: ${availableSecrets.length}`, {
           secrets: availableSecrets,
         });
+        
+        // Fetch actual secret values for auth testing
+        for (const secretMeta of secretsList) {
+          if (secretMeta.id) {
+            const secretValue = await bitwardenProvider.getSecret(secretMeta.id);
+            if (secretValue) {
+              secretValuesMap.set(secretMeta.key, secretValue);
+            }
+          }
+        }
+        logger.info("API", `Fetched ${secretValuesMap.size} secret values from Bitwarden`);
       }
 
       // Step 3: Get all registered integrations
@@ -1877,9 +1890,16 @@ When answering:
               
               // Test with key if secret exists
               let withKeyPass = false;
+              let secretSource = "none";
               if (secretExists && integration.secretKeyName) {
-                // Try to get secret value from Bitwarden or env
-                let secretValue = process.env[integration.secretKeyName] || null;
+                // Try to get secret value from Bitwarden first, then fall back to env
+                let secretValue = secretValuesMap.get(integration.secretKeyName) || null;
+                if (secretValue) {
+                  secretSource = "bitwarden";
+                } else {
+                  secretValue = process.env[integration.secretKeyName] || null;
+                  if (secretValue) secretSource = "env";
+                }
                 
                 if (secretValue) {
                   try {
@@ -1894,6 +1914,7 @@ When answering:
                     });
                     withKeyPass = withKeyRes.ok;
                     calledSuccessfully = withKeyPass;
+                    logger.info("API", `Auth test for ${integration.integrationId}: withKey=${withKeyPass}, source=${secretSource}`);
                   } catch (e) {
                     withKeyPass = false;
                   }
@@ -1904,7 +1925,7 @@ When answering:
               authTestDetails = {
                 noKeyResult: { status: noKeyPass ? "pass" : "fail", statusCode: noKeyRes.status },
                 withKeyResult: secretExists 
-                  ? { status: withKeyPass ? "pass" : "fail" }
+                  ? { status: withKeyPass ? "pass" : "fail", secretSource }
                   : { status: "skipped", reason: "No secret configured" },
               };
             } catch (err: any) {
