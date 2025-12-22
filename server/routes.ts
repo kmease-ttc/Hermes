@@ -1786,6 +1786,219 @@ When answering:
     }
   });
 
+  // Full refresh: Re-authenticate Bitwarden, fetch secrets, evaluate all services
+  app.post("/api/integrations/refresh", async (req, res) => {
+    try {
+      const startTime = Date.now();
+      logger.info("API", "Starting full integrations refresh");
+
+      // Step 1: Authenticate to Bitwarden and get vault status
+      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
+      bitwardenProvider.clearCache(); // Force fresh data
+      
+      const vaultHealth = await bitwardenProvider.healthCheck();
+      logger.info("API", `Bitwarden auth: ${vaultHealth.connected ? 'SUCCESS' : 'FAILED'}`, {
+        error: vaultHealth.error,
+      });
+
+      // Step 2: Fetch all secrets from Bitwarden (if connected)
+      let availableSecrets: string[] = [];
+      if (vaultHealth.connected) {
+        const secretsList = await bitwardenProvider.listSecrets();
+        availableSecrets = secretsList.map(s => s.key);
+        logger.info("API", `Bitwarden secrets found: ${availableSecrets.length}`, {
+          secrets: availableSecrets,
+        });
+      }
+
+      // Step 3: Get all registered integrations
+      const integrationsList = await storage.getIntegrations();
+      const results: any[] = [];
+
+      // Step 4: Re-evaluate each service
+      for (const integration of integrationsList) {
+        const serviceStart = Date.now();
+        let secretExists = false;
+        let healthCheckStatus = "unknown";
+        let authTestStatus = "unknown";
+        let healthCheckResponse: any = null;
+        let authTestDetails: any = null;
+        let calledSuccessfully = false;
+        let lastError: string | null = null;
+
+        // Check if secret exists in Bitwarden or environment
+        if (integration.secretKeyName) {
+          // Check Bitwarden first
+          secretExists = availableSecrets.includes(integration.secretKeyName);
+          // Fallback to environment variable
+          if (!secretExists) {
+            secretExists = !!process.env[integration.secretKeyName];
+          }
+        }
+
+        // Run health check if baseUrl is configured
+        if (integration.baseUrl) {
+          try {
+            const healthUrl = `${integration.baseUrl}${integration.healthEndpoint || '/health'}`;
+            const healthRes = await fetch(healthUrl, {
+              method: 'GET',
+              headers: { 'Accept': 'application/json' },
+              signal: AbortSignal.timeout(10000),
+            });
+            const healthData = await healthRes.json().catch(() => null);
+            healthCheckStatus = healthRes.ok ? "pass" : "fail";
+            healthCheckResponse = { 
+              statusCode: healthRes.status, 
+              data: healthData,
+            };
+            
+            if (!healthRes.ok) {
+              lastError = `Health check failed: ${healthRes.status}`;
+            }
+          } catch (err: any) {
+            healthCheckStatus = "fail";
+            healthCheckResponse = { error: err.message };
+            lastError = `Health check error: ${err.message}`;
+          }
+
+          // Run auth test if auth is required
+          if (integration.authRequired) {
+            try {
+              const testUrl = `${integration.baseUrl}${integration.healthEndpoint || '/health'}`;
+              
+              // Test without key - should get 401/403
+              const noKeyRes = await fetch(testUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                signal: AbortSignal.timeout(5000),
+              });
+              
+              const noKeyPass = noKeyRes.status === 401 || noKeyRes.status === 403;
+              
+              // Test with key if secret exists
+              let withKeyPass = false;
+              if (secretExists && integration.secretKeyName) {
+                // Try to get secret value from Bitwarden or env
+                let secretValue = process.env[integration.secretKeyName] || null;
+                
+                if (secretValue) {
+                  try {
+                    const withKeyRes = await fetch(testUrl, {
+                      method: 'GET',
+                      headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${secretValue}`,
+                        'X-API-Key': secretValue,
+                      },
+                      signal: AbortSignal.timeout(5000),
+                    });
+                    withKeyPass = withKeyRes.ok;
+                    calledSuccessfully = withKeyPass;
+                  } catch (e) {
+                    withKeyPass = false;
+                  }
+                }
+              }
+              
+              authTestStatus = noKeyPass && (withKeyPass || !secretExists) ? "pass" : "fail";
+              authTestDetails = {
+                noKeyResult: { status: noKeyPass ? "pass" : "fail", statusCode: noKeyRes.status },
+                withKeyResult: secretExists 
+                  ? { status: withKeyPass ? "pass" : "fail" }
+                  : { status: "skipped", reason: "No secret configured" },
+              };
+            } catch (err: any) {
+              authTestStatus = "fail";
+              authTestDetails = { error: err.message };
+            }
+          } else {
+            authTestStatus = "not_required";
+            // For services without auth, check if health passed = successful call
+            calledSuccessfully = healthCheckStatus === "pass";
+          }
+        } else {
+          healthCheckStatus = "not_configured";
+          authTestStatus = "not_configured";
+        }
+
+        const serviceDuration = Date.now() - serviceStart;
+
+        // Determine overall health status
+        const healthStatus = healthCheckStatus === "pass" ? "healthy" 
+          : healthCheckStatus === "not_configured" ? "disconnected" 
+          : "error";
+
+        // Update integration in database
+        await storage.updateIntegration(integration.integrationId, {
+          secretExists,
+          healthCheckStatus,
+          healthCheckResponse,
+          authTestStatus,
+          authTestDetails,
+          calledSuccessfully,
+          healthStatus,
+          lastHealthCheckAt: new Date(),
+          lastAuthTestAt: integration.authRequired ? new Date() : integration.lastAuthTestAt,
+          lastError: lastError || integration.lastError,
+          lastSuccessAt: calledSuccessfully ? new Date() : integration.lastSuccessAt,
+          updatedAt: new Date(),
+        });
+
+        results.push({
+          integrationId: integration.integrationId,
+          name: integration.name,
+          secretExists,
+          healthCheckStatus,
+          authTestStatus,
+          calledSuccessfully,
+          durationMs: serviceDuration,
+        });
+
+        logger.info("API", `Checked ${integration.integrationId}`, {
+          secretExists,
+          healthCheckStatus,
+          authTestStatus,
+          calledSuccessfully,
+        });
+      }
+
+      const totalDuration = Date.now() - startTime;
+
+      // Get updated integrations list
+      const updatedIntegrations = await storage.getIntegrations();
+
+      // Summary stats
+      const summary = {
+        total: results.length,
+        healthy: results.filter(r => r.healthCheckStatus === "pass").length,
+        failed: results.filter(r => r.healthCheckStatus === "fail").length,
+        notConfigured: results.filter(r => r.healthCheckStatus === "not_configured").length,
+        secretsFound: results.filter(r => r.secretExists).length,
+        calledSuccessfully: results.filter(r => r.calledSuccessfully).length,
+      };
+
+      logger.info("API", `Refresh complete in ${totalDuration}ms`, summary);
+
+      res.json({
+        success: true,
+        vaultStatus: {
+          connected: vaultHealth.connected,
+          provider: vaultHealth.provider,
+          error: vaultHealth.error,
+          secretsCount: availableSecrets.length,
+        },
+        summary,
+        results,
+        integrations: updatedIntegrations,
+        refreshedAt: new Date().toISOString(),
+        durationMs: totalDuration,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to refresh integrations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get single integration details
   app.get("/api/integrations/:integrationId", async (req, res) => {
     try {
