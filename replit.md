@@ -100,6 +100,14 @@ The system has modular connectors for each data source:
 - **PostgreSQL**: Primary data store (provisioned via Replit)
 - Connection via `DATABASE_URL` environment variable
 
+### Bitwarden Secrets Manager
+The platform uses Bitwarden Secrets Manager for secure credential storage:
+- **SDK**: `@bitwarden/sdk-napi` (official Node.js bindings)
+- **API URL**: `https://vault.bitwarden.com/api`
+- **Identity URL**: `https://vault.bitwarden.com/identity`
+- Secrets are listed by organization ID, not project ID (SDK requirement)
+- Machine account must have read access to the project containing secrets
+
 ### Required Environment Variables
 ```
 DOMAIN=empathyhealthclinic.com
@@ -110,6 +118,9 @@ GA4_PROPERTY_ID=<property_id>
 GSC_SITE=sc-domain:empathyhealthclinic.com
 ADS_CUSTOMER_ID=123-456-7890
 DATABASE_URL=postgresql://...
+BWS_ACCESS_TOKEN=<bitwarden_machine_account_token>
+BWS_PROJECT_ID=<bitwarden_project_id>
+BWS_ORGANIZATION_ID=<bitwarden_organization_id>
 ```
 
 ### NPM Packages (Key Dependencies)
