@@ -1,0 +1,193 @@
+Here are **developer instructions** to fix both issues:
+
+1. When a service is opened (ex: **Audit Log & Observability**), show the **service definition/description** (your explainer text)
+2. **Test Connection** currently does nothing — wire it up for **all services**, with real feedback + run logging
+
+---
+
+## 1) Service Detail must show the service definition (description)
+
+### Backend: store service definitions
+
+**Add/confirm these fields** on your `services` table:
+
+* `slug` (stable key)
+* `display_name`
+* `description_md` (TEXT)  ✅ required
+
+Populate `description_md` using your canonical definitions (the long text you provided). This should be seeded from a single catalog file (source of truth), not hand-entered.
+
+**Create**: `shared/servicesCatalog.ts`
+
+```ts
+export const servicesCatalog = [
+  {
+    slug: "audit_log_observability",
+    displayName: "Audit Log & Observability",
+    descriptionMd: `This service stores run history, service health, job outcomes, and change logs across the entire system, enabling you to trace any recommendation back to inputs and see what actually changed. It also powers alerts (run failed, API quota hit, big traffic drop, indexing issue detected) and becomes essential once you scale beyond a single site into ArcGlow Pro.`
+  },
+  ...
+];
+```
+
+### DB sync strategy (pick one)
+
+* **Option A (recommended):** seed script syncs the catalog into the DB at startup or migration time
+* **Option B:** skip DB and read `servicesCatalog.ts` directly in the API response (faster, fewer moving parts)
+
+### API: include description in service payload
+
+Ensure the service detail endpoint returns:
+
+* `display_name`
+* `description_md`
+
+Endpoints to implement/confirm:
+
+* `GET /api/services` (for table list; include a short `descriptionSnippet`)
+* `GET /api/services/:slug` (for detail modal; include full `description_md`)
+
+### UI: render it in the Service Detail modal
+
+In the service detail drawer/modal:
+
+* Add a **“What this service is”** section at the top
+* Render markdown from `description_md`
+
+**Acceptance criteria**
+
+* Opening **Audit Log & Observability** shows your full definition immediately.
+
+---
+
+## 2) Wire up “Test Connection” so it actually runs (for every service)
+
+Right now, your button likely has no handler or is calling an endpoint that doesn’t exist / returns nothing. You need a real endpoint + UI state updates.
+
+### Backend: add a universal test endpoint
+
+**Endpoint**
+`POST /api/services/:slug/test-connection`
+
+**Request body**
+
+```json
+{ "site_id": "..." }
+```
+
+**Response**
+
+```json
+{
+  "status": "pass|fail|skipped",
+  "duration_ms": 1234,
+  "summary": "Short human-readable summary",
+  "metrics": { "secretsFound": 14, "reachable": true },
+  "details": { "httpStatus": 200 }
+}
+```
+
+### Test behavior rules (important)
+
+Each service has a `test_mode` that decides what “test connection” means:
+
+**A) Worker service with base_url**
+
+* Call `${base_url}/health` (no auth) → must return 200
+* If auth required, call `${base_url}/health/auth` with API key → must return 200
+* If base_url missing → return `skipped` with summary “No base URL configured”
+
+**B) Connector-only service (e.g., Google Data Connector)**
+
+* Validate OAuth tokens exist (or return skipped)
+* Optionally call a light endpoint like “get properties” or “fetch small sample”
+* If not configured → `skipped`
+
+**C) Platform dependency (Bitwarden, DB)**
+
+* Bitwarden: list secrets for project; pass if API call succeeds (even if zero secrets)
+* DB: run a trivial query `select 1`
+
+### Always log a run (so Last Run works)
+
+On every Test Connection call, create a `service_runs` record:
+
+* `service_slug`
+* `site_id`
+* `trigger = "manual"`
+* `status = pass/fail/skipped` mapped to your run status set
+* `summary`
+* `metrics_json`
+* `inputs_json` (site_id)
+* `outputs_json` (actual results)
+
+This will instantly solve “Last Run always says never ran” for tests.
+
+---
+
+## 3) Frontend: make the button show feedback and update the table
+
+### UI behavior
+
+When user clicks **Test Connection**:
+
+* disable the button
+* show spinner / “Testing…”
+* call `POST /api/services/:slug/test-connection`
+* on success:
+
+  * toast “Pass/Fail/Skipped”
+  * update the service row’s:
+
+    * last run time
+    * summary
+    * key metrics
+* on error:
+
+  * toast with the error message
+  * mark run as failed in UI (and still log it if possible)
+
+### Common bug to fix
+
+If “nothing happens,” it’s usually because:
+
+* the button handler isn’t wired
+* the handler is async but errors are swallowed
+* the endpoint path is wrong
+* the request never includes `site_id` so backend rejects silently
+
+**Do not swallow errors.** Always show toast.
+
+---
+
+## 4) Implement “Open Service” + “Test Connection” in one place (clean design)
+
+In the Integrations page:
+
+* Clicking a row opens service detail modal
+* Modal contains:
+
+  * definition (description)
+  * last run summary
+  * run history
+  * **Test Connection** button
+
+Keep the table itself clean; actions live in the modal.
+
+---
+
+## 5) Acceptance Criteria (what you’ll verify)
+
+1. Open **Audit Log & Observability** → see the full service definition text immediately
+2. Click **Test Connection** → spinner shows, then toast shows pass/fail/skipped
+3. After test completes:
+
+   * table shows updated **Last Run** time
+   * clicking into Runs shows the logged test run with summary/metrics
+4. If base_url missing:
+
+   * test returns `skipped` with a clear message, not “nothing happens”
+
+---
+
+If you want, tell me what your current “service detail” component is called (or the file path), and I’ll give you the exact UI wiring points (where to add the modal section + handler) using your current code structure.
