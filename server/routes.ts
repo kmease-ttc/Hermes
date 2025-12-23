@@ -1623,8 +1623,7 @@ When answering:
       let postgresConnected = false;
       let postgresError = null;
       try {
-        const { db } = await import("./db");
-        const result = await db.execute(require('drizzle-orm').sql`SELECT 1 as connected`);
+        const result = await db.execute(sql`SELECT 1 as connected`);
         postgresConnected = true;
       } catch (pgError: any) {
         postgresError = pgError.message;
