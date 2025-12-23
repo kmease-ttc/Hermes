@@ -795,9 +795,26 @@ export default function Integrations() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      queryClient.invalidateQueries({ queryKey: ["siteSummary"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCatalog"] });
       setTestingAll(false);
-      const passed = data.results?.filter((r: any) => r.healthResult?.status === "pass").length || 0;
-      toast.success(`Tested ${data.tested} services: ${passed} passed`);
+      
+      const results = data.results || [];
+      const passed = results.filter((r: any) => r.status === "pass").length;
+      const partial = results.filter((r: any) => r.status === "partial").length;
+      const failed = results.filter((r: any) => r.status === "fail" || r.status === "failed").length;
+      
+      if (failed === 0 && passed > 0) {
+        toast.success(`All ${data.tested} services tested`, {
+          description: `${passed} passed${partial > 0 ? `, ${partial} partial` : ''}`,
+        });
+      } else if (failed > 0) {
+        toast.warning(`Tested ${data.tested} services`, {
+          description: `${passed} passed, ${partial} partial, ${failed} failed`,
+        });
+      } else {
+        toast.info(`Tested ${data.tested} services`);
+      }
     },
     onError: (error: any) => {
       setTestingAll(false);
@@ -1321,7 +1338,9 @@ export default function Integrations() {
                             partial: 'bg-yellow-100 text-yellow-700',
                             stale: 'bg-orange-100 text-orange-700',
                             never_ran: 'bg-gray-100 text-gray-600',
+                            testing: 'bg-blue-100 text-blue-700',
                           };
+                          const isServiceTesting = testingAll || testingId === service.slug;
                           const CONFIG_STATE_BADGES: Record<string, { label: string; color: string }> = {
                             ready: { label: 'Ready', color: 'bg-green-100 text-green-700' },
                             blocked: { label: 'Blocked', color: 'bg-orange-100 text-orange-700' },
@@ -1336,7 +1355,8 @@ export default function Integrations() {
                             >
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
-                                  {service.runState === 'success' ? <CheckCircle className="w-4 h-4 text-green-500" /> :
+                                  {isServiceTesting ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin" /> :
+                                   service.runState === 'success' ? <CheckCircle className="w-4 h-4 text-green-500" /> :
                                    service.runState === 'failed' ? <XCircle className="w-4 h-4 text-red-500" /> :
                                    service.runState === 'partial' ? <AlertTriangle className="w-4 h-4 text-yellow-500" /> :
                                    service.runState === 'stale' ? <AlertTriangle className="w-4 h-4 text-orange-500" /> :
@@ -1349,8 +1369,8 @@ export default function Integrations() {
                               </td>
                               <td className="p-3 text-center">
                                 <div className="flex flex-col items-center gap-1">
-                                  <Badge className={cn("text-[10px] px-1.5 py-0", RUN_STATE_COLORS[service.runState] || 'bg-gray-100')}>
-                                    {service.runState.replace('_', ' ')}
+                                  <Badge className={cn("text-[10px] px-1.5 py-0", isServiceTesting ? RUN_STATE_COLORS['testing'] : (RUN_STATE_COLORS[service.runState] || 'bg-gray-100'))}>
+                                    {isServiceTesting ? 'testing...' : service.runState.replace('_', ' ')}
                                   </Badge>
                                   <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", CONFIG_STATE_BADGES[service.configState]?.color || 'bg-gray-100')}>
                                     {CONFIG_STATE_BADGES[service.configState]?.label || service.configState}
