@@ -132,6 +132,14 @@ export const slugLabels: Record<string, string> = {
   compliance_status: "Compliance Status",
   fix_list: "Fix List",
   
+  // SEO KBase outputs
+  seo_recommendations: "SEO Recommendations",
+  best_practices: "Best Practices",
+  optimization_tips: "Optimization Tips",
+  reference_docs: "Reference Docs",
+  recommendations_generated: "Recommendations Generated",
+  queries_answered: "Queries Answered",
+  
   new_links: "New Links",
   lost_links: "Lost Links",
   domain_authority: "Domain Authority",
@@ -319,6 +327,19 @@ export const servicesCatalog: ServiceDefinition[] = [
     keyMetrics: ["qa_score", "violations", "pages_analyzed"],
     commonFailures: ["timeout", "no_data", "invalid_response", "network_error"],
     runTriggers: ["scheduled", "manual", "on_change"],
+    testMode: "worker",
+  },
+  {
+    slug: "seo_kbase",
+    displayName: "SEO Knowledge Base",
+    category: "analysis",
+    description: "Centralized knowledge base for SEO best practices, guidelines, and reference materials. Provides context and recommendations for content optimization.",
+    purpose: "Provide SEO knowledge and recommendations",
+    inputs: ["site_domain", "page_urls", "target_keywords"],
+    outputs: ["seo_recommendations", "best_practices", "optimization_tips", "reference_docs"],
+    keyMetrics: ["recommendations_generated", "queries_answered"],
+    commonFailures: ["timeout", "no_data", "network_error", "api_key_invalid"],
+    runTriggers: ["manual"],
     testMode: "worker",
   },
   {

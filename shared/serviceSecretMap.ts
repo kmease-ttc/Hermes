@@ -160,6 +160,14 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     requiresBaseUrl: true,
     category: "content"
   },
+  {
+    serviceSlug: "seo_kbase",  // Matches catalog
+    displayName: "SEO Knowledge Base",
+    bitwardenSecret: "SEO_KBASE_API_KEY",
+    type: "worker",
+    requiresBaseUrl: true,
+    category: "analysis"
+  },
 
   // Planned / Not Built Yet
   {
