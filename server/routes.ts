@@ -2862,52 +2862,118 @@ When answering:
       try {
         switch (integration.integrationId) {
           case "google_data_connector": {
-            const ga4Status = await ga4Connector.testConnection();
-            const gscStatus = await gscConnector.testConnection();
-            const bothPass = ga4Status.success && gscStatus.success;
-            const onePass = ga4Status.success || gscStatus.success;
+            // First try the worker-based approach using Bitwarden secret
+            const { bitwardenProvider: googleProvider } = await import("./vault/BitwardenProvider");
+            const googleSecret = await googleProvider.getSecret("SEO_Google_Connector");
             
-            // Build actualOutputs array based on what connected
-            const actualOutputs: string[] = [];
-            const missingReason: Record<string, string> = {};
+            const debug: any = { secretFound: !!googleSecret, requestedUrls: [], responses: [], mode: "worker" };
+            const expectedOutputs = ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages", "ga4_sessions", "ga4_users", "ga4_conversions"];
             
-            if (gscStatus.success) {
-              actualOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
-            } else {
-              const reason = gscStatus.error || "GSC not connected";
-              missingReason["gsc_impressions"] = reason;
-              missingReason["gsc_clicks"] = reason;
-              missingReason["gsc_ctr"] = reason;
-              missingReason["gsc_position"] = reason;
-              missingReason["gsc_queries"] = reason;
-              missingReason["gsc_pages"] = reason;
+            let workerConfig: { base_url?: string; api_key?: string } | null = null;
+            let parseError: string | null = null;
+            
+            if (googleSecret) {
+              try {
+                workerConfig = JSON.parse(googleSecret);
+                debug.baseUrl = workerConfig?.base_url;
+              } catch (e: any) {
+                parseError = e.message || "Invalid JSON";
+                debug.parseError = parseError;
+              }
             }
             
-            if (ga4Status.success) {
-              actualOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
+            // If worker secret exists and is valid, use worker approach
+            if (googleSecret && !parseError && workerConfig?.base_url) {
+              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const headers: Record<string, string> = {};
+              if (workerConfig.api_key) {
+                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
+                headers["X-API-Key"] = workerConfig.api_key;
+              }
+              
+              const healthUrl = `${baseUrl}/health`;
+              debug.requestedUrls.push(healthUrl);
+              
+              try {
+                const res = await fetch(healthUrl, { method: "GET", headers, signal: AbortSignal.timeout(10000) });
+                const bodyText = await res.text().catch(() => "");
+                debug.responses.push({ url: healthUrl, status: res.status, ok: res.ok, bodySnippet: bodyText.slice(0, 200) });
+                
+                if (res.ok) {
+                  checkResult = {
+                    status: "partial",
+                    summary: `Worker connected - run queries to validate outputs`,
+                    metrics: { worker_configured: true, worker_reachable: true, mode: "worker", outputs_pending: expectedOutputs.length },
+                    details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                  };
+                } else {
+                  checkResult = {
+                    status: "fail",
+                    summary: `Worker returned HTTP ${res.status}`,
+                    metrics: { worker_configured: true, worker_reachable: false, http_status: res.status },
+                    details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
+                  };
+                }
+              } catch (err: any) {
+                debug.error = err.message;
+                checkResult = {
+                  status: "fail",
+                  summary: `Worker unreachable: ${err.message}`,
+                  metrics: { worker_configured: true, worker_reachable: false },
+                  details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
+                };
+              }
+            } else if (googleSecret && parseError) {
+              checkResult = {
+                status: "fail",
+                summary: `Secret JSON invalid: ${parseError}`,
+                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
             } else {
-              const reason = ga4Status.error || "GA4 not connected";
-              missingReason["ga4_sessions"] = reason;
-              missingReason["ga4_users"] = reason;
-              missingReason["ga4_conversions"] = reason;
+              // Fallback to legacy OAuth-based connectors
+              debug.mode = "oauth_fallback";
+              const ga4Status = await ga4Connector.testConnection();
+              const gscStatus = await gscConnector.testConnection();
+              const bothPass = ga4Status.success && gscStatus.success;
+              const onePass = ga4Status.success || gscStatus.success;
+              
+              const actualOutputs: string[] = [];
+              const missingReason: Record<string, string> = {};
+              
+              if (gscStatus.success) {
+                actualOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
+              } else {
+                const reason = gscStatus.error || "GSC not connected";
+                ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages"].forEach(k => missingReason[k] = reason);
+              }
+              
+              if (ga4Status.success) {
+                actualOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
+              } else {
+                const reason = ga4Status.error || "GA4 not connected";
+                ["ga4_sessions", "ga4_users", "ga4_conversions"].forEach(k => missingReason[k] = reason);
+              }
+              
+              checkResult = {
+                status: bothPass ? "pass" : onePass ? "partial" : "fail",
+                summary: bothPass ? "GA4 and GSC connected (OAuth)" : onePass ? "Partial: one service connected (OAuth)" : "Both GA4 and GSC failed - add SEO_Google_Connector to Bitwarden",
+                metrics: { 
+                  ga4_connected: ga4Status.success, 
+                  gsc_connected: gscStatus.success,
+                  mode: "oauth",
+                  outputs_received: actualOutputs.length,
+                  outputs_missing: 9 - actualOutputs.length,
+                },
+                details: { 
+                  ga4: ga4Status, 
+                  gsc: gscStatus,
+                  actualOutputs,
+                  missingReason: Object.keys(missingReason).length > 0 ? missingReason : undefined,
+                  debug,
+                },
+              };
             }
-            
-            checkResult = {
-              status: bothPass ? "pass" : onePass ? "partial" : "fail",
-              summary: bothPass ? "GA4 and GSC connected" : onePass ? "Partial: one service connected" : "Both GA4 and GSC failed",
-              metrics: { 
-                ga4_connected: ga4Status.success, 
-                gsc_connected: gscStatus.success,
-                outputs_received: actualOutputs.length,
-                outputs_missing: 9 - actualOutputs.length,
-              },
-              details: { 
-                ga4: ga4Status, 
-                gsc: gscStatus,
-                actualOutputs,
-                missingReason: Object.keys(missingReason).length > 0 ? missingReason : undefined,
-              },
-            };
             break;
           }
           case "google_ads":

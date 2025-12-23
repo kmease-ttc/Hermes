@@ -56,13 +56,13 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     category: "infrastructure"
   },
 
-  // Google Connectors (special handling - OAuth based)
+  // Google Connectors (worker-based with base_url + api_key)
   {
     serviceSlug: "google_data_connector",  // Matches catalog
     displayName: "Google Data Connector (GSC + GA4)",
     bitwardenSecret: "SEO_Google_Connector",
-    type: "connector",
-    requiresBaseUrl: false,
+    type: "worker",
+    requiresBaseUrl: true,
     category: "google"
   },
 
