@@ -153,14 +153,6 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     category: "content"
   },
   {
-    serviceSlug: "content_gap",  // Matches catalog
-    displayName: "Content Gap Analysis",
-    bitwardenSecret: "SEO_Content_Gap",
-    type: "worker",
-    requiresBaseUrl: true,
-    category: "content"
-  },
-  {
     serviceSlug: "seo_kbase",  // Matches catalog
     displayName: "SEO Knowledge Base",
     bitwardenSecret: "SEO_KBASE",
