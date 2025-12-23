@@ -100,10 +100,15 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "core_web_vitals",  // Matches catalog
     displayName: "Core Web Vitals Monitor",
-    bitwardenSecret: "SEO_Vital_Monitor",
+    bitwardenSecret: "SEO_CORE_WEB_VITALS",
     type: "worker",
     requiresBaseUrl: true,
-    category: "analysis"
+    category: "analysis",
+    workerEndpoints: {
+      health: "/health",
+      vitals: "/api/vitals",
+      status: "/api/vitals/status"
+    }
   },
   {
     serviceSlug: "backlink_authority",  // Matches catalog
