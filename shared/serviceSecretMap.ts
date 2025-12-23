@@ -147,7 +147,7 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "content_qa",  // Matches catalog
     displayName: "Content QA / Policy Validator",
-    bitwardenSecret: "SEO_Content_QA",
+    bitwardenSecret: "SEO_Content_Validator",
     type: "worker",
     requiresBaseUrl: true,
     category: "content"
@@ -155,7 +155,7 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "content_gap",  // Matches catalog
     displayName: "Content Gap Analysis",
-    bitwardenSecret: "SEO_Content_Validator",
+    bitwardenSecret: "SEO_Content_Gap",
     type: "worker",
     requiresBaseUrl: true,
     category: "content"

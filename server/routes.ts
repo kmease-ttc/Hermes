@@ -3553,7 +3553,7 @@ When answering:
           case "content_qa": {
             // Check if the worker is configured via Bitwarden secret
             const { bitwardenProvider: qaProvider } = await import("./vault/BitwardenProvider");
-            const qaSecret = await qaProvider.getSecret("SEO_Content_QA");
+            const qaSecret = await qaProvider.getSecret("SEO_Content_Validator");
             
             const debug: any = { secretFound: !!qaSecret, requestedUrls: [], responses: [] };
             const expectedOutputs = ["qa_score", "violations", "compliance_status", "fix_list"];
@@ -3574,7 +3574,7 @@ When answering:
             if (!qaSecret) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Content_QA to Bitwarden",
+                summary: "Worker secret not found - add SEO_Content_Validator to Bitwarden",
                 metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -3891,9 +3891,9 @@ When answering:
             break;
           }
           case "content_gap": {
-            // Content Gap Analysis / Content Validator worker
+            // Content Gap Analysis worker
             const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-            const gapSecret = await bitwardenProvider.getSecret("SEO_Content_Validator");
+            const gapSecret = await bitwardenProvider.getSecret("SEO_Content_Gap");
             
             const debug: any = { secretFound: !!gapSecret, requestedUrls: [], responses: [] };
             const expectedOutputs = ["content_gaps", "topic_clusters", "competitor_coverage", "content_recommendations"];
@@ -3914,7 +3914,7 @@ When answering:
             if (!gapSecret) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Content_Validator to Bitwarden",
+                summary: "Worker secret not found - add SEO_Content_Gap to Bitwarden",
                 metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
