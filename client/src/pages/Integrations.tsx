@@ -720,8 +720,8 @@ export default function Integrations() {
         toast.success(`${data.integrationId} connection test passed`, {
           description: data.summary,
         });
-      } else if (data.status === "warning") {
-        toast.warning(`${data.integrationId} has partial connectivity`, {
+      } else if (data.status === "warning" || data.status === "partial") {
+        toast.warning(`${data.integrationId} connected`, {
           description: data.summary,
         });
       } else {
