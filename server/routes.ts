@@ -4438,6 +4438,345 @@ When answering:
     }
   });
 
+  // Test connections only (fast health/auth check - no data fetching)
+  app.post("/api/integrations/test-connections", async (req, res) => {
+    try {
+      const { servicesCatalog } = await import("@shared/servicesCatalog");
+      const { SERVICE_SECRET_MAP, getServiceBySlug: getServiceMapping } = await import("@shared/serviceSecretMap");
+      const { ServiceRunTypes } = await import("@shared/schema");
+      
+      const results: Array<{
+        serviceSlug: string;
+        displayName: string;
+        status: 'pass' | 'fail' | 'skipped';
+        healthCheck?: { status: number; ok: boolean; message?: string };
+        authCheck?: { status: number; ok: boolean; message?: string };
+        durationMs: number;
+        error?: string;
+      }> = [];
+
+      // Get workers that have base_url configured
+      const workerMappings = SERVICE_SECRET_MAP.filter(m => m.type === "worker" && m.requiresBaseUrl);
+
+      for (const mapping of workerMappings) {
+        const startTime = Date.now();
+        const catalogEntry = servicesCatalog.find((s: any) => s.slug === mapping.serviceSlug);
+        
+        if (!catalogEntry) {
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'skipped',
+            durationMs: Date.now() - startTime,
+            error: 'Not in catalog'
+          });
+          continue;
+        }
+
+        // Get stored integration to get base_url
+        const integration = await storage.getIntegration(mapping.serviceSlug);
+        if (!integration?.baseUrl) {
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'skipped',
+            durationMs: Date.now() - startTime,
+            error: 'No base_url configured'
+          });
+          continue;
+        }
+
+        try {
+          // 1. Health check without auth
+          const healthUrl = `${integration.baseUrl}/health`;
+          const healthRes = await fetch(healthUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(5000),
+          });
+
+          const healthCheck = {
+            status: healthRes.status,
+            ok: healthRes.ok,
+            message: healthRes.ok ? 'Worker reachable' : `HTTP ${healthRes.status}`
+          };
+
+          // 2. Auth check - should get 401 without key
+          let authCheck: { status: number; ok: boolean; message?: string } | undefined;
+          if (integration.apiKey) {
+            // Call with API key to verify auth works
+            const authRes = await fetch(healthUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${integration.apiKey}`,
+              },
+              signal: AbortSignal.timeout(5000),
+            });
+            authCheck = {
+              status: authRes.status,
+              ok: authRes.ok,
+              message: authRes.ok ? 'Auth valid' : `Auth failed: ${authRes.status}`
+            };
+          }
+
+          const status = healthCheck.ok && (!authCheck || authCheck.ok) ? 'pass' : 'fail';
+
+          // Save service run record
+          const runId = `conn_${Date.now()}_${mapping.serviceSlug}`;
+          await storage.saveServiceRun({
+            runId,
+            runType: ServiceRunTypes.CONNECTION,
+            serviceId: mapping.serviceSlug,
+            serviceName: mapping.displayName,
+            trigger: 'manual',
+            status: status === 'pass' ? 'success' : 'failed',
+            startedAt: new Date(startTime),
+            finishedAt: new Date(),
+            durationMs: Date.now() - startTime,
+            summary: status === 'pass' ? 'Connection test passed' : 'Connection test failed',
+          });
+
+          // Update integration health status
+          await storage.updateIntegration(mapping.serviceSlug, {
+            lastHealthCheckAt: new Date(),
+            healthCheckStatus: status,
+            healthStatus: status === 'pass' ? 'healthy' : 'error',
+          });
+
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status,
+            healthCheck,
+            authCheck,
+            durationMs: Date.now() - startTime,
+          });
+        } catch (err: any) {
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'fail',
+            durationMs: Date.now() - startTime,
+            error: err.message,
+          });
+        }
+      }
+
+      const passed = results.filter(r => r.status === 'pass').length;
+      const failed = results.filter(r => r.status === 'fail').length;
+      const skipped = results.filter(r => r.status === 'skipped').length;
+
+      res.json({
+        summary: { total: results.length, passed, failed, skipped },
+        results,
+        testedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to test connections", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run smoke tests (minimal real runs to validate outputs)
+  app.post("/api/integrations/run-smoke-tests", async (req, res) => {
+    try {
+      const { servicesCatalog } = await import("@shared/servicesCatalog");
+      const { SERVICE_SECRET_MAP } = await import("@shared/serviceSecretMap");
+      const { ServiceRunTypes } = await import("@shared/schema");
+      
+      const results: Array<{
+        serviceSlug: string;
+        displayName: string;
+        status: 'pass' | 'partial' | 'fail' | 'skipped';
+        expectedOutputs: string[];
+        actualOutputs: string[];
+        missingOutputs: string[];
+        durationMs: number;
+        error?: string;
+        rawResponse?: any;
+      }> = [];
+
+      const workerMappings = SERVICE_SECRET_MAP.filter(m => m.type === "worker" && m.requiresBaseUrl);
+
+      for (const mapping of workerMappings) {
+        const startTime = Date.now();
+        const catalogEntry = servicesCatalog.find((s: any) => s.slug === mapping.serviceSlug);
+        
+        if (!catalogEntry) {
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'skipped',
+            expectedOutputs: [],
+            actualOutputs: [],
+            missingOutputs: [],
+            durationMs: Date.now() - startTime,
+            error: 'Not in catalog'
+          });
+          continue;
+        }
+
+        const expectedOutputs = catalogEntry.outputs || [];
+        const integration = await storage.getIntegration(mapping.serviceSlug);
+        
+        if (!integration?.baseUrl || !integration?.apiKey) {
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'skipped',
+            expectedOutputs,
+            actualOutputs: [],
+            missingOutputs: expectedOutputs,
+            durationMs: Date.now() - startTime,
+            error: 'Not configured (missing base_url or api_key)'
+          });
+          continue;
+        }
+
+        try {
+          // Call the worker's smoke endpoint
+          const smokeUrl = `${integration.baseUrl}/api/smoke`;
+          const smokeRes = await fetch(smokeUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${integration.apiKey}`,
+            },
+            body: JSON.stringify({ 
+              domain: process.env.DOMAIN || 'empathyhealthclinic.com',
+              limit: 1 // minimal test
+            }),
+            signal: AbortSignal.timeout(30000), // 30s timeout for smoke tests
+          });
+
+          if (!smokeRes.ok) {
+            throw new Error(`Smoke test returned ${smokeRes.status}: ${await smokeRes.text()}`);
+          }
+
+          const smokeData = await smokeRes.json();
+          
+          // Determine which expected outputs are present in the response
+          const actualOutputs: string[] = [];
+          const checkOutputPresence = (data: any, outputKey: string): boolean => {
+            if (!data || typeof data !== 'object') return false;
+            // Check direct key
+            if (outputKey in data && data[outputKey] !== null && data[outputKey] !== undefined) return true;
+            // Check in nested 'data' or 'outputs' object
+            if (data.data && outputKey in data.data) return true;
+            if (data.outputs && outputKey in data.outputs) return true;
+            // Check for array with the key as element
+            if (Array.isArray(data.outputs) && data.outputs.includes(outputKey)) return true;
+            // Recursive check in nested objects
+            for (const val of Object.values(data)) {
+              if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                if (checkOutputPresence(val, outputKey)) return true;
+              }
+            }
+            return false;
+          };
+
+          for (const output of expectedOutputs) {
+            if (checkOutputPresence(smokeData, output)) {
+              actualOutputs.push(output);
+            }
+          }
+
+          const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
+          
+          // Determine status
+          let status: 'pass' | 'partial' | 'fail';
+          if (missingOutputs.length === 0) {
+            status = 'pass';
+          } else if (actualOutputs.length > 0) {
+            status = 'partial';
+          } else {
+            status = 'fail';
+          }
+
+          // Save service run record
+          const runId = `smoke_${Date.now()}_${mapping.serviceSlug}`;
+          await storage.saveServiceRun({
+            runId,
+            runType: ServiceRunTypes.SMOKE,
+            serviceId: mapping.serviceSlug,
+            serviceName: mapping.displayName,
+            trigger: 'manual',
+            status: status === 'pass' ? 'success' : status === 'partial' ? 'partial' : 'failed',
+            startedAt: new Date(startTime),
+            finishedAt: new Date(),
+            durationMs: Date.now() - startTime,
+            summary: `Expected ${expectedOutputs.length}, got ${actualOutputs.length}, missing ${missingOutputs.length}`,
+            outputsJson: {
+              expectedOutputs,
+              actualOutputs,
+              missingOutputs,
+              rawResponseKeys: Object.keys(smokeData || {}),
+            },
+          });
+
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status,
+            expectedOutputs,
+            actualOutputs,
+            missingOutputs,
+            durationMs: Date.now() - startTime,
+            rawResponse: smokeData,
+          });
+        } catch (err: any) {
+          const runId = `smoke_${Date.now()}_${mapping.serviceSlug}`;
+          await storage.saveServiceRun({
+            runId,
+            runType: ServiceRunTypes.SMOKE,
+            serviceId: mapping.serviceSlug,
+            serviceName: mapping.displayName,
+            trigger: 'manual',
+            status: 'failed',
+            startedAt: new Date(startTime),
+            finishedAt: new Date(),
+            durationMs: Date.now() - startTime,
+            summary: `Smoke test failed: ${err.message}`,
+            errorCode: 'SMOKE_ERROR',
+            errorDetail: err.message,
+            outputsJson: {
+              expectedOutputs,
+              actualOutputs: [],
+              missingOutputs: expectedOutputs,
+            },
+          });
+
+          results.push({
+            serviceSlug: mapping.serviceSlug,
+            displayName: mapping.displayName,
+            status: 'fail',
+            expectedOutputs,
+            actualOutputs: [],
+            missingOutputs: expectedOutputs,
+            durationMs: Date.now() - startTime,
+            error: err.message,
+          });
+        }
+      }
+
+      const passed = results.filter(r => r.status === 'pass').length;
+      const partial = results.filter(r => r.status === 'partial').length;
+      const failed = results.filter(r => r.status === 'fail').length;
+      const skipped = results.filter(r => r.status === 'skipped').length;
+
+      res.json({
+        summary: { total: results.length, passed, partial, failed, skipped },
+        results,
+        testedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to run smoke tests", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Seed default platform integrations
   app.post("/api/integrations/seed", async (req, res) => {
     try {

@@ -706,6 +706,7 @@ export type IntegrationCheck = typeof integrationChecks.$inferSelect;
 export const serviceRuns = pgTable("service_runs", {
   id: serial("id").primaryKey(),
   runId: text("run_id").notNull().unique(),
+  runType: text("run_type").notNull().default("smoke"), // connection, smoke, full
   siteId: text("site_id"),
   siteDomain: text("site_domain"),
   serviceId: text("service_id").notNull(),
@@ -719,7 +720,7 @@ export const serviceRuns = pgTable("service_runs", {
   summary: text("summary"),
   metricsJson: jsonb("metrics_json"), // { pages_crawled: 50, issues_found: 12, ... }
   inputsJson: jsonb("inputs_json"), // { urls: [...], date_range: {...}, ... }
-  outputsJson: jsonb("outputs_json"), // { expected: [...], actual: [...], missing: [...] }
+  outputsJson: jsonb("outputs_json"), // { expectedOutputs: [...], actualOutputs: [...], missingOutputs: [...], metrics: {...}, debug: {...} }
   errorCode: text("error_code"),
   errorDetail: text("error_detail"),
   artifactLinks: jsonb("artifact_links"), // [{ type: "report", url: "...", label: "..." }, ...]
@@ -732,6 +733,15 @@ export const insertServiceRunSchema = createInsertSchema(serviceRuns).omit({
 });
 export type InsertServiceRun = z.infer<typeof insertServiceRunSchema>;
 export type ServiceRun = typeof serviceRuns.$inferSelect;
+
+// Service Run Types
+export const ServiceRunTypes = {
+  CONNECTION: 'connection', // Health/auth check only
+  SMOKE: 'smoke',           // Minimal real run to validate outputs
+  FULL: 'full',             // Full production run
+} as const;
+
+export type ServiceRunType = typeof ServiceRunTypes[keyof typeof ServiceRunTypes];
 
 // Service Run Statuses
 export const ServiceRunStatuses = {

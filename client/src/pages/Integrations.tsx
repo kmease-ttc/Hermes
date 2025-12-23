@@ -440,6 +440,8 @@ export default function Integrations() {
     authRequired: true,
   });
   const [testingAll, setTestingAll] = useState(false);
+  const [testingConnections, setTestingConnections] = useState(false);
+  const [runningSmokeTests, setRunningSmokeTests] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [runningQa, setRunningQa] = useState(false);
   const [qaResults, setQaResults] = useState<{
@@ -819,6 +821,69 @@ export default function Integrations() {
     onError: (error: any) => {
       setTestingAll(false);
       toast.error(error.message || "Test all failed");
+    },
+  });
+
+  // Test connections only (fast health/auth check)
+  const testConnectionsMutation = useMutation({
+    mutationFn: async () => {
+      setTestingConnections(true);
+      const res = await fetch("/api/integrations/test-connections", { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCatalog"] });
+      setTestingConnections(false);
+      
+      const summary = data.summary || { passed: 0, failed: 0, skipped: 0 };
+      if (summary.failed === 0 && summary.passed > 0) {
+        toast.success(`All ${summary.passed} connections passed`, {
+          description: summary.skipped > 0 ? `${summary.skipped} skipped (not configured)` : undefined,
+        });
+      } else if (summary.failed > 0) {
+        toast.warning(`Connection tests: ${summary.passed} passed, ${summary.failed} failed`);
+      } else {
+        toast.info(`Connection tests: ${summary.total} services checked`);
+      }
+    },
+    onError: (error: any) => {
+      setTestingConnections(false);
+      toast.error(error.message || "Connection test failed");
+    },
+  });
+
+  // Run smoke tests (minimal real runs to validate outputs)
+  const runSmokeTestsMutation = useMutation({
+    mutationFn: async () => {
+      setRunningSmokeTests(true);
+      const res = await fetch("/api/integrations/run-smoke-tests", { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCatalog"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceRuns"] });
+      setRunningSmokeTests(false);
+      
+      const summary = data.summary || { passed: 0, partial: 0, failed: 0, skipped: 0 };
+      const total = summary.passed + summary.partial + summary.failed;
+      
+      if (summary.failed === 0 && summary.passed > 0 && summary.partial === 0) {
+        toast.success(`All ${summary.passed} smoke tests passed`, {
+          description: "All expected outputs validated",
+        });
+      } else if (summary.partial > 0 || summary.failed > 0) {
+        toast.warning(`Smoke tests: ${summary.passed} pass, ${summary.partial} partial, ${summary.failed} fail`, {
+          description: summary.partial > 0 ? "Some services have missing outputs" : undefined,
+        });
+      } else {
+        toast.info(`Smoke tests: ${total} services tested`);
+      }
+    },
+    onError: (error: any) => {
+      setRunningSmokeTests(false);
+      toast.error(error.message || "Smoke tests failed");
     },
   });
 
@@ -1243,18 +1308,33 @@ export default function Integrations() {
                     </Button>
                   </div>
                 </div>
-                <Button
-                  onClick={() => testAllMutation.mutate()}
-                  disabled={testingAll}
-                  data-testid="button-test-all"
-                >
-                  {testingAll ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4 mr-2" />
-                  )}
-                  Test All Services
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => testConnectionsMutation.mutate()}
+                    disabled={testingConnections || runningSmokeTests}
+                    data-testid="button-test-connections"
+                  >
+                    {testingConnections ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Zap className="w-4 h-4 mr-2" />
+                    )}
+                    Test Connections
+                  </Button>
+                  <Button
+                    onClick={() => runSmokeTestsMutation.mutate()}
+                    disabled={testingConnections || runningSmokeTests}
+                    data-testid="button-run-smoke-tests"
+                  >
+                    {runningSmokeTests ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4 mr-2" />
+                    )}
+                    Run Smoke Tests
+                  </Button>
+                </div>
               </div>
 
               <Card>
@@ -1340,7 +1420,7 @@ export default function Integrations() {
                             never_ran: 'bg-gray-100 text-gray-600',
                             testing: 'bg-blue-100 text-blue-700',
                           };
-                          const isServiceTesting = testingAll || testingId === service.slug;
+                          const isServiceTesting = testingAll || testingConnections || runningSmokeTests || testingId === service.slug;
                           const CONFIG_STATE_BADGES: Record<string, { label: string; color: string }> = {
                             ready: { label: 'Ready', color: 'bg-green-100 text-green-700' },
                             blocked: { label: 'Blocked', color: 'bg-orange-100 text-orange-700' },
