@@ -3296,6 +3296,91 @@ When answering:
             }
             break;
           }
+          case "backlink_authority": {
+            // Check if the worker is configured via Bitwarden secret
+            const { bitwardenProvider: backlinkProvider } = await import("./vault/BitwardenProvider");
+            const backlinkSecret = await backlinkProvider.getSecret("SEO_Backlinks");
+            
+            const debug: any = { secretFound: !!backlinkSecret, requestedUrls: [], responses: [] };
+            const expectedOutputs = ["new_links", "lost_links", "domain_authority", "anchor_distribution", "link_velocity"];
+            
+            let workerConfig: { base_url?: string; api_key?: string } | null = null;
+            let parseError: string | null = null;
+            
+            if (backlinkSecret) {
+              try {
+                workerConfig = JSON.parse(backlinkSecret);
+                debug.baseUrl = workerConfig?.base_url;
+              } catch (e: any) {
+                parseError = e.message || "Invalid JSON";
+                debug.parseError = parseError;
+              }
+            }
+            
+            if (!backlinkSecret) {
+              checkResult = {
+                status: "fail",
+                summary: "Worker secret not found - add SEO_Backlinks to Bitwarden",
+                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
+            } else if (parseError) {
+              checkResult = {
+                status: "fail",
+                summary: `Secret JSON invalid: ${parseError}`,
+                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
+            } else if (!workerConfig?.base_url) {
+              checkResult = {
+                status: "fail",
+                summary: "Worker secret missing base_url field",
+                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
+            } else {
+              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const headers: Record<string, string> = {};
+              if (workerConfig.api_key) {
+                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
+                headers["X-API-Key"] = workerConfig.api_key;
+              }
+              
+              const healthUrl = `${baseUrl}/health`;
+              debug.requestedUrls.push(healthUrl);
+              
+              try {
+                const res = await fetch(healthUrl, { method: "GET", headers, signal: AbortSignal.timeout(10000) });
+                const bodyText = await res.text().catch(() => "");
+                debug.responses.push({ url: healthUrl, status: res.status, ok: res.ok, bodySnippet: bodyText.slice(0, 200) });
+                
+                if (res.ok) {
+                  checkResult = {
+                    status: "partial",
+                    summary: `Worker connected - run backlink scan to validate outputs`,
+                    metrics: { worker_configured: true, worker_reachable: true, outputs_pending: expectedOutputs.length },
+                    details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                  };
+                } else {
+                  checkResult = {
+                    status: "fail",
+                    summary: `Worker returned HTTP ${res.status}`,
+                    metrics: { worker_configured: true, worker_reachable: false, http_status: res.status },
+                    details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
+                  };
+                }
+              } catch (err: any) {
+                debug.error = err.message;
+                checkResult = {
+                  status: "fail",
+                  summary: `Worker unreachable: ${err.message}`,
+                  metrics: { worker_configured: true, worker_reachable: false },
+                  details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
+                };
+              }
+            }
+            break;
+          }
           case "notifications": {
             // Check if the worker is configured via Bitwarden secret
             const { bitwardenProvider: notifyProvider } = await import("./vault/BitwardenProvider");
