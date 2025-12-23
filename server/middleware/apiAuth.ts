@@ -22,6 +22,9 @@ const DASHBOARD_GET_PATHS = [
   "/api/actions",
   "/api/integrations",
   "/api/platform",
+  "/api/tests",
+  "/api/changes",
+  "/api/diagnostics",
 ];
 
 // Paths that allow unauthenticated POST access (specific safe operations)
@@ -32,6 +35,10 @@ const DASHBOARD_POST_PATHS = [
   "/api/sites",
   "/api/hermes",
   "/api/ai",
+  "/api/tests",
+  "/api/changes",
+  "/api/diagnostics",
+  "/api/services",
 ];
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
