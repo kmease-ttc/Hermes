@@ -227,6 +227,65 @@ export async function registerRoutes(
     }
   });
 
+  // Debug endpoint for service config troubleshooting
+  app.get("/api/debug/service-config/:serviceSlug", async (req, res) => {
+    try {
+      const { serviceSlug } = req.params;
+      const { siteId } = req.query;
+
+      const { getServiceConfigDebug, getAllServiceMappings } = await import("./workerConfigResolver");
+
+      // If no serviceSlug, list all available services
+      if (!serviceSlug || serviceSlug === "list") {
+        const mappings = getAllServiceMappings();
+        return res.json({
+          services: mappings.map(m => ({
+            serviceSlug: m.serviceSlug,
+            displayName: m.displayName,
+            bitwardenSecret: m.bitwardenSecret,
+            type: m.type,
+            requiresBaseUrl: m.requiresBaseUrl,
+            category: m.category,
+          })),
+        });
+      }
+
+      const debug = await getServiceConfigDebug(serviceSlug, siteId as string);
+      res.json(debug);
+    } catch (error: any) {
+      logger.error("API", "Debug service-config failed", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Debug endpoint for all services config status
+  app.get("/api/debug/all-services-config", async (req, res) => {
+    try {
+      const { getServiceConfigDebug, getAllServiceMappings } = await import("./workerConfigResolver");
+      const mappings = getAllServiceMappings();
+      
+      const results = await Promise.all(
+        mappings.map(async (m) => {
+          const debug = await getServiceConfigDebug(m.serviceSlug);
+          return debug;
+        })
+      );
+
+      const summary = {
+        total: results.length,
+        ready: results.filter(r => r.finalState === "ready").length,
+        needsConfig: results.filter(r => r.finalState === "needs_config").length,
+        blocked: results.filter(r => r.finalState === "blocked").length,
+        error: results.filter(r => r.finalState === "error").length,
+      };
+
+      res.json({ summary, services: results });
+    } catch (error: any) {
+      logger.error("API", "Debug all-services-config failed", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/status", async (req, res) => {
     try {
       const token = await storage.getToken("google");

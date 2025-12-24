@@ -25,6 +25,7 @@ const DASHBOARD_GET_PATHS = [
   "/api/tests",
   "/api/changes",
   "/api/diagnostics",
+  "/api/debug",
 ];
 
 // Paths that allow unauthenticated POST access (only basic safe operations)

@@ -10,6 +10,7 @@ import {
   type TestJobType,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { resolveWorkerConfig } from "./workerConfigResolver";
 
 export interface RunnableService {
   slug: string;
@@ -54,22 +55,41 @@ export async function getRunnableServices(
       continue;
     }
 
-    const integration = await storage.getIntegrationById(mapping.serviceSlug);
+    // Use unified resolver to get worker config directly from Bitwarden
+    const workerConfig = await resolveWorkerConfig(mapping.serviceSlug, siteId || undefined);
     
-    if (!integration) {
-      debugReasons.push(`${mapping.serviceSlug}: No integration record in database`);
+    logger.info("TestRunner", `Resolved config for ${mapping.serviceSlug}`, {
+      secretName: workerConfig.secretName,
+      rawValueType: workerConfig.rawValueType,
+      base_url_present: !!workerConfig.base_url,
+      api_key_present: !!workerConfig.api_key,
+      valid: workerConfig.valid,
+      error: workerConfig.error,
+    });
+
+    if (!workerConfig.valid) {
+      debugReasons.push(`${mapping.serviceSlug}: ${workerConfig.error || 'Config invalid'}`);
       continue;
     }
 
-    if (!integration.baseUrl) {
-      debugReasons.push(`${mapping.serviceSlug}: No base_url configured`);
+    if (!workerConfig.base_url) {
+      debugReasons.push(`${mapping.serviceSlug}: No base_url in Bitwarden secret (secretName: ${workerConfig.secretName})`);
       continue;
     }
 
-    if (mode === 'smoke' && !integration.apiKey) {
-      debugReasons.push(`${mapping.serviceSlug}: No api_key configured (required for smoke)`);
+    if (mode === 'smoke' && !workerConfig.api_key) {
+      debugReasons.push(`${mapping.serviceSlug}: No api_key in Bitwarden secret (required for smoke)`);
       continue;
     }
+
+    // Create integration object from worker config for compatibility
+    const integration = {
+      id: mapping.serviceSlug,
+      baseUrl: workerConfig.base_url,
+      apiKey: workerConfig.api_key,
+      healthEndpoint: workerConfig.health_path,
+      status: 'active',
+    };
 
     services.push({
       slug: mapping.serviceSlug,
@@ -157,7 +177,15 @@ async function runConnectionTestsAsync(jobId: string, services: RunnableService[
     const runId = generateRunId('conn', svc.slug);
     
     try {
-      const healthUrl = `${svc.integration.baseUrl}/health`;
+      // Use the health endpoint from the resolved config (supports custom health paths)
+      const healthPath = svc.integration.healthEndpoint || '/health';
+      const healthUrl = `${svc.integration.baseUrl}${healthPath}`;
+      
+      logger.debug("TestRunner", `Testing connection for ${svc.slug}`, { 
+        healthUrl, 
+        hasApiKey: !!svc.integration.apiKey 
+      });
+      
       const healthRes = await fetch(healthUrl, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
@@ -205,11 +233,39 @@ async function runConnectionTestsAsync(jobId: string, services: RunnableService[
         summary: passed ? 'Connection test passed' : 'Connection test failed',
       });
 
-      await storage.updateIntegration(svc.slug, {
-        lastHealthCheckAt: new Date(),
-        healthCheckStatus: passed ? 'pass' : 'fail',
-        healthStatus: passed ? 'healthy' : 'error',
-      });
+      // Try to update or create integration record for health status tracking
+      try {
+        const existingIntegration = await storage.getIntegrationById(svc.slug);
+        if (existingIntegration) {
+          await storage.updateIntegration(svc.slug, {
+            lastHealthCheckAt: new Date(),
+            healthCheckStatus: passed ? 'pass' : 'fail',
+            healthStatus: passed ? 'healthy' : 'error',
+            baseUrl: svc.integration.baseUrl,
+            healthEndpoint: healthPath,
+          });
+        } else {
+          // Integration record doesn't exist - create it with required fields
+          await storage.createIntegration({
+            integrationId: svc.slug,
+            name: svc.displayName,
+            category: svc.mapping.category || 'analysis',
+            baseUrl: svc.integration.baseUrl,
+            healthEndpoint: healthPath,
+            secretKeyName: svc.mapping.bitwardenSecret || undefined,
+            secretExists: true,
+            lastHealthCheckAt: new Date(),
+            healthCheckStatus: passed ? 'pass' : 'fail',
+            healthStatus: passed ? 'healthy' : 'error',
+            deploymentStatus: 'deployed',
+            hasRequiredEndpoints: true,
+          });
+        }
+      } catch (storageErr: any) {
+        logger.warn("TestRunner", `Could not save integration status for ${svc.slug}`, { 
+          error: storageErr.message 
+        });
+      }
 
     } catch (err: any) {
       progress.perService[svc.slug] = {
