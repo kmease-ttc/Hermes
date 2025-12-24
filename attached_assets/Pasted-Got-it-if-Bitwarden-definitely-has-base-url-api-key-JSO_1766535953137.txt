@@ -1,0 +1,147 @@
+Got it — if Bitwarden **definitely** has `{ base_url, api_key }` JSON for all the workers, and Hermes is still saying “no base URL,” then this is almost never “Bitwarden is wrong.”
+
+It’s one of these:
+
+1. Hermes is reading the **wrong secret name** (mapping mismatch)
+2. Hermes is reading the **right secret** but parsing it wrong (expects `baseUrl` not `base_url`, or expects `url`, etc.)
+3. Hermes is reading **stale cached secrets** (it’s still using the pre-JSON values)
+4. Hermes is reading from the **wrong Bitwarden project / environment** (less likely if Bitwarden shows connected + secrets count)
+
+Here’s the fastest way to stop guessing and pin it down.
+
+---
+
+## What to do right now in the UI
+
+1. On Integrations, click **Refresh**
+2. If it still says “no base URL,” **restart Hermes** once (Stop/Run in Replit)
+3. Click **Refresh** again
+
+If after a restart it still says “no base URL,” this is **100% code-side (mapping/parsing), not Bitwarden.**
+
+---
+
+## Developer instructions to fix this in 15 minutes
+
+### 1) Add a “config preview” endpoint per service (redacts key)
+
+Add this endpoint:
+
+`GET /api/debug/service-config/:serviceSlug?siteId=...`
+
+It should return:
+
+```json
+{
+  "serviceSlug": "serp_keyword_intel",
+  "bitwardenSecretName": "SEO_SERP_&_Keyword",
+  "rawValueType": "json|string|null",
+  "parsed": {
+    "base_url_present": true,
+    "api_key_present": true,
+    "base_url": "https://…", 
+    "health_path": "/health"
+  },
+  "error": null
+}
+```
+
+Rules:
+
+* redact api_key (only show present/absent)
+* if JSON parse fails, include `parseError`
+* include which exact Bitwarden secret name was queried
+
+**This single endpoint will tell us instantly whether the issue is mapping or parsing.**
+
+---
+
+### 2) Make Bitwarden parsing tolerant (your JSON keys must work)
+
+In the Bitwarden secret parser, support these key variants:
+
+* base URL keys: `base_url`, `baseUrl`, `url`, `host`
+* api key keys: `api_key`, `apiKey`, `key`, `token`
+
+Implementation rule:
+
+* If value is JSON, normalize keys into:
+
+  * `base_url`
+  * `api_key`
+
+If value is a raw string:
+
+* treat as `{ api_key: raw }` (base_url missing)
+
+And if `base_url` missing:
+
+* return configState = needs_config with reason “base_url missing”
+
+---
+
+### 3) Ensure the bulk tests use the SAME resolver as the service cards
+
+Right now, you have evidence that one path worked before and now the bulk path says base_url missing.
+
+Force everything to call one function:
+
+`resolveWorkerConfig(serviceSlug, siteId)`
+
+and use it in:
+
+* service card test
+* test connections
+* smoke tests
+* QA
+
+No other code should read secrets directly.
+
+---
+
+### 4) Fix “blocked” vs “needs config” classification
+
+If Hermes is saying “13 blocked,” that’s wrong. Missing base_url should not be “blocked.”
+
+Rules:
+
+* `blocked` = planned/not built (Ads, Executor)
+* `needs_config` = missing base_url or missing api_key
+* `ready` = both present + worker reachable
+
+---
+
+### 5) Add logging for one failing worker in the bulk runner
+
+When “Test Connections” runs, for each service log:
+
+* serviceSlug
+* secretName
+* parsed base_url present?
+* parsed api_key present?
+* final decision
+
+This will immediately reveal the first service that is failing due to mapping/parsing.
+
+---
+
+## What I suspect is happening (most likely)
+
+Because you updated Bitwarden values this morning, the most common bug is:
+
+* Hermes is parsing JSON but looking for `baseUrl` while Bitwarden has `base_url`
+* Or the bulk runner is still using a **legacy config lookup** that assumes API-key-only strings
+
+The debug endpoint above will confirm this in one click.
+
+---
+
+## One more quick check you can do without code
+
+In Bitwarden, open one worker secret (like `SEO_TECHNICAL_CRAWLER_API_KEY`) and confirm the value starts with `{` and includes `"base_url":` exactly.
+
+If yes, then we know it’s definitely mapping/parsing/caching on Hermes.
+
+---
+
+If you tell me **one specific service Hermes says has “no base URL”** (e.g., crawler or SERP), I’ll give you the exact expected secret name from the mapping and the exact JSON keys Hermes should accept, so you can verify the mismatch immediately.

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-// Paths that allow unauthenticated GET access (dashboard/frontend)
+// Paths that allow unauthenticated GET access (dashboard/frontend reads)
 const DASHBOARD_GET_PATHS = [
   "/briefing",
   "/api/health",
@@ -27,7 +27,7 @@ const DASHBOARD_GET_PATHS = [
   "/api/diagnostics",
 ];
 
-// Paths that allow unauthenticated POST access (specific safe operations)
+// Paths that allow unauthenticated POST access (only basic safe operations)
 const DASHBOARD_POST_PATHS = [
   "/api/run",
   "/api/auth",
@@ -35,11 +35,44 @@ const DASHBOARD_POST_PATHS = [
   "/api/sites",
   "/api/hermes",
   "/api/ai",
+];
+
+// Paths that allow same-origin POST access (UI actions, protected by origin check)
+const SAME_ORIGIN_POST_PATHS = [
   "/api/tests",
   "/api/changes",
   "/api/diagnostics",
   "/api/services",
 ];
+
+// Check if request is from same origin (browser UI)
+function isSameOriginRequest(req: Request): boolean {
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+  const host = req.headers.host;
+  
+  // Check Origin header (set by browsers for CORS/same-origin requests)
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      if (host && originUrl.host === host) {
+        return true;
+      }
+    } catch {}
+  }
+  
+  // Check Referer header as fallback
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      if (host && refererUrl.host === host) {
+        return true;
+      }
+    } catch {}
+  }
+  
+  return false;
+}
 
 export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.path.startsWith("/api/") && req.path !== "/briefing") {
@@ -63,6 +96,13 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
     req.path.startsWith(path + "?")
   );
   
+  // Check if path matches same-origin POST paths (UI actions)
+  const matchesSameOriginPath = SAME_ORIGIN_POST_PATHS.some(path => 
+    req.path === path || 
+    req.path.startsWith(path + "/") || 
+    req.path.startsWith(path + "?")
+  );
+  
   // Allow unauthenticated GET on dashboard paths
   if (isGetRequest && matchesGetPath) {
     return next();
@@ -70,6 +110,12 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   
   // Allow unauthenticated POST on specific safe paths
   if (isPostRequest && matchesPostPath) {
+    return next();
+  }
+  
+  // Allow same-origin POST requests on UI action paths (browser requests only)
+  if (isPostRequest && matchesSameOriginPath && isSameOriginRequest(req)) {
+    logger.debug("API", "Allowing same-origin UI request", { path: req.path });
     return next();
   }
 
