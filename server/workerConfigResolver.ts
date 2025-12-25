@@ -1,5 +1,5 @@
 import { logger } from "./utils/logger";
-import { BitwardenProvider } from "./vault/BitwardenProvider";
+import { bitwardenProvider } from "./vault/BitwardenProvider";
 import { getServiceBySlug, SERVICE_SECRET_MAP, ServiceSecretMapping } from "@shared/serviceSecretMap";
 
 export interface WorkerConfig {
@@ -83,11 +83,10 @@ export async function resolveWorkerConfig(
     };
   }
 
-  const provider = BitwardenProvider.getInstance();
   const secretName = mapping.bitwardenSecret;
 
   try {
-    const secretValue = await provider.getSecret(secretName);
+    const secretValue = await bitwardenProvider.getSecret(secretName);
 
     if (!secretValue) {
       return {
