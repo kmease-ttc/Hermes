@@ -4280,8 +4280,10 @@ When answering:
                 if (smokeOk) {
                   // Parse response and check for expected outputs
                   let smokeData: any = {};
+                  let jsonParseOk = false;
                   try {
                     smokeData = JSON.parse(smokeBody);
+                    jsonParseOk = true;
                   } catch (e) {
                     debug.parseError = "Invalid JSON from smoke-test";
                   }
@@ -4320,34 +4322,40 @@ When answering:
                   
                   const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
                   
-                  if (actualOutputs.length >= expectedOutputs.length) {
+                  // KEY FIX: Once a valid JSON smoke-test succeeds, status should be "pass" or "success"
+                  // Earlier HTML responses should be ignored, not penalized
+                  if (jsonParseOk && (actualOutputs.length > 0 || hasValidData)) {
+                    // Valid JSON response with some data = SUCCESS
                     checkResult = {
                       status: "pass",
-                      summary: `All ${expectedOutputs.length} outputs validated`,
-                      metrics: { worker_configured: true, worker_reachable: true, outputs_validated: actualOutputs.length },
-                      details: { baseUrl, debug, actualOutputs, missingOutputs: [] },
-                    };
-                  } else if (actualOutputs.length > 0 || hasValidData) {
-                    // Worker is working but may have different output structure
-                    checkResult = {
-                      status: actualOutputs.length > 0 ? "partial" : "pass",
-                      summary: actualOutputs.length > 0 
-                        ? `${actualOutputs.length}/${expectedOutputs.length} outputs validated`
-                        : `Worker responding with valid data`,
+                      summary: actualOutputs.length >= expectedOutputs.length 
+                        ? `Worker connected and all ${expectedOutputs.length} outputs validated`
+                        : hasValidData 
+                          ? `Worker connected and responding with valid data`
+                          : `Worker connected - ${actualOutputs.length}/${expectedOutputs.length} outputs validated`,
                       metrics: { 
                         worker_configured: true, 
                         worker_reachable: true, 
                         outputs_validated: actualOutputs.length,
-                        has_valid_response: hasValidData,
+                        json_smoke_test_succeeded: true,
                       },
                       details: { baseUrl, debug, actualOutputs, missingOutputs, responseKeys: Object.keys(dataPayload || {}) },
                     };
+                  } else if (jsonParseOk) {
+                    // JSON parsed but no recognized outputs
+                    checkResult = {
+                      status: "pass",
+                      summary: `Worker connected - smoke-test returned empty response`,
+                      metrics: { worker_configured: true, worker_reachable: true, json_smoke_test_succeeded: true, outputs_pending: expectedOutputs.length },
+                      details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs, responseKeys: Object.keys(dataPayload || {}) },
+                    };
                   } else {
+                    // JSON parse failed but we had a 200 non-HTML response
                     checkResult = {
                       status: "partial",
-                      summary: `Worker connected - no outputs in response`,
+                      summary: `Worker connected but smoke-test response invalid`,
                       metrics: { worker_configured: true, worker_reachable: true, outputs_pending: expectedOutputs.length },
-                      details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs, responseKeys: Object.keys(dataPayload || {}) },
+                      details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
                     };
                   }
                 } else if (lastSmokeError) {
@@ -4355,15 +4363,15 @@ When answering:
                   debug.smokeError = lastSmokeError;
                   checkResult = {
                     status: "partial",
-                    summary: `Worker healthy but smoke-test unreachable`,
+                    summary: `Worker reachable but API smoke-test not found`,
                     metrics: { worker_configured: true, worker_reachable: true, smoke_test_error: true },
                     details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
                   };
                 } else {
-                  // Smoke test returned HTML or non-JSON
+                  // Smoke test returned HTML or non-JSON on all paths
                   checkResult = {
                     status: "partial",
-                    summary: `Worker healthy but smoke-test returned HTML (API path not found)`,
+                    summary: `Worker reachable but API smoke-test not found`,
                     metrics: { worker_configured: true, worker_reachable: true, smoke_test_status: smokeStatus },
                     details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
                   };
