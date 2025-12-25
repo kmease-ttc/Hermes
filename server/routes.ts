@@ -4701,6 +4701,23 @@ When answering:
           },
         });
         
+        // Update integration record with smoke test results
+        await storage.updateIntegration(integrationId, {
+          lastRunAt: new Date(),
+          lastRunSummary: `Smoke: ${actualOutputs.length}/${expectedOutputs.length} outputs validated`,
+          runState: status === 'pass' ? 'last_run_success' : status === 'partial' ? 'last_run_success' : 'last_run_failed',
+          healthStatus: status === 'pass' ? 'healthy' : status === 'partial' ? 'degraded' : 'error',
+          lastSuccessAt: status === 'pass' ? new Date() : undefined,
+          lastRunMetrics: {
+            expectedOutputs,
+            actualOutputs,
+            missingOutputs,
+            durationMs,
+            runId,
+            mode: 'worker',
+          },
+        });
+        
         res.json({
           integrationId,
           status,
@@ -4733,6 +4750,25 @@ When answering:
             expectedOutputs,
             actualOutputs: [],
             missingOutputs: expectedOutputs,
+          },
+        });
+        
+        // Update integration record with failure results
+        await storage.updateIntegration(integrationId, {
+          lastRunAt: new Date(),
+          lastRunSummary: `Smoke test failed: ${err.message}`,
+          runState: 'last_run_failed',
+          healthStatus: 'error',
+          lastErrorAt: new Date(),
+          lastError: err.message,
+          lastRunMetrics: {
+            expectedOutputs,
+            actualOutputs: [],
+            missingOutputs: expectedOutputs,
+            durationMs,
+            runId,
+            mode: 'worker',
+            error: err.message,
           },
         });
         
