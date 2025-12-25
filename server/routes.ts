@@ -1922,6 +1922,8 @@ When answering:
             summary: lastRun.summary,
             metrics: lastRun.metricsJson,
             missingOutputsCount: missingOutputs.length,
+            errorCode: lastRun.errorCode,
+            errorDetail: lastRun.errorDetail,
           } : null,
         };
       });
@@ -4517,7 +4519,7 @@ When answering:
         const runId = `smoke_${Date.now()}_${integrationId}`;
         const durationMs = Date.now() - startTime;
         
-        await storage.saveServiceRun({
+        await storage.createServiceRun({
           runId,
           runType: ServiceRunTypes.SMOKE,
           serviceId: integrationId,
@@ -4550,7 +4552,7 @@ When answering:
         const durationMs = Date.now() - startTime;
         const runId = `smoke_${Date.now()}_${integrationId}`;
         
-        await storage.saveServiceRun({
+        await storage.createServiceRun({
           runId,
           runType: ServiceRunTypes.SMOKE,
           serviceId: integrationId,
@@ -4750,7 +4752,7 @@ When answering:
 
           // Save service run record
           const runId = `conn_${Date.now()}_${mapping.serviceSlug}`;
-          await storage.saveServiceRun({
+          await storage.createServiceRun({
             runId,
             runType: ServiceRunTypes.CONNECTION,
             serviceId: mapping.serviceSlug,
@@ -4923,7 +4925,7 @@ When answering:
 
           // Save service run record
           const runId = `smoke_${Date.now()}_${mapping.serviceSlug}`;
-          await storage.saveServiceRun({
+          await storage.createServiceRun({
             runId,
             runType: ServiceRunTypes.SMOKE,
             serviceId: mapping.serviceSlug,
@@ -4954,7 +4956,7 @@ When answering:
           });
         } catch (err: any) {
           const runId = `smoke_${Date.now()}_${mapping.serviceSlug}`;
-          await storage.saveServiceRun({
+          await storage.createServiceRun({
             runId,
             runType: ServiceRunTypes.SMOKE,
             serviceId: mapping.serviceSlug,

@@ -187,6 +187,8 @@ interface SiteSummaryService {
     summary: string | null;
     metrics: Record<string, any> | null;
     missingOutputsCount: number;
+    errorCode?: string | null;
+    errorDetail?: string | null;
   } | null;
 }
 
@@ -1586,9 +1588,18 @@ export default function Integrations() {
                                 )}
                               </td>
                               <td className="p-3">
-                                <span className="text-xs text-muted-foreground line-clamp-2" title={service.lastRun?.summary || service.blockingReason || undefined}>
-                                  {service.lastRun?.summary || service.blockingReason || "—"}
-                                </span>
+                                {service.lastRun?.errorDetail ? (
+                                  <div className="flex items-start gap-1">
+                                    <XCircle className="w-3 h-3 text-red-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-xs text-red-600 line-clamp-2" title={service.lastRun.errorDetail}>
+                                      {service.lastRun.errorDetail}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground line-clamp-2" title={service.lastRun?.summary || service.blockingReason || undefined}>
+                                    {service.lastRun?.summary || service.blockingReason || "—"}
+                                  </span>
+                                )}
                               </td>
                               <td className="p-3">
                                 {service.lastRun?.metrics && Object.keys(service.lastRun.metrics).length > 0 ? (
@@ -2459,7 +2470,16 @@ export default function Integrations() {
                         </p>
                       </div>
                     </div>
-                    {selectedCatalogService.lastRun.summary && (
+                    {selectedCatalogService.lastRun.errorDetail && (
+                      <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                          <XCircle className="w-3 h-3" />
+                          Error
+                        </p>
+                        <p className="text-sm mt-1 text-red-700 dark:text-red-300">{selectedCatalogService.lastRun.errorDetail}</p>
+                      </div>
+                    )}
+                    {selectedCatalogService.lastRun.summary && !selectedCatalogService.lastRun.errorDetail && (
                       <div className="mt-3">
                         <p className="text-xs text-muted-foreground">Summary</p>
                         <p className="text-sm mt-1">{selectedCatalogService.lastRun.summary}</p>
