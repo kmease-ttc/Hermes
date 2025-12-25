@@ -4636,16 +4636,14 @@ When answering:
       }
       
       try {
-        const smokeUrl = `${baseUrl}/api/smoke`;
+        // Use /smoke-test endpoint per Gold Standard Worker Blueprint
+        // baseUrl already includes /api, so we just append /smoke-test
+        const smokeUrl = `${baseUrl}/smoke-test`;
         logger.info("API", `Running smoke test for ${integrationId}`, { smokeUrl });
         
         const smokeRes = await fetch(smokeUrl, {
-          method: 'POST',
+          method: 'GET',
           headers,
-          body: JSON.stringify({ 
-            domain: process.env.DOMAIN || 'empathyhealthclinic.com',
-            limit: 1,
-          }),
           signal: AbortSignal.timeout(60000),
         });
         
