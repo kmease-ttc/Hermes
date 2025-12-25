@@ -35,6 +35,7 @@ import {
   serviceEvents,
   changeProposals,
   changeProposalActions,
+  connectorDiagnostics,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -106,6 +107,8 @@ import {
   type InsertChangeProposal,
   type ChangeProposalAction,
   type InsertChangeProposalAction,
+  type ConnectorDiagnostic,
+  type InsertConnectorDiagnostic,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull } from "drizzle-orm";
 
@@ -310,6 +313,13 @@ export interface IStorage {
   
   // Service Runs by Type (for latest smoke run consistency)
   getLatestServiceRunsByType(runType: string): Promise<Map<string, ServiceRun>>;
+  
+  // Connector Diagnostics (stage-by-stage smoke test results)
+  createConnectorDiagnostic(diagnostic: InsertConnectorDiagnostic): Promise<ConnectorDiagnostic>;
+  updateConnectorDiagnostic(runId: string, updates: Partial<InsertConnectorDiagnostic>): Promise<ConnectorDiagnostic | undefined>;
+  getConnectorDiagnosticByRunId(runId: string): Promise<ConnectorDiagnostic | undefined>;
+  getConnectorDiagnosticsByService(serviceId: string, limit?: number): Promise<ConnectorDiagnostic[]>;
+  getLatestConnectorDiagnostic(serviceId: string, siteId?: string): Promise<ConnectorDiagnostic | undefined>;
 }
 
 class DBStorage implements IStorage {
@@ -1494,6 +1504,53 @@ class DBStorage implements IStorage {
       .from(changeProposalActions)
       .where(eq(changeProposalActions.proposalId, proposalId))
       .orderBy(asc(changeProposalActions.createdAt));
+  }
+
+  // Connector Diagnostics
+  async createConnectorDiagnostic(diagnostic: InsertConnectorDiagnostic): Promise<ConnectorDiagnostic> {
+    const [created] = await db.insert(connectorDiagnostics).values(diagnostic).returning();
+    return created;
+  }
+
+  async updateConnectorDiagnostic(runId: string, updates: Partial<InsertConnectorDiagnostic>): Promise<ConnectorDiagnostic | undefined> {
+    const [updated] = await db
+      .update(connectorDiagnostics)
+      .set(updates)
+      .where(eq(connectorDiagnostics.runId, runId))
+      .returning();
+    return updated;
+  }
+
+  async getConnectorDiagnosticByRunId(runId: string): Promise<ConnectorDiagnostic | undefined> {
+    const [diagnostic] = await db
+      .select()
+      .from(connectorDiagnostics)
+      .where(eq(connectorDiagnostics.runId, runId))
+      .limit(1);
+    return diagnostic;
+  }
+
+  async getConnectorDiagnosticsByService(serviceId: string, limit = 20): Promise<ConnectorDiagnostic[]> {
+    return db
+      .select()
+      .from(connectorDiagnostics)
+      .where(eq(connectorDiagnostics.serviceId, serviceId))
+      .orderBy(desc(connectorDiagnostics.createdAt))
+      .limit(limit);
+  }
+
+  async getLatestConnectorDiagnostic(serviceId: string, siteId?: string): Promise<ConnectorDiagnostic | undefined> {
+    const conditions = [eq(connectorDiagnostics.serviceId, serviceId)];
+    if (siteId) {
+      conditions.push(eq(connectorDiagnostics.siteId, siteId));
+    }
+    const [diagnostic] = await db
+      .select()
+      .from(connectorDiagnostics)
+      .where(and(...conditions))
+      .orderBy(desc(connectorDiagnostics.createdAt))
+      .limit(1);
+    return diagnostic;
   }
 }
 

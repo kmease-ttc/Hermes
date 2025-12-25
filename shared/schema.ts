@@ -791,6 +791,77 @@ export const RunStates = {
 
 export type RunState = typeof RunStates[keyof typeof RunStates];
 
+// Connector Diagnostic Stages
+export const DiagnosticStages = {
+  CONFIG_LOADED: 'config_loaded',
+  AUTH_READY: 'auth_ready',
+  ENDPOINT_BUILT: 'endpoint_built',
+  REQUEST_SENT: 'request_sent',
+  RESPONSE_TYPE_VALIDATED: 'response_type_validated',
+  SCHEMA_VALIDATED: 'schema_validated',
+  UI_MAPPING: 'ui_mapping',
+} as const;
+
+export type DiagnosticStage = typeof DiagnosticStages[keyof typeof DiagnosticStages];
+
+export const DiagnosticStageOrder: DiagnosticStage[] = [
+  'config_loaded',
+  'auth_ready',
+  'endpoint_built',
+  'request_sent',
+  'response_type_validated',
+  'schema_validated',
+  'ui_mapping',
+];
+
+export const DiagnosticStageLabels: Record<DiagnosticStage, string> = {
+  config_loaded: 'Config Loaded',
+  auth_ready: 'Auth Ready',
+  endpoint_built: 'Endpoint Built',
+  request_sent: 'Request Sent',
+  response_type_validated: 'Response Type Validated',
+  schema_validated: 'Schema Validated',
+  ui_mapping: 'UI Mapping',
+};
+
+// Connector Diagnostics - Stage-by-stage results for smoke tests
+export const connectorDiagnostics = pgTable("connector_diagnostics", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(), // Links to serviceRuns.runId
+  siteId: text("site_id"),
+  serviceId: text("service_id").notNull(),
+  serviceName: text("service_name").notNull(),
+  trigger: text("trigger").notNull().default("manual"), // manual, scheduled, webhook
+  overallStatus: text("overall_status").notNull().default("pending"), // pending, pass, partial, fail
+  stagesJson: jsonb("stages_json").notNull(), // Array of stage results
+  configSnapshot: jsonb("config_snapshot"), // Redacted config keys captured
+  authMode: text("auth_mode"), // oauth, api_key, none
+  expectedResponseType: text("expected_response_type").default("json"), // json, html, text
+  requiredOutputFields: text("required_output_fields").array(), // Expected fields
+  startedAt: timestamp("started_at").notNull(),
+  finishedAt: timestamp("finished_at"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertConnectorDiagnosticSchema = createInsertSchema(connectorDiagnostics).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertConnectorDiagnostic = z.infer<typeof insertConnectorDiagnosticSchema>;
+export type ConnectorDiagnostic = typeof connectorDiagnostics.$inferSelect;
+
+// Stage result shape (for stagesJson)
+export interface DiagnosticStageResult {
+  stage: DiagnosticStage;
+  status: 'pending' | 'pass' | 'fail' | 'skipped';
+  message: string;
+  durationMs?: number;
+  startedAt?: string;
+  finishedAt?: string;
+  details?: Record<string, unknown>; // Stage-specific debug info (redacted)
+}
+
 // Diagnostic Runs - Parent run that groups service_runs per site per day
 export const diagnosticRuns = pgTable("diagnostic_runs", {
   id: serial("id").primaryKey(),
