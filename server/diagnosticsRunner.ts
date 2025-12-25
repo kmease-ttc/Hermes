@@ -26,6 +26,12 @@ export function classifyFailure(details?: Record<string, unknown>): FailureClass
     return { bucket: 'unknown', suggestedFix: FailureBucketSuggestions.unknown };
   }
 
+  // Check for explicitly provided failure_bucket first
+  const explicitBucket = details.failure_bucket as string | undefined;
+  if (explicitBucket === 'api_key_mismatch') {
+    return { bucket: 'api_key_mismatch', suggestedFix: FailureBucketSuggestions.api_key_mismatch };
+  }
+
   const statusCode = details.statusCode as number | undefined 
     ?? details.status as number | undefined
     ?? details.httpStatus as number | undefined;
@@ -146,9 +152,12 @@ function generateDiagnosticRunId(): string {
 function redactSecrets(obj: Record<string, unknown>): Record<string, unknown> {
   const redacted: Record<string, unknown> = {};
   const secretPatterns = /token|secret|key|password|auth|credential/i;
+  const fingerprintExemptions = /fingerprint|_fingerprint$/i;
   
   for (const [key, value] of Object.entries(obj)) {
-    if (secretPatterns.test(key)) {
+    if (fingerprintExemptions.test(key)) {
+      redacted[key] = value;
+    } else if (secretPatterns.test(key)) {
       redacted[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
       redacted[key] = redactSecrets(value as Record<string, unknown>);
