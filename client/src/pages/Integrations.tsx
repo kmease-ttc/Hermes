@@ -415,6 +415,7 @@ interface Site {
 export default function Integrations() {
   const queryClient = useQueryClient();
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [smokeTestingId, setSmokeTestingId] = useState<string | null>(null);
   const [healthCheckingId, setHealthCheckingId] = useState<string | null>(null);
   const [authTestingId, setAuthTestingId] = useState<string | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
@@ -738,6 +739,42 @@ export default function Integrations() {
     onError: (error: any) => {
       setTestingId(null);
       toast.error(error.message || "Test failed");
+    },
+  });
+
+  const smokeTestMutation = useMutation({
+    mutationFn: async (integrationId: string) => {
+      setSmokeTestingId(integrationId);
+      const res = await fetch(`/api/integrations/${integrationId}/smoke`, { method: "POST" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["platformIntegrations"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCatalog"] });
+      queryClient.invalidateQueries({ queryKey: ["siteSummary"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceRuns"] });
+      setSmokeTestingId(null);
+      
+      if (data.status === "pass") {
+        toast.success(`${data.integrationId} smoke test passed`, {
+          description: `All ${data.actualOutputs?.length || 0} outputs validated`,
+        });
+      } else if (data.status === "partial") {
+        toast.warning(`${data.integrationId} smoke test partial`, {
+          description: `${data.actualOutputs?.length || 0}/${data.expectedOutputs?.length || 0} outputs found`,
+        });
+      } else {
+        toast.error(`${data.integrationId} smoke test failed`, {
+          description: data.error || `Missing ${data.missingOutputs?.length || 0} outputs`,
+        });
+      }
+      
+      setSelectedCatalogService(null);
+      setSelectedIntegration(null);
+    },
+    onError: (error: any) => {
+      setSmokeTestingId(null);
+      toast.error(error.message || "Smoke test failed");
     },
   });
 
@@ -1980,27 +2017,47 @@ export default function Integrations() {
                   </Collapsible>
                 )}
 
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedIntegration(null)}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      testMutation.mutate(selectedIntegration.integrationId);
-                    }}
-                    disabled={testingId === selectedIntegration.integrationId}
-                    data-testid="button-test-integration-detail"
-                  >
-                    {testingId === selectedIntegration.integrationId ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Activity className="w-4 h-4 mr-2" />
-                    )}
-                    Test Connection
-                  </Button>
+                <div className="pt-4 border-t space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Test Connection</strong> checks if credentials work. <strong>Run Smoke Test</strong> fetches real data to validate all outputs.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedIntegration(null)}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        testMutation.mutate(selectedIntegration.integrationId);
+                      }}
+                      disabled={testingId === selectedIntegration.integrationId || smokeTestingId === selectedIntegration.integrationId}
+                      data-testid="button-test-integration-detail"
+                    >
+                      {testingId === selectedIntegration.integrationId ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Activity className="w-4 h-4 mr-2" />
+                      )}
+                      Test Connection
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        smokeTestMutation.mutate(selectedIntegration.integrationId);
+                      }}
+                      disabled={smokeTestingId === selectedIntegration.integrationId || testingId === selectedIntegration.integrationId}
+                      data-testid="button-smoke-test-integration"
+                    >
+                      {smokeTestingId === selectedIntegration.integrationId ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4 mr-2" />
+                      )}
+                      Run Smoke Test
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>
@@ -2540,23 +2597,42 @@ export default function Integrations() {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => setSelectedCatalogService(null)}>
-                    Close
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => testMutation.mutate(selectedCatalogService.slug)}
-                    disabled={testingId === selectedCatalogService.slug || selectedCatalogService.configState === 'blocked'}
-                    data-testid="button-test-catalog-service"
-                  >
-                    {testingId === selectedCatalogService.slug ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Activity className="w-4 h-4 mr-2" />
-                    )}
-                    {selectedCatalogService.configState === 'blocked' ? 'Blocked' : 'Test Connection'}
-                  </Button>
+                <div className="pt-4 border-t space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Test Connection</strong> checks if credentials work. <strong>Run Smoke Test</strong> fetches real data to validate all outputs.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setSelectedCatalogService(null)}>
+                      Close
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => testMutation.mutate(selectedCatalogService.slug)}
+                      disabled={testingId === selectedCatalogService.slug || smokeTestingId === selectedCatalogService.slug || selectedCatalogService.configState === 'blocked'}
+                      data-testid="button-test-catalog-service"
+                    >
+                      {testingId === selectedCatalogService.slug ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Activity className="w-4 h-4 mr-2" />
+                      )}
+                      {selectedCatalogService.configState === 'blocked' ? 'Blocked' : 'Test Connection'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => smokeTestMutation.mutate(selectedCatalogService.slug)}
+                      disabled={smokeTestingId === selectedCatalogService.slug || testingId === selectedCatalogService.slug || selectedCatalogService.configState === 'blocked'}
+                      data-testid="button-smoke-test-catalog-service"
+                    >
+                      {smokeTestingId === selectedCatalogService.slug ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4 mr-2" />
+                      )}
+                      Run Smoke Test
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>

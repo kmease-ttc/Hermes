@@ -4420,6 +4420,173 @@ When answering:
     }
   });
 
+  // Run smoke test for a single integration (actually fetches data and validates outputs)
+  app.post("/api/integrations/:integrationId/smoke", async (req, res) => {
+    try {
+      const { servicesCatalog } = await import("@shared/servicesCatalog");
+      const { SERVICE_SECRET_MAP } = await import("@shared/serviceSecretMap");
+      const { ServiceRunTypes } = await import("@shared/schema");
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
+      
+      const integrationId = req.params.integrationId;
+      const startTime = Date.now();
+      
+      const mapping = SERVICE_SECRET_MAP.find(m => m.serviceSlug === integrationId);
+      const catalogEntry = servicesCatalog.find((s: any) => s.slug === integrationId);
+      
+      if (!catalogEntry) {
+        return res.status(404).json({ 
+          error: "Service not found in catalog",
+          integrationId,
+        });
+      }
+      
+      const expectedOutputs = catalogEntry.outputs || [];
+      
+      const workerConfig = await resolveWorkerConfig(integrationId);
+      
+      if (!workerConfig.valid || !workerConfig.base_url) {
+        return res.status(400).json({
+          error: "Service not configured",
+          details: workerConfig.error || "Missing base_url in Bitwarden secret",
+          integrationId,
+          expectedOutputs,
+          actualOutputs: [],
+          missingOutputs: expectedOutputs,
+        });
+      }
+      
+      const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      
+      if (workerConfig.api_key) {
+        headers['Authorization'] = `Bearer ${workerConfig.api_key}`;
+        headers['X-API-Key'] = workerConfig.api_key;
+      }
+      
+      try {
+        const smokeUrl = `${baseUrl}/api/smoke`;
+        logger.info("API", `Running smoke test for ${integrationId}`, { smokeUrl });
+        
+        const smokeRes = await fetch(smokeUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ 
+            domain: process.env.DOMAIN || 'empathyhealthclinic.com',
+            limit: 1,
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+        
+        if (!smokeRes.ok) {
+          const errorText = await smokeRes.text().catch(() => '');
+          throw new Error(`Smoke endpoint returned ${smokeRes.status}: ${errorText.slice(0, 200)}`);
+        }
+        
+        const smokeData = await smokeRes.json();
+        
+        const checkOutputPresence = (data: any, outputKey: string): boolean => {
+          if (!data || typeof data !== 'object') return false;
+          if (outputKey in data && data[outputKey] !== null && data[outputKey] !== undefined) return true;
+          if (data.data && outputKey in data.data) return true;
+          if (data.outputs && outputKey in data.outputs) return true;
+          if (Array.isArray(data.outputs) && data.outputs.includes(outputKey)) return true;
+          for (const val of Object.values(data)) {
+            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+              if (checkOutputPresence(val, outputKey)) return true;
+            }
+          }
+          return false;
+        };
+        
+        const actualOutputs = expectedOutputs.filter(o => checkOutputPresence(smokeData, o));
+        const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
+        
+        let status: 'pass' | 'partial' | 'fail';
+        if (missingOutputs.length === 0) {
+          status = 'pass';
+        } else if (actualOutputs.length > 0) {
+          status = 'partial';
+        } else {
+          status = 'fail';
+        }
+        
+        const runId = `smoke_${Date.now()}_${integrationId}`;
+        const durationMs = Date.now() - startTime;
+        
+        await storage.saveServiceRun({
+          runId,
+          runType: ServiceRunTypes.SMOKE,
+          serviceId: integrationId,
+          serviceName: mapping?.displayName || catalogEntry.displayName || integrationId,
+          trigger: 'manual',
+          status: status === 'pass' ? 'success' : status === 'partial' ? 'partial' : 'failed',
+          startedAt: new Date(startTime),
+          finishedAt: new Date(),
+          durationMs,
+          summary: `Smoke: ${actualOutputs.length}/${expectedOutputs.length} outputs`,
+          outputsJson: {
+            expectedOutputs,
+            actualOutputs,
+            missingOutputs,
+          },
+        });
+        
+        res.json({
+          integrationId,
+          status,
+          expectedOutputs,
+          actualOutputs,
+          missingOutputs,
+          durationMs,
+          summary: `Got ${actualOutputs.length}/${expectedOutputs.length} expected outputs`,
+          rawResponseKeys: Object.keys(smokeData || {}),
+        });
+        
+      } catch (err: any) {
+        const durationMs = Date.now() - startTime;
+        const runId = `smoke_${Date.now()}_${integrationId}`;
+        
+        await storage.saveServiceRun({
+          runId,
+          runType: ServiceRunTypes.SMOKE,
+          serviceId: integrationId,
+          serviceName: mapping?.displayName || catalogEntry.displayName || integrationId,
+          trigger: 'manual',
+          status: 'failed',
+          startedAt: new Date(startTime),
+          finishedAt: new Date(),
+          durationMs,
+          summary: `Smoke test failed: ${err.message}`,
+          errorCode: 'SMOKE_ERROR',
+          errorDetail: err.message,
+          outputsJson: {
+            expectedOutputs,
+            actualOutputs: [],
+            missingOutputs: expectedOutputs,
+          },
+        });
+        
+        res.json({
+          integrationId,
+          status: 'fail',
+          expectedOutputs,
+          actualOutputs: [],
+          missingOutputs: expectedOutputs,
+          durationMs,
+          error: err.message,
+        });
+      }
+      
+    } catch (error: any) {
+      logger.error("API", "Failed to run smoke test", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Run all inventory checks across all integrations
   app.post("/api/integrations/test-all", async (req, res) => {
     try {
