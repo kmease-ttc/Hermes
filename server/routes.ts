@@ -1147,6 +1147,157 @@ When answering:
     }
   });
 
+  // Industry Benchmarks Endpoints
+  app.get("/api/benchmarks", async (req, res) => {
+    try {
+      const { industry } = req.query;
+      
+      if (industry && typeof industry === 'string') {
+        const benchmarks = await storage.getBenchmarksByIndustry(industry);
+        return res.json({ benchmarks, industry });
+      }
+      
+      const benchmarks = await storage.getAllBenchmarks();
+      res.json({ benchmarks });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch benchmarks", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/benchmarks/industries", async (req, res) => {
+    try {
+      const industries = await storage.getAvailableIndustries();
+      res.json({ industries });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch industries", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/benchmarks/seed", async (req, res) => {
+    try {
+      const { seedBenchmarks } = await import("./seedBenchmarks");
+      const count = await seedBenchmarks();
+      res.json({ seeded: count, message: `Seeded ${count} benchmark entries` });
+    } catch (error: any) {
+      logger.error("API", "Failed to seed benchmarks", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/benchmarks/compare", async (req, res) => {
+    try {
+      const { industry, siteId } = req.query;
+      
+      if (!industry || typeof industry !== 'string') {
+        return res.status(400).json({ error: "Industry parameter required" });
+      }
+      
+      const benchmarks = await storage.getBenchmarksByIndustry(industry);
+      if (benchmarks.length === 0) {
+        return res.status(404).json({ error: `No benchmarks found for industry: ${industry}` });
+      }
+      
+      // Get site's actual metrics for comparison
+      const now = new Date();
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const formatDate = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
+      
+      const [gscData, ga4Data] = await Promise.all([
+        storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now)),
+        storage.getGA4DataByDateRange(formatDate(thirtyDaysAgo), formatDate(now)),
+      ]);
+      
+      // Calculate actual metrics
+      const totalClicks = gscData.reduce((sum, d) => sum + d.clicks, 0);
+      const totalImpressions = gscData.reduce((sum, d) => sum + d.impressions, 0);
+      const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+      const avgPosition = gscData.length > 0 
+        ? gscData.reduce((sum, d) => sum + d.position, 0) / gscData.length 
+        : 0;
+      
+      const totalSessions = ga4Data.reduce((sum, d) => sum + d.sessions, 0);
+      const totalUsers = ga4Data.reduce((sum, d) => sum + d.users, 0);
+      const totalConversions = ga4Data.reduce((sum, d) => sum + d.conversions, 0);
+      const conversionRate = totalSessions > 0 ? (totalConversions / totalSessions) * 100 : 0;
+      
+      // Map benchmarks to comparison format
+      const comparison = benchmarks.map(b => {
+        let actualValue: number | null = null;
+        
+        switch (b.metric) {
+          case 'organic_ctr':
+            actualValue = avgCtr;
+            break;
+          case 'avg_position':
+            actualValue = avgPosition;
+            break;
+          case 'conversion_rate':
+            actualValue = conversionRate;
+            break;
+          default:
+            actualValue = null;
+        }
+        
+        let percentile: string = 'unknown';
+        if (actualValue !== null) {
+          if (b.metric === 'avg_position' || b.metric === 'bounce_rate') {
+            // Lower is better for position and bounce rate
+            if (actualValue <= b.percentile90) percentile = 'excellent';
+            else if (actualValue <= b.percentile75) percentile = 'above_average';
+            else if (actualValue <= b.percentile50) percentile = 'average';
+            else if (actualValue <= b.percentile25) percentile = 'below_average';
+            else percentile = 'poor';
+          } else {
+            // Higher is better for most metrics
+            if (actualValue >= b.percentile90) percentile = 'excellent';
+            else if (actualValue >= b.percentile75) percentile = 'above_average';
+            else if (actualValue >= b.percentile50) percentile = 'average';
+            else if (actualValue >= b.percentile25) percentile = 'below_average';
+            else percentile = 'poor';
+          }
+        }
+        
+        return {
+          metric: b.metric,
+          unit: b.unit,
+          actualValue,
+          percentile,
+          benchmarks: {
+            p25: b.percentile25,
+            p50: b.percentile50,
+            p75: b.percentile75,
+            p90: b.percentile90,
+          },
+          source: b.source,
+          sourceYear: b.sourceYear,
+        };
+      });
+      
+      res.json({
+        industry,
+        siteId: siteId || 'default',
+        dateRange: {
+          start: formatDate(thirtyDaysAgo),
+          end: formatDate(now),
+        },
+        comparison,
+        summary: {
+          totalSessions,
+          totalClicks,
+          totalImpressions,
+          avgCtr: avgCtr.toFixed(2),
+          avgPosition: avgPosition.toFixed(1),
+          conversionRate: conversionRate.toFixed(2),
+        },
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to compare benchmarks", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const now = new Date();

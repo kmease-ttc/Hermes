@@ -109,6 +109,9 @@ import {
   type InsertChangeProposalAction,
   type ConnectorDiagnostic,
   type InsertConnectorDiagnostic,
+  industryBenchmarks,
+  type IndustryBenchmark,
+  type InsertIndustryBenchmark,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull } from "drizzle-orm";
 
@@ -322,6 +325,12 @@ export interface IStorage {
   getConnectorDiagnosticByRunId(runId: string): Promise<ConnectorDiagnostic | undefined>;
   getConnectorDiagnosticsByService(serviceId: string, limit?: number): Promise<ConnectorDiagnostic[]>;
   getLatestConnectorDiagnostic(serviceId: string, siteId?: string): Promise<ConnectorDiagnostic | undefined>;
+  
+  // Industry Benchmarks
+  getBenchmarksByIndustry(industry: string): Promise<IndustryBenchmark[]>;
+  getAllBenchmarks(): Promise<IndustryBenchmark[]>;
+  getAvailableIndustries(): Promise<string[]>;
+  saveBenchmarks(benchmarks: InsertIndustryBenchmark[]): Promise<IndustryBenchmark[]>;
 }
 
 class DBStorage implements IStorage {
@@ -1596,6 +1605,35 @@ class DBStorage implements IStorage {
       .orderBy(desc(connectorDiagnostics.createdAt))
       .limit(1);
     return diagnostic;
+  }
+
+  // Industry Benchmarks
+  async getBenchmarksByIndustry(industry: string): Promise<IndustryBenchmark[]> {
+    return db
+      .select()
+      .from(industryBenchmarks)
+      .where(eq(industryBenchmarks.industry, industry))
+      .orderBy(industryBenchmarks.metric);
+  }
+
+  async getAllBenchmarks(): Promise<IndustryBenchmark[]> {
+    return db
+      .select()
+      .from(industryBenchmarks)
+      .orderBy(industryBenchmarks.industry, industryBenchmarks.metric);
+  }
+
+  async getAvailableIndustries(): Promise<string[]> {
+    const results = await db
+      .selectDistinct({ industry: industryBenchmarks.industry })
+      .from(industryBenchmarks)
+      .orderBy(industryBenchmarks.industry);
+    return results.map(r => r.industry);
+  }
+
+  async saveBenchmarks(benchmarks: InsertIndustryBenchmark[]): Promise<IndustryBenchmark[]> {
+    if (benchmarks.length === 0) return [];
+    return db.insert(industryBenchmarks).values(benchmarks).returning();
   }
 }
 
