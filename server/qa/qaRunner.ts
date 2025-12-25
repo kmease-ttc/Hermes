@@ -3,7 +3,7 @@ import { bitwardenProvider } from "../vault/BitwardenProvider";
 import { servicesCatalog, computeMissingOutputs } from "@shared/servicesCatalog";
 import { SERVICE_SECRET_MAP, getServiceBySlug } from "@shared/serviceSecretMap";
 import type { InsertQaRun, InsertQaRunItem, QaRun, QaRunItem } from "@shared/schema";
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 
 export type QaMode = "connection" | "smoke" | "full";
 export type QaTrigger = "manual" | "scheduled" | "deploy";
