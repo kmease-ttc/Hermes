@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { 
   Check, X, Clock, AlertTriangle, AlertCircle, Info, 
   ChevronRight, Filter, RefreshCw, Settings, Play,
-  CheckCircle2, XCircle, Loader2, Eye
+  CheckCircle2, XCircle, Loader2, Eye, BookOpen, Lightbulb
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -122,6 +123,36 @@ export default function SuggestedChanges() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ proposalId: string; action: 'accept' | 'apply'; applyNow: boolean } | null>(null);
   const [confirmUnderstood, setConfirmUnderstood] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("proposals");
+
+  const { data: kbaseData } = useQuery({
+    queryKey: ["kbaseFindings", "open"],
+    queryFn: async () => {
+      const res = await fetch("/api/findings/kbase?status=open&limit=50");
+      return res.json();
+    },
+  });
+
+  const kbaseFindings = kbaseData?.findings || [];
+  const kbaseCount = kbaseData?.count || 0;
+
+  const updateFindingStatusMutation = useMutation({
+    mutationFn: async ({ findingId, status }: { findingId: string; status: string }) => {
+      const res = await fetch(`/api/findings/${findingId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kbaseFindings"] });
+      toast.success("Finding status updated");
+    },
+    onError: () => {
+      toast.error("Failed to update finding");
+    },
+  });
 
   const { data: proposalsData, isLoading, refetch } = useQuery({
     queryKey: ["changeProposals", statusFilter, riskFilter],
@@ -292,38 +323,57 @@ export default function SuggestedChanges() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="applied">Applied</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="snoozed">Snoozed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="proposals" className="gap-2" data-testid="tab-proposals">
+              <Settings className="h-4 w-4" />
+              System Proposals
+              {openCount > 0 && (
+                <Badge variant="secondary" className="ml-1">{openCount}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="kbase" className="gap-2" data-testid="tab-kbase">
+              <BookOpen className="h-4 w-4" />
+              Knowledge Base
+              {kbaseCount > 0 && (
+                <Badge variant="secondary" className="ml-1">{kbaseCount}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-          <Select value={riskFilter} onValueChange={setRiskFilter}>
-            <SelectTrigger className="w-[130px]" data-testid="select-risk-filter">
-              <SelectValue placeholder="Risk" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Risks</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <TabsContent value="proposals">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="accepted">Accepted</SelectItem>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="snoozed">Snoozed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Select value={riskFilter} onValueChange={setRiskFilter}>
+                <SelectTrigger className="w-[130px]" data-testid="select-risk-filter">
+                  <SelectValue placeholder="Risk" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Risks</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -452,6 +502,98 @@ export default function SuggestedChanges() {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="kbase">
+            {kbaseFindings.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                  <h3 className="text-lg font-medium">No Knowledge Base insights</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Run the SEO KBase integration to get recommendations.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {kbaseFindings.map((finding: any) => (
+                  <Card 
+                    key={finding.findingId}
+                    className="hover:shadow-md transition-shadow"
+                    data-testid={`card-kbase-${finding.findingId}`}
+                  >
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 flex-1">
+                          <BookOpen className="h-5 w-5 text-indigo-600 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium">{finding.title}</h3>
+                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                              <Badge className={
+                                finding.severity === 'critical' ? "bg-red-100 text-red-800" :
+                                finding.severity === 'high' ? "bg-orange-100 text-orange-800" :
+                                finding.severity === 'medium' ? "bg-yellow-100 text-yellow-800" :
+                                "bg-blue-100 text-blue-800"
+                              }>
+                                {finding.severity}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                Source: SEO_KBASE
+                              </Badge>
+                              {finding.runId && (
+                                <span className="text-xs">Run: {finding.runId}</span>
+                              )}
+                            </div>
+                            {finding.description && (
+                              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                {finding.description}
+                              </p>
+                            )}
+                            {finding.recommendedActions && finding.recommendedActions.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-xs font-medium text-muted-foreground mb-1">Recommended Actions:</p>
+                                <ul className="text-sm space-y-1">
+                                  {finding.recommendedActions.slice(0, 2).map((action: string, i: number) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>{action}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => updateFindingStatusMutation.mutate({ findingId: finding.findingId, status: "accepted" })}
+                            disabled={updateFindingStatusMutation.isPending}
+                            data-testid={`button-accept-kbase-${finding.findingId}`}
+                          >
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => updateFindingStatusMutation.mutate({ findingId: finding.findingId, status: "ignored" })}
+                            disabled={updateFindingStatusMutation.isPending}
+                            data-testid={`button-ignore-kbase-${finding.findingId}`}
+                          >
+                            <X className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Sheet open={!!selectedProposal} onOpenChange={() => setSelectedProposal(null)}>
