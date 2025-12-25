@@ -2746,6 +2746,35 @@ export default function Integrations() {
                               )}>
                                 {stage.message}
                               </p>
+                              
+                              {/* Failure Classification */}
+                              {stage.status === 'fail' && (stage as any).failureBucket && (
+                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                                    <span className="text-xs font-medium text-red-700 dark:text-red-400">
+                                      {(() => {
+                                        const bucketLabels: Record<string, string> = {
+                                          wrong_endpoint_404: '404 - Wrong Endpoint',
+                                          auth_401_403: '401/403 - Auth Failed',
+                                          html_200_app_shell: '200 HTML - SPA Shell',
+                                          redirect_3xx: '3xx - Redirect',
+                                          timeout: 'Timeout',
+                                          dns: 'DNS/TLS Error',
+                                          unknown: 'Unknown',
+                                        };
+                                        return bucketLabels[(stage as any).failureBucket] || (stage as any).failureBucket;
+                                      })()}
+                                    </span>
+                                  </div>
+                                  {(stage as any).suggestedFix && (
+                                    <p className="text-xs text-red-600 dark:text-red-300 ml-5">
+                                      <strong>Fix:</strong> {(stage as any).suggestedFix}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              
                               {stage.details && Object.keys(stage.details).length > 0 && (
                                 <details className="mt-1">
                                   <summary className="text-xs text-blue-600 cursor-pointer hover:underline">
