@@ -2457,20 +2457,29 @@ export default function Integrations() {
                       </div>
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-red-600">Missing</p>
-                        {(selectedCatalogService.lastRun.missingOutputs?.length ?? 0) > 0 ? (
-                          <div className="space-y-1">
-                            {selectedCatalogService.lastRun.missingOutputs?.map(slug => (
-                              <div key={slug} className="text-sm flex items-center gap-1 text-red-700">
-                                <XCircle className="w-3 h-3" />
-                                {getSlugLabel(slug)}
+                        {(() => {
+                          // Check both lastRun.missingOutputs and top-level missingOutputs (from SiteSummaryService)
+                          const missingFromLastRun = selectedCatalogService.lastRun?.missingOutputs || [];
+                          const missingFromService = (selectedCatalogService as any).missingOutputs || [];
+                          const allMissing = [...new Set([...missingFromLastRun, ...missingFromService])];
+                          
+                          if (allMissing.length > 0) {
+                            return (
+                              <div className="space-y-1">
+                                {allMissing.map(slug => (
+                                  <div key={slug} className="text-sm flex items-center gap-1 text-red-700">
+                                    <XCircle className="w-3 h-3" />
+                                    {getSlugLabel(slug)}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        ) : selectedCatalogService.lastRun.pendingOutputs?.length === 0 && selectedCatalogService.lastRun.actualOutputs?.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">Run to validate outputs</p>
-                        ) : (
-                          <p className="text-xs text-green-600">None missing</p>
-                        )}
+                            );
+                          } else if (selectedCatalogService.lastRun?.pendingOutputs?.length === 0 && selectedCatalogService.lastRun?.actualOutputs?.length === 0) {
+                            return <p className="text-xs text-muted-foreground">Run to validate outputs</p>;
+                          } else {
+                            return <p className="text-xs text-green-600">None missing</p>;
+                          }
+                        })()}
                       </div>
                     </div>
                     
