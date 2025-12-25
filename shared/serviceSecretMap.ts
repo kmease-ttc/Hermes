@@ -21,6 +21,7 @@ export interface ServiceSecretMapping {
   category: "google" | "analysis" | "content" | "infrastructure" | "execution";
   fallbackEnvVar?: string;         // Optional: env var for fallback when Bitwarden secret not JSON
   workerEndpoints?: Record<string, string>;  // Worker API endpoints
+  requiresBearer?: boolean;        // Optional: if true, send Authorization: Bearer header in addition to x-api-key
 }
 
 /**

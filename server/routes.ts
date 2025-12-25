@@ -2969,11 +2969,11 @@ When answering:
           case "google_data_connector": {
             // Google Data Connector now uses worker-based approach (not OAuth)
             const { runDiagnosticsForService } = await import("./diagnosticsRunner");
-            const { SERVICE_SECRET_MAP } = await import("@shared/serviceSecretMap");
-            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const { getServiceBySlug: getServiceMapping } = await import("@shared/serviceSecretMap");
             
-            const serviceMapping = SERVICE_SECRET_MAP.find(s => s.serviceSlug === "google_data_connector");
             const expectedOutputs = ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages", "ga4_sessions", "ga4_users", "ga4_conversions"];
+            const serviceMapping = getServiceMapping("google_data_connector");
             
             const diagResult = await runDiagnosticsForService({
               serviceId: "google_data_connector",
@@ -2983,54 +2983,63 @@ When answering:
               expectedResponseType: 'json',
               requiredOutputFields: expectedOutputs,
             }, async (runner) => {
-              // Stage 1: Config Loaded - Get worker config from Bitwarden
-              let workerConfig: { base_url?: string; api_key?: string } | null = null;
-              const secretName = serviceMapping?.bitwardenSecret || "SEO_Google_Connector";
+              // Stage 1: Config Loaded - Get worker config via resolver
+              const workerConfig = await resolveWorkerConfig("google_data_connector", site_id);
               
-              try {
-                const secretValue = await bitwardenProvider.getSecretValue(secretName);
-                if (secretValue) {
-                  workerConfig = JSON.parse(secretValue);
-                }
-              } catch (e: any) {
-                await runner.failStage('config_loaded', `Failed to load secret ${secretName}: ${e.message}`, { 
-                  secretName, 
-                  error: e.message 
+              if (!workerConfig.valid || !workerConfig.base_url) {
+                await runner.failStage('config_loaded', workerConfig.error || 'Missing base_url in worker config', { 
+                  hasBaseUrl: !!workerConfig.base_url,
+                  hasApiKey: !!workerConfig.api_key,
+                  secretName: workerConfig.secretName,
+                  rawValueType: workerConfig.rawValueType,
+                  parseError: workerConfig.parseError,
                 });
                 return;
               }
               
-              if (!workerConfig?.base_url || !workerConfig?.api_key) {
-                await runner.failStage('config_loaded', 'Missing base_url or api_key in worker config', { 
-                  hasBaseUrl: !!workerConfig?.base_url,
-                  hasApiKey: !!workerConfig?.api_key,
-                  secretName,
-                });
-                return;
-              }
-              
-              await runner.passStage('config_loaded', `Config loaded from ${secretName}`, { 
-                secretName,
+              await runner.passStage('config_loaded', `Config loaded from ${workerConfig.secretName}`, { 
+                secretName: workerConfig.secretName,
                 hasBaseUrl: true,
-                hasApiKey: true,
+                hasApiKey: !!workerConfig.api_key,
               });
-              await runner.setConfigSnapshot([secretName], workerConfig.base_url);
+              await runner.setConfigSnapshot([workerConfig.secretName || 'SEO_Google_Connector'], workerConfig.base_url);
               
               // Stage 2: Auth Ready - API key is present
+              if (!workerConfig.api_key) {
+                await runner.failStage('auth_ready', 'API key missing in worker config', {
+                  authMode: 'api_key',
+                  keyPresent: false,
+                });
+                return;
+              }
               await runner.passStage('auth_ready', 'API key present in worker config', {
                 authMode: 'api_key',
                 keyPresent: true,
               });
               
-              // Stage 3: Endpoint Built
-              const healthUrl = `${workerConfig.base_url}/health`;
-              const smokeTestUrl = `${workerConfig.base_url}/smoke-test`;
+              // Stage 3: Endpoint Built - Use workerEndpoints from mapping
+              const workerEndpoints = serviceMapping?.workerEndpoints || {};
+              const healthPath = workerEndpoints.health || workerConfig.health_path || '/health';
+              const smokeTestPath = workerEndpoints.smokeTest || '/smoke-test';
+              const healthUrl = `${workerConfig.base_url}${healthPath}`;
+              const smokeTestUrl = `${workerConfig.base_url}${smokeTestPath}`;
               await runner.passStage('endpoint_built', 'Worker endpoints ready', {
                 healthEndpoint: healthUrl,
                 smokeTestEndpoint: smokeTestUrl,
+                source: workerEndpoints.health ? 'mapping' : 'config',
               });
               
               // Stage 4: Request Sent - Call /health endpoint
+              // Build headers based on mapping metadata (use x-api-key for this worker)
+              const headers: Record<string, string> = {
+                'Accept': 'application/json',
+                'x-api-key': workerConfig.api_key,
+              };
+              // Some workers may also need bearer token
+              if (serviceMapping?.requiresBearer) {
+                headers['Authorization'] = `Bearer ${workerConfig.api_key}`;
+              }
+              
               let healthResponse: Response | null = null;
               let healthStatus: number = 0;
               let healthContentType: string = '';
@@ -3039,11 +3048,7 @@ When answering:
               try {
                 healthResponse = await fetch(healthUrl, {
                   method: 'GET',
-                  headers: {
-                    'x-api-key': workerConfig.api_key,
-                    'Authorization': `Bearer ${workerConfig.api_key}`,
-                    'Accept': 'application/json',
-                  },
+                  headers,
                   signal: AbortSignal.timeout(10000),
                 });
                 healthStatus = healthResponse.status;
@@ -3117,11 +3122,7 @@ When answering:
               try {
                 smokeResponse = await fetch(smokeTestUrl, {
                   method: 'GET',
-                  headers: {
-                    'x-api-key': workerConfig.api_key,
-                    'Authorization': `Bearer ${workerConfig.api_key}`,
-                    'Accept': 'application/json',
-                  },
+                  headers,
                   signal: AbortSignal.timeout(15000),
                 });
                 const smokeText = await smokeResponse.text();
