@@ -20,8 +20,19 @@ import {
   Link2,
   FileText,
   Zap,
-  Info
+  Info,
+  Users,
+  ArrowUpDown,
+  Crown
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import {
@@ -54,6 +65,48 @@ interface AuthorityScore {
   organicKeywords: number;
   organicTraffic: number;
 }
+
+interface CompetitorMetrics {
+  domain: string;
+  isPrimary: boolean;
+  webAuthorityScore: number;
+  domainAuthority: number;
+  totalBacklinks: number;
+  referringDomains: number;
+  organicKeywords: number;
+  monthlyOrganicTraffic: number;
+  averagePosition: number;
+}
+
+function generateMockCompetitorMetrics(domain: string, isPrimary: boolean, baseSeed: number): CompetitorMetrics {
+  const seedMultiplier = isPrimary ? 1 : (0.6 + (baseSeed % 100) / 100 * 0.8);
+  const baseAuthority = isPrimary ? 42 : 25 + (baseSeed % 40);
+  
+  return {
+    domain,
+    isPrimary,
+    webAuthorityScore: Math.round(baseAuthority * seedMultiplier),
+    domainAuthority: Math.round((isPrimary ? 42 : 20 + (baseSeed % 50)) * seedMultiplier),
+    totalBacklinks: Math.round((isPrimary ? 2847 : 500 + (baseSeed * 47) % 5000) * seedMultiplier),
+    referringDomains: Math.round((isPrimary ? 156 : 30 + (baseSeed * 13) % 300) * seedMultiplier),
+    organicKeywords: Math.round((isPrimary ? 1250 : 200 + (baseSeed * 29) % 2500) * seedMultiplier),
+    monthlyOrganicTraffic: Math.round((isPrimary ? 8500 : 1000 + (baseSeed * 83) % 15000) * seedMultiplier),
+    averagePosition: parseFloat((isPrimary ? 12.4 : 8 + (baseSeed % 30)).toFixed(1)),
+  };
+}
+
+const MOCK_COMPETITORS = [
+  'clevelandclinic.org',
+  'mayoclinic.org',
+  'webmd.com',
+  'healthline.com',
+  'medlineplus.gov',
+  'nih.gov',
+  'hopkinsmedicine.org',
+  'medicalnewstoday.com',
+  'verywellhealth.com',
+  'health.com',
+];
 
 const INDUSTRY_CATEGORIES = [
   { value: 'healthcare', label: 'Healthcare & Medical' },
@@ -214,6 +267,173 @@ function getPercentileVsTop10(benchmark: IndustryBenchmark): number {
   }
 }
 
+function CompetitorsTable({ 
+  competitors, 
+  isLoading, 
+  error 
+}: { 
+  competitors: CompetitorMetrics[] | undefined; 
+  isLoading: boolean;
+  error: Error | null;
+}) {
+  const [sortColumn, setSortColumn] = useState<keyof CompetitorMetrics>('webAuthorityScore');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (column: keyof CompetitorMetrics) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedCompetitors = competitors ? [...competitors].sort((a, b) => {
+    if (a.isPrimary) return -1;
+    if (b.isPrimary) return 1;
+    
+    const aVal = a[sortColumn];
+    const bVal = b[sortColumn];
+    
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+    return 0;
+  }) : [];
+
+  if (error) {
+    return (
+      <Card className="border-red-200 bg-red-50/50">
+        <CardContent className="p-6 text-center">
+          <p className="text-red-600">Failed to load competitor data. Please try again.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-12 bg-muted rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const SortHeader = ({ column, label }: { column: keyof CompetitorMetrics; label: string }) => (
+    <TableHead 
+      className="cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={() => handleSort(column)}
+      data-testid={`sort-${column}`}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={cn(
+          "w-3 h-3",
+          sortColumn === column ? "text-primary" : "text-muted-foreground"
+        )} />
+      </div>
+    </TableHead>
+  );
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Competitor Comparison
+        </CardTitle>
+        <CardDescription>
+          See how your site stacks up against top competitors in search results
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[180px]">Domain</TableHead>
+                <SortHeader column="webAuthorityScore" label="Authority" />
+                <SortHeader column="domainAuthority" label="DA" />
+                <SortHeader column="totalBacklinks" label="Backlinks" />
+                <SortHeader column="referringDomains" label="Ref. Domains" />
+                <SortHeader column="organicKeywords" label="Keywords" />
+                <SortHeader column="monthlyOrganicTraffic" label="Traffic" />
+                <SortHeader column="averagePosition" label="Avg Pos" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedCompetitors.map((competitor, idx) => (
+                <TableRow 
+                  key={competitor.domain}
+                  className={cn(
+                    competitor.isPrimary && "bg-primary/5 border-l-2 border-l-primary"
+                  )}
+                  data-testid={`row-competitor-${idx}`}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {competitor.isPrimary && (
+                        <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                          <Crown className="w-3 h-3 mr-1" />
+                          You
+                        </Badge>
+                      )}
+                      <span className={cn(competitor.isPrimary && "font-semibold")}>
+                        {competitor.domain}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "font-semibold",
+                        competitor.isPrimary && "text-primary"
+                      )}>
+                        {competitor.webAuthorityScore}
+                      </span>
+                      <Progress 
+                        value={competitor.webAuthorityScore} 
+                        className="w-12 h-1.5"
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>{competitor.domainAuthority}</TableCell>
+                  <TableCell>{formatNumber(competitor.totalBacklinks)}</TableCell>
+                  <TableCell>{formatNumber(competitor.referringDomains)}</TableCell>
+                  <TableCell>{formatNumber(competitor.organicKeywords)}</TableCell>
+                  <TableCell>{formatNumber(competitor.monthlyOrganicTraffic)}</TableCell>
+                  <TableCell>
+                    <span className={cn(
+                      competitor.averagePosition <= 10 && "text-green-600",
+                      competitor.averagePosition > 20 && "text-red-600"
+                    )}>
+                      {competitor.averagePosition}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        {sortedCompetitors.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            No competitor data available. Try refreshing or check your configuration.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function BenchmarkCard({ benchmark }: { benchmark: IndustryBenchmark }) {
   const status = getComparisonStatus(benchmark);
   const percentile = getPercentileVsTop10(benchmark);
@@ -335,14 +555,33 @@ export default function Authority() {
   const { data: benchmarks, isLoading, refetch } = useQuery({
     queryKey: ['authority-benchmarks', currentSite?.siteId, selectedIndustry],
     queryFn: async () => {
-      // In a real implementation, this would fetch from the API
-      // For now, return mock data with slight variations based on industry
       return MOCK_BENCHMARKS.map(b => ({
         ...b,
         industryAvg: b.industryAvg * (0.9 + Math.random() * 0.2),
         industryTop10: b.industryTop10 * (0.9 + Math.random() * 0.2),
       }));
     },
+  });
+
+  const primaryDomain = currentSite?.domain || 'empathyhealthclinic.com';
+
+  const { 
+    data: competitorData, 
+    isLoading: competitorsLoading, 
+    error: competitorsError,
+    refetch: refetchCompetitors 
+  } = useQuery({
+    queryKey: ['competitor-metrics', primaryDomain],
+    queryFn: async (): Promise<CompetitorMetrics[]> => {
+      const primary = generateMockCompetitorMetrics(primaryDomain, true, 42);
+      const competitors = MOCK_COMPETITORS.slice(0, 10).map((domain, idx) => 
+        generateMockCompetitorMetrics(domain, false, idx * 17 + 7)
+      );
+      return [primary, ...competitors].sort((a, b) => 
+        a.isPrimary ? -1 : b.isPrimary ? 1 : b.webAuthorityScore - a.webAuthorityScore
+      );
+    },
+    enabled: activeTab === 'competitors',
   });
 
   const filteredBenchmarks = benchmarks?.filter(b => 
@@ -414,8 +653,21 @@ export default function Authority() {
               {categoryIcons.technical}
               <span className="ml-1">Technical</span>
             </TabsTrigger>
+            <TabsTrigger value="competitors" data-testid="tab-competitors">
+              <Users className="w-4 h-4" />
+              <span className="ml-1">Competitors</span>
+            </TabsTrigger>
           </TabsList>
 
+          {activeTab === 'competitors' ? (
+            <TabsContent value="competitors" className="mt-4">
+              <CompetitorsTable 
+                competitors={competitorData} 
+                isLoading={competitorsLoading} 
+                error={competitorsError as Error | null}
+              />
+            </TabsContent>
+          ) : (
           <TabsContent value={activeTab} className="mt-4">
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -435,6 +687,7 @@ export default function Authority() {
               </div>
             )}
           </TabsContent>
+          )}
         </Tabs>
 
         <Card>
