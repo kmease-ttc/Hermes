@@ -4232,12 +4232,76 @@ When answering:
                 debug.responses.push({ url: healthUrl, status: res.status, ok: res.ok, bodySnippet: bodyText.slice(0, 200) });
                 
                 if (res.ok) {
-                  checkResult = {
-                    status: "partial",
-                    summary: `Worker connected - run query to validate outputs`,
-                    metrics: { worker_configured: true, worker_reachable: true, outputs_pending: expectedOutputs.length },
-                    details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
-                  };
+                  // Health passed, now call smoke-test to validate outputs
+                  const smokeUrl = `${baseUrl}/smoke-test`;
+                  debug.requestedUrls.push(smokeUrl);
+                  
+                  try {
+                    const smokeRes = await fetch(smokeUrl, { method: "GET", headers, signal: AbortSignal.timeout(15000) });
+                    const smokeBody = await smokeRes.text().catch(() => "");
+                    debug.responses.push({ url: smokeUrl, status: smokeRes.status, ok: smokeRes.ok, bodySnippet: smokeBody.slice(0, 500) });
+                    
+                    if (smokeRes.ok) {
+                      // Parse response and check for expected outputs
+                      let smokeData: any = {};
+                      try {
+                        smokeData = JSON.parse(smokeBody);
+                      } catch (e) {
+                        debug.parseError = "Invalid JSON from smoke-test";
+                      }
+                      
+                      // Check which outputs are present in the response
+                      const actualOutputs: string[] = [];
+                      const dataPayload = smokeData.data || smokeData;
+                      
+                      if (dataPayload.seo_recommendations || dataPayload.recommendations) actualOutputs.push("seo_recommendations");
+                      if (dataPayload.best_practices) actualOutputs.push("best_practices");
+                      if (dataPayload.optimization_tips) actualOutputs.push("optimization_tips");
+                      if (dataPayload.reference_docs) actualOutputs.push("reference_docs");
+                      
+                      const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
+                      
+                      if (actualOutputs.length >= expectedOutputs.length) {
+                        checkResult = {
+                          status: "pass",
+                          summary: `All ${expectedOutputs.length} outputs validated`,
+                          metrics: { worker_configured: true, worker_reachable: true, outputs_validated: actualOutputs.length },
+                          details: { baseUrl, debug, actualOutputs, missingOutputs: [] },
+                        };
+                      } else if (actualOutputs.length > 0) {
+                        checkResult = {
+                          status: "partial",
+                          summary: `${actualOutputs.length}/${expectedOutputs.length} outputs validated`,
+                          metrics: { worker_configured: true, worker_reachable: true, outputs_validated: actualOutputs.length, outputs_missing: missingOutputs.length },
+                          details: { baseUrl, debug, actualOutputs, missingOutputs },
+                        };
+                      } else {
+                        checkResult = {
+                          status: "partial",
+                          summary: `Worker connected - no outputs in response`,
+                          metrics: { worker_configured: true, worker_reachable: true, outputs_pending: expectedOutputs.length },
+                          details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                        };
+                      }
+                    } else {
+                      // Smoke test failed but health passed
+                      checkResult = {
+                        status: "partial",
+                        summary: `Worker healthy but smoke-test returned ${smokeRes.status}`,
+                        metrics: { worker_configured: true, worker_reachable: true, smoke_test_status: smokeRes.status },
+                        details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                      };
+                    }
+                  } catch (smokeErr: any) {
+                    // Health passed but smoke test failed
+                    debug.smokeError = smokeErr.message;
+                    checkResult = {
+                      status: "partial",
+                      summary: `Worker healthy but smoke-test unreachable`,
+                      metrics: { worker_configured: true, worker_reachable: true, smoke_test_error: true },
+                      details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                    };
+                  }
                 } else {
                   checkResult = {
                     status: "fail",
