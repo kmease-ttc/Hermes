@@ -56,14 +56,18 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     category: "infrastructure"
   },
 
-  // Google Connectors (internal OAuth-based - no external /api/smoke endpoint)
+  // Google Connectors (worker-based - calls external worker with api_key)
   {
     serviceSlug: "google_data_connector",  // Matches catalog
     displayName: "Google Data Connector (GSC + GA4)",
-    bitwardenSecret: "SEO_Google_Connector",
-    type: "worker",  // Keep as worker for orchestration/metadata purposes
-    requiresBaseUrl: false,  // No external /api/smoke endpoint - uses local OAuth connectors
-    category: "google"
+    bitwardenSecret: "SEO_Google_Connector",  // JSON: { base_url, api_key }
+    type: "worker",
+    requiresBaseUrl: true,  // Now uses external worker endpoint
+    category: "google",
+    workerEndpoints: {
+      health: "/health",
+      smokeTest: "/smoke-test"
+    }
   },
 
   // Analysis Workers (need base_url + api_key)

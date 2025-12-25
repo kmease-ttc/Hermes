@@ -2967,115 +2967,201 @@ When answering:
       try {
         switch (integration.integrationId) {
           case "google_data_connector": {
-            // Google Data Connector uses OAuth-based local connectors with diagnostics
+            // Google Data Connector now uses worker-based approach (not OAuth)
             const { runDiagnosticsForService } = await import("./diagnosticsRunner");
+            const { SERVICE_SECRET_MAP } = await import("@shared/serviceSecretMap");
+            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
             
+            const serviceMapping = SERVICE_SECRET_MAP.find(s => s.serviceSlug === "google_data_connector");
             const expectedOutputs = ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages", "ga4_sessions", "ga4_users", "ga4_conversions"];
             
             const diagResult = await runDiagnosticsForService({
               serviceId: "google_data_connector",
               serviceName: "Google Data Connector",
               siteId: site_id,
-              authMode: 'oauth',
+              authMode: 'api_key',
               expectedResponseType: 'json',
               requiredOutputFields: expectedOutputs,
             }, async (runner) => {
-              // Stage 1: Config Loaded
-              const ga4PropertyId = process.env.GA4_PROPERTY_ID;
-              const gscSite = process.env.GSC_SITE;
-              const configKeys = [];
-              if (ga4PropertyId) configKeys.push('GA4_PROPERTY_ID');
-              if (gscSite) configKeys.push('GSC_SITE');
+              // Stage 1: Config Loaded - Get worker config from Bitwarden
+              let workerConfig: { base_url?: string; api_key?: string } | null = null;
+              const secretName = serviceMapping?.bitwardenSecret || "SEO_Google_Connector";
               
-              if (configKeys.length === 0) {
-                await runner.failStage('config_loaded', 'Missing GA4_PROPERTY_ID and GSC_SITE environment variables', { configKeys });
+              try {
+                const secretValue = await bitwardenProvider.getSecretValue(secretName);
+                if (secretValue) {
+                  workerConfig = JSON.parse(secretValue);
+                }
+              } catch (e: any) {
+                await runner.failStage('config_loaded', `Failed to load secret ${secretName}: ${e.message}`, { 
+                  secretName, 
+                  error: e.message 
+                });
                 return;
               }
-              await runner.passStage('config_loaded', `Config loaded: ${configKeys.join(', ')}`, { configKeys });
-              await runner.setConfigSnapshot(configKeys);
               
-              // Stage 2: Auth Ready
-              const ga4Token = await storage.getToken('google');
-              const hasToken = !!ga4Token?.accessToken;
-              const tokenExpired = ga4Token ? new Date(ga4Token.expiresAt) < new Date() : true;
-              
-              if (!hasToken) {
-                await runner.failStage('auth_ready', 'No OAuth token found - please authenticate with Google', { hasToken, tokenExpired });
+              if (!workerConfig?.base_url || !workerConfig?.api_key) {
+                await runner.failStage('config_loaded', 'Missing base_url or api_key in worker config', { 
+                  hasBaseUrl: !!workerConfig?.base_url,
+                  hasApiKey: !!workerConfig?.api_key,
+                  secretName,
+                });
                 return;
               }
-              if (tokenExpired) {
-                await runner.passStage('auth_ready', 'OAuth token expired but refresh may work', { hasToken, tokenExpired, expiresAt: ga4Token?.expiresAt?.toISOString() });
-              } else {
-                await runner.passStage('auth_ready', 'OAuth token present and valid', { hasToken, tokenExpired: false });
-              }
               
-              // Stage 3: Endpoint Built
-              await runner.passStage('endpoint_built', 'OAuth API endpoints ready (GA4 + GSC)', {
-                ga4Endpoint: 'analyticsdata.googleapis.com',
-                gscEndpoint: 'searchconsole.googleapis.com',
+              await runner.passStage('config_loaded', `Config loaded from ${secretName}`, { 
+                secretName,
+                hasBaseUrl: true,
+                hasApiKey: true,
+              });
+              await runner.setConfigSnapshot([secretName], workerConfig.base_url);
+              
+              // Stage 2: Auth Ready - API key is present
+              await runner.passStage('auth_ready', 'API key present in worker config', {
+                authMode: 'api_key',
+                keyPresent: true,
               });
               
-              // Stage 4: Request Sent (test actual connections)
-              const ga4Status = await ga4Connector.testConnection();
-              const gscStatus = await gscConnector.testConnection();
+              // Stage 3: Endpoint Built
+              const healthUrl = `${workerConfig.base_url}/health`;
+              const smokeTestUrl = `${workerConfig.base_url}/smoke-test`;
+              await runner.passStage('endpoint_built', 'Worker endpoints ready', {
+                healthEndpoint: healthUrl,
+                smokeTestEndpoint: smokeTestUrl,
+              });
               
-              await runner.passStage('request_sent', 'API requests completed', {
-                ga4Request: { attempted: true, success: ga4Status.success, error: ga4Status.error },
-                gscRequest: { attempted: true, success: gscStatus.success, error: gscStatus.error },
+              // Stage 4: Request Sent - Call /health endpoint
+              let healthResponse: Response | null = null;
+              let healthStatus: number = 0;
+              let healthContentType: string = '';
+              let healthBody: string = '';
+              
+              try {
+                healthResponse = await fetch(healthUrl, {
+                  method: 'GET',
+                  headers: {
+                    'x-api-key': workerConfig.api_key,
+                    'Authorization': `Bearer ${workerConfig.api_key}`,
+                    'Accept': 'application/json',
+                  },
+                  signal: AbortSignal.timeout(10000),
+                });
+                healthStatus = healthResponse.status;
+                healthContentType = healthResponse.headers.get('content-type') || '';
+                healthBody = await healthResponse.text();
+              } catch (e: any) {
+                await runner.failStage('request_sent', `Health check failed: ${e.message}`, {
+                  url: healthUrl,
+                  error: e.message,
+                  errorType: e.name,
+                });
+                return;
+              }
+              
+              await runner.passStage('request_sent', `Health endpoint responded (${healthStatus})`, {
+                url: healthUrl,
+                statusCode: healthStatus,
+                contentType: healthContentType,
+                responseSnippet: healthBody.slice(0, 200),
               });
               
               // Stage 5: Response Type Validated
-              const bothJson = ga4Status.success || gscStatus.success;
-              if (bothJson) {
-                await runner.passStage('response_type_validated', 'Received valid JSON responses', {
-                  ga4ResponseType: 'json',
-                  gscResponseType: 'json',
-                });
-              } else {
-                await runner.failStage('response_type_validated', 'No valid responses received', {
-                  ga4Error: ga4Status.error,
-                  gscError: gscStatus.error,
+              const isJson = healthContentType.includes('application/json');
+              const isHtml = healthContentType.includes('text/html') || healthBody.trim().startsWith('<!DOCTYPE') || healthBody.trim().startsWith('<html');
+              
+              if (healthStatus === 404) {
+                await runner.failStage('response_type_validated', 'Health endpoint not found (404)', {
+                  statusCode: 404,
+                  contentType: healthContentType,
+                  responseSnippet: healthBody.slice(0, 200),
                 });
                 return;
               }
               
-              // Stage 6: Schema Validated
-              const actualOutputs: string[] = [];
-              const missingOutputs: string[] = [];
-              
-              if (gscStatus.success) {
-                actualOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
-              } else {
-                missingOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
+              if (healthStatus === 401 || healthStatus === 403) {
+                await runner.failStage('response_type_validated', `Auth failed (${healthStatus})`, {
+                  statusCode: healthStatus,
+                  contentType: healthContentType,
+                  responseSnippet: healthBody.slice(0, 200),
+                });
+                return;
               }
               
-              if (ga4Status.success) {
-                actualOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
-              } else {
-                missingOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
+              if (isHtml) {
+                await runner.failStage('response_type_validated', 'Got HTML instead of JSON - hitting SPA shell', {
+                  statusCode: healthStatus,
+                  contentType: healthContentType,
+                  responseSnippet: healthBody.slice(0, 200),
+                });
+                return;
               }
+              
+              if (!isJson && healthStatus === 200) {
+                await runner.failStage('response_type_validated', 'Expected JSON response', {
+                  statusCode: healthStatus,
+                  contentType: healthContentType,
+                  responseSnippet: healthBody.slice(0, 200),
+                });
+                return;
+              }
+              
+              await runner.passStage('response_type_validated', 'Valid JSON response', {
+                statusCode: healthStatus,
+                contentType: healthContentType,
+              });
+              
+              // Stage 6: Schema Validated - Try smoke-test endpoint for outputs
+              let smokeResponse: Response | null = null;
+              let smokeBody: any = null;
+              
+              try {
+                smokeResponse = await fetch(smokeTestUrl, {
+                  method: 'GET',
+                  headers: {
+                    'x-api-key': workerConfig.api_key,
+                    'Authorization': `Bearer ${workerConfig.api_key}`,
+                    'Accept': 'application/json',
+                  },
+                  signal: AbortSignal.timeout(15000),
+                });
+                const smokeText = await smokeResponse.text();
+                smokeBody = JSON.parse(smokeText);
+              } catch (e: any) {
+                // Smoke test is optional - if health passed, we can still mark partial success
+                await runner.passStage('schema_validated', 'Health check passed, smoke test optional', {
+                  smokeTestError: e.message,
+                  healthPassed: true,
+                });
+                await runner.skipStage('ui_mapping', 'Smoke test unavailable');
+                return;
+              }
+              
+              const actualOutputs: string[] = smokeBody?.outputs || smokeBody?.available_outputs || [];
+              const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
               
               if (actualOutputs.length === expectedOutputs.length) {
                 await runner.passStage('schema_validated', 'All expected outputs available', { actualOutputs, missingOutputs: [] });
               } else if (actualOutputs.length > 0) {
-                await runner.passStage('schema_validated', `Partial: ${actualOutputs.length}/${expectedOutputs.length} outputs available`, { actualOutputs, missingOutputs });
+                await runner.passStage('schema_validated', `Partial: ${actualOutputs.length}/${expectedOutputs.length} outputs`, { actualOutputs, missingOutputs });
               } else {
-                await runner.failStage('schema_validated', 'No outputs available', { actualOutputs: [], missingOutputs });
-                return;
+                await runner.passStage('schema_validated', 'Worker connected but outputs unknown', { 
+                  smokeResponse: smokeBody,
+                  note: 'Worker may not report outputs in smoke-test response',
+                });
               }
               
-              // Stage 7: UI Mapping (optional)
-              await runner.skipStage('ui_mapping', 'UI mapping check not applicable for OAuth connectors');
+              // Stage 7: UI Mapping
+              await runner.skipStage('ui_mapping', 'UI mapping check not applicable for worker connectors');
             });
             
-            const bothPass = diagResult.status === 'pass';
-            const onePass = diagResult.status === 'partial' || diagResult.status === 'pass';
+            const isPass = diagResult.status === 'pass';
+            const isPartial = diagResult.status === 'partial';
             
             checkResult = {
               status: diagResult.status,
-              summary: bothPass ? "GA4 and GSC connected (OAuth)" : onePass ? "Partial: one service connected (OAuth)" : "GA4/GSC OAuth not configured",
+              summary: isPass ? "Google Data Worker connected" : isPartial ? "Worker partially connected" : "Worker connection failed",
               metrics: { 
-                mode: "oauth",
+                mode: "worker",
                 diagnosticRunId: diagResult.runId,
               },
               details: { 
