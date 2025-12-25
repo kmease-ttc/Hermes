@@ -4174,30 +4174,71 @@ When answering:
             break;
           }
           case "seo_kbase": {
-            // SEO KBASE uses TRAFFIC_DOCTOR_API_KEY (same as Google Services worker)
-            // Base URL: https://seo-kbase.replit.app (API endpoints at /health, /smoke-test, /run)
+            // SEO KBASE - fetch config from Bitwarden, uses TRAFFIC_DOCTOR_API_KEY
+            const { bitwardenProvider: kbaseProvider } = await import("./vault/BitwardenProvider");
+            const kbaseSecret = await kbaseProvider.getSecret("SEO_KBASE");
             const kbaseApiKey = process.env.TRAFFIC_DOCTOR_API_KEY;
-            const kbaseBaseUrl = "https://seo-kbase.replit.app";
+            
+            // Helper to join URL paths without double slashes or extra /api
+            const joinUrl = (base: string, path: string) => {
+              const cleanBase = base.replace(/\/+$/, ''); // Remove trailing slashes
+              const cleanPath = path.replace(/^\/+/, ''); // Remove leading slashes
+              return `${cleanBase}/${cleanPath}`;
+            };
             
             const debug: any = { 
-              secretFound: !!kbaseApiKey, 
-              baseUrl: kbaseBaseUrl,
+              secretFound: !!kbaseSecret, 
+              apiKeyFound: !!kbaseApiKey,
               requestedUrls: [], 
               responses: [],
               expectedKeyFingerprint: "975aa7e6",
             };
             const expectedOutputs = ["kbase_articles", "kbase_gaps", "kbase_recommendations", "kbase_summary"];
             
-            if (!kbaseApiKey) {
+            let workerConfig: { base_url?: string; api_key?: string } | null = null;
+            let parseError: string | null = null;
+            
+            if (kbaseSecret) {
+              try {
+                workerConfig = JSON.parse(kbaseSecret);
+                debug.baseUrl = workerConfig?.base_url;
+              } catch (e: any) {
+                parseError = e.message || "Invalid JSON";
+                debug.parseError = parseError;
+              }
+            }
+            
+            if (!kbaseSecret) {
               checkResult = {
                 status: "fail",
-                summary: "TRAFFIC_DOCTOR_API_KEY not configured",
+                summary: "SEO_KBASE secret not found in Bitwarden",
                 metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
+            } else if (parseError) {
+              checkResult = {
+                status: "fail",
+                summary: `Secret JSON invalid: ${parseError}`,
+                metrics: { secret_found: true, json_valid: false },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
+            } else if (!workerConfig?.base_url) {
+              checkResult = {
+                status: "fail",
+                summary: "SEO_KBASE secret missing base_url field",
+                metrics: { secret_found: true, base_url_present: false },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
+            } else if (!kbaseApiKey) {
+              checkResult = {
+                status: "fail",
+                summary: "TRAFFIC_DOCTOR_API_KEY not configured",
+                metrics: { secret_found: true, api_key_found: false },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
+              };
             } else {
-              // API-only worker - direct paths (no frontend fallback needed)
-              const baseUrl = kbaseBaseUrl;
+              // base_url from Bitwarden already includes /api, just append endpoint paths
+              const baseUrl = workerConfig.base_url.replace(/\/+$/, '');
               const headers: Record<string, string> = {
                 "Authorization": `Bearer ${kbaseApiKey}`,
                 "X-API-Key": kbaseApiKey,
