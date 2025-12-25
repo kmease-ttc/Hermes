@@ -107,10 +107,16 @@ All microservice workers must follow the Gold Standard Worker Blueprint (see `do
 
 **Key Rules:**
 - All `/api/*` routes return JSON only (never HTML)
-- Auth via `x-api-key` header
+- Auth via `x-api-key` header (Hermes sends both `x-api-key` and `Authorization: Bearer` for compatibility)
 - Hermes sends `X-Request-Id` for correlation
 - Bitwarden secrets: `{ "base_url": "https://..../api", "api_key": "..." }`
 - Workers echo `request_id` in responses
+
+**API Key Fingerprint Diagnostics:**
+- Hermes computes SHA256 fingerprint of api_key (first 6 + last 6 chars, e.g., "9f2c1a…a31b77")
+- Workers should expose `expected_key_fingerprint` in `/health` response for key alignment verification
+- Fingerprint mismatch triggers `api_key_mismatch` failure bucket with actionable fix suggestion
+- Fingerprints are safe to display (never exposes raw keys)
 
 ### Authentication
 - Google OAuth 2.0 for API access
