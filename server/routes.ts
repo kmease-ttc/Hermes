@@ -2413,6 +2413,50 @@ When answering:
     }
   });
 
+  // =============== CONNECTOR DIAGNOSTICS ===============
+
+  // Get latest diagnostic for a service
+  app.get("/api/sites/:siteId/services/:serviceId/diagnostics/latest", async (req, res) => {
+    try {
+      const { siteId, serviceId } = req.params;
+      const diagnostic = await storage.getLatestConnectorDiagnostic(serviceId, siteId);
+      if (!diagnostic) {
+        return res.json({ diagnostic: null });
+      }
+      res.json({ diagnostic });
+    } catch (error: any) {
+      logger.error("API", "Failed to get latest diagnostic", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get diagnostic history for a service
+  app.get("/api/sites/:siteId/services/:serviceId/diagnostics", async (req, res) => {
+    try {
+      const { serviceId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const diagnostics = await storage.getConnectorDiagnosticsByService(serviceId, limit);
+      res.json({ diagnostics });
+    } catch (error: any) {
+      logger.error("API", "Failed to get diagnostics history", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get diagnostic by run ID
+  app.get("/api/diagnostics/:runId", async (req, res) => {
+    try {
+      const diagnostic = await storage.getConnectorDiagnosticByRunId(req.params.runId);
+      if (!diagnostic) {
+        return res.status(404).json({ error: "Diagnostic not found" });
+      }
+      res.json({ diagnostic });
+    } catch (error: any) {
+      logger.error("API", "Failed to get diagnostic", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // =============== ACTION RUNS (Fix This) ===============
 
   // Run an action for a detected drop
@@ -2923,48 +2967,120 @@ When answering:
       try {
         switch (integration.integrationId) {
           case "google_data_connector": {
-            // Google Data Connector uses OAuth-based local connectors (requiresBaseUrl: false)
-            // Skip worker approach entirely - use local GA4/GSC OAuth connectors
-            const debug: any = { mode: "oauth" };
+            // Google Data Connector uses OAuth-based local connectors with diagnostics
+            const { runDiagnosticsForService } = await import("./diagnosticsRunner");
             
-            const ga4Status = await ga4Connector.testConnection();
-            const gscStatus = await gscConnector.testConnection();
-            const bothPass = ga4Status.success && gscStatus.success;
-            const onePass = ga4Status.success || gscStatus.success;
+            const expectedOutputs = ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages", "ga4_sessions", "ga4_users", "ga4_conversions"];
             
-            const actualOutputs: string[] = [];
-            const missingReason: Record<string, string> = {};
+            const diagResult = await runDiagnosticsForService({
+              serviceId: "google_data_connector",
+              serviceName: "Google Data Connector",
+              siteId: site_id,
+              authMode: 'oauth',
+              expectedResponseType: 'json',
+              requiredOutputFields: expectedOutputs,
+            }, async (runner) => {
+              // Stage 1: Config Loaded
+              const ga4PropertyId = process.env.GA4_PROPERTY_ID;
+              const gscSite = process.env.GSC_SITE;
+              const configKeys = [];
+              if (ga4PropertyId) configKeys.push('GA4_PROPERTY_ID');
+              if (gscSite) configKeys.push('GSC_SITE');
+              
+              if (configKeys.length === 0) {
+                await runner.failStage('config_loaded', 'Missing GA4_PROPERTY_ID and GSC_SITE environment variables', { configKeys });
+                return;
+              }
+              await runner.passStage('config_loaded', `Config loaded: ${configKeys.join(', ')}`, { configKeys });
+              await runner.setConfigSnapshot(configKeys);
+              
+              // Stage 2: Auth Ready
+              const ga4Token = await storage.getToken('google');
+              const hasToken = !!ga4Token?.accessToken;
+              const tokenExpired = ga4Token ? new Date(ga4Token.expiresAt) < new Date() : true;
+              
+              if (!hasToken) {
+                await runner.failStage('auth_ready', 'No OAuth token found - please authenticate with Google', { hasToken, tokenExpired });
+                return;
+              }
+              if (tokenExpired) {
+                await runner.passStage('auth_ready', 'OAuth token expired but refresh may work', { hasToken, tokenExpired, expiresAt: ga4Token?.expiresAt?.toISOString() });
+              } else {
+                await runner.passStage('auth_ready', 'OAuth token present and valid', { hasToken, tokenExpired: false });
+              }
+              
+              // Stage 3: Endpoint Built
+              await runner.passStage('endpoint_built', 'OAuth API endpoints ready (GA4 + GSC)', {
+                ga4Endpoint: 'analyticsdata.googleapis.com',
+                gscEndpoint: 'searchconsole.googleapis.com',
+              });
+              
+              // Stage 4: Request Sent (test actual connections)
+              const ga4Status = await ga4Connector.testConnection();
+              const gscStatus = await gscConnector.testConnection();
+              
+              await runner.passStage('request_sent', 'API requests completed', {
+                ga4Request: { attempted: true, success: ga4Status.success, error: ga4Status.error },
+                gscRequest: { attempted: true, success: gscStatus.success, error: gscStatus.error },
+              });
+              
+              // Stage 5: Response Type Validated
+              const bothJson = ga4Status.success || gscStatus.success;
+              if (bothJson) {
+                await runner.passStage('response_type_validated', 'Received valid JSON responses', {
+                  ga4ResponseType: 'json',
+                  gscResponseType: 'json',
+                });
+              } else {
+                await runner.failStage('response_type_validated', 'No valid responses received', {
+                  ga4Error: ga4Status.error,
+                  gscError: gscStatus.error,
+                });
+                return;
+              }
+              
+              // Stage 6: Schema Validated
+              const actualOutputs: string[] = [];
+              const missingOutputs: string[] = [];
+              
+              if (gscStatus.success) {
+                actualOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
+              } else {
+                missingOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
+              }
+              
+              if (ga4Status.success) {
+                actualOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
+              } else {
+                missingOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
+              }
+              
+              if (actualOutputs.length === expectedOutputs.length) {
+                await runner.passStage('schema_validated', 'All expected outputs available', { actualOutputs, missingOutputs: [] });
+              } else if (actualOutputs.length > 0) {
+                await runner.passStage('schema_validated', `Partial: ${actualOutputs.length}/${expectedOutputs.length} outputs available`, { actualOutputs, missingOutputs });
+              } else {
+                await runner.failStage('schema_validated', 'No outputs available', { actualOutputs: [], missingOutputs });
+                return;
+              }
+              
+              // Stage 7: UI Mapping (optional)
+              await runner.skipStage('ui_mapping', 'UI mapping check not applicable for OAuth connectors');
+            });
             
-            if (gscStatus.success) {
-              actualOutputs.push("gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages");
-            } else {
-              const reason = gscStatus.error || "GSC not connected";
-              ["gsc_impressions", "gsc_clicks", "gsc_ctr", "gsc_position", "gsc_queries", "gsc_pages"].forEach(k => missingReason[k] = reason);
-            }
-            
-            if (ga4Status.success) {
-              actualOutputs.push("ga4_sessions", "ga4_users", "ga4_conversions");
-            } else {
-              const reason = ga4Status.error || "GA4 not connected";
-              ["ga4_sessions", "ga4_users", "ga4_conversions"].forEach(k => missingReason[k] = reason);
-            }
+            const bothPass = diagResult.status === 'pass';
+            const onePass = diagResult.status === 'partial' || diagResult.status === 'pass';
             
             checkResult = {
-              status: bothPass ? "pass" : onePass ? "partial" : "fail",
+              status: diagResult.status,
               summary: bothPass ? "GA4 and GSC connected (OAuth)" : onePass ? "Partial: one service connected (OAuth)" : "GA4/GSC OAuth not configured",
               metrics: { 
-                ga4_connected: ga4Status.success, 
-                gsc_connected: gscStatus.success,
                 mode: "oauth",
-                outputs_received: actualOutputs.length,
-                outputs_missing: 9 - actualOutputs.length,
+                diagnosticRunId: diagResult.runId,
               },
               details: { 
-                ga4: ga4Status, 
-                gsc: gscStatus,
-                actualOutputs,
-                missingReason: Object.keys(missingReason).length > 0 ? missingReason : undefined,
-                debug,
+                diagnosticRunId: diagResult.runId,
+                stages: diagResult.stages,
               },
             };
             break;

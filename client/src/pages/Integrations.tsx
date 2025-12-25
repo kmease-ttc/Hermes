@@ -28,7 +28,9 @@ import {
   Server,
   HelpCircle,
   Edit,
-  Info
+  Info,
+  Copy,
+  MinusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -495,6 +497,37 @@ export default function Integrations() {
     },
   });
 
+  // Fetch diagnostics for selected catalog service
+  const { data: serviceDiagnostics, refetch: refetchDiagnostics } = useQuery<{
+    diagnostic: {
+      runId: string;
+      serviceId: string;
+      serviceName: string;
+      overallStatus: string;
+      stagesJson: Array<{
+        stage: string;
+        status: 'pending' | 'pass' | 'fail' | 'skipped';
+        message: string;
+        durationMs?: number;
+        details?: Record<string, unknown>;
+      }>;
+      configSnapshot?: Record<string, unknown>;
+      startedAt: string;
+      finishedAt?: string;
+      durationMs?: number;
+    } | null;
+  }>({
+    queryKey: ["serviceDiagnostics", selectedCatalogService?.slug, selectedSiteId],
+    queryFn: async () => {
+      if (!selectedCatalogService?.slug) return { diagnostic: null };
+      const siteId = selectedSiteId || 'site_empathy_health_clinic';
+      const res = await fetch(`/api/sites/${siteId}/services/${selectedCatalogService.slug}/diagnostics/latest`);
+      if (!res.ok) return { diagnostic: null };
+      return res.json();
+    },
+    enabled: !!selectedCatalogService?.slug,
+  });
+
   // Fetch platform dependencies (Bitwarden + Postgres real status)
   const { data: platformDeps, refetch: refetchPlatformDeps } = useQuery<PlatformDependencies>({
     queryKey: ["platformDependencies"],
@@ -719,6 +752,7 @@ export default function Integrations() {
       queryClient.invalidateQueries({ queryKey: ["serviceCatalog"] });
       queryClient.invalidateQueries({ queryKey: ["siteSummary"] });
       queryClient.invalidateQueries({ queryKey: ["serviceRuns"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceDiagnostics"] });
       setTestingId(null);
       
       if (data.status === "pass") {
@@ -734,9 +768,6 @@ export default function Integrations() {
           description: data.summary,
         });
       }
-      
-      // Close the modal so user sees the refreshed data in the table
-      setSelectedCatalogService(null);
     },
     onError: (error: any) => {
       setTestingId(null);
@@ -2613,6 +2644,129 @@ export default function Integrations() {
                           </Badge>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* F) Diagnostics Pipeline */}
+                {serviceDiagnostics?.diagnostic && (
+                  <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50" data-testid="diagnostics-panel">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Activity className="w-3 h-3" />
+                        Diagnostics Pipeline
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline"
+                          className={cn(
+                            "text-xs",
+                            serviceDiagnostics.diagnostic.overallStatus === 'pass' ? 'bg-green-100 text-green-700' :
+                            serviceDiagnostics.diagnostic.overallStatus === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          )}
+                        >
+                          {serviceDiagnostics.diagnostic.overallStatus.toUpperCase()}
+                        </Badge>
+                        <button 
+                          onClick={() => {
+                            const stages = serviceDiagnostics.diagnostic?.stagesJson || [];
+                            const blob = JSON.stringify({
+                              runId: serviceDiagnostics.diagnostic?.runId,
+                              serviceId: serviceDiagnostics.diagnostic?.serviceId,
+                              overallStatus: serviceDiagnostics.diagnostic?.overallStatus,
+                              stages: stages.map(s => ({
+                                stage: s.stage,
+                                status: s.status,
+                                message: s.message,
+                                durationMs: s.durationMs,
+                              })),
+                            }, null, 2);
+                            navigator.clipboard.writeText(blob);
+                          }}
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                          data-testid="button-copy-diagnostics"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      {serviceDiagnostics.diagnostic.stagesJson.map((stage, index) => {
+                        const stageLabels: Record<string, string> = {
+                          'config_loaded': 'Config Loaded',
+                          'auth_ready': 'Auth Ready',
+                          'endpoint_built': 'Endpoint Built',
+                          'request_sent': 'Request Sent',
+                          'response_type_validated': 'Response Type Validated',
+                          'schema_validated': 'Schema Validated',
+                          'ui_mapping': 'UI Mapping',
+                        };
+                        const isLast = index === serviceDiagnostics.diagnostic!.stagesJson.length - 1;
+                        
+                        return (
+                          <div key={stage.stage} className="relative flex items-start gap-3 pb-3" data-testid={`diagnostic-stage-${stage.stage}`}>
+                            {!isLast && (
+                              <div 
+                                className={cn(
+                                  "absolute left-[11px] top-[20px] w-0.5 h-[calc(100%-8px)]",
+                                  stage.status === 'pass' ? 'bg-green-300' :
+                                  stage.status === 'fail' ? 'bg-red-300' :
+                                  stage.status === 'skipped' ? 'bg-gray-300' :
+                                  'bg-gray-200'
+                                )}
+                              />
+                            )}
+                            <div className={cn(
+                              "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10",
+                              stage.status === 'pass' ? 'bg-green-100 text-green-600' :
+                              stage.status === 'fail' ? 'bg-red-100 text-red-600' :
+                              stage.status === 'skipped' ? 'bg-gray-100 text-gray-500' :
+                              'bg-gray-100 text-gray-400'
+                            )}>
+                              {stage.status === 'pass' && <CheckCircle className="w-4 h-4" />}
+                              {stage.status === 'fail' && <XCircle className="w-4 h-4" />}
+                              {stage.status === 'skipped' && <MinusCircle className="w-4 h-4" />}
+                              {stage.status === 'pending' && <Clock className="w-4 h-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium">{stageLabels[stage.stage] || stage.stage}</p>
+                                {stage.durationMs !== undefined && (
+                                  <span className="text-xs text-muted-foreground">{stage.durationMs}ms</span>
+                                )}
+                              </div>
+                              <p className={cn(
+                                "text-xs mt-0.5",
+                                stage.status === 'fail' ? 'text-red-600' :
+                                stage.status === 'skipped' ? 'text-gray-500' :
+                                'text-muted-foreground'
+                              )}>
+                                {stage.message}
+                              </p>
+                              {stage.details && Object.keys(stage.details).length > 0 && (
+                                <details className="mt-1">
+                                  <summary className="text-xs text-blue-600 cursor-pointer hover:underline">
+                                    Debug details
+                                  </summary>
+                                  <pre className="mt-1 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs overflow-x-auto">
+                                    {JSON.stringify(stage.details, null, 2)}
+                                  </pre>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Run ID: {serviceDiagnostics.diagnostic.runId}</span>
+                      {serviceDiagnostics.diagnostic.durationMs && (
+                        <span>Total: {(serviceDiagnostics.diagnostic.durationMs / 1000).toFixed(2)}s</span>
+                      )}
                     </div>
                   </div>
                 )}
