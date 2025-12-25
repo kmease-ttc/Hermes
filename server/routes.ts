@@ -4175,9 +4175,9 @@ When answering:
           }
           case "seo_kbase": {
             // SEO KBASE uses TRAFFIC_DOCTOR_API_KEY (same as Google Services worker)
-            // Base URL: https://seo-kbase.replit.app/api
+            // Base URL: https://seo-kbase.replit.app (API endpoints at /health, /smoke-test, /run)
             const kbaseApiKey = process.env.TRAFFIC_DOCTOR_API_KEY;
-            const kbaseBaseUrl = "https://seo-kbase.replit.app/api";
+            const kbaseBaseUrl = "https://seo-kbase.replit.app";
             
             const debug: any = { 
               secretFound: !!kbaseApiKey, 
