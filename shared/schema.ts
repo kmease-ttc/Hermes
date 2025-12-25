@@ -855,6 +855,7 @@ export type ConnectorDiagnostic = typeof connectorDiagnostics.$inferSelect;
 export type FailureBucket = 
   | 'wrong_endpoint_404'
   | 'auth_401_403'
+  | 'api_key_mismatch'
   | 'html_200_app_shell'
   | 'redirect_3xx'
   | 'timeout'
@@ -864,6 +865,7 @@ export type FailureBucket =
 export const FailureBucketLabels: Record<FailureBucket, string> = {
   wrong_endpoint_404: '404 - Wrong Endpoint',
   auth_401_403: '401/403 - Auth Failed',
+  api_key_mismatch: 'API Key Mismatch',
   html_200_app_shell: '200 HTML - SPA Shell',
   redirect_3xx: '3xx - Redirect',
   timeout: 'Timeout',
@@ -874,6 +876,7 @@ export const FailureBucketLabels: Record<FailureBucket, string> = {
 export const FailureBucketSuggestions: Record<FailureBucket, string> = {
   wrong_endpoint_404: 'Verify base_url and expected endpoint path (e.g. /api/health).',
   auth_401_403: 'Verify api_key secret and header format (Authorization Bearer vs x-api-key).',
+  api_key_mismatch: 'Bitwarden api_key does not match worker expected key. Update one side.',
   html_200_app_shell: "You're hitting a UI/SPA route; ensure the worker exposes a JSON /api/health and Hermes calls it.",
   redirect_3xx: 'Check URL construction and redirects; ensure Hermes calls the final JSON endpoint directly.',
   timeout: 'Worker unreachable or slow; check worker uptime and network.',

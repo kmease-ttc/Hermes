@@ -9,6 +9,12 @@ import {
   FailureBucketSuggestions,
 } from "@shared/schema";
 import { logger } from "./utils/logger";
+import { createHash } from "crypto";
+
+export function computeKeyFingerprint(apiKey: string): string {
+  const hash = createHash('sha256').update(apiKey).digest('hex');
+  return `${hash.slice(0, 6)}…${hash.slice(-6)}`;
+}
 
 export interface FailureClassification {
   bucket: FailureBucket;
@@ -325,6 +331,7 @@ export class DiagnosticsRunner {
     }
     if (apiKey) {
       headers['x-api-key'] = apiKey;
+      headers['Authorization'] = `Bearer ${apiKey}`;
     }
     return headers;
   }

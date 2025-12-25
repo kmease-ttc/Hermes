@@ -1,10 +1,12 @@
 import { logger } from "./utils/logger";
 import { bitwardenProvider } from "./vault/BitwardenProvider";
 import { getServiceBySlug, SERVICE_SECRET_MAP, ServiceSecretMapping } from "@shared/serviceSecretMap";
+import { computeKeyFingerprint } from "./diagnosticsRunner";
 
 export interface WorkerConfig {
   base_url: string | null;
   api_key: string | null;
+  api_key_fingerprint: string | null;
   health_path: string;
   start_path: string;
   status_path: string;
@@ -35,6 +37,7 @@ export interface ServiceConfigDebug {
 const DEFAULT_CONFIG: WorkerConfig = {
   base_url: null,
   api_key: null,
+  api_key_fingerprint: null,
   health_path: "/health",
   start_path: "/api/run",
   status_path: "/api/status",
@@ -105,6 +108,7 @@ export async function resolveWorkerConfig(
         secretName,
         rawValueType: "string",
         api_key: trimmedValue,
+        api_key_fingerprint: computeKeyFingerprint(trimmedValue),
         error: "Secret is plain string (not JSON) - treating as API key only, base_url missing",
       };
     }
@@ -132,6 +136,7 @@ export async function resolveWorkerConfig(
         raw: parsed,
         base_url: normalized.base_url,
         api_key: normalized.api_key,
+        api_key_fingerprint: normalized.api_key ? computeKeyFingerprint(normalized.api_key) : null,
         error: `Invalid base_url: must start with http:// or https://`,
       };
     }
@@ -145,6 +150,8 @@ export async function resolveWorkerConfig(
 
     // Only require base_url for workers that need it
     // api_key is optional - connection tests can run without it (unauthenticated health checks)
+    const apiKeyFingerprint = normalized.api_key ? computeKeyFingerprint(normalized.api_key) : null;
+    
     if (mapping.requiresBaseUrl && !normalized.base_url) {
       return {
         ...DEFAULT_CONFIG,
@@ -153,6 +160,7 @@ export async function resolveWorkerConfig(
         raw: parsed,
         base_url: normalized.base_url,
         api_key: normalized.api_key,
+        api_key_fingerprint: apiKeyFingerprint,
         health_path: normalized.health_path,
         start_path: normalized.start_path,
         status_path: normalized.status_path,
@@ -164,6 +172,7 @@ export async function resolveWorkerConfig(
     return {
       base_url: normalized.base_url,
       api_key: normalized.api_key,
+      api_key_fingerprint: apiKeyFingerprint,
       health_path: normalized.health_path,
       start_path: normalized.start_path,
       status_path: normalized.status_path,

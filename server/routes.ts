@@ -3005,17 +3005,20 @@ When answering:
               });
               await runner.setConfigSnapshot([workerConfig.secretName || 'SEO_Google_Connector'], workerConfig.base_url);
               
-              // Stage 2: Auth Ready - API key is present
+              // Stage 2: Auth Ready - API key is present with fingerprint
               if (!workerConfig.api_key) {
                 await runner.failStage('auth_ready', 'API key missing in worker config', {
                   authMode: 'api_key',
                   keyPresent: false,
+                  hermes_key_fingerprint: null,
                 });
                 return;
               }
               await runner.passStage('auth_ready', 'API key present in worker config', {
                 authMode: 'api_key',
                 keyPresent: true,
+                auth_header_used: 'x-api-key + Authorization',
+                hermes_key_fingerprint: workerConfig.api_key_fingerprint,
               });
               
               // Stage 3: Endpoint Built - Use workerEndpoints from mapping
@@ -3108,9 +3111,37 @@ When answering:
                 return;
               }
               
+              // Parse health response to check fingerprint
+              let healthJson: any = null;
+              let workerFingerprint: string | null = null;
+              try {
+                healthJson = JSON.parse(healthBody);
+                workerFingerprint = healthJson.expected_key_fingerprint || null;
+              } catch (e) {
+                // Health response is not valid JSON, proceed without fingerprint check
+              }
+              
+              // Check for fingerprint mismatch
+              if (workerFingerprint && workerConfig.api_key_fingerprint) {
+                if (workerFingerprint !== workerConfig.api_key_fingerprint) {
+                  await runner.failStage('response_type_validated', 'API key mismatch - fingerprints differ', {
+                    statusCode: healthStatus,
+                    contentType: healthContentType,
+                    hermes_key_fingerprint: workerConfig.api_key_fingerprint,
+                    worker_expected_fingerprint: workerFingerprint,
+                    failure_bucket: 'api_key_mismatch',
+                    suggested_fix: 'Bitwarden api_key does not match worker expected key. Update one side.',
+                  });
+                  return;
+                }
+              }
+              
               await runner.passStage('response_type_validated', 'Valid JSON response', {
                 statusCode: healthStatus,
                 contentType: healthContentType,
+                hermes_key_fingerprint: workerConfig.api_key_fingerprint,
+                worker_expected_fingerprint: workerFingerprint || 'not_provided',
+                fingerprints_match: workerFingerprint === workerConfig.api_key_fingerprint,
               });
               
               // Stage 6: Schema Validated - Try smoke-test endpoint for outputs
