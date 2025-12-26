@@ -218,9 +218,9 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     category: "content",
     workerEndpoints: {
       health: "/health",
-      smokeTest: "/smoke-test",
+      smokeTest: "/health",  // Worker uses /health for smoke test
       capabilities: "/capabilities",
-      run: "/run"
+      run: "/validate"
     }
   },
   {
