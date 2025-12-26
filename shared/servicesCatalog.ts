@@ -282,11 +282,12 @@ export const servicesCatalog: ServiceDefinition[] = [
     description: "Monitors PageSpeed Insights and CrUX performance signals including LCP, CLS, and INP. Tracks performance regressions and alerts on significant drops.",
     purpose: "Track LCP, CLS, INP and detect performance regressions",
     inputs: ["site_domain", "page_urls"],
-    outputs: ["lcp", "cls", "inp", "performance_score", "regressions"],
+    outputs: ["ok", "service", "version", "time"],
     keyMetrics: ["lcp", "cls", "inp", "performance_score"],
     commonFailures: ["timeout", "rate_limited", "no_data", "invalid_response"],
     runTriggers: ["scheduled", "manual"],
     testMode: "worker",
+    secretKeyName: "SEO_CORE_WEB_VITALS",
   },
   {
     slug: "competitive_snapshot",

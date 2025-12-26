@@ -127,17 +127,24 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "core_web_vitals",  // Matches catalog
     displayName: "Core Web Vitals Monitor",
-    bitwardenSecret: "SEO_CORE_WEB_VITALS",
+    bitwardenSecret: "SEO_CORE_WEB_VITALS",  // JSON: { base_url, api_key }
     type: "worker",
     requiresBaseUrl: true,
     category: "analysis",
+    fallbackEnvVar: "SEO_CORE_WEB_VITALS_API_KEY",  // Replit secret for API key
+    fallbackBaseUrlEnvVar: "SEO_CORE_WEB_VITALS_BASE_URL",  // Env var for base URL
     workerEndpoints: {
-      health: "/health",
-      smokeTest: "/smoke-test",
-      capabilities: "/capabilities",
-      run: "/run",
-      vitals: "/api/vitals",
-      status: "/api/vitals/status"
+      health: "/api/health",
+      smokeTest: "/api/health",  // Use health as smoke test since no dedicated smoke endpoint
+      capabilities: "/api/capabilities",
+      authCheck: "/api/auth/check",
+      websites: "/api/v1/websites",
+      triggerRun: "/api/v1/runs",
+      getRun: "/api/v1/runs",
+      results: "/api/v1/websites/:website_id/results/latest",
+      timeseries: "/api/v1/websites/:website_id/results/timeseries",
+      regressions: "/api/v1/websites/:website_id/regressions",
+      summary: "/api/v1/websites/:website_id/summary"
     }
   },
   {
