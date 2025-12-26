@@ -4865,25 +4865,32 @@ When answering:
         return res.status(404).json({ error: "Integration not found" });
       }
 
-      const { baseUrl, healthEndpoint, metaEndpoint, authRequired, secretKeyName } = integration;
+      const { healthEndpoint, metaEndpoint, authRequired, secretKeyName } = integration;
       const startTime = Date.now();
       let healthResult: any = { status: "unknown", response: null, error: null };
       let metaResult: any = { status: "unknown", response: null, error: null };
 
-      // Build headers - include API key if auth is required
+      // Build headers and get base_url from worker config (Bitwarden)
       const headers: Record<string, string> = { 'Accept': 'application/json' };
+      let baseUrl = integration.baseUrl; // Default to DB value
       
-      if (authRequired && secretKeyName) {
-        try {
-          const { resolveWorkerConfig } = await import("./workerConfigResolver");
-          const workerConfig = await resolveWorkerConfig(integration.integrationId);
-          if (workerConfig.api_key) {
-            headers['X-API-Key'] = workerConfig.api_key;
-            headers['Authorization'] = `Bearer ${workerConfig.api_key}`;
-          }
-        } catch (e) {
-          logger.warn("API", `Failed to resolve API key for ${integration.integrationId}`, { error: (e as Error).message });
+      // Resolve worker config from Bitwarden for base_url and api_key
+      try {
+        const { resolveWorkerConfig } = await import("./workerConfigResolver");
+        const workerConfig = await resolveWorkerConfig(integration.integrationId);
+        
+        // Use Bitwarden base_url if available
+        if (workerConfig.base_url) {
+          baseUrl = workerConfig.base_url;
         }
+        
+        // Add API key if available
+        if (workerConfig.api_key) {
+          headers['X-API-Key'] = workerConfig.api_key;
+          headers['Authorization'] = `Bearer ${workerConfig.api_key}`;
+        }
+      } catch (e) {
+        logger.warn("API", `Failed to resolve worker config for ${integration.integrationId}`, { error: (e as Error).message });
       }
 
       // Check if service has a base URL configured
