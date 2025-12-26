@@ -108,18 +108,17 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "crawl_render",  // Matches catalog
     displayName: "Technical SEO",
-    bitwardenSecret: "SEO_TECHNICAL_CRAWLER_API_KEY",
+    bitwardenSecret: "SEO_Technical_Crawler",  // JSON: { base_url, api_key }
     type: "worker",
     requiresBaseUrl: true,
     category: "analysis",
     workerEndpoints: {
-      health: "/health",
-      smokeTest: "/smoke-test",
-      capabilities: "/capabilities",
-      run: "/run",
-      crawl: "/api/crawl",
-      status: "/api/crawl/status",
-      results: "/api/crawl/results"
+      health: "/api/health",
+      smokeTest: "/api/smoke-test",
+      capabilities: "/api/capabilities",
+      run: "/api/run",
+      crawlStart: "/api/crawl/start",
+      crawlStatus: "/api/crawl/status"
     }
   },
   {
