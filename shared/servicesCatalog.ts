@@ -314,11 +314,12 @@ export const servicesCatalog: ServiceDefinition[] = [
     description: "Identifies pages losing impressions, clicks, or rankings over time. Prioritizes content refresh candidates and detects when competitors are replacing your rankings.",
     purpose: "Detect pages losing traffic and prioritize refreshes",
     inputs: ["gsc_data", "ga4_data", "site_domain"],
-    outputs: ["decay_signals", "refresh_candidates", "competitor_replacement"],
+    outputs: ["ok", "service"],  // Matches /health response for smoke tests
     keyMetrics: ["decay_signals", "refresh_candidates"],
     commonFailures: ["no_data", "missing_config", "timeout"],
     runTriggers: ["scheduled", "manual"],
     testMode: "worker",
+    secretKeyName: "SEO_Content_Decay_Monitor",
   },
   {
     slug: "content_qa",

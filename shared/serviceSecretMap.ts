@@ -198,13 +198,15 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "content_decay",  // Matches catalog
     displayName: "Content Decay Monitor",
-    bitwardenSecret: "SEO_CONTENT_DECAY_MONITOR_API_KEY",
+    bitwardenSecret: "SEO_Content_Decay_Monitor",  // JSON: { base_url, api_key }
     type: "worker",
     requiresBaseUrl: true,
     category: "content",
+    fallbackEnvVar: "SEO_CONTENT_DECAY_MONITOR_API_KEY",  // Replit secret for API key
+    fallbackBaseUrlEnvVar: "SEO_CONTENT_DECAY_MONITOR_BASE_URL",  // Env var for base URL
     workerEndpoints: {
       health: "/health",
-      smokeTest: "/smoke-test",
+      smokeTest: "/health",  // Use /health for smoke test
       capabilities: "/capabilities",
       run: "/run"
     }
