@@ -160,7 +160,7 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
   notifications: {
     service_id: "notifications",
     nickname: "Herald",
-    role: "Communications Officer",
+    role: "Notifications",
     color: "#A855F7",
     icon: Bell,
     blurb: "Sends alerts via email, Slack, and SMS.",
