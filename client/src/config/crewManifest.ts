@@ -70,7 +70,7 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
   backlink_authority: {
     service_id: "backlink_authority",
     nickname: "Beacon",
-    role: "Signal Engineer",
+    role: "Domain Authority",
     color: "#F59E0B",
     icon: Radio,
     blurb: "Tracks backlinks, domain authority, and link velocity.",
