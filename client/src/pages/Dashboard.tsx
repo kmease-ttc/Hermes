@@ -496,7 +496,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="grid lg:grid-cols-2 gap-4">
+        <section className="space-y-4">
           <BenchmarkComparison />
           <KnowledgeBaseCard />
         </section>
