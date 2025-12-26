@@ -4109,88 +4109,33 @@ When answering:
             break;
           }
           case "crawl_render": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-            const crawlSecret = await bitwardenProvider.getSecret("SEO_TECHNICAL_CRAWLER_API_KEY");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const crawlConfig = await resolveWorkerConfig("crawl_render");
             
-            const debug: any = { secretFound: !!crawlSecret, requestedUrls: [], responses: [] };
-            const actualOutputs: string[] = [];
+            const debug: any = { 
+              secretFound: crawlConfig.rawValueType !== "null", 
+              secretName: crawlConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["pages_crawled", "indexable_pages", "non_200_urls", "canonical_errors", 
                                       "render_failures", "redirect_chains", "orphan_pages", "meta_tags"];
             
-            // Parse worker credentials
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (crawlSecret) {
-              try {
-                workerConfig = JSON.parse(crawlSecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            // Handle different failure modes explicitly
-            if (!crawlSecret) {
+            if (!crawlConfig.valid || !crawlConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_TECHNICAL_CRAWLER_API_KEY to Bitwarden",
-                metrics: { 
-                  secret_found: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Add SEO_TECHNICAL_CRAWLER_API_KEY secret to Bitwarden with JSON: { \"base_url\": \"...\", \"api_key\": \"...\" }",
-                },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { 
-                  secret_found: true,
-                  json_valid: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Update SEO_TECHNICAL_CRAWLER_API_KEY with valid JSON: { \"base_url\": \"...\", \"api_key\": \"...\" }",
-                },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { 
-                  secret_found: true,
-                  json_valid: true,
-                  base_url_present: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Update secret to include base_url: { \"base_url\": \"https://your-worker.replit.app\", \"api_key\": \"...\" }",
-                },
+                summary: crawlConfig.error || "Worker not configured - add SEO_Technical_Crawler to Bitwarden or set SEO_TECHNICAL_CRAWLER_BASE_URL env var",
+                metrics: { secret_found: crawlConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              // Worker is configured - test /health endpoint
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = crawlConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (crawlConfig.api_key) {
+                headers["Authorization"] = `Bearer ${crawlConfig.api_key}`;
+                headers["X-API-Key"] = crawlConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -4272,86 +4217,32 @@ When answering:
             break;
           }
           case "core_web_vitals": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-            const vitalsSecret = await bitwardenProvider.getSecret("SEO_CORE_WEB_VITALS");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const vitalsConfig = await resolveWorkerConfig("core_web_vitals");
             
-            const debug: any = { secretFound: !!vitalsSecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: vitalsConfig.rawValueType !== "null", 
+              secretName: vitalsConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["lcp", "cls", "inp", "performance_score", "regressions"];
             
-            // Parse worker credentials
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (vitalsSecret) {
-              try {
-                workerConfig = JSON.parse(vitalsSecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            // Handle different failure modes explicitly
-            if (!vitalsSecret) {
+            if (!vitalsConfig.valid || !vitalsConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_CORE_WEB_VITALS to Bitwarden",
-                metrics: { 
-                  secret_found: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Add SEO_CORE_WEB_VITALS secret to Bitwarden with JSON: { \"base_url\": \"...\", \"api_key\": \"...\" }",
-                },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { 
-                  secret_found: true,
-                  json_valid: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Update SEO_CORE_WEB_VITALS with valid JSON: { \"base_url\": \"...\", \"api_key\": \"...\" }",
-                },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { 
-                  secret_found: true,
-                  json_valid: true,
-                  base_url_present: false,
-                  outputs_available: 0,
-                  outputs_missing: expectedOutputs.length,
-                },
-                details: { 
-                  debug,
-                  actualOutputs: [],
-                  missingOutputs: expectedOutputs,
-                  fix: "Update secret to include base_url: { \"base_url\": \"https://your-worker.replit.app\", \"api_key\": \"...\" }",
-                },
+                summary: vitalsConfig.error || "Worker not configured - add SEO_Core_Web_Vitals to Bitwarden or set SEO_CORE_WEB_VITALS_BASE_URL env var",
+                metrics: { secret_found: vitalsConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
+                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              // Worker is configured - test /health endpoint
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = vitalsConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (vitalsConfig.api_key) {
+                headers["Authorization"] = `Bearer ${vitalsConfig.api_key}`;
+                headers["X-API-Key"] = vitalsConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -4496,53 +4387,32 @@ When answering:
             break;
           }
           case "backlink_authority": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider: backlinkProvider } = await import("./vault/BitwardenProvider");
-            const backlinkSecret = await backlinkProvider.getSecret("SEO_Backlinks");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const backlinkConfig = await resolveWorkerConfig("backlink_authority");
             
-            const debug: any = { secretFound: !!backlinkSecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: backlinkConfig.rawValueType !== "null", 
+              secretName: backlinkConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["new_links", "lost_links", "domain_authority", "anchor_distribution", "link_velocity"];
             
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (backlinkSecret) {
-              try {
-                workerConfig = JSON.parse(backlinkSecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!backlinkSecret) {
+            if (!backlinkConfig.valid || !backlinkConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Backlinks to Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                summary: backlinkConfig.error || "Worker not configured - add SEO_Backlinks to Bitwarden or set SEO_BACKLINKS_BASE_URL env var",
+                metrics: { secret_found: backlinkConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = backlinkConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (backlinkConfig.api_key) {
+                headers["Authorization"] = `Bearer ${backlinkConfig.api_key}`;
+                headers["X-API-Key"] = backlinkConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -4581,53 +4451,32 @@ When answering:
             break;
           }
           case "notifications": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider: notifyProvider } = await import("./vault/BitwardenProvider");
-            const notifySecret = await notifyProvider.getSecret("SEO_Notifications");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const notifyConfig = await resolveWorkerConfig("notifications");
             
-            const debug: any = { secretFound: !!notifySecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: notifyConfig.rawValueType !== "null", 
+              secretName: notifyConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["notifications_sent", "alert_delivered"];
             
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (notifySecret) {
-              try {
-                workerConfig = JSON.parse(notifySecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!notifySecret) {
+            if (!notifyConfig.valid || !notifyConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Notifications to Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                summary: notifyConfig.error || "Worker not configured - add SEO_Notifications to Bitwarden or set SEO_NOTIFICATIONS_BASE_URL env var",
+                metrics: { secret_found: notifyConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = notifyConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (notifyConfig.api_key) {
+                headers["Authorization"] = `Bearer ${notifyConfig.api_key}`;
+                headers["X-API-Key"] = notifyConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -4666,53 +4515,32 @@ When answering:
             break;
           }
           case "content_qa": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider: qaProvider } = await import("./vault/BitwardenProvider");
-            const qaSecret = await qaProvider.getSecret("SEO_Content_Validator");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const qaConfig = await resolveWorkerConfig("content_qa");
             
-            const debug: any = { secretFound: !!qaSecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: qaConfig.rawValueType !== "null", 
+              secretName: qaConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["qa_score", "violations", "compliance_status", "fix_list"];
             
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (qaSecret) {
-              try {
-                workerConfig = JSON.parse(qaSecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!qaSecret) {
+            if (!qaConfig.valid || !qaConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Content_Validator to Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                summary: qaConfig.error || "Worker not configured - add SEO_Content_QA to Bitwarden or set SEO_CONTENT_QA_BASE_URL env var",
+                metrics: { secret_found: qaConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = qaConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (qaConfig.api_key) {
+                headers["Authorization"] = `Bearer ${qaConfig.api_key}`;
+                headers["X-API-Key"] = qaConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -4751,55 +4579,27 @@ When answering:
             break;
           }
           case "seo_kbase": {
-            // SEO KBASE - fetch config from Bitwarden SEO_KBASE secret (base_url + api_key + write_key)
-            const { bitwardenProvider: kbaseProvider } = await import("./vault/BitwardenProvider");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
             const { createHash } = await import("crypto");
-            const kbaseSecret = await kbaseProvider.getSecret("SEO_KBASE");
+            const kbaseConfig = await resolveWorkerConfig("seo_kbase");
             
             const debug: any = { 
-              secretFound: !!kbaseSecret, 
+              secretFound: kbaseConfig.rawValueType !== "null", 
+              secretName: kbaseConfig.secretName,
               requestedUrls: [], 
               responses: [],
             };
             const expectedOutputs = ["seo_recommendations", "best_practices", "optimization_tips", "reference_docs"];
             
-            let workerConfig: { base_url?: string; api_key?: string; write_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (kbaseSecret) {
-              try {
-                workerConfig = JSON.parse(kbaseSecret);
-                debug.baseUrl = workerConfig?.base_url;
-                debug.apiKeyFound = !!workerConfig?.api_key;
-                debug.writeKeyFound = !!workerConfig?.write_key;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!kbaseSecret) {
+            if (!kbaseConfig.valid || !kbaseConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "SEO_KBASE secret not found in Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
+                summary: kbaseConfig.error || "Worker not configured - add SEO_KBASE to Bitwarden or set SEO_KBASE_BASE_URL env var",
+                metrics: { secret_found: kbaseConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "SEO_KBASE secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.api_key) {
+            } else if (!kbaseConfig.api_key) {
               checkResult = {
                 status: "fail",
                 summary: "SEO_KBASE secret missing api_key field",
@@ -4808,9 +4608,10 @@ When answering:
               };
             } else {
               // base_url from Bitwarden already includes /api, just append endpoint paths
-              const baseUrl = workerConfig.base_url.replace(/\/+$/, '');
-              const kbaseApiKey = workerConfig.api_key;
-              const kbaseWriteKey = workerConfig.write_key;
+              const baseUrl = kbaseConfig.base_url.replace(/\/+$/, '');
+              debug.baseUrl = baseUrl;
+              const kbaseApiKey = kbaseConfig.api_key;
+              const kbaseWriteKey = kbaseConfig.write_key;
               const headers: Record<string, string> = {
                 "x-api-key": kbaseApiKey,
               };
@@ -4973,53 +4774,32 @@ When answering:
             break;
           }
           case "content_decay": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider: decayProvider } = await import("./vault/BitwardenProvider");
-            const decaySecret = await decayProvider.getSecret("SEO_CONTENT_DECAY_MONITOR_API_KEY");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const decayConfig = await resolveWorkerConfig("content_decay");
             
-            const debug: any = { secretFound: !!decaySecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: decayConfig.rawValueType !== "null", 
+              secretName: decayConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["decay_signals", "refresh_candidates", "competitor_replacement"];
             
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (decaySecret) {
-              try {
-                workerConfig = JSON.parse(decaySecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!decaySecret) {
+            if (!decayConfig.valid || !decayConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_CONTENT_DECAY_MONITOR_API_KEY to Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                summary: decayConfig.error || "Worker not configured - add SEO_Content_Decay to Bitwarden or set SEO_CONTENT_DECAY_BASE_URL env var",
+                metrics: { secret_found: decayConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = decayConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (decayConfig.api_key) {
+                headers["Authorization"] = `Bearer ${decayConfig.api_key}`;
+                headers["X-API-Key"] = decayConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
@@ -5058,53 +4838,32 @@ When answering:
             break;
           }
           case "competitive_snapshot": {
-            // Check if the worker is configured via Bitwarden secret
-            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-            const compSecret = await bitwardenProvider.getSecret("SEO_Competitive_Intel");
+            // Use workerConfigResolver for aliases and env var fallback
+            const { resolveWorkerConfig } = await import("./workerConfigResolver");
+            const compConfig = await resolveWorkerConfig("competitive_snapshot");
             
-            const debug: any = { secretFound: !!compSecret, requestedUrls: [], responses: [] };
+            const debug: any = { 
+              secretFound: compConfig.rawValueType !== "null", 
+              secretName: compConfig.secretName,
+              requestedUrls: [], 
+              responses: [] 
+            };
             const expectedOutputs = ["competitors", "ranking_pages", "page_templates", "content_structure"];
             
-            let workerConfig: { base_url?: string; api_key?: string } | null = null;
-            let parseError: string | null = null;
-            
-            if (compSecret) {
-              try {
-                workerConfig = JSON.parse(compSecret);
-                debug.baseUrl = workerConfig?.base_url;
-              } catch (e: any) {
-                parseError = e.message || "Invalid JSON";
-                debug.parseError = parseError;
-              }
-            }
-            
-            if (!compSecret) {
+            if (!compConfig.valid || !compConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: "Worker secret not found - add SEO_Competitive_Intel to Bitwarden",
-                metrics: { secret_found: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (parseError) {
-              checkResult = {
-                status: "fail",
-                summary: `Secret JSON invalid: ${parseError}`,
-                metrics: { secret_found: true, json_valid: false, outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else if (!workerConfig?.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: "Worker secret missing base_url field",
-                metrics: { secret_found: true, base_url_present: false, outputs_missing: expectedOutputs.length },
+                summary: compConfig.error || "Worker not configured - add SEO_Competitive_Intel to Bitwarden or set SEO_COMPETITIVE_INTEL_BASE_URL env var",
+                metrics: { secret_found: compConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              const baseUrl = workerConfig.base_url.replace(/\/$/, '');
+              const baseUrl = compConfig.base_url.replace(/\/$/, '');
+              debug.baseUrl = baseUrl;
               const headers: Record<string, string> = {};
-              if (workerConfig.api_key) {
-                headers["Authorization"] = `Bearer ${workerConfig.api_key}`;
-                headers["X-API-Key"] = workerConfig.api_key;
+              if (compConfig.api_key) {
+                headers["Authorization"] = `Bearer ${compConfig.api_key}`;
+                headers["X-API-Key"] = compConfig.api_key;
               }
               
               const healthUrl = `${baseUrl}/health`;
