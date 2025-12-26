@@ -192,7 +192,7 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     serviceSlug: "content_generator",  // Matches catalog
     displayName: "Content Generator",
     bitwardenSecret: "SEO_Blog_Writer",  // Preferred: JSON: { base_url (with /api), api_key }
-    aliasSecrets: ["SEO_blog_writer", "seo_blog_writer", "Blog_Writer", "Content_Generator"],
+    aliasSecrets: ["SEO_Content_GENERATOR", "SEO_content_generator", "SEO_blog_writer", "seo_blog_writer", "Blog_Writer", "Content_Generator"],
     type: "worker",
     requiresBaseUrl: true,
     category: "content",
