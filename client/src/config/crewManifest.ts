@@ -163,8 +163,8 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
     role: "Notifications",
     color: "#A855F7",
     icon: Bell,
-    blurb: "Sends alerts via email, Slack, and SMS.",
-    capabilities: ["Email Alerts", "Slack Notifications", "SMS Alerts"],
+    blurb: "Sends alerts via email and SMS.",
+    capabilities: ["Email Alerts", "SMS Alerts"],
     dependencies: ["orchestrator"],
   },
   audit_log: {
