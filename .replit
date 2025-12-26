@@ -54,3 +54,4 @@ SEO_CORE_WEB_VITALS_BASE_URL = "https://d377f1d2-aad4-4ab3-868d-682f4e50fcdf-00-
 SEO_BLOG_WRITER_BASE_URL = "https://worker-blog-writer--providers2.replit.app/api"
 SEO_CONTENT_DECAY_MONITOR_BASE_URL = "https://b47c21c1-02eb-4525-9592-77153728db07-00-3phyzhsp8vqry.picard.replit.dev"
 SEO_BACKLINKS_BASE_URL = "https://backlink-blaster--providers2.replit.app/api"
+SEO_NOTIFICATIONS_BASE_URL = "https://notification-system--providers2.replit.app/api"
