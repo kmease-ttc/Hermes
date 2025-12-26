@@ -112,6 +112,15 @@ import {
   industryBenchmarks,
   type IndustryBenchmark,
   type InsertIndustryBenchmark,
+  seoWorkerResults,
+  type SeoWorkerResult,
+  type InsertSeoWorkerResult,
+  seoSuggestions,
+  type SeoSuggestion,
+  type InsertSeoSuggestion,
+  seoKbaseInsights,
+  type SeoKbaseInsight,
+  type InsertSeoKbaseInsight,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull } from "drizzle-orm";
 
@@ -334,6 +343,29 @@ export interface IStorage {
   getAllBenchmarks(): Promise<IndustryBenchmark[]>;
   getAvailableIndustries(): Promise<string[]>;
   saveBenchmarks(benchmarks: InsertIndustryBenchmark[]): Promise<IndustryBenchmark[]>;
+  
+  // SEO Worker Results
+  saveSeoWorkerResult(result: InsertSeoWorkerResult): Promise<SeoWorkerResult>;
+  saveSeoWorkerResults(results: InsertSeoWorkerResult[]): Promise<SeoWorkerResult[]>;
+  getSeoWorkerResultsByRunId(runId: string): Promise<SeoWorkerResult[]>;
+  getSeoWorkerResultsBySite(siteId: string, limit?: number): Promise<SeoWorkerResult[]>;
+  getLatestSeoWorkerResults(siteId: string): Promise<SeoWorkerResult[]>;
+  updateSeoWorkerResult(id: number, updates: Partial<InsertSeoWorkerResult>): Promise<SeoWorkerResult | undefined>;
+  
+  // SEO Suggestions
+  saveSeoSuggestion(suggestion: InsertSeoSuggestion): Promise<SeoSuggestion>;
+  saveSeoSuggestions(suggestions: InsertSeoSuggestion[]): Promise<SeoSuggestion[]>;
+  getSeoSuggestionsByRunId(runId: string): Promise<SeoSuggestion[]>;
+  getSeoSuggestionsBySite(siteId: string, status?: string, limit?: number): Promise<SeoSuggestion[]>;
+  getLatestSeoSuggestions(siteId: string, limit?: number): Promise<SeoSuggestion[]>;
+  updateSeoSuggestionStatus(suggestionId: string, status: string): Promise<void>;
+  
+  // SEO KBase Insights
+  saveSeoKbaseInsight(insight: InsertSeoKbaseInsight): Promise<SeoKbaseInsight>;
+  saveSeoKbaseInsights(insights: InsertSeoKbaseInsight[]): Promise<SeoKbaseInsight[]>;
+  getSeoKbaseInsightsByRunId(runId: string): Promise<SeoKbaseInsight[]>;
+  getSeoKbaseInsightsBySite(siteId: string, limit?: number): Promise<SeoKbaseInsight[]>;
+  getLatestSeoKbaseInsights(siteId: string, limit?: number): Promise<SeoKbaseInsight[]>;
 }
 
 class DBStorage implements IStorage {
@@ -1667,6 +1699,151 @@ class DBStorage implements IStorage {
   async saveBenchmarks(benchmarks: InsertIndustryBenchmark[]): Promise<IndustryBenchmark[]> {
     if (benchmarks.length === 0) return [];
     return db.insert(industryBenchmarks).values(benchmarks).returning();
+  }
+
+  // SEO Worker Results
+  async saveSeoWorkerResult(result: InsertSeoWorkerResult): Promise<SeoWorkerResult> {
+    const [created] = await db.insert(seoWorkerResults).values(result).returning();
+    return created;
+  }
+
+  async saveSeoWorkerResults(results: InsertSeoWorkerResult[]): Promise<SeoWorkerResult[]> {
+    if (results.length === 0) return [];
+    return db.insert(seoWorkerResults).values(results).returning();
+  }
+
+  async getSeoWorkerResultsByRunId(runId: string): Promise<SeoWorkerResult[]> {
+    return db
+      .select()
+      .from(seoWorkerResults)
+      .where(eq(seoWorkerResults.runId, runId))
+      .orderBy(seoWorkerResults.workerKey);
+  }
+
+  async getSeoWorkerResultsBySite(siteId: string, limit = 50): Promise<SeoWorkerResult[]> {
+    return db
+      .select()
+      .from(seoWorkerResults)
+      .where(eq(seoWorkerResults.siteId, siteId))
+      .orderBy(desc(seoWorkerResults.createdAt))
+      .limit(limit);
+  }
+
+  async getLatestSeoWorkerResults(siteId: string): Promise<SeoWorkerResult[]> {
+    const latestRun = await db
+      .selectDistinct({ runId: seoWorkerResults.runId })
+      .from(seoWorkerResults)
+      .where(eq(seoWorkerResults.siteId, siteId))
+      .orderBy(desc(seoWorkerResults.createdAt))
+      .limit(1);
+    
+    if (latestRun.length === 0) return [];
+    
+    return db
+      .select()
+      .from(seoWorkerResults)
+      .where(and(
+        eq(seoWorkerResults.siteId, siteId),
+        eq(seoWorkerResults.runId, latestRun[0].runId)
+      ))
+      .orderBy(seoWorkerResults.workerKey);
+  }
+
+  async updateSeoWorkerResult(id: number, updates: Partial<InsertSeoWorkerResult>): Promise<SeoWorkerResult | undefined> {
+    const [updated] = await db
+      .update(seoWorkerResults)
+      .set(updates)
+      .where(eq(seoWorkerResults.id, id))
+      .returning();
+    return updated;
+  }
+
+  // SEO Suggestions
+  async saveSeoSuggestion(suggestion: InsertSeoSuggestion): Promise<SeoSuggestion> {
+    const [created] = await db.insert(seoSuggestions).values(suggestion).returning();
+    return created;
+  }
+
+  async saveSeoSuggestions(suggestions: InsertSeoSuggestion[]): Promise<SeoSuggestion[]> {
+    if (suggestions.length === 0) return [];
+    return db.insert(seoSuggestions).values(suggestions).returning();
+  }
+
+  async getSeoSuggestionsByRunId(runId: string): Promise<SeoSuggestion[]> {
+    return db
+      .select()
+      .from(seoSuggestions)
+      .where(eq(seoSuggestions.runId, runId))
+      .orderBy(desc(seoSuggestions.severity), seoSuggestions.category);
+  }
+
+  async getSeoSuggestionsBySite(siteId: string, status?: string, limit = 50): Promise<SeoSuggestion[]> {
+    const conditions = [eq(seoSuggestions.siteId, siteId)];
+    if (status) {
+      conditions.push(eq(seoSuggestions.status, status));
+    }
+    return db
+      .select()
+      .from(seoSuggestions)
+      .where(and(...conditions))
+      .orderBy(desc(seoSuggestions.createdAt))
+      .limit(limit);
+  }
+
+  async getLatestSeoSuggestions(siteId: string, limit = 20): Promise<SeoSuggestion[]> {
+    return db
+      .select()
+      .from(seoSuggestions)
+      .where(and(
+        eq(seoSuggestions.siteId, siteId),
+        eq(seoSuggestions.status, 'open')
+      ))
+      .orderBy(desc(seoSuggestions.severity), desc(seoSuggestions.createdAt))
+      .limit(limit);
+  }
+
+  async updateSeoSuggestionStatus(suggestionId: string, status: string): Promise<void> {
+    await db
+      .update(seoSuggestions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(seoSuggestions.suggestionId, suggestionId));
+  }
+
+  // SEO KBase Insights
+  async saveSeoKbaseInsight(insight: InsertSeoKbaseInsight): Promise<SeoKbaseInsight> {
+    const [created] = await db.insert(seoKbaseInsights).values(insight).returning();
+    return created;
+  }
+
+  async saveSeoKbaseInsights(insights: InsertSeoKbaseInsight[]): Promise<SeoKbaseInsight[]> {
+    if (insights.length === 0) return [];
+    return db.insert(seoKbaseInsights).values(insights).returning();
+  }
+
+  async getSeoKbaseInsightsByRunId(runId: string): Promise<SeoKbaseInsight[]> {
+    return db
+      .select()
+      .from(seoKbaseInsights)
+      .where(eq(seoKbaseInsights.runId, runId))
+      .orderBy(desc(seoKbaseInsights.priority));
+  }
+
+  async getSeoKbaseInsightsBySite(siteId: string, limit = 20): Promise<SeoKbaseInsight[]> {
+    return db
+      .select()
+      .from(seoKbaseInsights)
+      .where(eq(seoKbaseInsights.siteId, siteId))
+      .orderBy(desc(seoKbaseInsights.createdAt))
+      .limit(limit);
+  }
+
+  async getLatestSeoKbaseInsights(siteId: string, limit = 5): Promise<SeoKbaseInsight[]> {
+    return db
+      .select()
+      .from(seoKbaseInsights)
+      .where(eq(seoKbaseInsights.siteId, siteId))
+      .orderBy(desc(seoKbaseInsights.priority), desc(seoKbaseInsights.createdAt))
+      .limit(limit);
   }
 }
 

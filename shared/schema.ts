@@ -1486,3 +1486,118 @@ export const insertIndustryBenchmarkSchema = createInsertSchema(industryBenchmar
 });
 export type InsertIndustryBenchmark = z.infer<typeof insertIndustryBenchmarkSchema>;
 export type IndustryBenchmark = typeof industryBenchmarks.$inferSelect;
+
+// SEO Worker Results - stores raw and normalized results from each worker per run
+export const seoWorkerResults = pgTable("seo_worker_results", {
+  id: serial("id").primaryKey(),
+  runId: text("run_id").notNull(), // Links to runs.runId or diagnosticRuns.runId
+  siteId: text("site_id").notNull(), // Links to sites.siteId
+  workerKey: text("worker_key").notNull(), // e.g., "backlink_authority", "serp_intel", "crawl_render"
+  status: text("status").notNull().default("pending"), // pending, success, failed, timeout
+  
+  // Raw response from worker
+  payloadJson: jsonb("payload_json"), // Full worker response
+  
+  // Normalized metrics for fast dashboard reads
+  metricsJson: jsonb("metrics_json"), // { keywordCount: 100, inTop10: 25, avgPosition: 12.5, etc. }
+  
+  // Summary for display
+  summaryText: text("summary_text"), // Human-readable summary of results
+  
+  // Error tracking
+  errorCode: text("error_code"),
+  errorDetail: text("error_detail"),
+  
+  // Timing
+  durationMs: integer("duration_ms"),
+  startedAt: timestamp("started_at"),
+  finishedAt: timestamp("finished_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSeoWorkerResultSchema = createInsertSchema(seoWorkerResults).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSeoWorkerResult = z.infer<typeof insertSeoWorkerResultSchema>;
+export type SeoWorkerResult = typeof seoWorkerResults.$inferSelect;
+
+// SEO Suggestions - generated recommendations from combined worker signals
+export const seoSuggestions = pgTable("seo_suggestions", {
+  id: serial("id").primaryKey(),
+  suggestionId: text("suggestion_id").notNull().unique(), // e.g., "sug_1703123456_content_refresh"
+  runId: text("run_id").notNull(), // Links to runs.runId
+  siteId: text("site_id").notNull(), // Links to sites.siteId
+  
+  // Suggestion details
+  suggestionType: text("suggestion_type").notNull(), // content_refresh, backlink_campaign, technical_fix, keyword_optimization, etc.
+  title: text("title").notNull(),
+  description: text("description"),
+  severity: text("severity").notNull().default("medium"), // low, medium, high, critical
+  category: text("category").notNull(), // authority, technical, serp, content, performance
+  
+  // Evidence and context
+  evidenceJson: jsonb("evidence_json"), // { metrics: {}, urls: [], keywords: [], workerResults: [] }
+  impactedUrls: text("impacted_urls").array(), // URLs affected by this suggestion
+  impactedKeywords: text("impacted_keywords").array(), // Keywords related to this suggestion
+  
+  // Recommended actions
+  actionsJson: jsonb("actions_json"), // [{ step: 1, action: "...", priority: "high" }]
+  
+  // Impact estimation
+  estimatedImpact: text("estimated_impact"), // high, medium, low
+  estimatedEffort: text("estimated_effort"), // quick_win, moderate, significant
+  
+  // Status tracking
+  status: text("status").notNull().default("open"), // open, in_progress, completed, dismissed
+  assignee: text("assignee"), // SEO, Dev, Content, Ads
+  
+  // Source tracking
+  sourceWorkers: text("source_workers").array(), // Which workers contributed to this suggestion
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSeoSuggestionSchema = createInsertSchema(seoSuggestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSeoSuggestion = z.infer<typeof insertSeoSuggestionSchema>;
+export type SeoSuggestion = typeof seoSuggestions.$inferSelect;
+
+// Knowledge Base Insights - cached KB insights generated per run
+export const seoKbaseInsights = pgTable("seo_kbase_insights", {
+  id: serial("id").primaryKey(),
+  insightId: text("insight_id").notNull().unique(), // e.g., "ins_1703123456_weekly_summary"
+  runId: text("run_id").notNull(),
+  siteId: text("site_id").notNull(),
+  
+  // Insight content
+  title: text("title").notNull(),
+  summary: text("summary").notNull(), // Short description
+  fullContent: text("full_content"), // Full article/insight text
+  insightType: text("insight_type").notNull(), // weekly_summary, technical_issues, keyword_opportunities, content_decay, authority_notes
+  
+  // References
+  articleRefsJson: jsonb("article_refs_json"), // Links to related KB articles
+  suggestionIds: text("suggestion_ids").array(), // Related suggestions
+  
+  // Actions
+  actionsJson: jsonb("actions_json"), // Quick actions derived from this insight
+  
+  // Metadata
+  priority: integer("priority").default(50), // 1-100 for ordering
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSeoKbaseInsightSchema = createInsertSchema(seoKbaseInsights).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSeoKbaseInsight = z.infer<typeof insertSeoKbaseInsightSchema>;
+export type SeoKbaseInsight = typeof seoKbaseInsights.$inferSelect;
