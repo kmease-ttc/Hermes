@@ -45,7 +45,8 @@ async function callWorker(
   config: WorkerConfig,
   mapping: ServiceSecretMapping,
   siteId: string,
-  runId: string
+  runId: string,
+  domain: string
 ): Promise<WorkerCallResult> {
   const startTime = Date.now();
   const workerKey = mapping.serviceSlug;
@@ -79,7 +80,7 @@ async function callWorker(
   const body = {
     site_id: siteId,
     run_id: runId,
-    domain: "empathyhealthclinic.com",
+    domain,
   };
   
   try {
@@ -476,10 +477,22 @@ function generateKbaseInsights(
 
 export async function runWorkerOrchestration(
   runId: string,
-  siteId: string = "empathyhealthclinic.com"
+  siteId: string = "empathyhealthclinic.com",
+  domain?: string
 ): Promise<OrchestrationResult> {
   const startedAt = new Date();
-  logger.info("WorkerOrchestrator", "Starting orchestration run", { runId, siteId });
+  
+  let resolvedDomain = domain;
+  if (!resolvedDomain) {
+    const site = await storage.getSiteBySiteId(siteId);
+    if (site?.baseUrl) {
+      resolvedDomain = site.baseUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    } else {
+      resolvedDomain = siteId;
+    }
+  }
+  
+  logger.info("WorkerOrchestrator", "Starting orchestration run", { runId, siteId, domain: resolvedDomain });
   
   const workerServices = getWorkerServices().filter(s => 
     WORKER_KEYS.includes(s.serviceSlug as any)
@@ -493,7 +506,7 @@ export async function runWorkerOrchestration(
   const configs = await Promise.all(configPromises);
   
   const callPromises = configs.map(({ mapping, config }) =>
-    callWorker(config, mapping, siteId, runId)
+    callWorker(config, mapping, siteId, runId, resolvedDomain!)
   );
   
   const results = await Promise.all(callPromises);
