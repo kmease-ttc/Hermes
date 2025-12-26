@@ -400,7 +400,9 @@ async function runSmokeTestsAsync(jobId: string, services: RunnableService[]) {
     const runId = generateRunId('smoke', svc.slug);
     
     try {
-      const smokeUrl = `${svc.integration.baseUrl}/api/smoke`;
+      // Use workerEndpoints.smokeTest from config, fallback to /api/smoke
+      const smokeEndpoint = svc.mapping.workerEndpoints?.smokeTest || '/api/smoke';
+      const smokeUrl = `${svc.integration.baseUrl}${smokeEndpoint}`;
       const smokePayload = getSmokePayload(svc.slug, domain);
       
       const smokeRes = await fetch(smokeUrl, {
@@ -409,6 +411,7 @@ async function runSmokeTestsAsync(jobId: string, services: RunnableService[]) {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${svc.integration.apiKey}`,
+          'X-API-Key': svc.integration.apiKey,  // Some workers prefer X-API-Key header
         },
         body: JSON.stringify(smokePayload),
         signal: AbortSignal.timeout(60000),

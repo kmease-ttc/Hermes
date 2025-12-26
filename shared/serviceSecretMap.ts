@@ -155,10 +155,12 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     requiresBaseUrl: true,
     category: "analysis",
     workerEndpoints: {
-      health: "/health",
-      smokeTest: "/smoke-test",
-      capabilities: "/capabilities",
-      run: "/run"
+      health: "/api/health",
+      smokeTest: "/api/run",  // Worker uses /api/run for smoke tests
+      capabilities: "/api/capabilities",
+      run: "/api/run",
+      authCheck: "/api/auth/check",
+      report: "/api/report"
     }
   },
 

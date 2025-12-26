@@ -5138,14 +5138,29 @@ When answering:
       }
       
       try {
-        // Use /smoke-test endpoint per Gold Standard Worker Blueprint
-        // baseUrl already includes /api, so we just append /smoke-test
-        const smokeUrl = `${baseUrl}/smoke-test`;
-        logger.info("API", `Running smoke test for ${integrationId}`, { smokeUrl });
+        // Use workerEndpoints.smokeTest from config if available, default to /smoke-test
+        const smokeEndpoint = mapping?.workerEndpoints?.smokeTest || '/smoke-test';
+        const smokeUrl = `${baseUrl}${smokeEndpoint}`;
+        logger.info("API", `Running smoke test for ${integrationId}`, { smokeUrl, endpoint: smokeEndpoint });
+        
+        // If using /api/run endpoint (POST with body), send smoke payload
+        const isRunEndpoint = smokeEndpoint.includes('/run');
+        const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
+        // Build payload based on worker's expected format
+        let smokePayload: Record<string, any> | undefined;
+        if (isRunEndpoint) {
+          if (integrationId === 'competitive_snapshot') {
+            // Competitive Intelligence expects { target: { domain }, mode, limit }
+            smokePayload = { target: { domain }, mode: 'smoke', limit: 3 };
+          } else {
+            smokePayload = { domain, mode: 'smoke', limit: 3 };
+          }
+        }
         
         const smokeRes = await fetch(smokeUrl, {
-          method: 'GET',
+          method: isRunEndpoint ? 'POST' : 'GET',
           headers,
+          body: isRunEndpoint ? JSON.stringify(smokePayload) : undefined,
           signal: AbortSignal.timeout(60000),
         });
         
@@ -5154,7 +5169,52 @@ When answering:
           throw new Error(`Smoke endpoint returned ${smokeRes.status}: ${errorText.slice(0, 200)}`);
         }
         
-        const smokeData = await smokeRes.json();
+        let smokeData = await smokeRes.json();
+        
+        // Handle async workers that return report_id - poll for results
+        if (smokeData.report_id && mapping?.workerEndpoints?.report) {
+          const reportId = smokeData.report_id;
+          const reportEndpoint = mapping.workerEndpoints.report;
+          const reportUrl = `${baseUrl}${reportEndpoint}/${reportId}`;
+          logger.info("API", `Async worker detected, polling report: ${reportUrl}`);
+          
+          // Poll up to 30 times (60 seconds total)
+          for (let attempt = 0; attempt < 30; attempt++) {
+            await new Promise(r => setTimeout(r, 2000));
+            try {
+              const reportRes = await fetch(reportUrl, {
+                method: 'GET',
+                headers,
+                signal: AbortSignal.timeout(10000),
+              });
+              if (reportRes.ok) {
+                const reportData = await reportRes.json();
+                logger.info("API", `Report poll ${attempt + 1}/30`, { 
+                  status: reportData.status,
+                  hasData: !!(reportData.data || reportData.result),
+                  keys: Object.keys(reportData).slice(0, 10)
+                });
+                
+                // Check for completion - worker may use 'completed', 'success', 'done', or have data/result
+                const isComplete = reportData.status === 'completed' || reportData.status === 'success' || reportData.status === 'done';
+                const hasResult = reportData.data || reportData.result;
+                
+                if (isComplete || (hasResult && reportData.status !== 'queued' && reportData.status !== 'processing')) {
+                  smokeData = reportData.data || reportData.result || reportData;
+                  logger.info("API", `Report ready for ${integrationId}`, { attempt, keys: Object.keys(smokeData) });
+                  break;
+                } else if (reportData.status === 'failed' || reportData.status === 'error') {
+                  throw new Error(`Report failed: ${reportData.error || 'Unknown error'}`);
+                }
+                // Still pending, continue polling
+              } else {
+                logger.warn("API", `Report poll got HTTP ${reportRes.status}`);
+              }
+            } catch (pollErr: any) {
+              logger.warn("API", `Report poll error: ${pollErr.message}`);
+            }
+          }
+        }
         
         const checkOutputPresence = (data: any, outputKey: string): boolean => {
           if (!data || typeof data !== 'object') return false;
