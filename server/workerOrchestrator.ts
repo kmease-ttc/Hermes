@@ -484,7 +484,7 @@ export async function runWorkerOrchestration(
   
   let resolvedDomain = domain;
   if (!resolvedDomain) {
-    const site = await storage.getSiteBySiteId(siteId);
+    const site = await storage.getSiteById(siteId);
     if (site?.baseUrl) {
       resolvedDomain = site.baseUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
     } else {

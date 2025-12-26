@@ -1730,21 +1730,21 @@ class DBStorage implements IStorage {
   }
 
   async getLatestSeoWorkerResults(siteId: string): Promise<SeoWorkerResult[]> {
-    const latestRun = await db
-      .selectDistinct({ runId: seoWorkerResults.runId })
+    const latestResult = await db
+      .select({ runId: seoWorkerResults.runId })
       .from(seoWorkerResults)
       .where(eq(seoWorkerResults.siteId, siteId))
       .orderBy(desc(seoWorkerResults.createdAt))
       .limit(1);
     
-    if (latestRun.length === 0) return [];
+    if (latestResult.length === 0) return [];
     
     return db
       .select()
       .from(seoWorkerResults)
       .where(and(
         eq(seoWorkerResults.siteId, siteId),
-        eq(seoWorkerResults.runId, latestRun[0].runId)
+        eq(seoWorkerResults.runId, latestResult[0].runId)
       ))
       .orderBy(seoWorkerResults.workerKey);
   }
