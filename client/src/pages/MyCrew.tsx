@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { USER_FACING_AGENTS, getCrewMember, type CrewMember } from "@/config/agents";
-import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity } from "lucide-react";
+import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity, Plus, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShipCanvas } from "@/components/crew/ShipCanvas";
 
@@ -128,102 +128,118 @@ function MaturityBadge({ percent }: { percent: number }) {
 }
 
 
+function getContextLine(percent: number): string {
+  if (percent >= 80) return "Your crew is fully operational with best-in-class coverage.";
+  if (percent >= 60) return "Strong foundation with most key insights unlocked.";
+  if (percent >= 40) return "Growing visibility — key capabilities coming online.";
+  if (percent >= 20) return "Basic monitoring active, but limited visibility into performance.";
+  return "Foundation in place. Add crew to unlock deeper insights.";
+}
+
+function getNextBestUpgrade(enabledAgents: string[]): typeof SET_BONUSES[0] | null {
+  for (const bonus of SET_BONUSES) {
+    const missing = bonus.requirements.filter(r => !enabledAgents.includes(r));
+    if (missing.length > 0 && missing.length <= bonus.requirements.length) {
+      return bonus;
+    }
+  }
+  return null;
+}
+
 function StatusCard({ 
   enabledCount, 
   totalRoles, 
-  enabledAgents = []
+  enabledAgents = [],
+  onAddRequiredCrew
 }: { 
   enabledCount: number;
   totalRoles: number;
   enabledAgents: string[];
+  onAddRequiredCrew: (agentIds: string[]) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<"progress" | "nextup">("progress");
   const percent = Math.round((enabledCount / totalRoles) * 100);
-  
   const agents = enabledAgents || [];
-  const missingForRevenue = SET_BONUSES[0].requirements.filter(r => !agents.includes(r));
-  const missingForExecution = SET_BONUSES[1].requirements.filter(r => !agents.includes(r));
+  
+  const nextUpgrade = getNextBestUpgrade(agents);
+  const missingAgents = nextUpgrade 
+    ? nextUpgrade.requirements.filter(r => !agents.includes(r))
+    : [];
   
   return (
     <Card className="bg-slate-900/80 border-slate-700 text-white" data-testid="status-card">
-      <div className="flex border-b border-slate-700">
-        <button
-          onClick={() => setActiveTab("progress")}
-          className={cn(
-            "flex-1 py-3 text-sm font-medium transition-colors",
-            activeTab === "progress" 
-              ? "text-amber-400 border-b-2 border-amber-400" 
-              : "text-slate-400 hover:text-slate-300"
-          )}
-          data-testid="tab-progress"
-        >
-          Progress
-        </button>
-        <button
-          onClick={() => setActiveTab("nextup")}
-          className={cn(
-            "flex-1 py-3 text-sm font-medium transition-colors",
-            activeTab === "nextup" 
-              ? "text-amber-400 border-b-2 border-amber-400" 
-              : "text-slate-400 hover:text-slate-300"
-          )}
-          data-testid="tab-nextup"
-        >
-          Next Up
-        </button>
-      </div>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg text-white flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-400" />
+          Mission Status
+        </CardTitle>
+      </CardHeader>
       
-      <CardContent className="p-5">
-        {activeTab === "progress" ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <ProgressRing percent={percent} />
-              <div>
-                <MaturityBadge percent={percent} />
-                <p className="text-sm text-slate-400 mt-1">Operational</p>
-                <p className="text-lg font-semibold">{enabledCount} / {totalRoles} Roles staffed</p>
-              </div>
+      <CardContent className="space-y-5">
+        {/* Current State */}
+        <div className="flex items-center gap-4">
+          <ProgressRing percent={percent} />
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <MaturityBadge percent={percent} />
             </div>
-            <p className="text-xs text-slate-500">
-              {percent >= 80 ? "Best-in-class coverage achieved!" :
-               percent >= 60 ? "Ahead of 65% of similar sites" :
-               percent >= 40 ? "Ahead of 45% of similar sites" :
-               "Getting started — enable more crew members"}
-            </p>
+            <p className="text-lg font-semibold text-white">{percent}% Operational</p>
+            <p className="text-sm text-slate-400">{enabledCount} / {totalRoles} roles staffed</p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Lowest friction wins</p>
-            
-            {missingForRevenue.length > 0 && missingForRevenue.length <= 2 && (
-              <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                <p className="text-sm font-medium text-amber-300 mb-1">
-                  <TrendingUp className="w-4 h-4 inline mr-1" />
-                  Unlock Revenue Attribution
-                </p>
-                <p className="text-xs text-slate-400">
-                  Missing: {missingForRevenue.map(id => getCrewMember(id).nickname).join(" + ")}
-                </p>
-              </div>
-            )}
-            
-            {missingForExecution.length > 0 && missingForExecution.length <= 2 && (
-              <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                <p className="text-sm font-medium text-sky-300 mb-1">
-                  <Zap className="w-4 h-4 inline mr-1" />
-                  Unlock Automated Execution
-                </p>
-                <p className="text-xs text-slate-400">
-                  Missing: {missingForExecution.map(id => getCrewMember(id).nickname).join(" + ")}
-                </p>
-              </div>
-            )}
-            
-            {missingForRevenue.length > 2 && missingForExecution.length > 2 && (
-              <p className="text-sm text-slate-400">
-                Enable crew members to unlock set bonuses and capabilities.
+        </div>
+        
+        {/* Context Line */}
+        <p className="text-sm text-slate-400 border-l-2 border-slate-600 pl-3">
+          {getContextLine(percent)}
+        </p>
+        
+        {/* Next Best Upgrade */}
+        {nextUpgrade && missingAgents.length > 0 && (
+          <div className="pt-3 border-t border-slate-700/50">
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Next Best Upgrade</p>
+            <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+              <p className="text-sm font-medium text-amber-300 mb-1 flex items-center gap-1.5">
+                <nextUpgrade.icon className="w-4 h-4" />
+                {nextUpgrade.title}
               </p>
-            )}
+              <p className="text-xs text-slate-400 mb-3">
+                {nextUpgrade.value}
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {missingAgents.map(id => {
+                  const crew = getCrewMember(id);
+                  return (
+                    <span 
+                      key={id}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-700/80 text-xs text-slate-300"
+                    >
+                      {crew.avatar && (
+                        <img src={crew.avatar} alt="" className="w-4 h-4 object-contain opacity-60" />
+                      )}
+                      {crew.nickname}
+                    </span>
+                  );
+                })}
+              </div>
+              <Button 
+                size="sm"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-medium"
+                onClick={() => onAddRequiredCrew(missingAgents)}
+                data-testid="btn-add-required-crew"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add required crew
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* All bonuses unlocked */}
+        {!nextUpgrade && (
+          <div className="pt-3 border-t border-slate-700/50">
+            <div className="p-3 rounded-lg bg-green-900/30 border border-green-700/50 text-center">
+              <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-1" />
+              <p className="text-sm font-medium text-green-300">All set bonuses unlocked!</p>
+            </div>
           </div>
         )}
       </CardContent>
@@ -407,14 +423,18 @@ function CapabilityCard({
 function SetBonusCard({ 
   bonus, 
   enabledAgents,
+  selectedAgents = [],
   onRequirementClick
 }: { 
   bonus: typeof SET_BONUSES[0];
   enabledAgents: string[];
+  selectedAgents?: string[];
   onRequirementClick: (agentId: string) => void;
 }) {
   const enabledCount = bonus.requirements.filter(r => enabledAgents.includes(r)).length;
+  const previewCount = bonus.requirements.filter(r => enabledAgents.includes(r) || selectedAgents.includes(r)).length;
   const status = enabledCount === bonus.requirements.length ? "active" : enabledCount > 0 ? "partial" : "locked";
+  const previewStatus = previewCount === bonus.requirements.length ? "preview-complete" : previewCount > enabledCount ? "preview-partial" : null;
   const Icon = bonus.icon;
   
   return (
@@ -440,6 +460,11 @@ function SetBonusCard({
             <Badge variant="outline" className="text-[10px] mt-1 border-slate-700 text-slate-500">
               Coming Soon
             </Badge>
+          ) : previewStatus ? (
+            <p className="text-xs text-sky-400">
+              Preview: {previewCount} / {bonus.requirements.length}
+              {previewStatus === "preview-complete" && " ✓"}
+            </p>
           ) : (
             <p className="text-xs text-slate-400">Progress: {enabledCount} / {bonus.requirements.length}</p>
           )}
@@ -451,19 +476,24 @@ function SetBonusCard({
           {bonus.requirements.map((reqId) => {
             const reqCrew = getCrewMember(reqId);
             const isEnabled = enabledAgents.includes(reqId);
+            const isSelected = selectedAgents.includes(reqId);
             return (
               <button
                 key={reqId}
                 onClick={() => !isEnabled && onRequirementClick(reqId)}
                 className={cn(
                   "flex items-center gap-2 text-xs w-full text-left",
-                  isEnabled ? "text-slate-300" : "text-slate-500 hover:text-slate-300 cursor-pointer"
+                  isEnabled ? "text-slate-300" : 
+                  isSelected ? "text-sky-300" :
+                  "text-slate-500 hover:text-slate-300 cursor-pointer"
                 )}
                 disabled={isEnabled}
                 data-testid={`bonus-requirement-${reqId}`}
               >
                 {isEnabled ? (
                   <Check className="w-3 h-3 text-green-400" />
+                ) : isSelected ? (
+                  <Check className="w-3 h-3 text-sky-400" />
                 ) : (
                   <div className="w-3 h-3 rounded-sm border border-slate-600" />
                 )}
@@ -543,6 +573,17 @@ export default function MyCrew() {
     );
   };
 
+  const handleAddRequiredCrew = (agentIds: string[]) => {
+    setSelectedAgents(prev => {
+      const newSet = new Set([...prev, ...agentIds]);
+      return Array.from(newSet);
+    });
+    if (agentIds.length > 0) {
+      setDrawerAgentId(agentIds[0]);
+      setDrawerOpen(true);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 -m-6 p-6">
@@ -556,6 +597,7 @@ export default function MyCrew() {
             enabledCount={enabledAgents.length}
             totalRoles={totalRoles}
             enabledAgents={enabledAgents}
+            onAddRequiredCrew={handleAddRequiredCrew}
           />
           
           <ShipCanvas 
@@ -593,6 +635,7 @@ export default function MyCrew() {
                   key={bonus.id} 
                   bonus={bonus} 
                   enabledAgents={enabledAgents}
+                  selectedAgents={selectedAgents}
                   onRequirementClick={handleSlotClick}
                 />
               ))}
