@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AgentCard } from "@/components/crew/AgentCard";
 import { CREW_MANIFEST, getCrewMember, isUserFacingAgent } from "@/config/crewManifest";
+import { getMockAgentData } from "@/config/mockAgentInsights";
 import { useQuery } from "@tanstack/react-query";
 import { Bot } from "lucide-react";
 
@@ -65,6 +66,7 @@ export default function CrewPage() {
     .map((serviceId) => {
       const service = services.find((s) => s.slug === serviceId);
       const crew = getCrewMember(serviceId);
+      const mockData = getMockAgentData(serviceId);
       return {
         serviceId,
         crew,
@@ -72,6 +74,8 @@ export default function CrewPage() {
         lastCheckIn: service?.lastRun?.finishedAt
           ? formatRelativeTime(service.lastRun.finishedAt)
           : null,
+        findings: mockData?.findings || [],
+        nextSteps: mockData?.nextSteps || [],
       };
     });
 
@@ -101,6 +105,8 @@ export default function CrewPage() {
                   serviceId={agent.serviceId}
                   status={agent.status}
                   lastCheckIn={agent.lastCheckIn}
+                  findings={agent.findings}
+                  nextSteps={agent.nextSteps}
                 />
               ))}
             </div>
