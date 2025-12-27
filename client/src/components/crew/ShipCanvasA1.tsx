@@ -20,27 +20,27 @@ type RoleSlot = {
 // Do not add or remove slots without redesigning the ship image
 // ═══════════════════════════════════════════════════════════════════════════
 const ROLE_SLOTS: RoleSlot[] = [
-  // ROW 1 - COMMAND (8%) - 1 slot
-  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", xPct: 50, yPct: 8 },
+  // ROW 1 - COMMAND (6%) - 1 slot
+  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", xPct: 50, yPct: 6 },
 
-  // ROW 2 - INTELLIGENCE & VISIBILITY (30%) - 3 slots
-  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 17, yPct: 30 },
-  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 30 },
-  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 83, yPct: 30 },
+  // ROW 2 - INTELLIGENCE & VISIBILITY (28%) - 3 slots
+  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 16, yPct: 28 },
+  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 28 },
+  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 84, yPct: 28 },
 
-  // ROW 3 - ENGINEERING & PERFORMANCE (52%) - 2 slots
-  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 28, yPct: 52 },
-  { roleId: "performance_monitoring", roleName: "Performance Monitoring", roleIcon: Zap, crewId: "core_web_vitals", xPct: 72, yPct: 52 },
+  // ROW 3 - ENGINEERING & PERFORMANCE (50%) - 2 slots
+  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 27, yPct: 50 },
+  { roleId: "performance_monitoring", roleName: "Performance Monitoring", roleIcon: Zap, crewId: "core_web_vitals", xPct: 73, yPct: 50 },
 
-  // ROW 4 - CONTENT SYSTEMS (74%) - 2 slots
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 28, yPct: 74 },
-  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 72, yPct: 74 },
+  // ROW 4 - CONTENT SYSTEMS (72%) - 2 slots
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 27, yPct: 72 },
+  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 73, yPct: 72 },
 
-  // ROW 5 - AUTHORITY, AI, ADS, KNOWLEDGE (96%) - 4 slots spread wide
-  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 13, yPct: 96 },
-  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 37, yPct: 96 },
-  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 63, yPct: 96 },
-  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", xPct: 87, yPct: 96 },
+  // ROW 5 - AUTHORITY, AI, ADS, KNOWLEDGE (94%) - 4 slots spread wide
+  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 13, yPct: 94 },
+  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 37, yPct: 94 },
+  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 63, yPct: 94 },
+  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", xPct: 87, yPct: 94 },
 ];
 
 function RoleInfoTooltip({ roleId, isEmpty }: { roleId: string; isEmpty: boolean }) {
@@ -119,7 +119,7 @@ export function ShipCanvasA1(props: {
   onSlotClick: (id: string) => void;
   tileSize?: number;
 }) {
-  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 280 } = props;
+  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 340 } = props;
 
   return (
     <TooltipProvider>
@@ -271,7 +271,7 @@ export function ShipCanvasA1(props: {
                         </div>
                       )}
 
-                      <div className="flex h-full flex-col items-center justify-center gap-2 pt-6 pb-4">
+                      <div className="flex h-full flex-col items-center justify-center gap-3 px-4 py-6">
                         {slot.crewId && (
                           <CrewAvatarTooltip crewId={slot.crewId}>
                             {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
@@ -287,7 +287,7 @@ export function ShipCanvasA1(props: {
                             )}
                           </CrewAvatarTooltip>
                         )}
-                        <div className="text-lg font-semibold text-white/90 leading-tight px-2 text-center">
+                        <div className="text-xl font-semibold text-white/90 leading-tight px-3 text-center">
                           {crew?.nickname || "Unknown"}
                         </div>
                       </div>
