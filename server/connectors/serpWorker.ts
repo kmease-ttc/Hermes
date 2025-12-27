@@ -68,11 +68,13 @@ export class SerpWorkerClient {
     if (this.initialized) return true;
 
     try {
-      const config = await bitwardenProvider.getWorkerConfig("SEO_SERP_Keyword");
+      // Use workerConfigResolver which supports fallback env vars
+      const { resolveWorkerConfig } = await import("../workerConfigResolver");
+      const config = await resolveWorkerConfig("serp_intel");
       
-      if (config.valid && config.baseUrl) {
-        this.baseUrl = config.baseUrl;
-        this.apiKey = config.apiKey || null;
+      if (config.valid && config.base_url) {
+        this.baseUrl = config.base_url;
+        this.apiKey = config.api_key || null;
         this.initialized = true;
         logger.info("SerpWorker", `Initialized with base URL: ${this.baseUrl}`);
         return true;
@@ -189,7 +191,7 @@ export class SerpWorkerClient {
       if (!initialized || !this.baseUrl) {
         return { 
           success: false, 
-          message: "Failed to initialize - check Bitwarden secret SEO_SERP_Keyword (needs JSON with base_url and api_key)",
+          message: "Failed to initialize - check SERP_INTELLIGENCE_API_KEY and SERP_INTELLIGENCE_BASE_URL env vars or Bitwarden secret SEO_SERP_Keyword",
           debug,
         };
       }
