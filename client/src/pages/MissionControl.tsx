@@ -504,7 +504,7 @@ export default function MissionControl() {
           blockers={captainData.blockers}
           confidence={captainData.confidence}
           coverage={captainData.coverage}
-          updatedAt={captainData.generatedAt ? new Date(captainData.generatedAt).toLocaleDateString() : undefined}
+          updatedAt={captainData.generated_at ? new Date(captainData.generated_at).toLocaleDateString() : undefined}
         />
 
         <div>
