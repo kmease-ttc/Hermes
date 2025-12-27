@@ -38,10 +38,10 @@ function RoleInfoTooltip({ roleId }: { roleId: string }) {
     <Tooltip delayDuration={200}>
       <TooltipTrigger asChild>
         <div
-          className="absolute left-1.5 top-1.5 z-10 rounded-full p-0.5 cursor-help transition-all opacity-50 hover:opacity-90 hover:bg-white/10"
+          className="rounded-full p-0.5 cursor-help transition-all opacity-50 hover:opacity-90 hover:bg-white/10"
           onClick={(e) => e.stopPropagation()}
         >
-          <Info className="w-3.5 h-3.5 text-white/70" />
+          <Info className="w-3 h-3 text-white/70" />
         </div>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[240px] bg-[#1a1a2e] border border-white/10 rounded-lg p-2.5 shadow-xl z-50">
@@ -151,16 +151,18 @@ export function ShipCanvasA1(props: {
                       ].join(" ")}
                       style={{ "--tw-ring-color": ringColor } as React.CSSProperties}
                     >
-                      <RoleInfoTooltip roleId={slot.roleId} />
+                      <div className="absolute left-2 top-2 z-10">
+                        <RoleInfoTooltip roleId={slot.roleId} />
+                      </div>
 
                       {badge && (
-                        <div className={`absolute right-1.5 top-1.5 z-10 rounded-full px-1.5 py-0.5 text-[9px] font-medium whitespace-nowrap ${badgeClass}`}>
+                        <div className={`absolute right-2 top-2 z-10 rounded-full px-1.5 py-0.5 text-[8px] font-medium whitespace-nowrap ${badgeClass}`}>
                           {badge}
                         </div>
                       )}
 
-                      <div className="absolute inset-0 flex flex-col">
-                        <div className="flex-1 flex items-center justify-center pt-2 pb-0 px-1">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center px-2 pt-6 pb-2">
+                        <div className="flex-1 flex items-center justify-center">
                           {isEmpty ? (
                             <RoleIcon className="w-[55%] h-[55%] max-w-[80px] max-h-[80px] text-white/20 group-hover:text-white/35 transition-colors" />
                           ) : slot.crewId && (
@@ -178,14 +180,12 @@ export function ShipCanvasA1(props: {
                           )}
                         </div>
 
-                        <div className="h-[18%] flex flex-col items-center justify-center px-2 pb-1.5">
-                          <div className={`text-base font-semibold leading-tight text-center truncate w-full ${isEmpty ? "text-white/30" : "text-white/90"}`}>
-                            {isEmpty ? slot.roleName : (crew?.nickname || "Unknown")}
-                          </div>
-                          {isEmpty && (
-                            <div className="text-[9px] text-white/20">Empty slot</div>
-                          )}
+                        <div className={`mt-1 text-lg font-semibold leading-tight text-center truncate w-full ${isEmpty ? "text-white/30" : "text-white/90"}`}>
+                          {isEmpty ? slot.roleName : (crew?.nickname || "Unknown")}
                         </div>
+                        {isEmpty && (
+                          <div className="text-[9px] text-white/20 mt-0.5">Empty slot</div>
+                        )}
                       </div>
                     </div>
                   </button>

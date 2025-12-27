@@ -1,0 +1,108 @@
+CREW PAGE – TIGHTEN INTERNAL TILE LAYOUT (REDUCE DEAD SPACE)
+
+Context:
+The bot avatar size is PERFECT. Do NOT resize or scale the avatar.
+The problem is excessive internal padding and vertical spacing between:
+- info (“i”) icon
+- Active badge
+- avatar
+- name text
+
+Goal:
+Dramatically reduce internal margins so the tile feels compact, dense, and intentional, while keeping the avatar dominant.
+
+---
+
+### 1) DO NOT CHANGE
+- Avatar image size
+- Tile outer dimensions
+- Tile corner radius
+- Border thickness
+- Hover / click behavior
+
+This is an INTERNAL LAYOUT ONLY change.
+
+---
+
+### 2) TILE INTERNAL GRID (MUST IMPLEMENT)
+
+Re-structure each tile’s content into 3 tight zones:
+
+ZONE A – Top Overlay (VERY SMALL)
+- Height: minimal (icon + badge only)
+- Contains:
+  - Top-left: info “i” icon
+  - Top-right: Active / Included / Selected badge
+- Padding:
+  - Top: 6–8px
+  - Left/Right: 8–10px
+- Icons/badges must NOT push content down
+
+This zone should feel like an overlay, not a block.
+
+---
+
+ZONE B – AVATAR ZONE (PRIMARY)
+- Avatar remains centered
+- Reduce vertical margin above and below avatar
+- Avatar should visually sit closer to the name
+- No extra spacer divs above avatar
+
+Rule:
+- The avatar zone should start immediately under the top overlay
+- Remove any `margin-top` or `padding-top` greater than ~8px
+
+---
+
+ZONE C – NAME ZONE (BOTTOM, TIGHT)
+- Crew name must be:
+  - Larger
+  - Closer to avatar
+- Reduce margin between avatar and name to ~6–8px
+- Remove any large bottom padding
+
+Typography:
+- Name font size: increase ~20–25%
+- Font weight: semibold
+- Line-height: tight (1.1–1.2)
+- Color: text-primary
+
+The name should feel “attached” to the avatar, not floating far below it.
+
+---
+
+### 3) REMOVE EXCESS SPACING (IMPORTANT)
+
+Explicitly remove or reduce:
+- Large `padding-top` on tile container
+- Spacer divs between avatar and name
+- Any `margin-bottom` on avatar container > 8px
+- Any `padding-bottom` on tile container > 10px
+
+If space is needed:
+- Steal it from padding, not avatar scale.
+
+---
+
+### 4) EMPTY SLOT TILES (MATCH DENSITY)
+
+Apply the SAME tight spacing rules to empty role slots:
+- Role icon sits higher
+- Role name sits closer to icon
+- Info icon + role icon do not create large gaps
+
+Empty slots must feel as dense as filled slots.
+
+---
+
+### 5) ACCEPTANCE CRITERIA
+
+This task is complete when:
+- Avatar remains the same size
+- Name is noticeably closer to the avatar
+- Info icon and Active badge feel tucked into corners
+- No large dead space above or below the avatar
+- Tile feels compact and visually balanced
+
+If you have to choose between shrinking the badge or shrinking the avatar:
+→ Shrink the badge. Never the avatar.
