@@ -17,6 +17,7 @@ import SuggestedChanges from "@/pages/SuggestedChanges";
 import Authority from "@/pages/Authority";
 import Crew from "@/pages/Crew";
 import AgentDetail from "@/pages/AgentDetail";
+import KeywordRankings from "@/pages/KeywordRankings";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/sites/:siteId" component={SiteDetail} />
       <Route path="/tickets" component={Tickets} />
       <Route path="/serp" component={SERP} />
+      <Route path="/keywords" component={KeywordRankings} />
       <Route path="/authority" component={Authority} />
       <Route path="/integrations" component={Integrations} />
       <Route path="/crew" component={Crew} />

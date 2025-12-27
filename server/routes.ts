@@ -2491,6 +2491,210 @@ When answering:
     }
   });
 
+  // Enhanced keyword rankings with position history (7/30/90 days)
+  app.get("/api/serp/rankings/full", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+      const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
+      
+      // Get all keywords
+      const keywords = await storage.getSerpKeywords(true);
+      
+      // Get all rankings for the last 90 days
+      const allRankings = await storage.getAllRankingsWithHistory(90);
+      
+      // Calculate date boundaries
+      const now = new Date();
+      const day7Ago = new Date(now);
+      day7Ago.setDate(day7Ago.getDate() - 7);
+      const day30Ago = new Date(now);
+      day30Ago.setDate(day30Ago.getDate() - 30);
+      const day90Ago = new Date(now);
+      day90Ago.setDate(day90Ago.getDate() - 90);
+      
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      const day7Str = formatDate(day7Ago);
+      const day30Str = formatDate(day30Ago);
+      const day90Str = formatDate(day90Ago);
+      
+      // Group rankings by keyword
+      const rankingsByKeyword = new Map<number, typeof allRankings>();
+      for (const r of allRankings) {
+        if (!rankingsByKeyword.has(r.keywordId)) {
+          rankingsByKeyword.set(r.keywordId, []);
+        }
+        rankingsByKeyword.get(r.keywordId)!.push(r);
+      }
+      
+      // Re-sort each keyword's rankings by date descending to ensure latest is first
+      for (const [keywordId, rankings] of rankingsByKeyword) {
+        rankings.sort((a, b) => b.date.localeCompare(a.date));
+      }
+      
+      // Calculate position averages for each keyword
+      const keywordData = keywords.slice(0, limit).map(kw => {
+        const rankings = rankingsByKeyword.get(kw.id) || [];
+        
+        // Get latest position (rankings are now sorted by date desc, so first = latest)
+        const latestRanking = rankings[0];
+        const currentPosition = latestRanking?.position ?? null;
+        const currentUrl = latestRanking?.url ?? null;
+        const lastChecked = latestRanking?.date ?? null;
+        
+        // Calculate averages for each time period
+        const calcAvg = (cutoff: string) => {
+          const filtered = rankings.filter(r => r.date >= cutoff && r.position !== null);
+          if (filtered.length === 0) return null;
+          return Math.round(filtered.reduce((sum, r) => sum + (r.position || 0), 0) / filtered.length * 10) / 10;
+        };
+        
+        const avg7Day = calcAvg(day7Str);
+        const avg30Day = calcAvg(day30Str);
+        const avg90Day = calcAvg(day90Str);
+        
+        // Calculate trend by comparing recent (7-day) vs longer-term (30-day) average
+        // Lower position = better ranking (position 1 is best)
+        // Example: avg30Day=15, avg7Day=10 → diff=5 → improving (position got better recently)
+        // Example: avg30Day=10, avg7Day=15 → diff=-5 → declining (position got worse recently)
+        let trend: 'up' | 'down' | 'stable' | 'new' = 'new';
+        if (avg7Day !== null && avg30Day !== null) {
+          const diff = avg30Day - avg7Day; // Positive = 7-day avg is lower (better) than 30-day
+          if (diff > 2) trend = 'up';      // Position improved by more than 2 spots
+          else if (diff < -2) trend = 'down'; // Position declined by more than 2 spots
+          else trend = 'stable';
+        } else if (avg7Day !== null) {
+          trend = 'stable';
+        }
+        
+        return {
+          id: kw.id,
+          keyword: kw.keyword,
+          intent: kw.intent,
+          priority: kw.priority,
+          targetUrl: kw.targetUrl,
+          tags: kw.tags,
+          currentPosition,
+          currentUrl,
+          lastChecked,
+          avg7Day,
+          avg30Day,
+          avg90Day,
+          trend,
+          volume: latestRanking?.volume ?? null,
+        };
+      });
+      
+      // Sort by priority then current position
+      keywordData.sort((a, b) => {
+        if (a.priority !== b.priority) return (b.priority || 0) - (a.priority || 0);
+        if (a.currentPosition === null && b.currentPosition === null) return 0;
+        if (a.currentPosition === null) return 1;
+        if (b.currentPosition === null) return -1;
+        return a.currentPosition - b.currentPosition;
+      });
+      
+      // Summary stats
+      const withPosition = keywordData.filter(k => k.currentPosition !== null);
+      const inTop10 = withPosition.filter(k => k.currentPosition! <= 10).length;
+      const inTop20 = withPosition.filter(k => k.currentPosition! <= 20).length;
+      const improving = keywordData.filter(k => k.trend === 'up').length;
+      const declining = keywordData.filter(k => k.trend === 'down').length;
+      
+      res.json({
+        domain,
+        totalKeywords: keywords.length,
+        displayedKeywords: keywordData.length,
+        lastUpdated: allRankings[0]?.date ?? null,
+        summary: {
+          ranking: withPosition.length,
+          notRanking: keywordData.length - withPosition.length,
+          inTop10,
+          inTop20,
+          improving,
+          declining,
+          avgPosition: withPosition.length > 0 
+            ? Math.round(withPosition.reduce((sum, k) => sum + k.currentPosition!, 0) / withPosition.length)
+            : null,
+        },
+        keywords: keywordData,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch full keyword rankings", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Sync keywords from SERP Intelligence service
+  app.post("/api/serp/sync-from-service", async (req, res) => {
+    try {
+      const { serpWorkerClient } = await import("./connectors/serpWorker");
+      const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
+      
+      // Initialize and fetch keywords from the SERP service
+      const initialized = await serpWorkerClient.init();
+      if (!initialized) {
+        return res.status(400).json({ 
+          error: "SERP Intelligence service not configured",
+          hint: "Configure SERP_INTELLIGENCE_BASE_URL and add secret to Bitwarden"
+        });
+      }
+      
+      // Get keywords from the service
+      const serviceKeywords = await serpWorkerClient.getKeywords(domain);
+      
+      if (!serviceKeywords || serviceKeywords.length === 0) {
+        return res.json({ 
+          synced: 0, 
+          message: "No keywords returned from SERP service. Run a scan first."
+        });
+      }
+      
+      // Map service keywords to our format
+      const keywordsToSave = serviceKeywords.slice(0, 100).map(sk => ({
+        keyword: sk.keyword,
+        intent: 'transactional' as const,
+        priority: 50,
+        targetUrl: sk.url || null,
+        tags: [],
+        active: true,
+      }));
+      
+      // Save to database (upsert)
+      const saved = await storage.saveSerpKeywords(keywordsToSave);
+      
+      // Also save current rankings if available
+      const rankingsToSave = serviceKeywords
+        .filter(sk => sk.currentPosition !== null)
+        .map(sk => {
+          const savedKw = saved.find(s => s.keyword === sk.keyword);
+          if (!savedKw) return null;
+          return {
+            keywordId: savedKw.id,
+            date: new Date().toISOString().split('T')[0],
+            position: sk.currentPosition,
+            url: sk.url || null,
+            change: sk.delta || null,
+          };
+        })
+        .filter(Boolean) as any[];
+      
+      if (rankingsToSave.length > 0) {
+        await storage.saveSerpRankings(rankingsToSave);
+      }
+      
+      logger.info("SERP", `Synced ${saved.length} keywords from SERP service`, { domain });
+      
+      res.json({
+        synced: saved.length,
+        rankingsUpdated: rankingsToSave.length,
+        message: `Successfully synced ${saved.length} keywords from SERP Intelligence service`,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to sync keywords from service", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ========== SITES REGISTRY ENDPOINTS ==========
   
   app.get("/api/sites", async (req, res) => {

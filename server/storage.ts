@@ -213,6 +213,7 @@ export interface IStorage {
   getLatestRankings(): Promise<(SerpRanking & { keyword: string })[]>;
   getRankingHistoryByKeyword(keywordId: number, limit?: number): Promise<SerpRanking[]>;
   getRankingsByDate(date: string): Promise<SerpRanking[]>;
+  getAllRankingsWithHistory(days: number): Promise<SerpRanking[]>;
   
   // Sites Registry
   getSites(activeOnly?: boolean): Promise<Site[]>;
@@ -834,6 +835,18 @@ class DBStorage implements IStorage {
       .from(serpRankings)
       .where(eq(serpRankings.date, date))
       .orderBy(asc(serpRankings.position));
+  }
+
+  async getAllRankingsWithHistory(days: number): Promise<SerpRanking[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+    
+    return db
+      .select()
+      .from(serpRankings)
+      .where(gte(serpRankings.date, cutoffStr))
+      .orderBy(desc(serpRankings.date), asc(serpRankings.keywordId));
   }
 
   // Sites Registry

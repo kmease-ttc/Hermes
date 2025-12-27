@@ -491,7 +491,7 @@ export default function Dashboard() {
               whyExplanation={keywordInsight.why}
               kpis={keywordInsight.kpis}
               nextActions={keywordInsight.actions}
-              detailsLink="/serp"
+              detailsLink="/keywords"
             />
           </div>
         </section>
