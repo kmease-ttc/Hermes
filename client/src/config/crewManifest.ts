@@ -189,7 +189,7 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
   audit_log: {
     service_id: "audit_log",
     nickname: "Chronicle",
-    role: "Historian",
+    role: "Audit Log",
     color: "#78716C",
     icon: Database,
     blurb: "Stores run history, health metrics, and change logs.",
