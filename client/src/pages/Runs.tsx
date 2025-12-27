@@ -40,11 +40,11 @@ function RunStatusBadge({ status }: { status: string }) {
 export default function Runs() {
   const queryClient = useQueryClient();
 
-  const { data: runs = [], isLoading } = useQuery<Run[]>({
+  const { data: runs = [], isLoading, isError, refetch } = useQuery<Run[]>({
     queryKey: ["runs"],
     queryFn: async () => {
       const res = await fetch("/api/runs");
-      if (!res.ok) return [];
+      if (!res.ok) throw new Error("Failed to fetch runs");
       return res.json();
     },
   });
@@ -101,6 +101,26 @@ export default function Runs() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
+        ) : isError ? (
+          <Card>
+            <CardContent className="py-12">
+              <Empty>
+                <EmptyMedia variant="icon">
+                  <AlertCircle className="w-6 h-6" />
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>Failed to load runs</EmptyTitle>
+                  <EmptyDescription>
+                    There was a problem loading the diagnostic runs. Please try again.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <Button onClick={() => refetch()} data-testid="btn-retry-runs">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+              </Empty>
+            </CardContent>
+          </Card>
         ) : runs.length === 0 ? (
           <Card>
             <CardContent className="py-12">

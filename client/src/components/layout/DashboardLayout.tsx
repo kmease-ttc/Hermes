@@ -195,12 +195,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             
             return (
               <Link key={item.href} href={item.href}>
-                <div className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                  isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}>
+                <div 
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                    isActive 
+                      ? "bg-primary/10 text-primary" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  data-testid={`link-nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                >
                   <Icon className="w-4 h-4" />
                   {item.label}
                 </div>
@@ -210,7 +213,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         <div className="p-4 border-t border-border/50">
-          <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/30">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/30"
+            data-testid="btn-sign-out"
+            onClick={() => toast.info("Sign out functionality coming soon")}
+          >
             <LogOut className="w-4 h-4" />
             Sign Out
           </Button>

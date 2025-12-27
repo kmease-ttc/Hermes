@@ -1,0 +1,235 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2024-12-27T12:00:00Z",
+  "elements": [
+    {
+      "element_id": "link-nav-mission-control",
+      "visible_label": "Mission Control",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/dashboard",
+      "status": "OK"
+    },
+    {
+      "element_id": "link-nav-agents",
+      "visible_label": "Agents",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/crew",
+      "status": "OK"
+    },
+    {
+      "element_id": "link-nav-runs",
+      "visible_label": "Runs",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/runs",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "link-nav-integrations",
+      "visible_label": "Integrations",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/integrations",
+      "status": "OK"
+    },
+    {
+      "element_id": "link-nav-sites",
+      "visible_label": "Sites",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/sites",
+      "status": "OK"
+    },
+    {
+      "element_id": "link-nav-audit-log",
+      "visible_label": "Audit Log",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/audit",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "link-nav-settings",
+      "visible_label": "Settings",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/settings",
+      "status": "OK"
+    },
+    {
+      "element_id": "link-nav-help",
+      "visible_label": "Help",
+      "route": "/*",
+      "behavior": "NAVIGATE",
+      "destination": "/help",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-sign-out",
+      "visible_label": "Sign Out",
+      "route": "/*",
+      "behavior": "ACTION",
+      "destination": "toast notification",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "button-site-selector",
+      "visible_label": "Site Selector",
+      "route": "/*",
+      "behavior": "MODAL",
+      "destination": "dropdown menu",
+      "status": "OK"
+    },
+    {
+      "element_id": "menu-item-add-site",
+      "visible_label": "Add New Site",
+      "route": "/*",
+      "behavior": "MODAL",
+      "destination": "add site dialog",
+      "status": "OK"
+    },
+    {
+      "element_id": "btn-run-diagnostics",
+      "visible_label": "Run Diagnostics",
+      "route": "/dashboard",
+      "behavior": "ACTION",
+      "destination": "POST /api/run",
+      "status": "OK"
+    },
+    {
+      "element_id": "btn-trigger-run",
+      "visible_label": "Run Diagnostics",
+      "route": "/runs",
+      "behavior": "ACTION",
+      "destination": "POST /api/run",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-refresh-runs",
+      "visible_label": "Refresh",
+      "route": "/runs",
+      "behavior": "ACTION",
+      "destination": "invalidate runs query",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-view-run-*",
+      "visible_label": "View",
+      "route": "/runs",
+      "behavior": "NAVIGATE",
+      "destination": "/runs/:runId",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-back-runs",
+      "visible_label": "Back / Back to Runs",
+      "route": "/runs/:runId",
+      "behavior": "NAVIGATE",
+      "destination": "/runs",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-retry-runs",
+      "visible_label": "Retry",
+      "route": "/runs",
+      "behavior": "ACTION",
+      "destination": "refetch runs query",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-refresh-audit",
+      "visible_label": "Refresh",
+      "route": "/audit",
+      "behavior": "ACTION",
+      "destination": "invalidate audit-logs query",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-export-audit",
+      "visible_label": "Export CSV",
+      "route": "/audit",
+      "behavior": "ACTION",
+      "destination": "download CSV file",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-contact-support",
+      "visible_label": "Contact Support",
+      "route": "/help",
+      "behavior": "ACTION",
+      "destination": "toast notification",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "btn-back-dashboard",
+      "visible_label": "Back to Dashboard",
+      "route": "/benchmarks",
+      "behavior": "NAVIGATE",
+      "destination": "/dashboard",
+      "status": "FIXED"
+    },
+    {
+      "element_id": "metric-card-*",
+      "visible_label": "Key Metric Card",
+      "route": "/dashboard",
+      "behavior": "NAVIGATE",
+      "destination": "/agents/* or /benchmarks",
+      "status": "OK"
+    },
+    {
+      "element_id": "agent-card-*",
+      "visible_label": "Agent Card",
+      "route": "/crew",
+      "behavior": "NAVIGATE",
+      "destination": "/agents/:agentId",
+      "status": "OK"
+    },
+    {
+      "element_id": "agent-summary-*",
+      "visible_label": "Agent Summary Card",
+      "route": "/dashboard",
+      "behavior": "NAVIGATE",
+      "destination": "/agents/:agentId",
+      "status": "OK"
+    },
+    {
+      "element_id": "button-tooltip-*",
+      "visible_label": "Info Icon",
+      "route": "/crew, /dashboard",
+      "behavior": "MODAL",
+      "destination": "tooltip popover",
+      "status": "OK"
+    }
+  ],
+  "routes": [
+    { "path": "/", "redirectsTo": "/dashboard", "status": "OK" },
+    { "path": "/dashboard", "component": "MissionControl", "status": "OK" },
+    { "path": "/mission-control", "component": "MissionControl", "status": "OK" },
+    { "path": "/sites", "component": "Sites", "status": "OK" },
+    { "path": "/sites/new", "component": "SiteDetail", "status": "OK" },
+    { "path": "/sites/:siteId", "component": "SiteDetail", "status": "OK" },
+    { "path": "/tickets", "component": "Tickets", "status": "OK" },
+    { "path": "/serp", "component": "SERP", "status": "OK" },
+    { "path": "/keywords", "component": "KeywordRankings", "status": "OK" },
+    { "path": "/authority", "component": "Authority", "status": "OK" },
+    { "path": "/integrations", "component": "Integrations", "status": "OK" },
+    { "path": "/crew", "component": "Crew", "status": "OK" },
+    { "path": "/agents/:agentId", "component": "AgentDetail", "status": "OK" },
+    { "path": "/changes", "component": "SuggestedChanges", "status": "OK" },
+    { "path": "/runs", "component": "Runs", "status": "FIXED" },
+    { "path": "/runs/:runId", "component": "RunDetail", "status": "FIXED" },
+    { "path": "/audit", "component": "Audit", "status": "FIXED" },
+    { "path": "/help", "component": "Help", "status": "FIXED" },
+    { "path": "/benchmarks", "component": "Benchmarks", "status": "FIXED" },
+    { "path": "/settings", "component": "Settings", "status": "OK" }
+  ],
+  "summary": {
+    "total_elements_audited": 25,
+    "ok": 14,
+    "fixed": 11,
+    "todo": 0,
+    "blocked": 0
+  }
+}

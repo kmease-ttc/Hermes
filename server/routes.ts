@@ -2846,6 +2846,18 @@ When answering:
     }
   });
 
+  // Get all audit logs (global)
+  app.get("/api/audit-logs", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await storage.getAllAuditLogs(limit);
+      res.json(logs);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch global audit logs", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // =============== PLATFORM DEPENDENCIES ===============
   
   // Get platform dependency status (Bitwarden + Postgres)

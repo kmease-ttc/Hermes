@@ -235,6 +235,7 @@ export interface IStorage {
   // Audit Logs
   saveAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogsBySite(siteId: string, limit?: number): Promise<AuditLog[]>;
+  getAllAuditLogs(limit?: number): Promise<AuditLog[]>;
   
   // Site Integrations
   getSiteIntegrations(siteId: string): Promise<SiteIntegration[]>;
@@ -973,6 +974,10 @@ class DBStorage implements IStorage {
 
   async getAuditLogsBySite(siteId: string, limit = 50): Promise<AuditLog[]> {
     return db.select().from(auditLogs).where(eq(auditLogs.siteId, siteId)).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  async getAllAuditLogs(limit = 100): Promise<AuditLog[]> {
+    return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
   }
 
   // Site Integrations

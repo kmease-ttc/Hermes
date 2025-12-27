@@ -91,7 +91,7 @@ export default function RunDetail() {
                   </EmptyDescription>
                 </EmptyHeader>
                 <Link href="/runs">
-                  <Button data-testid="btn-back-to-runs">
+                  <Button data-testid="btn-back-runs">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Runs
                   </Button>
