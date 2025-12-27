@@ -387,7 +387,7 @@ export const servicesCatalog: ServiceDefinition[] = [
     description: "The core coordination service that manages scheduled jobs, retries, rate limits, timeouts, and run status tracking across the entire diagnostic pipeline.",
     purpose: "Coordinate service runs and track job status",
     inputs: ["site_domain"],
-    outputs: ["ok", "version", "uptime"],
+    outputs: ["status", "version", "uptime"],
     keyMetrics: ["jobs_run", "error_rates"],
     commonFailures: ["timeout", "server_error", "db_connection_failed"],
     runTriggers: ["scheduled", "manual"],
