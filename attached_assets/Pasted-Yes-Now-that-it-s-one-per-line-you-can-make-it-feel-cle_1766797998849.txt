@@ -1,0 +1,73 @@
+Yes. Now that it’s one-per-line, you can make it feel **clean, calm, and scannable** with a few targeted UI changes (no new features, just polish). Here’s a Replit prompt that focuses on “reduce noise, improve hierarchy.”
+
+---
+
+### Replit Prompt: Polish the Agents Page (Single-Column, Clean + Scannable)
+
+Improve the visual design of the single-column Agents page so each agent card is easier to scan and feels less “data dense,” while keeping all the same information and logic.
+
+Requirements:
+
+* Do not change what data is shown, only improve layout, spacing, typography, and hierarchy.
+* Keep the single-column layout (one agent per row, full width).
+* Maintain the existing card sections:
+
+  * What I Watch
+  * What I Found
+  * Last Checked
+  * Next Steps (1, 2, 3)
+
+Design updates to implement:
+
+1. Tighten the header area
+
+* Make agent name + role visually stronger and more compact.
+* Put agent name on the left, status pill on the right (already), but reduce wasted vertical space.
+* Reduce the size of the left icon slightly or soften it (lower opacity background).
+
+2. Improve section hierarchy
+
+* Make section labels (“WHAT I WATCH”, “WHAT I FOUND”, “LAST CHECKED”, “NEXT STEPS”) smaller and lighter (uppercase, muted), but increase spacing between sections so the eye can rest.
+* Ensure the body text under each label is readable and not cramped.
+
+3. Make “What I Found” easier to scan
+
+* Convert the findings list into a clean 2-column key/value layout:
+
+  * Left column: label (muted)
+  * Right column: value (slightly bolder)
+* Align values vertically and keep consistent spacing between rows.
+* Keep the list to the existing number of findings; just present them better.
+
+4. Make Next Steps feel like actions (not clutter)
+
+* Keep the 1/2/3 badges, but reduce their visual weight slightly (smaller badge, softer background).
+* Add a bit more line spacing between steps so they don’t feel jammed together.
+
+5. Reduce heavy borders / visual noise
+
+* Soften the colored left border: make it thinner OR reduce saturation so it doesn’t dominate.
+* Keep the color coding, but make it feel like an accent, not a frame.
+* Slightly increase border radius and use a subtle shadow for separation instead of strong borders.
+
+6. Improve whitespace + card rhythm
+
+* Increase internal padding slightly (especially around sections).
+* Add consistent vertical spacing between cards (e.g., `space-y-6`).
+
+Acceptance criteria:
+
+* Cards read like a short report, not a dashboard.
+* The eye can quickly scan: Name → Status → 3 Findings → 3 Next Steps.
+* Everything is calmer with less “shouting,” but still clear.
+
+Implementation guidance:
+
+* Make changes in the AgentCard component (and any shared typography styles it uses).
+* Avoid major refactors; this is purely styling/layout polish.
+
+After implementing, preview the Agents page and ensure Socrates/Natasha/Scotty/Beacon all look clean and consistent.
+
+---
+
+If you want one more “wow” polish after that: add a very subtle divider line between sections inside the card (thin muted border) so the sections feel structured without adding clutter.
