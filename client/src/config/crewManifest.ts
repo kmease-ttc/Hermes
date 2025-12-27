@@ -80,7 +80,7 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
   google_data_connector: {
     service_id: "google_data_connector",
     nickname: "Pulse",
-    role: "Telemetry Officer",
+    role: "GA4",
     color: "#06B6D4",
     icon: Activity,
     blurb: "Fetches analytics and search console data from Google APIs.",
