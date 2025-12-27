@@ -1,0 +1,57 @@
+REFactor Set Bonuses section: show VALUE PROP + NEXT CREW TO ADD (not just agent names)
+
+The current Set Bonuses cards list agent requirements (Popular, Lookout, Natasha). That’s backwards.
+Set Bonuses must sell the COMBO BENEFIT and guide the user to the NEXT CREW to add.
+
+For each Set Bonus card, change layout to:
+
+1) Header:
+- Title (e.g. “Revenue Attribution”)
+- One-sentence value prop under title:
+  “Connect SEO work to traffic and conversions so you know what’s actually paying off.”
+
+2) Progress:
+- Display: “Progress: X / N systems online”
+- Optional tiny progress bar under it (subtle gold)
+
+3) Next recommended crew to add:
+- Determine the first missing required agent (in priority order defined in the set bonus requirements)
+- Render a “Next to unlock:” row:
+  “Next to unlock: Popular (Signals)”
+  Button: “Select Popular”
+- Clicking “Select {agent}” should:
+  a) add agentId to previewSelected set (NOT enabled)
+  b) update the ship tile to Selected (semi-opaque)
+  c) update the progress display on this card
+
+4) Missing list (greyed):
+- Render missing agents as grey chips with icons if available.
+- Chips are clickable: open the crew modal for that agent.
+
+5) Only show the full requirement list in small muted text if needed, but do NOT make requirements the main content.
+
+STATE RULES
+- If the set is fully active (all required agents enabled), show “Active” and a gold check.
+- If partial, show the Next-to-unlock CTA.
+- If locked (0/N), show the Next-to-unlock CTA and grey chips.
+
+COPY RULES
+- Do NOT list bare agent names without benefit context.
+- Always lead with value prop.
+- “Select” = preview add to ship (no billing).
+- Enabling happens only in the crew modal.
+
+DATA MODEL
+Update setBonuses config to include:
+- id
+- title
+- valueProp (1 sentence)
+- outcomes (optional 1–2 bullets)
+- requirements: agentIds[] (ordered)
+- activationCopy (optional)
+
+Acceptance criteria:
+- Set bonus cards read like benefits, not checklists
+- Each set bonus clearly tells the user what to add next
+- Clicking Select updates ship preview state and progress number
+- Clicking a missing chip opens modal for that agent

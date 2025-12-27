@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { USER_FACING_AGENTS, getCrewMember, type CrewMember } from "@/config/agents";
 import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity, Plus, CheckCircle } from "lucide-react";
@@ -247,7 +247,13 @@ function StatusCard({
   );
 }
 
-function RoleDrawer({ 
+function getSetBonusContributions(agentId: string): string[] {
+  return SET_BONUSES
+    .filter(bonus => bonus.requirements.includes(agentId))
+    .map(bonus => bonus.title);
+}
+
+function CrewModal({ 
   agentId, 
   open, 
   onOpenChange,
@@ -269,51 +275,51 @@ function RoleDrawer({
   if (!agentId) return null;
   
   const crew = getCrewMember(agentId);
+  const bonusContributions = getSetBonusContributions(agentId);
+  const statusLabel = isEnabled ? "Active" : isSelected ? "Selected" : "Available";
+  const statusColor = isEnabled ? "bg-green-600 text-white" : isSelected ? "bg-sky-600 text-white" : "bg-slate-600 text-slate-200";
   
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-slate-900 border-slate-700 text-white w-[400px]">
-        <SheetHeader className="pb-4 border-b border-slate-700">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-[560px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b border-slate-700">
           <div className="flex items-center gap-4">
             {crew.avatar ? (
-              <img src={crew.avatar} alt={crew.nickname} className="w-16 h-16 object-contain" />
+              <img src={crew.avatar} alt={crew.nickname} className="w-20 h-20 object-contain" />
             ) : (
               <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold"
+                className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold"
                 style={{ backgroundColor: crew.color }}
               >
                 {crew.nickname.slice(0, 2)}
               </div>
             )}
-            <div>
-              <SheetTitle className="text-white text-xl" style={{ color: crew.color }}>
-                {crew.nickname}
-              </SheetTitle>
-              <SheetDescription className="text-slate-400">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-1">
+                <DialogTitle className="text-xl" style={{ color: crew.color }}>
+                  {crew.nickname}
+                </DialogTitle>
+                <Badge className={cn("text-xs", statusColor)}>
+                  {statusLabel}
+                </Badge>
+              </div>
+              <DialogDescription className="text-slate-400 text-base">
                 {crew.role}
-              </SheetDescription>
+              </DialogDescription>
             </div>
           </div>
-        </SheetHeader>
+        </DialogHeader>
         
-        <div className="py-6 space-y-6">
-          <div>
-            <p className="text-sm text-slate-300">{crew.blurb}</p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge variant={isEnabled ? "default" : "outline"} className={isEnabled ? "bg-green-600" : "border-slate-600 text-slate-400"}>
-              {isEnabled ? "Enabled" : isSelected ? "Selected (Preview)" : "Not Enabled"}
-            </Badge>
-          </div>
-          
+        <div className="py-4 space-y-5">
+          {/* What this does */}
           {crew.tooltipInfo && (
             <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">What this unlocks:</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 font-medium">What this does</p>
+              <p className="text-sm text-slate-300 mb-3">{crew.tooltipInfo.whatItDoes}</p>
               <ul className="space-y-2">
                 {crew.tooltipInfo.outputs.map((output, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-slate-300">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                    <Check className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
                     {output}
                   </li>
                 ))}
@@ -321,46 +327,101 @@ function RoleDrawer({
             </div>
           )}
           
-          {crew.capabilities && (
+          {/* Unlocks section */}
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 font-medium">Unlocks</p>
+            
+            {crew.capabilities && crew.capabilities.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-slate-500 mb-1.5">Capabilities:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {crew.capabilities.map((cap, i) => (
+                    <Badge key={i} variant="outline" className="border-slate-600 text-slate-300 text-xs">
+                      {cap}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {bonusContributions.length > 0 && (
+              <div>
+                <p className="text-xs text-slate-500 mb-1.5">Contributes to set bonuses:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {bonusContributions.map((bonus, i) => (
+                    <Badge key={i} className="bg-amber-500/20 text-amber-300 border-0 text-xs">
+                      <Zap className="w-3 h-3 mr-1" />
+                      {bonus}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Requirements section */}
+          {crew.dependencies && crew.dependencies.filter(d => d !== "orchestrator").length > 0 && (
             <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">Capabilities:</p>
-              <div className="flex flex-wrap gap-2">
-                {crew.capabilities.map((cap, i) => (
-                  <Badge key={i} variant="outline" className="border-slate-600 text-slate-300">
-                    {cap}
-                  </Badge>
-                ))}
+              <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 font-medium">Requirements</p>
+              <div className="flex flex-wrap gap-1.5">
+                {crew.dependencies.filter(d => d !== "orchestrator").map((dep, i) => {
+                  const depCrew = getCrewMember(dep);
+                  return (
+                    <Badge key={i} variant="outline" className="border-slate-600 text-slate-300 text-xs">
+                      {depCrew.nickname}
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
         
-        <div className="absolute bottom-6 left-6 right-6 space-y-3">
-          {!isEnabled && (
-            <Button 
-              variant="outline" 
-              className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
-              onClick={onSelect}
-              data-testid="button-select-preview"
-            >
-              {isSelected ? "Deselect Preview" : "Select (Preview)"}
-            </Button>
-          )}
+        <DialogFooter className="pt-4 border-t border-slate-700 flex-row gap-3 sm:justify-between">
           <Button 
-            className={cn(
-              "w-full font-semibold",
-              isEnabled 
-                ? "bg-red-600 hover:bg-red-700 text-white" 
-                : "bg-amber-500 hover:bg-amber-600 text-slate-900"
-            )}
-            onClick={isEnabled ? onDisable : onEnable}
-            data-testid={isEnabled ? "button-disable" : "button-enable"}
+            variant="outline" 
+            className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-cancel"
           >
-            {isEnabled ? "Disable" : "Enable"}
+            Cancel
           </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+          
+          {isEnabled ? (
+            <Button 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
+              onClick={onDisable}
+              data-testid="button-disable"
+            >
+              Disable
+            </Button>
+          ) : (
+            <div className="flex gap-2 flex-1">
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "flex-1",
+                  isSelected 
+                    ? "border-slate-500 text-slate-400 hover:bg-slate-800" 
+                    : "border-sky-500 text-sky-400 hover:bg-sky-950"
+                )}
+                onClick={onSelect}
+                data-testid="button-select-preview"
+              >
+                {isSelected ? "Deselect" : "Select"}
+              </Button>
+              <Button 
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
+                onClick={onEnable}
+                data-testid="button-enable"
+              >
+                Enable
+              </Button>
+            </div>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -643,7 +704,7 @@ export default function MyCrew() {
           </Card>
         </div>
 
-        <RoleDrawer
+        <CrewModal
           agentId={drawerAgentId}
           open={drawerOpen}
           onOpenChange={setDrawerOpen}
