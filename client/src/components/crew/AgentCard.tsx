@@ -1,15 +1,13 @@
-import { getCrewMember, type CrewMember } from "@/config/crewManifest";
+import { getCrewMember } from "@/config/crewManifest";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle, AlertTriangle, Clock, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
 
 interface AgentCardProps {
   serviceId: string;
   status?: "healthy" | "degraded" | "down" | "disabled" | "unknown";
   lastCheckIn?: string | null;
-  findings?: string[];
-  recommendation?: string;
   className?: string;
   onClick?: () => void;
 }
@@ -26,8 +24,6 @@ export function AgentCard({
   serviceId, 
   status = "unknown", 
   lastCheckIn, 
-  findings = [],
-  recommendation,
   className, 
   onClick 
 }: AgentCardProps) {
@@ -35,9 +31,6 @@ export function AgentCard({
   const Icon = crew.icon;
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
-
-  const hasFindings = findings.length > 0;
-  const hasRecommendation = recommendation && recommendation.length > 0;
 
   return (
     <Card 
@@ -50,7 +43,7 @@ export function AgentCard({
       onClick={onClick}
       data-testid={`agent-card-${serviceId}`}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -63,7 +56,7 @@ export function AgentCard({
               <h3 className="font-semibold" style={{ color: crew.color }}>
                 {crew.nickname}
               </h3>
-              <p className="text-xs text-muted-foreground">{crew.role}</p>
+              <p className="text-sm text-muted-foreground">{crew.role}</p>
             </div>
           </div>
           <Badge className={cn("flex items-center gap-1 text-xs", statusConfig.color)}>
@@ -72,44 +65,9 @@ export function AgentCard({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {crew.watchDescription && (
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">What I watch</p>
-            <p className="text-sm">{crew.watchDescription}</p>
-          </div>
-        )}
-
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">What I found</p>
-          {hasFindings ? (
-            <ul className="text-sm space-y-1">
-              {findings.slice(0, 3).map((finding, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-muted-foreground">•</span>
-                  <span>{finding}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">No findings yet</p>
-          )}
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Recommendation</p>
-          {hasRecommendation ? (
-            <p className="text-sm flex items-start gap-2">
-              <ArrowRight className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-              <span>{recommendation}</span>
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">Keep monitoring</p>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-          <span>Last checked</span>
+      <CardContent className="pt-0">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Last seen</span>
           <span>{lastCheckIn || "Never"}</span>
         </div>
       </CardContent>

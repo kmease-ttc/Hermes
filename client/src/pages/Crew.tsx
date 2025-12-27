@@ -2,7 +2,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AgentCard } from "@/components/crew/AgentCard";
-import { CaptainsRecommendations, type CaptainRecommendation } from "@/components/crew/CaptainsRecommendations";
 import { CREW_MANIFEST, getCrewMember, isUserFacingAgent } from "@/config/crewManifest";
 import { useQuery } from "@tanstack/react-query";
 import { Bot } from "lucide-react";
@@ -73,37 +72,12 @@ export default function CrewPage() {
         lastCheckIn: service?.lastRun?.finishedAt
           ? formatRelativeTime(service.lastRun.finishedAt)
           : null,
-        category: service?.category || "analysis",
       };
     });
 
   const healthyCount = userFacingAgents.filter((a) => a.status === "healthy").length;
   const degradedCount = userFacingAgents.filter((a) => a.status === "degraded").length;
-  const activeAgentCount = userFacingAgents.filter((a) => a.status === "healthy" || a.status === "degraded").length;
-
-  const mockRecommendations: CaptainRecommendation[] = activeAgentCount >= 2 ? [
-    {
-      id: "rec_1",
-      priority: 1,
-      title: "Publish a new blog on high-demand topics",
-      description: "Blog cadence is slipping and keyword demand is rising for key terms.",
-      contributingAgents: ["content_generator", "serp_intel"],
-    },
-    {
-      id: "rec_2",
-      priority: 2,
-      title: "Fix indexing issues on key pages",
-      description: "Several high-conversion pages have technical issues blocking crawlers.",
-      contributingAgents: ["crawl_render", "google_data_connector"],
-    },
-    {
-      id: "rec_3",
-      priority: 3,
-      title: "Acquire local backlinks",
-      description: "Domain authority growth has plateaued while competitors are gaining links.",
-      contributingAgents: ["backlink_authority", "competitive_snapshot"],
-    },
-  ] : [];
+  const downCount = userFacingAgents.filter((a) => a.status === "down").length;
 
   return (
     <DashboardLayout>
@@ -117,11 +91,6 @@ export default function CrewPage() {
             Your hired specialists analyzing and improving your site
           </p>
         </div>
-
-        <CaptainsRecommendations 
-          recommendations={mockRecommendations} 
-          activeAgentCount={activeAgentCount} 
-        />
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -158,6 +127,12 @@ export default function CrewPage() {
                     <span className="text-muted-foreground">Needs Attention</span>
                     <Badge className="bg-yellow-100 text-yellow-700">
                       {degradedCount}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Down</span>
+                    <Badge className="bg-red-100 text-red-700">
+                      {downCount}
                     </Badge>
                   </div>
                 </div>
