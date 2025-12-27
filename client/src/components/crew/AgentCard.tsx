@@ -83,14 +83,16 @@ export function AgentCard({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             {crew.avatar ? (
-              <img 
-                src={crew.avatar} 
-                alt={crew.nickname}
-                className="w-12 h-12 rounded-lg object-cover"
-              />
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: crew.color }}>
+                <img 
+                  src={crew.avatar} 
+                  alt={crew.nickname}
+                  className="w-full h-full object-cover scale-110"
+                />
+              </div>
             ) : (
               <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: `${crew.color}15` }}
               >
                 <Icon className="w-6 h-6" style={{ color: crew.color }} />
