@@ -171,7 +171,7 @@ export function CaptainsRecommendations({ data }: CaptainsRecommendationsProps) 
               <Compass className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Captain's Recommendations</CardTitle>
+              <CardTitle className="text-lg">Recommendations</CardTitle>
               <p className="text-xs text-muted-foreground flex items-center gap-2">
                 <span>Based on {data.coverage.active} active agents</span>
                 <span>•</span>
@@ -217,7 +217,7 @@ export function CaptainsRecommendations({ data }: CaptainsRecommendationsProps) 
 
         <p className="text-xs text-muted-foreground italic flex items-center gap-1 pt-2 border-t">
           <Lightbulb className="w-3 h-3" />
-          Captain's Recommendations improve as more agents contribute data.
+          Recommendations improve as more agents contribute data.
         </p>
       </CardContent>
     </Card>

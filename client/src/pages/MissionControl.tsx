@@ -258,7 +258,7 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
               <Compass className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">Captain's Recommendations</CardTitle>
+              <CardTitle className="text-lg">Recommendations</CardTitle>
               <p className="text-xs text-muted-foreground flex items-center gap-2">
                 <span>Sourced from {coverage.active} agents</span>
                 {updatedAt && (
