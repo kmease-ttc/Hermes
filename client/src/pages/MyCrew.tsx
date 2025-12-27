@@ -16,15 +16,15 @@ const SET_BONUSES = [
   {
     id: "revenue_attribution",
     title: "Revenue Attribution",
+    valueProp: "Connect SEO work to traffic and conversions so you know what's actually paying off.",
     requirements: ["google_data_connector", "serp_intel", "competitive_snapshot"],
-    value: "See which SEO work actually drives traffic and conversions.",
     icon: TrendingUp,
   },
   {
     id: "automated_execution",
     title: "Automated SEO Execution",
+    valueProp: "Automatically generate tasks, PRs, and content updates without manual work.",
     requirements: ["crawl_render", "content_generator"],
-    value: "Automatically generate tasks, PRs, and content updates.",
     icon: Zap,
     comingSoon: true,
   },
@@ -202,7 +202,7 @@ function StatusCard({
                 {nextUpgrade.title}
               </p>
               <p className="text-xs text-slate-400 mb-3">
-                {nextUpgrade.value}
+                {nextUpgrade.valueProp}
               </p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {missingAgents.map(id => {
@@ -485,87 +485,136 @@ function SetBonusCard({
   bonus, 
   enabledAgents,
   selectedAgents = [],
-  onRequirementClick
+  onRequirementClick,
+  onSelectAgent
 }: { 
   bonus: typeof SET_BONUSES[0];
   enabledAgents: string[];
   selectedAgents?: string[];
   onRequirementClick: (agentId: string) => void;
+  onSelectAgent: (agentId: string) => void;
 }) {
   const enabledCount = bonus.requirements.filter(r => enabledAgents.includes(r)).length;
   const previewCount = bonus.requirements.filter(r => enabledAgents.includes(r) || selectedAgents.includes(r)).length;
-  const status = enabledCount === bonus.requirements.length ? "active" : enabledCount > 0 ? "partial" : "locked";
-  const previewStatus = previewCount === bonus.requirements.length ? "preview-complete" : previewCount > enabledCount ? "preview-partial" : null;
+  const isActive = enabledCount === bonus.requirements.length;
   const Icon = bonus.icon;
+  
+  const missingAgents = bonus.requirements.filter(r => !enabledAgents.includes(r) && !selectedAgents.includes(r));
+  const nextToUnlock = missingAgents.length > 0 ? missingAgents[0] : null;
+  const nextCrew = nextToUnlock ? getCrewMember(nextToUnlock) : null;
+  
+  const progressDisplay = previewCount > enabledCount 
+    ? `${previewCount} / ${bonus.requirements.length}` 
+    : `${enabledCount} / ${bonus.requirements.length}`;
+  const isPreview = previewCount > enabledCount;
   
   return (
     <div className={cn(
       "p-4 rounded-xl border transition-all",
       bonus.comingSoon ? "bg-slate-900/30 border-slate-800 opacity-50" :
-      status === "active" ? "bg-gradient-to-br from-amber-900/30 to-slate-900 border-amber-500/50" :
-      status === "partial" ? "bg-slate-800/50 border-slate-600" :
+      isActive ? "bg-gradient-to-br from-amber-900/30 to-slate-900 border-amber-500/50" :
       "bg-slate-900/50 border-slate-700"
     )}>
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-start gap-3 mb-3">
         <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center",
+          "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
           bonus.comingSoon ? "bg-slate-800 text-slate-600" :
-          status === "active" ? "bg-amber-500/20 text-amber-400" :
+          isActive ? "bg-amber-500/20 text-amber-400" :
           "bg-slate-800 text-slate-500"
         )}>
-          {bonus.comingSoon ? <Lock className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+          {bonus.comingSoon ? <Lock className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
         </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-white text-sm">{bonus.title}</h4>
-          {bonus.comingSoon ? (
-            <Badge variant="outline" className="text-[10px] mt-1 border-slate-700 text-slate-500">
-              Coming Soon
-            </Badge>
-          ) : previewStatus ? (
-            <p className="text-xs text-sky-400">
-              Preview: {previewCount} / {bonus.requirements.length}
-              {previewStatus === "preview-complete" && " ✓"}
-            </p>
-          ) : (
-            <p className="text-xs text-slate-400">Progress: {enabledCount} / {bonus.requirements.length}</p>
-          )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-semibold text-white text-sm">{bonus.title}</h4>
+            {isActive && (
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">
+                <Check className="w-3 h-3 mr-1" /> Active
+              </Badge>
+            )}
+            {bonus.comingSoon && (
+              <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-500">
+                Coming Soon
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">{bonus.valueProp}</p>
         </div>
       </div>
       
-      {!bonus.comingSoon && (
-        <div className="space-y-2 mb-3">
-          {bonus.requirements.map((reqId) => {
-            const reqCrew = getCrewMember(reqId);
-            const isEnabled = enabledAgents.includes(reqId);
-            const isSelected = selectedAgents.includes(reqId);
-            return (
-              <button
-                key={reqId}
-                onClick={() => !isEnabled && onRequirementClick(reqId)}
+      {!bonus.comingSoon && !isActive && (
+        <>
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className={cn(
+                "text-xs font-medium",
+                isPreview ? "text-sky-400" : "text-slate-400"
+              )}>
+                Progress: {progressDisplay} systems online
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div 
                 className={cn(
-                  "flex items-center gap-2 text-xs w-full text-left",
-                  isEnabled ? "text-slate-300" : 
-                  isSelected ? "text-sky-300" :
-                  "text-slate-500 hover:text-slate-300 cursor-pointer"
+                  "h-full rounded-full transition-all",
+                  isPreview ? "bg-sky-500" : "bg-amber-500"
                 )}
-                disabled={isEnabled}
-                data-testid={`bonus-requirement-${reqId}`}
-              >
-                {isEnabled ? (
-                  <Check className="w-3 h-3 text-green-400" />
-                ) : isSelected ? (
-                  <Check className="w-3 h-3 text-sky-400" />
-                ) : (
-                  <div className="w-3 h-3 rounded-sm border border-slate-600" />
-                )}
-                {reqCrew.nickname}
-              </button>
-            );
-          })}
-        </div>
+                style={{ width: `${(previewCount / bonus.requirements.length) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          {nextCrew && (
+            <div className="bg-slate-800/50 rounded-lg p-3 mb-3">
+              <p className="text-xs text-slate-400 mb-2">Next to unlock:</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{nextCrew.avatar}</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{nextCrew.nickname}</p>
+                    <p className="text-xs text-slate-500">{nextCrew.signalType}</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-sky-500 text-sky-400 hover:bg-sky-950 text-xs h-7"
+                  onClick={() => onSelectAgent(nextToUnlock!)}
+                  data-testid={`select-next-${nextToUnlock}`}
+                >
+                  Select {nextCrew.nickname}
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {missingAgents.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {missingAgents.slice(1).map((agentId) => {
+                const crew = getCrewMember(agentId);
+                return (
+                  <button
+                    key={agentId}
+                    onClick={() => onRequirementClick(agentId)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-700 text-xs transition-colors"
+                    data-testid={`missing-chip-${agentId}`}
+                  >
+                    <span className="text-sm">{crew.avatar}</span>
+                    {crew.nickname}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
       
-      <p className="text-xs text-slate-400 italic">{bonus.value}</p>
+      {isActive && (
+        <div className="flex items-center gap-2 text-xs text-amber-400">
+          <Check className="w-4 h-4" />
+          <span>All {bonus.requirements.length} crew members active</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -634,6 +683,12 @@ export default function MyCrew() {
     );
   };
 
+  const handleSelectAgent = (agentId: string) => {
+    if (!enabledAgents.includes(agentId) && !selectedAgents.includes(agentId)) {
+      setSelectedAgents(prev => [...prev, agentId]);
+    }
+  };
+
   const handleAddRequiredCrew = (agentIds: string[]) => {
     setSelectedAgents(prev => {
       const newSet = new Set([...prev, ...agentIds]);
@@ -698,6 +753,7 @@ export default function MyCrew() {
                   enabledAgents={enabledAgents}
                   selectedAgents={selectedAgents}
                   onRequirementClick={handleSlotClick}
+                  onSelectAgent={handleSelectAgent}
                 />
               ))}
             </CardContent>
