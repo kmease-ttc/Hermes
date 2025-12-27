@@ -32,8 +32,8 @@ const helpSections = [
     description: "Learn what each specialist agent does and how to use their insights",
     icon: Users,
     links: [
-      { label: "View all agents", href: "/crew" },
-      { label: "Agent capabilities", href: "/crew" },
+      { label: "View all agents", href: "/agents" },
+      { label: "Agent capabilities", href: "/agents" },
     ],
   },
   {

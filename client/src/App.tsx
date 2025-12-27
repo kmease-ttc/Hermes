@@ -16,6 +16,7 @@ import Integrations from "@/pages/Integrations";
 import SuggestedChanges from "@/pages/SuggestedChanges";
 import Authority from "@/pages/Authority";
 import Crew from "@/pages/Crew";
+import MyCrew from "@/pages/MyCrew";
 import AgentDetail from "@/pages/AgentDetail";
 import KeywordRankings from "@/pages/KeywordRankings";
 import Runs from "@/pages/Runs";
@@ -37,7 +38,8 @@ function Router() {
       <Route path="/keywords" component={KeywordRankings} />
       <Route path="/authority" component={Authority} />
       <Route path="/integrations" component={Integrations} />
-      <Route path="/crew" component={Crew} />
+      <Route path="/crew" component={MyCrew} />
+      <Route path="/agents" component={Crew} />
       <Route path="/agents/:agentId" component={AgentDetail} />
       <Route path="/changes" component={SuggestedChanges} />
       <Route path="/runs" component={Runs} />

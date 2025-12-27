@@ -370,7 +370,7 @@ function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: 
           <h2 className="text-lg font-semibold">Agent Summary</h2>
           <Badge variant="secondary" className="text-xs">{enabledCount} of {totalAgents} enabled</Badge>
         </div>
-        <Link href="/crew">
+        <Link href="/agents">
           <Button variant="ghost" size="sm" className="text-xs">
             View all agents <ChevronRight className="w-3 h-3 ml-1" />
           </Button>
