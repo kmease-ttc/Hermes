@@ -12,6 +12,7 @@ import blogwriterAvatar from "@assets/generated_images/blogwriter_friendly_robot
 import draperAvatar from "@assets/generated_images/draper_friendly_robot_transparent.png";
 import speedsterAvatar from "@assets/generated_images/speedster_friendly_robot_transparent.png";
 import sentinelAvatar from "@assets/generated_images/sentinel_friendly_robot_transparent.png";
+import majorTomAvatar from "@assets/generated_images/major_tom_orchestrator_bot_avatar.png";
 
 export type CrewMember = {
   service_id: string;
@@ -57,6 +58,7 @@ export const AGENTS: Record<string, CrewMember> = {
     role: "Mission Control",
     color: "#4F46E5",
     icon: Radar,
+    avatar: majorTomAvatar,
     blurb: "Coordinates all services and manages the diagnostic pipeline.",
     capabilities: ["Job Scheduling", "Service Coordination", "Health Monitoring"],
     dependencies: [],
