@@ -90,24 +90,28 @@ interface MetricCardData {
 }
 
 function AreaSparkline({ data, color, fillColor }: { data: number[]; color: string; fillColor: string }) {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const padding = 8;
-  const width = 100;
-  const height = 50;
+  const W = 300;
+  const H = 64;
+  const pad = 10;
+  
+  const rawMin = Math.min(...data);
+  const rawMax = Math.max(...data);
+  const range = rawMax - rawMin;
+  const yPad = range === 0 ? 1 : range * 0.15;
+  const yMin = rawMin - yPad;
+  const yMax = rawMax + yPad;
   
   const points = data.map((val, i) => {
-    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
-    const y = padding + (1 - (val - min) / range) * (height - padding * 2);
+    const x = pad + (i / (data.length - 1)) * (W - pad * 2);
+    const y = H - pad - ((val - yMin) / (yMax - yMin)) * (H - pad * 2);
     return { x, y, val };
   });
   
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${H - pad} L ${points[0].x.toFixed(1)} ${H - pad} Z`;
   
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16" preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="64" preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id={`gradient-${color.replace('#', '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={fillColor} stopOpacity="0.4" />
@@ -122,7 +126,7 @@ function AreaSparkline({ data, color, fillColor }: { data: number[]; color: stri
         d={linePath}
         fill="none"
         stroke={color}
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -131,7 +135,7 @@ function AreaSparkline({ data, color, fillColor }: { data: number[]; color: stri
           key={i}
           cx={p.x}
           cy={p.y}
-          r="3"
+          r="4"
           fill="white"
           stroke={color}
           strokeWidth="2"
@@ -169,7 +173,7 @@ function MetricCard({ metric }: { metric: MetricCardData }) {
             {metric.delta}
           </span>
         </div>
-        <div className="h-16 mb-4 -mx-2">
+        <div className="h-16 w-full overflow-hidden mb-4">
           <AreaSparkline data={metric.sparkline} color={styles.lineColor} fillColor={styles.fillColor} />
         </div>
         <div className="space-y-2">
