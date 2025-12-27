@@ -6,7 +6,7 @@ import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SiteProvider } from "@/hooks/useSiteContext";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/Dashboard";
+import MissionControl from "@/pages/MissionControl";
 import Tickets from "@/pages/Tickets";
 import Settings from "@/pages/Settings";
 import SERP from "@/pages/SERP";
@@ -22,7 +22,8 @@ import KeywordRankings from "@/pages/KeywordRankings";
 function Router() {
   return (
     <Switch>
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard" component={MissionControl} />
+      <Route path="/mission-control" component={MissionControl} />
       <Route path="/sites" component={Sites} />
       <Route path="/sites/new" component={SiteDetail} />
       <Route path="/sites/:siteId" component={SiteDetail} />

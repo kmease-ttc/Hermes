@@ -1634,3 +1634,79 @@ export const insertSeoRunSchema = createInsertSchema(seoRuns).omit({
 });
 export type InsertSeoRun = z.infer<typeof insertSeoRunSchema>;
 export type SeoRun = typeof seoRuns.$inferSelect;
+
+// Metric Snapshots - canonical source of truth for all metrics
+export const metricSnapshots = pgTable("metric_snapshots", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  
+  // Metric identification
+  metricKey: text("metric_key").notNull(), // e.g. sessions_7d, top10_keywords, avg_position
+  sourceAgent: text("source_agent").notNull(), // e.g. popular, lookout, scotty
+  
+  // Time window
+  windowStart: timestamp("window_start"),
+  windowEnd: timestamp("window_end"),
+  
+  // Values
+  value: real("value").notNull(),
+  comparisonValue: real("comparison_value"), // Previous period value
+  deltaAbs: real("delta_abs"), // Absolute change
+  deltaPct: real("delta_pct"), // Percentage change
+  
+  // Verdict
+  verdict: text("verdict"), // good, watch, bad, neutral
+  verdictReason: text("verdict_reason"), // One-line explanation
+  
+  // Metadata
+  asOf: timestamp("as_of").defaultNow().notNull(), // When this snapshot was captured
+  metadataJson: jsonb("metadata_json"), // Additional context
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMetricSnapshotSchema = createInsertSchema(metricSnapshots).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMetricSnapshot = z.infer<typeof insertMetricSnapshotSchema>;
+export type MetricSnapshot = typeof metricSnapshots.$inferSelect;
+
+// Action Queue - prioritized actions from Captain's Recommendations
+export const actionQueue = pgTable("action_queue", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  
+  // Action details
+  title: text("title").notNull(),
+  description: text("description"),
+  
+  // Categorization
+  priority: integer("priority").notNull().default(50), // 1-100
+  impactLevel: text("impact_level"), // high, medium, low
+  effortLevel: text("effort_level"), // quick, medium, long
+  
+  // Source agents
+  sourceAgents: text("source_agents").array(), // Which agents recommended this
+  evidenceJson: jsonb("evidence_json"), // Supporting data from agents
+  
+  // Status tracking
+  status: text("status").notNull().default("new"), // new, reviewed, approved, done, dismissed
+  reviewedAt: timestamp("reviewed_at"),
+  approvedAt: timestamp("approved_at"),
+  completedAt: timestamp("completed_at"),
+  
+  // Export prompt
+  promptMarkdown: text("prompt_markdown"), // Generated Replit instructions
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertActionQueueSchema = createInsertSchema(actionQueue).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertActionQueue = z.infer<typeof insertActionQueueSchema>;
+export type ActionItem = typeof actionQueue.$inferSelect;
