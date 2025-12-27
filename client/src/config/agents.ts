@@ -1,7 +1,7 @@
 import { Map, Binoculars, Wrench, Radio, Activity, Key, GitBranch, Radar, Bot, BookOpen, BarChart3, Search, FileText, Zap, Bell, Database, Globe, Shield, TrendingUp, Link2, Eye, PenTool, Megaphone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import socratesAvatar from "@assets/generated_images/socrates_cyan_knowledge_robot.png";
+import socratesAvatar from "@assets/generated_images/socrates_cyan_robot_white_bg.png";
 import pulseAvatar from "@assets/generated_images/pulse_green_analytics_robot.png";
 import scottyAvatar from "@assets/generated_images/scotty_orange_technical_robot.png";
 import lookoutAvatar from "@assets/generated_images/lookout_purple_serp_robot.png";
