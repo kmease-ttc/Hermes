@@ -38,9 +38,9 @@ export function ShipCanvasA1(props: {
   const { enabledAgents, selectedAgents, onSlotClick, tileSize = 110 } = props;
 
   return (
-    <div className="relative w-full">
-      <div className="relative rounded-3xl border border-white/10 bg-white/5 p-4 md:p-6">
-        <div className="relative mx-auto w-full max-w-[1000px]">
+    <div className="relative w-full h-full">
+      <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-4 md:p-6">
+        <div className="relative mx-auto w-full h-full max-w-[1000px]">
           <ShipHullSvg className="w-full" />
 
           <div className="pointer-events-none absolute inset-0">

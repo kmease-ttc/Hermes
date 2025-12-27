@@ -702,63 +702,76 @@ export default function MyCrew() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 -m-6 p-6">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">My Crew</h1>
-          <p className="text-slate-400">Staff AI specialists to unlock deeper insights.</p>
+      <div className="min-h-screen w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 -m-6">
+        <div className="mx-auto w-full max-w-[1400px] px-6 pt-6">
+          <h1 className="text-2xl font-semibold text-white/90">My Crew</h1>
+          <p className="mt-1 text-sm text-white/60">
+            Staff AI specialists to unlock deeper insights.
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr] mb-10">
-          <StatusCard 
-            enabledCount={enabledAgents.length}
-            totalRoles={totalRoles}
-            enabledAgents={enabledAgents}
-            onAddRequiredCrew={handleAddRequiredCrew}
-          />
-          
-          <ShipCanvasA1 
-            enabledAgents={enabledAgents}
-            selectedAgents={selectedAgents}
-            onSlotClick={handleSlotClick}
-          />
-        </div>
+        <section className="mx-auto w-full max-w-[1400px] px-6 pt-6">
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            <div className="min-w-0">
+              <StatusCard 
+                enabledCount={enabledAgents.length}
+                totalRoles={totalRoles}
+                enabledAgents={enabledAgents}
+                onAddRequiredCrew={handleAddRequiredCrew}
+              />
+            </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-6">
-          <Card className="bg-slate-900/60 border-slate-700">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <CardTitle className="text-white text-lg">Active Capabilities</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              {CAPABILITY_GROUPS.map(group => (
-                <CapabilityCard key={group.id} group={group} enabledAgents={enabledAgents} />
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-900/60 border-slate-700">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-400" />
-                <CardTitle className="text-white text-lg">Set Bonuses</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {SET_BONUSES.map(bonus => (
-                <SetBonusCard 
-                  key={bonus.id} 
-                  bonus={bonus} 
+            <div className="min-w-0">
+              <div className="relative w-full min-h-[72vh] max-h-[780px] overflow-hidden">
+                <ShipCanvasA1 
                   enabledAgents={enabledAgents}
                   selectedAgents={selectedAgents}
-                  onRequirementClick={handleSlotClick}
-                  onSelectAgent={handleSelectAgent}
+                  onSlotClick={handleSlotClick}
+                  tileSize={132}
                 />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-10">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-progress" />
+                  <CardTitle className="text-white text-lg">Active Capabilities</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2">
+                {CAPABILITY_GROUPS.map(group => (
+                  <CapabilityCard key={group.id} group={group} enabledAgents={enabledAgents} />
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-progress" />
+                  <CardTitle className="text-white text-lg">Set Bonuses</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {SET_BONUSES.map(bonus => (
+                  <SetBonusCard 
+                    key={bonus.id} 
+                    bonus={bonus} 
+                    enabledAgents={enabledAgents}
+                    selectedAgents={selectedAgents}
+                    onRequirementClick={handleSlotClick}
+                    onSelectAgent={handleSelectAgent}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
 
         <CrewModal
           agentId={drawerAgentId}
