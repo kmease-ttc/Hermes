@@ -296,7 +296,7 @@ export const servicesCatalog: ServiceDefinition[] = [
     description: "Creates competitive baselines by analyzing who ranks for your target keywords, their page structures, titles/meta/H1 patterns, and URL templates.",
     purpose: "Analyze competitor rankings and page structures",
     inputs: ["target_keywords", "competitor_domains", "serp_api_key"],
-    outputs: ["run", "results", "keyword", "bestCompetitorDomain", "opportunityType", "opportunityScore"],
+    outputs: ["ok", "service", "version", "time"],  // Matches worker smoke-test response
     keyMetrics: ["resultCount", "opportunityScore", "competitorPosition"],
     commonFailures: ["api_key_invalid", "rate_limited", "no_data", "timeout"],
     runTriggers: ["scheduled", "manual"],
