@@ -97,16 +97,18 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Medium" | "Low"
 }
 
 function PriorityCard({ priority }: { priority: CaptainPriority }) {
-  const priorityColors = {
-    1: "border-l-red-500",
-    2: "border-l-amber-500", 
-    3: "border-l-blue-500",
+  const priorityStyles = {
+    1: { bg: "bg-red-50", border: "border-red-200" },
+    2: { bg: "bg-amber-50", border: "border-amber-200" }, 
+    3: { bg: "bg-blue-50", border: "border-blue-200" },
   };
+  const styles = priorityStyles[priority.rank as 1 | 2 | 3] || { bg: "bg-slate-50", border: "border-slate-200" };
   return (
     <div 
       className={cn(
-        "flex gap-4 p-4 rounded-lg bg-white border-2 border-slate-400 shadow-sm hover:shadow-md transition-shadow border-l-4",
-        priorityColors[priority.rank as 1 | 2 | 3] || "border-l-slate-300"
+        "flex gap-4 p-5 rounded-2xl border-2 hover:shadow-md transition-shadow",
+        styles.bg,
+        styles.border
       )} 
       data-testid={`priority-${priority.rank}`}
     >
