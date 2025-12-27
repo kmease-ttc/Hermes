@@ -26,8 +26,8 @@ export const CREW_MANIFEST: Record<string, CrewMember> = {
   },
   seo_kbase: {
     service_id: "seo_kbase",
-    nickname: "Knowledge Base",
-    role: "SEO Librarian",
+    nickname: "Socrates",
+    role: "Knowledge Base",
     color: "#22C55E",
     icon: Map,
     blurb: "Turns findings into durable knowledge and makes them searchable.",
