@@ -168,11 +168,14 @@ export function ShipCanvasA1(props: {
                           ) : slot.crewId && (
                             <CrewAvatarTooltip crewId={slot.crewId}>
                               {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
-                                <img 
-                                  src={crew.avatar} 
-                                  alt={crew.nickname || slot.roleName}
-                                  className="w-[85%] h-[85%] max-w-[150px] max-h-[150px] object-contain drop-shadow-lg"
-                                />
+                                <div className="w-[75%] h-[75%] max-w-[140px] max-h-[140px] overflow-hidden flex items-center justify-center">
+                                  <img 
+                                    src={crew.avatar} 
+                                    alt={crew.nickname || slot.roleName}
+                                    className="w-full h-full object-contain drop-shadow-lg"
+                                    style={{ transform: "scale(1.35) translateY(-2px)" }}
+                                  />
+                                </div>
                               ) : (
                                 <span className="text-6xl drop-shadow-lg">{crew?.avatar || "👤"}</span>
                               )}
