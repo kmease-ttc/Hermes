@@ -159,9 +159,7 @@ export function KnowledgeBaseCard() {
                     data-testid={`finding-${finding.findingId}`}
                   >
                     {crew.avatar ? (
-                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: crew.color }}>
-                        <img src={crew.avatar} alt="Socrates" className="w-full h-full object-cover scale-110" />
-                      </div>
+                      <img src={crew.avatar} alt="Socrates" className="w-8 h-8 object-contain flex-shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: crew.color }}>
                         So
