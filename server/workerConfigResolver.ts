@@ -65,9 +65,30 @@ function normalizeKeys(parsed: any): { base_url: string | null; api_key: string 
   };
 }
 
-function resolveFromFallbackEnvVars(mapping: ServiceSecretMapping): WorkerConfig {
+async function getIntegrationBaseUrl(serviceSlug: string): Promise<string | null> {
+  try {
+    const { storage } = await import("./storage");
+    const integration = await storage.getIntegrationById(serviceSlug);
+    if (integration?.baseUrl) {
+      return integration.baseUrl.trim().replace(/\/+$/, "");
+    }
+  } catch (err: any) {
+    logger.debug("WorkerConfig", `Could not fetch integration base_url for ${serviceSlug}: ${err.message}`);
+  }
+  return null;
+}
+
+async function resolveFromFallbackEnvVars(mapping: ServiceSecretMapping): Promise<WorkerConfig> {
   const apiKey = mapping.fallbackEnvVar ? process.env[mapping.fallbackEnvVar] : null;
-  const baseUrl = mapping.fallbackBaseUrlEnvVar ? process.env[mapping.fallbackBaseUrlEnvVar] : null;
+  let baseUrl = mapping.fallbackBaseUrlEnvVar ? process.env[mapping.fallbackBaseUrlEnvVar] : null;
+  
+  // Also check integrations database for base_url if not in env vars
+  if (!baseUrl) {
+    baseUrl = await getIntegrationBaseUrl(mapping.serviceSlug);
+    if (baseUrl) {
+      logger.info("WorkerConfig", `Found base_url in integrations database for ${mapping.serviceSlug}`);
+    }
+  }
   
   const apiKeyFingerprint = apiKey ? computeKeyFingerprint(apiKey) : null;
   const normalizedBaseUrl = baseUrl ? baseUrl.trim().replace(/\/+$/, "") : null;
@@ -87,7 +108,7 @@ function resolveFromFallbackEnvVars(mapping: ServiceSecretMapping): WorkerConfig
       api_key_fingerprint: apiKeyFingerprint,
       base_url: null,
       valid: false,
-      error: `Fallback base URL env var not set: ${mapping.fallbackBaseUrlEnvVar}`,
+      error: `Base URL not configured. Set ${mapping.fallbackBaseUrlEnvVar} env var or configure in Integrations.`,
     };
   }
   
@@ -183,9 +204,18 @@ export async function resolveWorkerConfig(
     const trimmedValue = secretValue.trim();
 
     if (!trimmedValue.startsWith("{")) {
-      // Plain string secret = API key only, try to get base_url from fallback env var
-      const fallbackBaseUrl = mapping.fallbackBaseUrlEnvVar ? process.env[mapping.fallbackBaseUrlEnvVar] : null;
-      const normalizedBaseUrl = fallbackBaseUrl ? fallbackBaseUrl.trim().replace(/\/+$/, "") : null;
+      // Plain string secret = API key only, try to get base_url from fallback env var or integrations DB
+      let baseUrl = mapping.fallbackBaseUrlEnvVar ? process.env[mapping.fallbackBaseUrlEnvVar] : null;
+      
+      // Also check integrations database for base_url if not in env vars
+      if (!baseUrl) {
+        baseUrl = await getIntegrationBaseUrl(serviceSlug);
+        if (baseUrl) {
+          logger.info("WorkerConfig", `Found base_url in integrations database for ${serviceSlug}`);
+        }
+      }
+      
+      const normalizedBaseUrl = baseUrl ? baseUrl.trim().replace(/\/+$/, "") : null;
       
       if (mapping.requiresBaseUrl && !normalizedBaseUrl) {
         return {
@@ -194,13 +224,13 @@ export async function resolveWorkerConfig(
           rawValueType: "string",
           api_key: trimmedValue,
           api_key_fingerprint: computeKeyFingerprint(trimmedValue),
-          error: `Secret is API key only, base_url missing. Set ${mapping.fallbackBaseUrlEnvVar} env var.`,
+          error: `Secret is API key only, base_url missing. Set in Integrations page or ${mapping.fallbackBaseUrlEnvVar} env var.`,
         };
       }
       
-      logger.info("WorkerConfig", `Using Bitwarden API key + fallback base URL for ${serviceSlug}`, {
+      logger.info("WorkerConfig", `Using Bitwarden API key + base URL for ${serviceSlug}`, {
         secretName,
-        fallbackEnvVar: mapping.fallbackBaseUrlEnvVar,
+        baseUrl: normalizedBaseUrl,
       });
       
       return {

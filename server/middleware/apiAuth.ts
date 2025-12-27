@@ -47,6 +47,8 @@ const SAME_ORIGIN_POST_PATHS = [
   "/api/changes",
   "/api/diagnostics",
   "/api/services",
+  "/api/kbase",
+  "/api/serp",
 ];
 
 // Check if request is from same origin (browser UI)
