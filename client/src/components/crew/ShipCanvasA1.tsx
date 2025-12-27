@@ -46,7 +46,7 @@ export function ShipCanvasA1(props: {
   onSlotClick: (id: string) => void;
   tileSize?: number;
 }) {
-  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 110 } = props;
+  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 100 } = props;
 
   return (
     <div className="relative w-full h-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent overflow-hidden">
@@ -89,6 +89,31 @@ export function ShipCanvasA1(props: {
             </svg>
           </div>
 
+          {/* BACKGROUND LAYER: Role labels (not clickable) */}
+          <div className="absolute inset-0 pointer-events-none">
+            {ROLE_SLOTS.map((slot) => {
+              const currentTileSize = slot.roleId === "mission_control" ? tileSize * 1.1 : tileSize;
+              const labelOffset = currentTileSize / 2 + 14;
+              
+              return (
+                <div
+                  key={`label-${slot.roleId}`}
+                  className="absolute text-center"
+                  style={{
+                    left: `${slot.xPct}%`,
+                    top: `calc(${slot.yPct}% - ${labelOffset}px)`,
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  <span className="text-[10px] font-medium text-white/40 whitespace-nowrap">
+                    {slot.roleName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* INTERACTIVE LAYER: Crew tiles and empty bays */}
           <div className="absolute inset-0">
             {ROLE_SLOTS.map((slot) => {
               const crew = slot.crewId ? getCrewMember(slot.crewId) : null;
@@ -99,6 +124,32 @@ export function ShipCanvasA1(props: {
               const RoleIcon = slot.roleIcon;
 
               const badge = isMissionControl ? "Included" : isEnabled ? "Active" : isSelected ? "Selected" : null;
+
+              const currentTileSize = isMissionControl ? tileSize * 1.1 : tileSize;
+              const left = `calc(${slot.xPct}% - ${currentTileSize / 2}px)`;
+              const top = `calc(${slot.yPct}% - ${currentTileSize / 2}px)`;
+
+              if (isEmpty) {
+                return (
+                  <button
+                    key={slot.roleId}
+                    className="absolute transition-all hover:scale-105 group"
+                    style={{ left, top, width: currentTileSize, height: currentTileSize }}
+                    onClick={() => slot.crewId && onSlotClick(slot.crewId)}
+                    data-testid={`ship-slot-${slot.roleId}`}
+                    title="Assign a crew member to this role"
+                  >
+                    <div className="relative h-full w-full rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] transition-all duration-200 group-hover:border-white/30 group-hover:bg-white/[0.04]">
+                      <div className="absolute left-1.5 top-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
+                        <Info className="w-3.5 h-3.5 text-white/60" />
+                      </div>
+                      <div className="flex h-full items-center justify-center">
+                        <RoleIcon className="w-10 h-10 text-white/20 group-hover:text-white/40 transition-colors" />
+                      </div>
+                    </div>
+                  </button>
+                );
+              }
 
               const ringClass = isEnabled
                 ? "ring-2 shadow-[0_0_0_2px_var(--color-progress-soft),0_18px_40px_rgba(0,0,0,0.45)]"
@@ -112,19 +163,11 @@ export function ShipCanvasA1(props: {
                   ? "var(--color-primary)" 
                   : undefined;
 
-              const borderClass = isEmpty
-                ? "border border-dashed border-white/20"
-                : "border border-white/15";
-
               const badgeClass = isMissionControl || isEnabled
                 ? "bg-progress-soft text-white/90"
                 : isSelected
                   ? "bg-[rgba(124,58,237,0.18)] text-white/90"
                   : "";
-
-              const currentTileSize = isMissionControl ? tileSize * 1.08 : tileSize;
-              const left = `calc(${slot.xPct}% - ${currentTileSize / 2}px)`;
-              const top = `calc(${slot.yPct}% - ${currentTileSize / 2}px)`;
 
               return (
                 <button
@@ -133,14 +176,14 @@ export function ShipCanvasA1(props: {
                   style={{ left, top, width: currentTileSize, height: currentTileSize }}
                   onClick={() => slot.crewId && onSlotClick(slot.crewId)}
                   data-testid={`ship-slot-${slot.roleId}`}
-                  title={isEmpty ? "Assign a crew member to this role" : `View ${crew?.nickname || slot.roleName} details`}
+                  title={`View ${crew?.nickname || slot.roleName} details`}
                 >
                   <div
                     className={[
                       "relative h-full w-full rounded-2xl bg-white/[0.06] backdrop-blur-sm",
                       "transition-all duration-200 hover:bg-white/[0.08]",
                       ringClass,
-                      borderClass,
+                      "border border-white/15",
                     ].join(" ")}
                     style={{ "--tw-ring-color": ringColor } as React.CSSProperties}
                   >
@@ -150,41 +193,17 @@ export function ShipCanvasA1(props: {
                       </div>
                     )}
 
-                    {isEmpty && (
-                      <div className="absolute left-1.5 top-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
-                        <Info className="w-3.5 h-3.5 text-white/60" />
-                      </div>
-                    )}
-
-                    <div className="flex h-full flex-col items-center justify-center gap-1 px-2">
-                      {isEmpty ? (
-                        <>
-                          <RoleIcon className="w-8 h-8 text-white/30 group-hover:text-white/50 transition-colors" />
-                          <div className="text-center">
-                            <div className="text-[11px] font-medium text-white/40 leading-tight">{slot.roleName}</div>
-                            <div className="text-[10px] text-white/30 leading-tight">
-                              {slot.roleId === "ai_optimization" ? "Optimize for AI discovery" : "Empty slot"}
-                            </div>
-                          </div>
-                        </>
+                    <div className="flex h-full items-center justify-center">
+                      {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
+                        <img 
+                          src={crew.avatar} 
+                          alt={crew.nickname || slot.roleName}
+                          className="h-16 w-16 object-contain drop-shadow-lg"
+                        />
                       ) : (
-                        <>
-                          {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
-                            <img 
-                              src={crew.avatar} 
-                              alt={crew.nickname || slot.roleName}
-                              className="h-12 w-12 object-contain"
-                            />
-                          ) : (
-                            <span className="text-3xl">
-                              {crew?.avatar || "👤"}
-                            </span>
-                          )}
-                          <div className="text-center">
-                            <div className="text-[11px] font-semibold text-white/90 leading-tight">{crew?.nickname || "Unknown"}</div>
-                            <div className="text-[10px] text-white/50 leading-tight">{slot.roleName}</div>
-                          </div>
-                        </>
+                        <span className="text-4xl drop-shadow-lg">
+                          {crew?.avatar || "👤"}
+                        </span>
                       )}
                     </div>
                   </div>
