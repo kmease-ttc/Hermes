@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { USER_FACING_AGENTS, getCrewMember, type CrewMember } from "@/config/agents";
-import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity, Plus, CheckCircle } from "lucide-react";
+import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity, Plus, CheckCircle, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShipCanvasA1 } from "@/components/crew/ShipCanvasA1";
 
@@ -19,6 +19,14 @@ const SET_BONUSES = [
     valueProp: "Connect SEO work to traffic and conversions so you know what's actually paying off.",
     requirements: ["google_data_connector", "serp_intel", "competitive_snapshot"],
     icon: TrendingUp,
+  },
+  {
+    id: "ai_discoverability",
+    title: "AI Discoverability",
+    valueProp: "Help AI assistants understand, trust, and recommend your site.",
+    requirements: ["ai_optimization", "seo_kbase", "crawl_render"],
+    icon: BrainCircuit,
+    outcomes: ["AI-friendly content summaries", "Entity-consistent site structure", "Competitive AI discoverability advantage"],
   },
   {
     id: "automated_execution",
@@ -191,6 +199,12 @@ function StatusCard({
         <p className="text-sm text-slate-400 border-l-2 border-slate-600 pl-3">
           {getContextLine(percent)}
         </p>
+        
+        {/* Baseline AI Readiness - always on */}
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <BrainCircuit className="w-3.5 h-3.5 text-violet-400/60" />
+          <span>AI Readiness: <span className="text-violet-400/80">Basic</span></span>
+        </div>
         
         {/* Next Best Upgrade */}
         {nextUpgrade && missingAgents.length > 0 && (

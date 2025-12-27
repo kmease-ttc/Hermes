@@ -1,4 +1,4 @@
-import { Map, Binoculars, Wrench, Radio, Activity, Key, GitBranch, Radar, Bot, BookOpen, BarChart3, Search, FileText, Zap, Bell, Database, Globe, Shield, TrendingUp, Link2, Eye, PenTool, Megaphone } from "lucide-react";
+import { Map, Binoculars, Wrench, Radio, Activity, Key, GitBranch, Radar, Bot, BookOpen, BarChart3, Search, FileText, Zap, Bell, Database, Globe, Shield, TrendingUp, Link2, Eye, PenTool, Megaphone, BrainCircuit } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import socratesAvatar from "@assets/generated_images/socrates_friendly_robot_transparent.png";
@@ -45,6 +45,7 @@ export const USER_FACING_AGENTS = [
   "content_decay",
   "content_generator",
   "google_ads_connector",
+  "ai_optimization",
 ];
 
 export function isUserFacingAgent(serviceId: string): boolean {
@@ -296,6 +297,28 @@ export const AGENTS: Record<string, CrewMember> = {
     watchDescription: "Content coverage vs. competitors",
     capabilities: ["Gap Analysis", "Coverage Mapping", "Priority Scoring"],
     dependencies: ["orchestrator", "competitive_snapshot"],
+  },
+  ai_optimization: {
+    service_id: "ai_optimization",
+    nickname: "Atlas",
+    role: "AI Optimization",
+    color: "#8B5CF6",
+    icon: BrainCircuit,
+    avatar: "🧠",
+    blurb: "Optimizes your site for AI assistants and LLM discovery.",
+    shortDescription: "Improves AI discoverability and LLM-readiness.",
+    tooltipInfo: {
+      whatItDoes: "Ensures AI assistants can understand, trust, and recommend your content. Generates llms.txt, structured data, and AI-friendly summaries.",
+      outputs: ["AI discoverability score", "LLM-ready content", "Structured data"],
+    },
+    watchDescription: "AI assistant visibility and LLM discoverability",
+    capabilities: ["llms.txt Generation", "Structured Data", "AI Summaries", "Entity Optimization"],
+    dependencies: ["orchestrator", "seo_kbase", "crawl_render"],
+    endpoints: [
+      { method: "GET", path: "/api/atlas/health", auth: "none" },
+      { method: "POST", path: "/api/atlas/run", auth: "api_key" },
+      { method: "GET", path: "/api/atlas/outputs/latest", auth: "api_key" },
+    ],
   },
 };
 

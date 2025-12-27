@@ -7826,5 +7826,68 @@ When answering:
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Atlas (AI Optimization) API - Stub endpoints
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.get("/api/atlas/health", async (_req, res) => {
+    res.json({
+      ok: true,
+      service: "atlas",
+      version: "1.0.0",
+      schema_version: "2025-12-27",
+      status: "stub",
+      message: "Atlas AI Optimization service is not yet implemented",
+    });
+  });
+
+  app.post("/api/atlas/run", async (req, res) => {
+    const { siteId = "default" } = req.body;
+    const requestId = req.headers["x-request-id"] || randomUUID();
+    
+    res.json({
+      ok: true,
+      service: "atlas",
+      version: "1.0.0",
+      schema_version: "2025-12-27",
+      request_id: requestId,
+      data: {
+        siteId,
+        status: "stub",
+        message: "Atlas run not yet implemented. Enable Atlas to unlock AI Optimization capabilities.",
+        ai_discoverability_score: null,
+        issues: [],
+        fixes: [],
+        files_to_add: [],
+        pages_to_update: [],
+      },
+    });
+  });
+
+  app.get("/api/atlas/outputs/latest", async (req, res) => {
+    const siteId = (req.query.siteId as string) || "default";
+    const requestId = req.headers["x-request-id"] || randomUUID();
+    
+    res.json({
+      ok: true,
+      service: "atlas",
+      version: "1.0.0",
+      schema_version: "2025-12-27",
+      request_id: requestId,
+      data: {
+        siteId,
+        status: "stub",
+        message: "No Atlas outputs yet. Enable Atlas to generate AI optimization recommendations.",
+        ai_discoverability_score: null,
+        last_run_at: null,
+        issues: [],
+        fixes: [],
+        files_to_add: [],
+        pages_to_update: [],
+        competitive_ai_gap: [],
+      },
+    });
+  });
+
   return httpServer;
 }

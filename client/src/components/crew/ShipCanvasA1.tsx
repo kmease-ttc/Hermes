@@ -1,7 +1,7 @@
 import React from "react";
 import { ShipHullSvg } from "./ShipHullSvg";
 import { getCrewMember } from "@/config/agents";
-import { Info, Eye, Target, BarChart3, Wrench, Zap, Search, PenTool, Link2, Megaphone, Compass } from "lucide-react";
+import { Info, Eye, Target, BarChart3, Wrench, Zap, Search, PenTool, Link2, Megaphone, Compass, BrainCircuit } from "lucide-react";
 
 type RoleSlot = {
   roleId: string;
@@ -22,8 +22,9 @@ const ROLE_SLOTS: RoleSlot[] = [
   { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 75, yPct: 32 },
 
   // CONTENT SYSTEMS - Middle upper (52%)
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 32, yPct: 52 },
-  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 68, yPct: 52 },
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 25, yPct: 52 },
+  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 50, yPct: 52 },
+  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 75, yPct: 52 },
 
   // ENGINEERING - Middle lower (72%)
   { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 32, yPct: 72 },
@@ -156,7 +157,9 @@ export function ShipCanvasA1(props: {
                           <RoleIcon className="w-8 h-8 text-white/30 group-hover:text-white/50 transition-colors" />
                           <div className="text-center">
                             <div className="text-[11px] font-medium text-white/40 leading-tight">{slot.roleName}</div>
-                            <div className="text-[10px] text-white/30 leading-tight">Empty slot</div>
+                            <div className="text-[10px] text-white/30 leading-tight">
+                              {slot.roleId === "ai_optimization" ? "Optimize for AI discovery" : "Empty slot"}
+                            </div>
                           </div>
                         </>
                       ) : (
