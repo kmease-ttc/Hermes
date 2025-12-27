@@ -34,18 +34,39 @@ export type CrewMember = {
   watchDescription?: string;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FINAL CREW MANIFEST - LOCKED (12 slots)
+// These are the agents that appear on the ship as fillable role slots.
+// Do not add or remove agents without redesigning the ship image.
+// ═══════════════════════════════════════════════════════════════════════════
 export const USER_FACING_AGENTS = [
-  "seo_kbase",
-  "competitive_snapshot", 
-  "crawl_render",
-  "backlink_authority",
-  "google_data_connector",
-  "serp_intel",
-  "core_web_vitals",
-  "content_decay",
-  "content_generator",
-  "google_ads_connector",
-  "ai_optimization",
+  // COMMAND (1) - Always included
+  // "orchestrator" is not in this list because it's always enabled (Major Tom)
+  
+  // INTELLIGENCE & VISIBILITY (3)
+  "competitive_snapshot",  // Natasha - Competitive Intelligence
+  "serp_intel",            // Lookout - SERP Tracking  
+  "google_data_connector", // Popular - Analytics & Signals
+  
+  // ENGINEERING & PERFORMANCE (2)
+  "crawl_render",          // Scotty - Technical SEO
+  "core_web_vitals",       // Speedster - Performance Monitoring
+  
+  // CONTENT SYSTEMS (2)
+  "content_decay",         // Sentinel - Content Decay
+  "content_generator",     // Hemingway - Content Strategy
+  
+  // AUTHORITY & TRUST (1)
+  "backlink_authority",    // Beacon - Domain Authority
+  
+  // AI SYSTEMS (1)
+  "ai_optimization",       // Atlas - AI Optimization
+  
+  // GROWTH (1)
+  "google_ads_connector",  // Draper - Paid Ads
+  
+  // KNOWLEDGE & MEMORY (1)
+  "seo_kbase",             // Socrates - Knowledge Base
 ];
 
 export function isUserFacingAgent(serviceId: string): boolean {
@@ -148,7 +169,7 @@ export const AGENTS: Record<string, CrewMember> = {
   google_data_connector: {
     service_id: "google_data_connector",
     nickname: "Popular",
-    role: "GA4",
+    role: "Analytics & Signals",
     color: "#06B6D4",
     icon: Activity,
     avatar: pulseAvatar,
@@ -175,7 +196,7 @@ export const AGENTS: Record<string, CrewMember> = {
   serp_intel: {
     service_id: "serp_intel",
     nickname: "Lookout",
-    role: "SERP Analyst",
+    role: "SERP Tracking",
     color: "#EC4899",
     icon: Search,
     avatar: lookoutAvatar,
@@ -192,7 +213,7 @@ export const AGENTS: Record<string, CrewMember> = {
   core_web_vitals: {
     service_id: "core_web_vitals",
     nickname: "Speedster",
-    role: "Performance Monitor",
+    role: "Performance Monitoring",
     color: "#10B981",
     icon: Zap,
     avatar: speedsterAvatar,
@@ -226,7 +247,7 @@ export const AGENTS: Record<string, CrewMember> = {
   content_generator: {
     service_id: "content_generator",
     nickname: "Hemingway",
-    role: "BlogWriter",
+    role: "Content Strategy",
     color: "#1E3A8A",
     icon: PenTool,
     avatar: hemingwayAvatar,
@@ -243,7 +264,7 @@ export const AGENTS: Record<string, CrewMember> = {
   google_ads_connector: {
     service_id: "google_ads_connector",
     nickname: "Draper",
-    role: "Google Ads",
+    role: "Paid Ads",
     color: "#EC4899",
     icon: Megaphone,
     avatar: draperAvatar,

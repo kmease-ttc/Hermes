@@ -1,7 +1,7 @@
 import React from "react";
 import { ShipHullSvg } from "./ShipHullSvg";
 import { getCrewMember } from "@/config/agents";
-import { Info, Eye, Target, BarChart3, Wrench, Zap, Search, PenTool, Link2, Megaphone, Compass, BrainCircuit } from "lucide-react";
+import { Info, Eye, Target, BarChart3, Wrench, Zap, Search, PenTool, Link2, Megaphone, Compass, BrainCircuit, BookOpen } from "lucide-react";
 
 type RoleSlot = {
   roleId: string;
@@ -12,27 +12,32 @@ type RoleSlot = {
   yPct: number;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FINAL CREW MANIFEST - LOCKED (12 slots)
+// Do not add or remove slots without redesigning the ship image
+// ═══════════════════════════════════════════════════════════════════════════
 const ROLE_SLOTS: RoleSlot[] = [
-  // COMMAND - Top (10%)
+  // ROW 1 - COMMAND (10%) - 1 slot
   { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", xPct: 50, yPct: 10 },
 
-  // INTELLIGENCE - Upper section (32%)
-  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 25, yPct: 32 },
-  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 32 },
-  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 75, yPct: 32 },
+  // ROW 2 - INTELLIGENCE & VISIBILITY (30%) - 3 slots
+  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 25, yPct: 30 },
+  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 30 },
+  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 75, yPct: 30 },
 
-  // CONTENT SYSTEMS - Middle upper (52%)
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 25, yPct: 52 },
-  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 50, yPct: 52 },
-  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 75, yPct: 52 },
+  // ROW 3 - ENGINEERING & PERFORMANCE (48%) - 2 slots
+  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 35, yPct: 48 },
+  { roleId: "performance_monitoring", roleName: "Performance Monitoring", roleIcon: Zap, crewId: "core_web_vitals", xPct: 65, yPct: 48 },
 
-  // ENGINEERING - Middle lower (72%)
-  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 32, yPct: 72 },
-  { roleId: "performance", roleName: "Performance", roleIcon: Zap, crewId: "core_web_vitals", xPct: 68, yPct: 72 },
+  // ROW 4 - CONTENT SYSTEMS (66%) - 2 slots
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 35, yPct: 66 },
+  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 65, yPct: 66 },
 
-  // AUTHORITY & GROWTH - Bottom section (92%)
-  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 38, yPct: 92 },
-  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 62, yPct: 92 },
+  // ROW 5 - AUTHORITY, AI, GROWTH, KNOWLEDGE (84%) - 4 slots
+  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 20, yPct: 84 },
+  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 40, yPct: 84 },
+  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 60, yPct: 84 },
+  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", xPct: 80, yPct: 84 },
 ];
 
 export function ShipCanvasA1(props: {
