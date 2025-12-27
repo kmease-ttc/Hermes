@@ -8,21 +8,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { USER_FACING_AGENTS, getCrewMember, type CrewMember } from "@/config/agents";
 import { Check, Zap, Lock, Sparkles, TrendingUp, Shield, Eye, FileText, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ShipCanvas } from "@/components/crew/ShipCanvas";
 
 const CREW_ROLES = USER_FACING_AGENTS;
-
-const ROLE_POSITIONS: Record<string, { x: number; y: number; row: number }> = {
-  seo_kbase: { x: 50, y: 15, row: 1 },
-  content_decay: { x: 75, y: 15, row: 1 },
-  competitive_snapshot: { x: 25, y: 35, row: 2 },
-  crawl_render: { x: 50, y: 35, row: 2 },
-  serp_intel: { x: 75, y: 35, row: 2 },
-  backlink_authority: { x: 37.5, y: 55, row: 3 },
-  google_data_connector: { x: 62.5, y: 55, row: 3 },
-  core_web_vitals: { x: 25, y: 75, row: 4 },
-  content_generator: { x: 50, y: 75, row: 4 },
-  google_ads_connector: { x: 75, y: 75, row: 4 },
-};
 
 const SET_BONUSES = [
   {
@@ -72,8 +60,6 @@ const CAPABILITY_GROUPS = [
     capabilities: ["Traffic trends", "Conversion tracking", "Ad performance"],
   },
 ];
-
-type AgentStatus = "empty" | "selected" | "active";
 
 interface CrewStateResponse {
   siteId: string;
@@ -141,107 +127,6 @@ function MaturityBadge({ percent }: { percent: number }) {
   );
 }
 
-function ShipSlot({ 
-  agentId, 
-  status, 
-  onClick 
-}: { 
-  agentId: string; 
-  status: AgentStatus;
-  onClick: () => void;
-}) {
-  const crew = getCrewMember(agentId);
-  const position = ROLE_POSITIONS[agentId] || { x: 50, y: 50 };
-  
-  const opacityClass = status === "active" ? "opacity-100" : status === "selected" ? "opacity-55" : "opacity-20";
-  const glowClass = status === "active" ? "ring-2 ring-amber-400 ring-opacity-50" : "";
-  
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-110 focus:outline-none group",
-        glowClass
-      )}
-      style={{ left: `${position.x}%`, top: `${position.y}%` }}
-      data-testid={`ship-slot-${agentId}`}
-    >
-      <div className="relative">
-        {crew.avatar ? (
-          <img 
-            src={crew.avatar} 
-            alt={crew.nickname}
-            className={cn("w-14 h-14 object-contain transition-opacity", opacityClass)}
-          />
-        ) : (
-          <div 
-            className={cn(
-              "w-14 h-14 rounded-full flex items-center justify-center text-white font-bold transition-opacity",
-              opacityClass
-            )}
-            style={{ backgroundColor: crew.color }}
-          >
-            {crew.nickname.slice(0, 2)}
-          </div>
-        )}
-        {status === "active" && (
-          <Badge className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] bg-green-500 text-white px-1.5 py-0">
-            Active
-          </Badge>
-        )}
-        {status === "selected" && (
-          <Badge className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0">
-            Selected
-          </Badge>
-        )}
-      </div>
-      <p className={cn(
-        "text-xs mt-1 text-center font-medium transition-opacity",
-        status === "empty" ? "text-slate-500" : "text-slate-300"
-      )}>
-        {crew.nickname}
-      </p>
-    </button>
-  );
-}
-
-function ShipCanvas({ 
-  enabledAgents, 
-  selectedAgents, 
-  onSlotClick 
-}: { 
-  enabledAgents: string[];
-  selectedAgents: string[];
-  onSlotClick: (agentId: string) => void;
-}) {
-  const getStatus = (agentId: string): AgentStatus => {
-    if (enabledAgents.includes(agentId)) return "active";
-    if (selectedAgents.includes(agentId)) return "selected";
-    return "empty";
-  };
-
-  return (
-    <div className="relative w-full aspect-[4/3] max-w-lg mx-auto">
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50" />
-      <div className="absolute inset-4 bg-slate-800/30 rounded-2xl border border-slate-600/30 backdrop-blur-sm" 
-           style={{
-             backgroundImage: `radial-gradient(circle at 50% 30%, rgba(251, 191, 36, 0.05) 0%, transparent 50%)`,
-           }}
-      />
-      
-      <div className="absolute inset-0 p-8">
-        {CREW_ROLES.map((agentId) => (
-          <ShipSlot
-            key={agentId}
-            agentId={agentId}
-            status={getStatus(agentId)}
-            onClick={() => onSlotClick(agentId)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function StatusCard({ 
   enabledCount, 
