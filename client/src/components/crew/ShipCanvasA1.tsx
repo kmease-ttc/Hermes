@@ -12,21 +12,21 @@ type Slot = {
 };
 
 const SLOTS: Slot[] = [
-  { id: "orchestrator", label: "Major Tom", subtitle: "Orchestrator", avatar: "🎖️", xPct: 50, yPct: 18 },
+  { id: "orchestrator", label: "Major Tom", subtitle: "Orchestrator", avatar: "🎖️", xPct: 50, yPct: 8 },
 
-  { id: "content_decay", label: "Sentinel", subtitle: "Content Decay", avatar: "🔍", xPct: 50, yPct: 36 },
-  { id: "competitive_snapshot", label: "Natasha", subtitle: "Competitive Intel", avatar: "🕵️", xPct: 33, yPct: 36 },
-  { id: "serp_intel", label: "Lookout", subtitle: "SERP Tracking", avatar: "🔭", xPct: 72, yPct: 40 },
+  { id: "content_decay", label: "Sentinel", subtitle: "Content Decay", avatar: "🔍", xPct: 50, yPct: 25 },
+  { id: "competitive_snapshot", label: "Natasha", subtitle: "Competitive Intel", avatar: "🕵️", xPct: 30, yPct: 28 },
+  { id: "serp_intel", label: "Lookout", subtitle: "SERP Tracking", avatar: "🔭", xPct: 70, yPct: 28 },
 
-  { id: "seo_kbase", label: "Socrates", subtitle: "Knowledge Base", avatar: "🧠", xPct: 30, yPct: 55 },
-  { id: "backlink_authority", label: "Beacon", subtitle: "Authority", avatar: "🏛️", xPct: 50, yPct: 56 },
-  { id: "google_data_connector", label: "Popular", subtitle: "Signals", avatar: "📊", xPct: 72, yPct: 56 },
+  { id: "seo_kbase", label: "Socrates", subtitle: "Knowledge Base", avatar: "🧠", xPct: 25, yPct: 48 },
+  { id: "backlink_authority", label: "Beacon", subtitle: "Authority", avatar: "🏛️", xPct: 50, yPct: 45 },
+  { id: "google_data_connector", label: "Popular", subtitle: "Signals", avatar: "📊", xPct: 75, yPct: 48 },
 
-  { id: "crawl_render", label: "Scotty", subtitle: "Technical SEO", avatar: "🔧", xPct: 35, yPct: 72 },
-  { id: "core_web_vitals", label: "Speedster", subtitle: "Performance", avatar: "⚡", xPct: 65, yPct: 72 },
+  { id: "crawl_render", label: "Scotty", subtitle: "Technical SEO", avatar: "🔧", xPct: 32, yPct: 65 },
+  { id: "core_web_vitals", label: "Speedster", subtitle: "Performance", avatar: "⚡", xPct: 68, yPct: 65 },
 
-  { id: "content_generator", label: "Hemingway", subtitle: "Content Strategy", avatar: "✍️", xPct: 42, yPct: 87 },
-  { id: "google_ads_connector", label: "Draper", subtitle: "Ads Growth", avatar: "📈", xPct: 58, yPct: 87 },
+  { id: "content_generator", label: "Hemingway", subtitle: "Content Strategy", avatar: "✍️", xPct: 40, yPct: 82 },
+  { id: "google_ads_connector", label: "Draper", subtitle: "Ads Growth", avatar: "📈", xPct: 60, yPct: 82 },
 ];
 
 export function ShipCanvasA1(props: {
@@ -38,13 +38,20 @@ export function ShipCanvasA1(props: {
   const { enabledAgents, selectedAgents, onSlotClick, tileSize = 110 } = props;
 
   return (
-    <div className="relative w-full h-full">
-      <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-4 md:p-6">
-        <div className="relative mx-auto w-full h-full max-w-[1000px]">
-          <ShipHullSvg className="w-full" />
+    <div className="relative w-full h-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent overflow-hidden">
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(245,158,11,0.06) 0%, transparent 60%)",
+        }}
+      />
+      
+      <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+        <div className="relative w-full max-w-[900px] h-full max-h-[800px]">
+          <ShipHullSvg className="absolute inset-0 w-full h-full" />
 
           <div className="pointer-events-none absolute inset-0">
-            <svg viewBox="0 0 1000 560" className="h-full w-full">
+            <svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" className="h-full w-full">
               <defs>
                 <mask id="outsideMask">
                   <rect x="0" y="0" width="1000" height="560" fill="white" />
@@ -65,7 +72,7 @@ export function ShipCanvasA1(props: {
                 y="0"
                 width="1000"
                 height="560"
-                fill="rgba(0,0,0,0.40)"
+                fill="rgba(0,0,0,0.50)"
                 mask="url(#outsideMask)"
               />
             </svg>
@@ -104,14 +111,15 @@ export function ShipCanvasA1(props: {
                   ? "bg-[rgba(124,58,237,0.18)] text-white/90"
                   : "";
 
-              const left = `calc(${slot.xPct}% - ${tileSize / 2}px)`;
-              const top = `calc(${slot.yPct}% - ${tileSize / 2}px)`;
+              const currentTileSize = isOrchestrator ? tileSize * 1.15 : tileSize;
+              const left = `calc(${slot.xPct}% - ${currentTileSize / 2}px)`;
+              const top = `calc(${slot.yPct}% - ${currentTileSize / 2}px)`;
 
               return (
                 <button
                   key={slot.id}
                   className="absolute transition-transform hover:scale-105"
-                  style={{ left, top, width: tileSize, height: tileSize }}
+                  style={{ left, top, width: currentTileSize, height: currentTileSize }}
                   onClick={() => onSlotClick(slot.id)}
                   data-testid={`ship-slot-${slot.id}`}
                 >
@@ -135,19 +143,19 @@ export function ShipCanvasA1(props: {
                         <img 
                           src={crew.avatar} 
                           alt={crew.nickname || slot.label}
-                          className="h-12 w-12 object-contain transition-opacity"
+                          className="h-14 w-14 object-contain transition-opacity"
                           style={{ opacity }}
                         />
                       ) : (
                         <span 
-                          className="text-3xl transition-opacity"
+                          className="text-4xl transition-opacity"
                           style={{ opacity }}
                         >
                           {crew.avatar || slot.avatar}
                         </span>
                       )}
                       <div className="text-center">
-                        <div className="text-[11px] font-semibold text-white/90 leading-tight">{crew.nickname || slot.label}</div>
+                        <div className="text-xs font-semibold text-white/90 leading-tight">{crew.nickname || slot.label}</div>
                         <div className="text-[10px] text-white/50 leading-tight">{crew.signalType || slot.subtitle}</div>
                       </div>
                     </div>

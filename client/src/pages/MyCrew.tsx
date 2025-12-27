@@ -722,12 +722,12 @@ export default function MyCrew() {
             </div>
 
             <div className="min-w-0">
-              <div className="relative w-full min-h-[72vh] max-h-[780px] overflow-hidden">
+              <div className="relative w-full min-h-[720px] lg:h-[calc(100vh-180px)] max-h-[980px] overflow-hidden">
                 <ShipCanvasA1 
                   enabledAgents={enabledAgents}
                   selectedAgents={selectedAgents}
                   onSlotClick={handleSlotClick}
-                  tileSize={132}
+                  tileSize={140}
                 />
               </div>
             </div>
