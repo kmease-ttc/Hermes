@@ -1,5 +1,4 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AgentCard } from "@/components/crew/AgentCard";
 import { CaptainsRecommendations } from "@/components/crew/CaptainsRecommendations";
@@ -102,56 +101,37 @@ export default function CrewPage() {
 
         <CaptainsRecommendations data={captainData} />
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="grid md:grid-cols-2 gap-4">
-              {userFacingAgents.map((agent) => (
-                <div key={agent.serviceId} id={agent.serviceId}>
-                  <AgentCard
-                    serviceId={agent.serviceId}
-                    status={agent.status}
-                    lastCheckIn={agent.lastCheckIn}
-                    findings={agent.findings}
-                    nextSteps={agent.nextSteps}
-                  />
-                </div>
-              ))}
-            </div>
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Active:</span>
+            <Badge variant="secondary">{userFacingAgents.length}</Badge>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Healthy:</span>
+            <Badge className="bg-green-100 text-green-700">{healthyCount}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Needs Attention:</span>
+            <Badge className="bg-yellow-100 text-yellow-700">{degradedCount}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Down:</span>
+            <Badge className="bg-red-100 text-red-700">{downCount}</Badge>
+          </div>
+        </div>
 
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Agent Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Active Agents</span>
-                    <Badge variant="secondary">{userFacingAgents.length}</Badge>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Healthy</span>
-                    <Badge className="bg-green-100 text-green-700">
-                      {healthyCount}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Needs Attention</span>
-                    <Badge className="bg-yellow-100 text-yellow-700">
-                      {degradedCount}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Down</span>
-                    <Badge className="bg-red-100 text-red-700">
-                      {downCount}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="flex flex-col gap-4">
+          {userFacingAgents.map((agent) => (
+            <div key={agent.serviceId} id={agent.serviceId}>
+              <AgentCard
+                serviceId={agent.serviceId}
+                status={agent.status}
+                lastCheckIn={agent.lastCheckIn}
+                findings={agent.findings}
+                nextSteps={agent.nextSteps}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </DashboardLayout>
