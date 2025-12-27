@@ -20,27 +20,27 @@ type RoleSlot = {
 // Do not add or remove slots without redesigning the ship image
 // ═══════════════════════════════════════════════════════════════════════════
 const ROLE_SLOTS: RoleSlot[] = [
-  // ROW 1 - COMMAND (8%) - 1 slot
-  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", xPct: 50, yPct: 8 },
+  // ROW 1 - COMMAND (10%) - 1 slot
+  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", xPct: 50, yPct: 10 },
 
-  // ROW 2 - INTELLIGENCE & VISIBILITY (28%) - 3 slots
-  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 18, yPct: 28 },
-  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 28 },
-  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 82, yPct: 28 },
+  // ROW 2 - INTELLIGENCE & VISIBILITY (32%) - 3 slots
+  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", xPct: 18, yPct: 32 },
+  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", xPct: 50, yPct: 32 },
+  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", xPct: 82, yPct: 32 },
 
-  // ROW 3 - ENGINEERING & PERFORMANCE (48%) - 2 slots
-  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 28, yPct: 48 },
-  { roleId: "performance_monitoring", roleName: "Performance Monitoring", roleIcon: Zap, crewId: "core_web_vitals", xPct: 72, yPct: 48 },
+  // ROW 3 - ENGINEERING & PERFORMANCE (54%) - 2 slots
+  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", xPct: 30, yPct: 54 },
+  { roleId: "performance_monitoring", roleName: "Performance Monitoring", roleIcon: Zap, crewId: "core_web_vitals", xPct: 70, yPct: 54 },
 
-  // ROW 4 - CONTENT SYSTEMS (68%) - 2 slots
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 28, yPct: 68 },
-  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 72, yPct: 68 },
+  // ROW 4 - CONTENT SYSTEMS (76%) - 2 slots
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", xPct: 30, yPct: 76 },
+  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", xPct: 70, yPct: 76 },
 
-  // ROW 5 - AUTHORITY, AI, GROWTH, KNOWLEDGE (88%) - 4 slots (wider spread to prevent overlap with larger tiles)
-  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 12, yPct: 88 },
-  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 37, yPct: 88 },
-  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 63, yPct: 88 },
-  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", xPct: 88, yPct: 88 },
+  // ROW 5 - AUTHORITY, AI, ADS, KNOWLEDGE (98%) - 4 slots spread wide
+  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", xPct: 12, yPct: 98 },
+  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", xPct: 37, yPct: 98 },
+  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", xPct: 63, yPct: 98 },
+  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", xPct: 88, yPct: 98 },
 ];
 
 function RoleInfoTooltip({ roleId, isEmpty }: { roleId: string; isEmpty: boolean }) {
@@ -119,7 +119,7 @@ export function ShipCanvasA1(props: {
   onSlotClick: (id: string) => void;
   tileSize?: number;
 }) {
-  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 210 } = props;
+  const { enabledAgents, selectedAgents, onSlotClick, tileSize = 240 } = props;
 
   return (
     <TooltipProvider>
@@ -214,11 +214,11 @@ export function ShipCanvasA1(props: {
                     >
                       <div className="relative h-full w-full rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] transition-all duration-200 group-hover:border-white/30 group-hover:bg-white/[0.04]">
                         <RoleInfoTooltip roleId={slot.roleId} isEmpty={true} />
-                        <div className="flex h-full flex-col items-center justify-center gap-3 px-3">
-                          <RoleIcon className="w-16 h-16 text-white/25 group-hover:text-white/40 transition-colors" />
+                        <div className="flex h-full flex-col items-center justify-center gap-4 px-4">
+                          <RoleIcon className="w-20 h-20 text-white/25 group-hover:text-white/40 transition-colors" />
                           <div className="text-center">
-                            <div className="text-sm font-medium text-white/35 leading-tight">{slot.roleName}</div>
-                            <div className="text-xs text-white/25 leading-tight mt-1">
+                            <div className="text-base font-medium text-white/35 leading-tight">{slot.roleName}</div>
+                            <div className="text-sm text-white/25 leading-tight mt-1">
                               {slot.roleId === "ai_optimization" ? "Optimize for AI discovery" : "Empty slot"}
                             </div>
                           </div>
@@ -278,16 +278,16 @@ export function ShipCanvasA1(props: {
                               <img 
                                 src={crew.avatar} 
                                 alt={crew.nickname || slot.roleName}
-                                className="h-28 w-28 object-contain drop-shadow-lg"
+                                className="h-32 w-32 object-contain drop-shadow-lg"
                               />
                             ) : (
-                              <span className="text-6xl drop-shadow-lg">
+                              <span className="text-7xl drop-shadow-lg">
                                 {crew?.avatar || "👤"}
                               </span>
                             )}
                           </CrewAvatarTooltip>
                         )}
-                        <div className="text-sm font-semibold text-white/90 leading-tight">
+                        <div className="text-base font-semibold text-white/90 leading-tight">
                           {crew?.nickname || "Unknown"}
                         </div>
                       </div>
