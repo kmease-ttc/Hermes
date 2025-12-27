@@ -69,7 +69,7 @@ export function AgentCard({
   return (
     <Card 
       className={cn(
-        "relative overflow-hidden transition-all shadow-sm hover:shadow-md rounded-xl border-l-[3px]",
+        "relative overflow-hidden transition-all rounded-xl border-l-[3px]",
         onClick && "cursor-pointer",
         className
       )}

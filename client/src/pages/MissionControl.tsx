@@ -115,7 +115,7 @@ function MetricCard({ metric }: { metric: MetricCardData }) {
   const TrendIcon = metric.deltaPct > 0 ? TrendingUp : metric.deltaPct < 0 ? TrendingDown : Minus;
   
   return (
-    <Card className={cn("transition-all hover:shadow-md overflow-hidden", colors.bg, colors.border)} data-testid={`metric-card-${metric.id}`}>
+    <Card className={cn("transition-all overflow-hidden", colors.bg, colors.border)} data-testid={`metric-card-${metric.id}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <span className="text-sm font-medium text-muted-foreground">{metric.label}</span>
@@ -199,7 +199,7 @@ function AgentSummaryCard({ agent }: { agent: { serviceId: string; score: number
   const scoreColor = agent.score >= 70 ? "#22C55E" : agent.score >= 40 ? "#F59E0B" : "#EF4444";
   
   return (
-    <Card className={cn("transition-all hover:shadow-md border", statusColors.border)} data-testid={`agent-summary-${agent.serviceId}`}>
+    <Card className={cn("transition-all border", statusColors.border)} data-testid={`agent-summary-${agent.serviceId}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3 mb-3">
           {crew.avatar ? (
