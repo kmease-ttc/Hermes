@@ -1,0 +1,66 @@
+Replit Prompt: Make “Priority Actions” use the GOLD attention color scheme (match Blockers semantics)
+
+Context
+The “Priority Actions” panel is now correctly using the cold glass container, but its accent color is wrong. It’s currently purple-tinted, which reads as a primary/system surface. Priority Actions should instead read as **attention / action-required**, like Blockers.
+
+Goal
+Update the **Priority Actions panel** to use the **gold color scheme** consistently, matching the semantic role of “things you should act on next.”
+
+What “gold color scheme” means (use existing tokens)
+Use the same gold/yellow palette already used for:
+
+* Blockers container
+* “Watch” pills
+* Attention/queue indicators elsewhere in the app
+
+Specifically apply gold to:
+
+1. Panel container accent
+
+* The cold glass background stays the same
+* The tint/overlay color should shift from purple → gold
+* Border/glow should be gold-toned (low opacity, subtle)
+
+2. Section header
+
+* “PRIORITY ACTIONS” label/icon should be gold (not purple)
+* Any leading icon should inherit the gold accent
+
+3. Item ordering markers
+
+* The numbered circles (1, 2, 3) should be gold-themed
+* Keep contrast high; text remains readable
+
+What should NOT change
+
+* Do NOT recolor individual crew pills (Pulse, Lookout, Natasha, etc.) — those should remain crew-colored
+* Do NOT change severity pills (High/Medium/Quick) — those stay semantic
+* Do NOT change layout, spacing, or typography
+* Do NOT affect Blockers (they are already correct)
+
+Implementation guidance
+
+* Reuse the same container variant used by Blockers, but allow a configurable “tone”:
+
+  * tone="warning" or tone="attention" (gold)
+* If a variant already exists (e.g., warning-soft), use that instead of creating new classes
+* Avoid hardcoded yellow values; use the shared gold token
+
+Acceptance criteria
+
+* Priority Actions visually reads as an “attention queue,” not a neutral or primary section
+* Gold accents clearly distinguish it from:
+
+  * Purple (system / control)
+  * Red (errors)
+  * Crew-specific colors
+* Side-by-side with Blockers, the two feel related but not identical:
+
+  * Blockers = hard stop
+  * Priority Actions = next best actions
+
+Result
+Priority Actions now sits in the correct visual hierarchy:
+Gold (act now) → Red (blocked) → Purple (system) → Crew colors (ownership)
+
+This is the *right* call, by the way. Gold here instantly communicates “focus here next,” and it keeps purple reserved for control/state instead of urgency.
