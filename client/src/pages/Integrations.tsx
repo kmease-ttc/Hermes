@@ -244,43 +244,50 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const DEPLOYMENT_STATUS_COLORS: Record<string, string> = {
-  not_built: "bg-gray-100 text-gray-700",
-  building: "bg-blue-100 text-blue-700",
-  built: "bg-yellow-100 text-yellow-700",
-  deploying: "bg-blue-100 text-blue-700",
-  deployed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
+  not_built: "bg-muted text-muted-foreground",
+  building: "bg-semantic-info-soft text-semantic-info",
+  built: "bg-semantic-warning-soft text-semantic-warning",
+  deploying: "bg-semantic-info-soft text-semantic-info",
+  deployed: "bg-semantic-success-soft text-semantic-success",
+  failed: "bg-semantic-danger-soft text-semantic-danger",
 };
 
 const BUILD_STATE_COLORS: Record<string, string> = {
-  built: "bg-green-100 text-green-700",
-  planned: "bg-gray-100 text-gray-600",
-  deprecated: "bg-red-100 text-red-700",
+  built: "bg-semantic-success-soft text-semantic-success",
+  planned: "bg-muted text-muted-foreground",
+  deprecated: "bg-semantic-danger-soft text-semantic-danger",
 };
 
 const CONFIG_STATE_COLORS: Record<string, string> = {
-  ready: "bg-green-100 text-green-700",
-  missing_config: "bg-yellow-100 text-yellow-700",
-  blocked: "bg-orange-100 text-orange-700",
+  ready: "bg-semantic-success-soft text-semantic-success",
+  missing_config: "bg-semantic-warning-soft text-semantic-warning",
+  blocked: "bg-semantic-danger-soft text-semantic-danger",
+  needs_config: "bg-semantic-warning-soft text-semantic-warning",
 };
 
 const RUN_STATE_COLORS: Record<string, string> = {
-  never_ran: "bg-gray-100 text-gray-600",
-  last_run_success: "bg-green-100 text-green-700",
-  last_run_failed: "bg-red-100 text-red-700",
-  stale: "bg-yellow-100 text-yellow-700",
+  never_ran: "bg-muted text-muted-foreground",
+  last_run_success: "bg-semantic-success-soft text-semantic-success",
+  last_run_failed: "bg-semantic-danger-soft text-semantic-danger",
+  stale: "bg-semantic-warning-soft text-semantic-warning",
+  success: "bg-semantic-success-soft text-semantic-success",
+  failed: "bg-semantic-danger-soft text-semantic-danger",
+  partial: "bg-semantic-warning-soft text-semantic-warning",
 };
 
 function getRunStateIcon(runState: string | null) {
   switch (runState) {
     case "last_run_success":
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+    case "success":
+      return <CheckCircle className="w-5 h-5 text-semantic-success" />;
     case "last_run_failed":
-      return <XCircle className="w-5 h-5 text-red-500" />;
+    case "failed":
+      return <XCircle className="w-5 h-5 text-semantic-danger" />;
     case "stale":
-      return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+    case "partial":
+      return <AlertTriangle className="w-5 h-5 text-semantic-warning" />;
     default:
-      return <Clock className="w-5 h-5 text-gray-400" />;
+      return <Clock className="w-5 h-5 text-muted-foreground" />;
   }
 }
 
@@ -328,13 +335,13 @@ function getStatusIcon(status: string | null | undefined) {
 function getStatusBadge(status: string | null | undefined) {
   switch (status) {
     case "healthy":
-      return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Healthy</Badge>;
+      return <Badge className="bg-semantic-success-soft text-semantic-success border border-semantic-success-border">Healthy</Badge>;
     case "degraded":
-      return <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Degraded</Badge>;
+      return <Badge className="bg-semantic-warning-soft text-semantic-warning border border-semantic-warning-border">Degraded</Badge>;
     case "error":
-      return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Error</Badge>;
+      return <Badge className="bg-semantic-danger-soft text-semantic-danger border border-semantic-danger-border">Error</Badge>;
     default:
-      return <Badge variant="secondary">Disconnected</Badge>;
+      return <Badge variant="secondary" className="bg-muted text-muted-foreground border border-border">Disconnected</Badge>;
   }
 }
 
@@ -342,39 +349,39 @@ function StatusCell({ status, label }: { status: string | null | undefined; labe
   if (status === "pass" || status === true) {
     return (
       <div className="flex items-center gap-1">
-        <CheckCircle className="w-4 h-4 text-green-500" />
-        {label && <span className="text-xs text-green-600">{label}</span>}
+        <CheckCircle className="w-4 h-4 text-semantic-success" />
+        {label && <span className="text-xs text-semantic-success">{label}</span>}
       </div>
     );
   }
   if (status === "fail" || status === false) {
     return (
       <div className="flex items-center gap-1">
-        <XCircle className="w-4 h-4 text-red-500" />
-        {label && <span className="text-xs text-red-600">{label}</span>}
+        <XCircle className="w-4 h-4 text-semantic-danger" />
+        {label && <span className="text-xs text-semantic-danger">{label}</span>}
       </div>
     );
   }
   if (status === "warning") {
     return (
       <div className="flex items-center gap-1">
-        <AlertTriangle className="w-4 h-4 text-yellow-500" />
-        {label && <span className="text-xs text-yellow-600">{label}</span>}
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />
+        {label && <span className="text-xs text-semantic-warning">{label}</span>}
       </div>
     );
   }
   if (status === "not_configured" || status === "unknown") {
     return (
       <div className="flex items-center gap-1">
-        <HelpCircle className="w-4 h-4 text-gray-400" />
-        {label && <span className="text-xs text-gray-500">{label}</span>}
+        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+        {label && <span className="text-xs text-muted-foreground">{label}</span>}
       </div>
     );
   }
   return (
     <div className="flex items-center gap-1">
-      <span className="w-4 h-4 rounded-full bg-gray-200" />
-      <span className="text-xs text-gray-400">—</span>
+      <span className="w-4 h-4 rounded-full bg-muted" />
+      <span className="text-xs text-muted-foreground">—</span>
     </div>
   );
 }
@@ -1115,7 +1122,7 @@ export default function Integrations() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground" data-testid="text-page-title">
               Integrations
             </h1>
             <p className="text-muted-foreground">
@@ -1125,23 +1132,22 @@ export default function Integrations() {
           <div className="flex items-center gap-2">
             <CrewToggle showCrewNames={showCrewNames} onToggle={setShowCrewNames} />
             <div className="w-px h-6 bg-border" />
-            <div className="flex items-center border rounded-md">
+            <div className="flex items-center border border-border rounded-xl bg-card/50 backdrop-blur-sm">
               <select
                 value={qaMode}
                 onChange={(e) => setQaMode(e.target.value as "connection" | "smoke" | "full")}
                 disabled={runningQa}
-                className="h-9 px-2 text-sm bg-transparent border-r focus:outline-none"
+                className="h-9 px-3 text-sm bg-transparent border-r border-border focus:outline-none text-foreground rounded-l-xl"
                 data-testid="select-qa-mode"
               >
-                <option value="connection">Connection Only</option>
-                <option value="smoke">Smoke Test</option>
-                <option value="full">Full QA</option>
+                <option value="connection" className="bg-card text-foreground">Connection Only</option>
+                <option value="smoke" className="bg-card text-foreground">Smoke Test</option>
+                <option value="full" className="bg-card text-foreground">Full QA</option>
               </select>
               <Button
-                variant="default"
                 onClick={() => runQaMutation.mutate(qaMode)}
                 disabled={runningQa}
-                className="rounded-l-none"
+                className="rounded-l-none rounded-r-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_-5px_rgba(124,58,237,0.4)]"
                 data-testid="button-run-qa"
               >
                 {runningQa ? (
@@ -1156,6 +1162,7 @@ export default function Integrations() {
               variant="outline"
               onClick={() => refreshMutation.mutate()}
               disabled={isLoading || isRefreshing}
+              className="border-border text-foreground hover:bg-muted rounded-xl"
               data-testid="button-refresh-integrations"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
@@ -1166,6 +1173,7 @@ export default function Integrations() {
                 variant="outline"
                 onClick={() => seedMutation.mutate()}
                 disabled={seedMutation.isPending}
+                className="border-border text-foreground hover:bg-muted rounded-xl"
                 data-testid="button-seed-integrations"
               >
                 {seedMutation.isPending ? (
@@ -1195,21 +1203,21 @@ export default function Integrations() {
         ) : (
           <>
             {/* Site Selection and Run Diagnosis */}
-            <Card className="mb-4">
+            <Card className="mb-4 bg-card/80 backdrop-blur-sm border-border">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Site:</span>
+                      <span className="text-sm font-medium text-foreground">Site:</span>
                       <select
-                        className="border rounded px-3 py-1.5 text-sm bg-background"
+                        className="border border-border rounded-lg px-3 py-1.5 text-sm bg-card/50 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         value={selectedSiteId || ""}
                         onChange={(e) => setSelectedSiteId(e.target.value)}
                         data-testid="select-site"
                       >
                         {sites?.map((site) => (
-                          <option key={site.siteId} value={site.siteId}>
+                          <option key={site.siteId} value={site.siteId} className="bg-card text-foreground">
                             {site.displayName}
                           </option>
                         ))}
@@ -1224,6 +1232,7 @@ export default function Integrations() {
                   <Button
                     onClick={() => selectedSiteId && runDiagnosisMutation.mutate(selectedSiteId)}
                     disabled={!selectedSiteId || runningDiagnosis}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-[0_0_20px_-5px_rgba(124,58,237,0.4)]"
                     data-testid="button-run-diagnosis"
                   >
                     {runningDiagnosis ? (
@@ -1251,15 +1260,15 @@ export default function Integrations() {
 
             <TabsContent value="inventory" className="space-y-4">
               {/* Platform Dependencies Panel */}
-              <Card className="bg-slate-50 dark:bg-slate-900/50">
+              <Card className="bg-card/80 backdrop-blur-sm border-border">
                 <CardHeader className="py-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
+                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground">
+                    <Shield className="w-4 h-4 text-primary" />
                     Platform Dependencies
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 ml-auto"
+                      className="h-6 w-6 ml-auto text-muted-foreground hover:text-foreground"
                       onClick={() => refetchPlatformDeps()}
                     >
                       <RefreshCw className="w-3 h-3" />
@@ -1269,17 +1278,17 @@ export default function Integrations() {
                 <CardContent className="py-2">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {/* Bitwarden Status */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
                         platformDeps?.bitwarden?.connected 
-                          ? "bg-green-100 text-green-600" 
-                          : "bg-yellow-100 text-yellow-600"
+                          ? "bg-semantic-success-soft text-semantic-success" 
+                          : "bg-semantic-warning-soft text-semantic-warning"
                       )}>
                         <Key className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">Bitwarden</p>
+                        <p className="text-sm font-medium text-foreground">Bitwarden</p>
                         <p className="text-xs text-muted-foreground">
                           {platformDeps?.bitwarden?.connected 
                             ? (platformDeps.bitwarden.reason === "ZERO_SECRETS" 
@@ -1297,23 +1306,23 @@ export default function Integrations() {
                         </p>
                       </div>
                       {platformDeps?.bitwarden?.connected ? (
-                        <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                        <CheckCircle className="w-4 h-4 text-semantic-success ml-auto" />
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-yellow-500 ml-auto" />
+                        <AlertTriangle className="w-4 h-4 text-semantic-warning ml-auto" />
                       )}
                     </div>
                     {/* Database Status */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
                         platformDeps?.postgres?.connected 
-                          ? "bg-green-100 text-green-600" 
-                          : "bg-red-100 text-red-600"
+                          ? "bg-semantic-success-soft text-semantic-success" 
+                          : "bg-semantic-danger-soft text-semantic-danger"
                       )}>
                         <Database className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">PostgreSQL</p>
+                        <p className="text-sm font-medium text-foreground">PostgreSQL</p>
                         <p className="text-xs text-muted-foreground">
                           {platformDeps?.postgres?.connected ? "Connected" : "Disconnected"}
                         </p>
@@ -2480,7 +2489,7 @@ export default function Integrations() {
                     <div className="space-y-1">
                       {selectedCatalogService.keyMetrics.map(slug => (
                         <div key={slug} className="text-sm flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                           {getSlugLabel(slug)}
                         </div>
                       ))}

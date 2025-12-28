@@ -123,7 +123,14 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background: 
+      radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 58, 138, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse 100% 60% at 80% 20%, rgba(88, 28, 135, 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse 80% 50% at 20% 80%, rgba(30, 64, 175, 0.10) 0%, transparent 40%),
+      linear-gradient(180deg, #070A14 0%, #0A0F1C 50%, #070A14 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 }
 
