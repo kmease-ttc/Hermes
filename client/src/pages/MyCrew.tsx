@@ -748,7 +748,7 @@ export default function MyCrew() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-10">
+        <section className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-4">
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="bg-slate-900/60 border-slate-700">
               <CardHeader className="pb-3">
