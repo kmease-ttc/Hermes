@@ -59,13 +59,14 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   } : null;
 }
 
-function getCrewAccentStyles(hexColor: string) {
+function getTintedGlassStyles(hexColor: string) {
   const rgb = hexToRgb(hexColor);
   if (!rgb) return {};
   const { r, g, b } = rgb;
   return {
-    borderTop: `2px solid rgba(${r}, ${g}, ${b}, 0.5)`,
-    boxShadow: `inset 0 1px 0 0 rgba(${r}, ${g}, ${b}, 0.15), 0 0 16px -8px rgba(${r}, ${g}, ${b}, 0.3)`,
+    background: `rgba(${r}, ${g}, ${b}, 0.08)`,
+    border: `1px solid rgba(${r}, ${g}, ${b}, 0.25)`,
+    boxShadow: `inset 0 1px 0 0 rgba(${r}, ${g}, ${b}, 0.15), 0 0 20px -6px rgba(${r}, ${g}, ${b}, 0.22)`,
   };
 }
 
@@ -343,13 +344,13 @@ function AgentSummaryCard({ agent }: { agent: { serviceId: string; score: number
   const crew = getCrewMember(agent.serviceId);
   const mockData = getMockAgentData(agent.serviceId);
   
-  const crewAccentStyles = getCrewAccentStyles(crew.color);
+  const tintedGlassStyles = getTintedGlassStyles(crew.color);
   const crewBadgeStyles = getCrewBadgeStyles(crew.color);
   
   return (
     <Card 
-      className="transition-all bg-card/80 backdrop-blur-sm rounded-xl border-x border-b border-border"
-      style={crewAccentStyles}
+      className="transition-all backdrop-blur-sm rounded-xl overflow-hidden"
+      style={tintedGlassStyles}
       data-testid={`agent-summary-${agent.serviceId}`}
     >
       <CardContent className="p-4">
