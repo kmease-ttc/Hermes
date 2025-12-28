@@ -34,7 +34,7 @@ const GRID_SLOTS: GridSlot[] = [
   { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", row: 4, col: 3, valueProp: "Make your site discoverable to AI." },
   // Row 5: Growth & Knowledge
   { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", row: 5, col: 1, valueProp: "Turn learnings into faster growth." },
-  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", row: 5, col: 2, valueProp: "Store insights and learn over time." },
+  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", row: 5, col: 3, valueProp: "Store insights and learn over time." },
 ];
 
 const ALL_BAY_POSITIONS = [
