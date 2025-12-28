@@ -583,7 +583,11 @@ function SetBonusCard({
               <p className="text-xs text-slate-400 mb-2">Next to unlock:</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{nextCrew.avatar}</span>
+                  {nextCrew.avatar && nextCrew.avatar.includes('/') ? (
+                    <img src={nextCrew.avatar} alt={nextCrew.nickname} className="w-8 h-8 object-contain" />
+                  ) : (
+                    <span className="text-2xl">{nextCrew.avatar || "👤"}</span>
+                  )}
                   <div>
                     <p className="text-sm font-medium text-white">{nextCrew.nickname}</p>
                     <p className="text-xs text-slate-500">{nextCrew.signalType}</p>
@@ -613,7 +617,11 @@ function SetBonusCard({
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-700 text-xs transition-colors"
                     data-testid={`missing-chip-${agentId}`}
                   >
-                    <span className="text-sm">{crew.avatar}</span>
+                    {crew.avatar && crew.avatar.includes('/') ? (
+                      <img src={crew.avatar} alt={crew.nickname} className="w-4 h-4 object-contain" />
+                    ) : (
+                      <span className="text-sm">{crew.avatar || "👤"}</span>
+                    )}
                     {crew.nickname}
                   </button>
                 );
