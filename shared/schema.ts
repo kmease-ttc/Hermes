@@ -1756,3 +1756,38 @@ export const insertCrewStateSchema = createInsertSchema(crewState).omit({
 });
 export type InsertCrewState = z.infer<typeof insertCrewStateSchema>;
 export type CrewState = typeof crewState.$inferSelect;
+
+// Integration Status Cache - for instant UI loading with stale-while-revalidate
+export const integrationStatusCache = pgTable("integration_status_cache", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().unique(),
+  
+  // Cached summary data
+  payloadJson: jsonb("payload_json").notNull(), // Full integrations summary
+  servicesJson: jsonb("services_json"), // Service-level status array
+  nextActionsJson: jsonb("next_actions_json"), // Recommended next actions
+  
+  // Cache metadata
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  computedFromRunId: text("computed_from_run_id"), // Which run produced this cache
+  
+  // Refresh tracking
+  lastRefreshAttemptAt: timestamp("last_refresh_attempt_at"),
+  lastRefreshStatus: text("last_refresh_status"), // success, failed, timeout
+  lastRefreshError: text("last_refresh_error"),
+  lastRefreshDurationMs: integer("last_refresh_duration_ms"),
+  
+  // TTL control
+  ttlSeconds: integer("ttl_seconds").default(60), // How long before considered stale
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertIntegrationStatusCacheSchema = createInsertSchema(integrationStatusCache).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertIntegrationStatusCache = z.infer<typeof insertIntegrationStatusCacheSchema>;
+export type IntegrationStatusCache = typeof integrationStatusCache.$inferSelect;

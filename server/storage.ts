@@ -39,6 +39,9 @@ import {
   crewState,
   type CrewState,
   type InsertCrewState,
+  integrationStatusCache,
+  type IntegrationStatusCache,
+  type InsertIntegrationStatusCache,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -2085,6 +2088,65 @@ class DBStorage implements IStorage {
       .update(crewState)
       .set({ enabled: false, updatedAt: new Date() })
       .where(and(eq(crewState.siteId, siteId), eq(crewState.agentId, agentId)));
+  }
+
+  // Integration Status Cache (SWR)
+  async getIntegrationCache(siteId: string): Promise<IntegrationStatusCache | undefined> {
+    const [cache] = await db
+      .select()
+      .from(integrationStatusCache)
+      .where(eq(integrationStatusCache.siteId, siteId))
+      .limit(1);
+    return cache;
+  }
+
+  async saveIntegrationCache(data: InsertIntegrationStatusCache): Promise<IntegrationStatusCache> {
+    const existing = await this.getIntegrationCache(data.siteId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(integrationStatusCache)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(integrationStatusCache.siteId, data.siteId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(integrationStatusCache)
+        .values(data)
+        .returning();
+      return created;
+    }
+  }
+
+  async updateIntegrationCacheRefreshStatus(
+    siteId: string, 
+    status: string, 
+    error?: string,
+    durationMs?: number
+  ): Promise<void> {
+    await db
+      .update(integrationStatusCache)
+      .set({
+        lastRefreshAttemptAt: new Date(),
+        lastRefreshStatus: status,
+        lastRefreshError: error || null,
+        lastRefreshDurationMs: durationMs || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(integrationStatusCache.siteId, siteId));
+  }
+
+  async isIntegrationCacheStale(siteId: string): Promise<boolean> {
+    const cache = await this.getIntegrationCache(siteId);
+    if (!cache) return true;
+    
+    const ttl = cache.ttlSeconds || 60;
+    const now = new Date();
+    const cachedAt = new Date(cache.cachedAt);
+    const ageSeconds = (now.getTime() - cachedAt.getTime()) / 1000;
+    
+    return ageSeconds >= ttl;
   }
 }
 
