@@ -1,0 +1,102 @@
+STOP GENERATING NEW DESIGNS.
+
+This is an EXECUTION task.
+
+Use the existing approved CrewCard component EXACTLY as-is:
+- Do NOT change size
+- Do NOT change borders
+- Do NOT change avatar scale
+- Do NOT change typography
+- Do NOT change badge placement
+- Do NOT change shadows/rounding
+
+We are only changing HOW cards are positioned: replace absolute/percent positioning with a fixed grid-based slot layout.
+
+========================================
+1) LOCKED DESKTOP GRID (>=1280px)
+========================================
+
+Implement a fixed 4 columns × 4 rows grid for ship slots.
+
+Grid rules:
+- Grid gap: 28px (both directions)
+- Tile size: LOCKED (use the current tile size used in production)
+- Cards must NEVER resize based on content
+- If a title would wrap, truncate it. Never resize.
+
+Grid placement must follow THIS exact slot map:
+
+Row 1 (Command):
+- Col 2: Mission Control (Major Tom) [filled, Included]
+- All other columns empty/unused in row 1
+
+Row 2 (Visibility/Intelligence):
+- Col 1: Competitive Intelligence (Natasha) [filled if enabled]
+- Col 2: SERP Tracking (Lookout) [empty slot if not enabled]
+- Col 3: Analytics & Signals (Popular) [empty slot if not enabled]
+- Col 4: Analytics & Signals (Popular) [filled if enabled]
+NOTE: If you currently show both “Analytics & Signals” and “Popular” as separate, combine them:
+- Slot label: “Analytics & Signals”
+- Crew card name: “Popular”
+
+Row 3 (Engineering + Content):
+- Col 1: Technical SEO (Scotty) [empty if not enabled]
+- Col 2: Performance Monitoring (Speedster) [empty if not enabled]
+- Col 3: Content Decay (Sentinel) [empty if not enabled]
+- Col 4: Content Strategy (Hemingway) [empty if not enabled]
+
+Row 4 (Authority + AI + Growth + Knowledge):
+- Col 1: Domain Authority (Beacon) [empty if not enabled]
+- Col 2: AI Optimization (Atlas) [empty if not enabled]
+- Col 3: Paid Ads (Draper) [empty if not enabled]
+- Col 4: Knowledge Base (Socrates) [empty if not enabled]
+
+This guarantees all 12 roles are always visible and fit with no overlap.
+
+========================================
+2) EMPTY SLOT CTA STYLING (FULL SIZE)
+========================================
+
+Empty slots must render as full-size cards (same width/height) but with CTA styling:
+- Dashed border
+- Role icon centered
+- CTA text: “Add crew”
+- Info (i) icon top-left with tooltip describing role
+- Clicking empty slot opens the same modal flow to select/enable crew
+
+Empty slots are NOT disabled. They are primary CTAs.
+
+========================================
+3) SHIP BACKGROUND IS DECORATIVE ONLY
+========================================
+
+The ship interior background image is ONLY decoration:
+- It must not control layout
+- It must not affect card positioning
+- Cards are positioned by the grid only
+
+Implementation:
+- Put ship background behind the grid container (absolute inset-0, pointer-events-none)
+- Grid container sits above it (relative z-10)
+
+========================================
+4) RESPONSIVE BEHAVIOR
+========================================
+
+- Desktop >=1280px: use the fixed 4×4 grid exactly
+- Tablet: 2 columns (still ordered by the same slot order)
+- Mobile: 1 column stacked, in slot order (Major Tom first, then Row 2 left-to-right, Row 3, Row 4)
+
+========================================
+5) ACCEPTANCE CRITERIA
+========================================
+
+- No overlap can ever happen (grid prevents it)
+- All 12 roles are always visible simultaneously
+- Filled crew shows approved CrewCard component unchanged
+- Empty roles show CTA card of same size and open modal on click
+- Background stays the same visual, but never controls placement
+- No new visuals are generated
+- No design changes to cards
+
+This is a strict implementation task. Follow the slot map exactly.
