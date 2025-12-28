@@ -141,32 +141,30 @@ function MetricCard({ data }: { data: BenchmarkMetric }) {
   const getIcon = () => {
     if (data.actualValue === null) return <Minus className="w-4 h-4" />;
     
-    const isLowerBetter = ['avg_position', 'bounce_rate', 'lcp', 'cls', 'inp'].includes(data.metric);
-    
     if (data.percentile === 'excellent' || data.percentile === 'above_average') {
-      return <TrendingUp className="w-4 h-4 text-green-600" />;
+      return <TrendingUp className="w-4 h-4 text-emerald-400" />;
     }
     if (data.percentile === 'poor' || data.percentile === 'below_average') {
-      return <TrendingDown className="w-4 h-4 text-red-600" />;
+      return <TrendingDown className="w-4 h-4 text-red-400" />;
     }
-    return <Minus className="w-4 h-4 text-yellow-600" />;
+    return <Minus className="w-4 h-4 text-amber-400" />;
   };
   
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="bg-card/60 backdrop-blur-sm border-border hover:shadow-lg transition-shadow">
       <CardContent className="pt-4">
         <div className="flex items-start justify-between mb-2">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
               {metricLabels[data.metric] || data.metric}
             </p>
-            <p className="text-2xl font-bold">
+            <p className="text-2xl font-bold text-foreground">
               {formatMetricValue(data.actualValue, data.metric, data.unit)}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {getIcon()}
-            <Badge className={`${percentileStyle.bg} ${percentileStyle.text} border-0`}>
+            <Badge className={`${percentileStyle.bg} ${percentileStyle.text} border-0 text-xs`}>
               {percentileStyle.label}
             </Badge>
           </div>
@@ -295,18 +293,26 @@ export function BenchmarkComparison() {
         ) : (
           <>
             {comparisonData?.summary && (
-              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Sessions</p>
-                  <p className="text-xl font-semibold">{comparisonData.summary.totalSessions.toLocaleString()}</p>
+              <div className="flex flex-col gap-3 mb-6">
+                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Total Sessions</span>
+                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalSessions.toLocaleString()}</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Clicks</p>
-                  <p className="text-xl font-semibold">{comparisonData.summary.totalClicks.toLocaleString()}</p>
+                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Total Clicks</span>
+                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalClicks.toLocaleString()}</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Impressions</p>
-                  <p className="text-xl font-semibold">{comparisonData.summary.totalImpressions.toLocaleString()}</p>
+                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Impressions</span>
+                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalImpressions.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Avg CTR</span>
+                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.avgCtr}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Avg Position</span>
+                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.avgPosition}</span>
                 </div>
               </div>
             )}

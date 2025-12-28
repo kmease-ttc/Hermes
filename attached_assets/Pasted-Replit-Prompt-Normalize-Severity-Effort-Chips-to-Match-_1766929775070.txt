@@ -1,0 +1,96 @@
+Replit Prompt: Normalize Severity & Effort Chips to Match “High” Style (Filled Glass + Solid Text)
+
+Context
+In the Action Queue cards, the “High” severity chip is styled correctly:
+
+* Light translucent background (glass)
+* Text in the same hue at full opacity
+* No outline
+* Premium, readable, consistent with My Crew
+
+However, other chips (Medium, Quick, etc.) are currently white or outlined and visually inconsistent.
+
+Goal
+All **severity and effort chips** must use the **same visual pattern as “High”**, differing only by color — not structure or opacity rules.
+
+---
+
+## Correct Chip Style (Canonical Pattern)
+
+Use this pattern for **ALL** chips:
+
+* Background: light translucent fill of the chip’s semantic color (≈15–20% opacity)
+* Text: same color at **100% opacity**
+* Border: none (or extremely subtle inner border)
+* Rounded pill
+* Same font size, weight, and padding across all chips
+
+This is a **filled-glass chip**, not an outline or solid badge.
+
+---
+
+## Apply This Pattern To
+
+### Severity Chips
+
+* High (already correct – do not change)
+* Medium
+* Low (if present)
+
+Color mapping:
+
+* High → red family
+* Medium → amber/yellow family
+* Low → green family
+
+Each severity chip:
+
+* `bg: color @ 15–20%`
+* `text: color @ 100%`
+
+---
+
+### Effort Chips
+
+* Quick
+* Medium
+* Slow (if present)
+
+Effort chips should:
+
+* Follow the SAME pattern
+* Use a neutral or cool color family (gray/blue)
+* Still be filled-glass, not white or outlined
+
+---
+
+## Explicitly Remove
+
+* White-filled chips
+* Outline-only chips
+* Mixed opacity text/background combinations
+* Chips that don’t match the “High” visual treatment
+
+---
+
+## Implementation Notes
+
+* Centralize chip styling in a shared component or utility:
+
+  * e.g. `<StatusChip type="severity" level="high" />`
+* Pass only the color token; styling logic should be shared.
+* Do not hardcode colors inline per chip.
+
+---
+
+## Acceptance Criteria
+
+* “High”, “Medium”, and “Quick” all look like variations of the same chip
+* The only difference between chips is **color**, not structure
+* Chips feel premium, consistent, and readable on dark glass cards
+* The Action Queue looks visually coherent and intentional
+
+---
+
+This is a visual normalization task only.
+Do not change copy, layout, or behavior.
