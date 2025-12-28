@@ -433,9 +433,8 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
                     return (
                       <Badge 
                         key={agentId} 
-                        variant="outline" 
-                        className="text-xs"
-                        style={{ borderColor: crew.color, color: crew.color }}
+                        className="text-xs font-medium text-white border-0"
+                        style={{ backgroundColor: crew.color }}
                       >
                         {crew.nickname}
                       </Badge>
@@ -448,13 +447,13 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-muted">
+                <Button size="sm" className="text-xs bg-card hover:bg-muted border border-border text-foreground rounded-xl">
                   Review
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-muted">
+                <Button size="sm" className="text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-[0_0_15px_-3px_rgba(124,58,237,0.4)]">
                   Approve
                 </Button>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground opacity-70 hover:opacity-100">
                   Export Prompt
                 </Button>
               </div>
@@ -536,9 +535,8 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     return (
                       <Badge 
                         key={agent.id} 
-                        variant="outline" 
-                        className="text-xs"
-                        style={{ borderColor: crew.color, color: crew.color }}
+                        className="text-xs font-medium text-white border-0"
+                        style={{ backgroundColor: crew.color }}
                       >
                         {agent.name}
                       </Badge>
