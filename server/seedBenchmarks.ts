@@ -2,7 +2,21 @@ import { storage } from "./storage";
 import type { InsertIndustryBenchmark } from "@shared/schema";
 
 const benchmarkData: InsertIndustryBenchmark[] = [
+  // Psychiatry / Mental Health Industry (primary)
+  { industry: "psychiatry", metric: "sessions", percentile25: 800, percentile50: 2500, percentile75: 8000, percentile90: 25000, unit: "count_monthly", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "clicks", percentile25: 200, percentile50: 800, percentile75: 2500, percentile90: 8000, unit: "count_monthly", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "impressions", percentile25: 5000, percentile50: 20000, percentile75: 60000, percentile90: 200000, unit: "count_monthly", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "organic_ctr", percentile25: 2.8, percentile50: 4.0, percentile75: 5.5, percentile90: 7.5, unit: "percent", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "avg_position", percentile25: 22, percentile50: 12, percentile75: 6, percentile90: 3, unit: "position", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "bounce_rate", percentile25: 62, percentile50: 52, percentile75: 42, percentile90: 32, unit: "percent", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "session_duration", percentile25: 50, percentile50: 100, percentile75: 170, percentile90: 280, unit: "seconds", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "pages_per_session", percentile25: 1.6, percentile50: 2.4, percentile75: 3.5, percentile90: 5.0, unit: "count", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  { industry: "psychiatry", metric: "conversion_rate", percentile25: 1.5, percentile50: 3.0, percentile75: 5.0, percentile90: 8.0, unit: "percent", source: "Healthcare Industry Research 2024", sourceYear: 2024 },
+  
   // Healthcare Industry
+  { industry: "healthcare", metric: "sessions", percentile25: 1000, percentile50: 3500, percentile75: 12000, percentile90: 40000, unit: "count_monthly", source: "Industry Research 2024", sourceYear: 2024 },
+  { industry: "healthcare", metric: "clicks", percentile25: 300, percentile50: 1200, percentile75: 4000, percentile90: 15000, unit: "count_monthly", source: "Industry Research 2024", sourceYear: 2024 },
+  { industry: "healthcare", metric: "impressions", percentile25: 8000, percentile50: 30000, percentile75: 100000, percentile90: 350000, unit: "count_monthly", source: "Industry Research 2024", sourceYear: 2024 },
   { industry: "healthcare", metric: "organic_ctr", percentile25: 2.5, percentile50: 3.8, percentile75: 5.2, percentile90: 7.1, unit: "percent", source: "Industry Research 2024", sourceYear: 2024 },
   { industry: "healthcare", metric: "avg_position", percentile25: 25, percentile50: 15, percentile75: 8, percentile90: 4, unit: "position", source: "Industry Research 2024", sourceYear: 2024 },
   { industry: "healthcare", metric: "bounce_rate", percentile25: 65, percentile50: 55, percentile75: 45, percentile90: 35, unit: "percent", source: "Industry Research 2024", sourceYear: 2024 },

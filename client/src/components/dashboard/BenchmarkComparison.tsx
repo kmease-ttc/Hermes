@@ -11,7 +11,11 @@ interface BenchmarkMetric {
   metric: string;
   unit: string | null;
   actualValue: number | null;
+  industryBaseline: number | null;
+  delta: number | null;
+  deltaPct: number | null;
   percentile: string;
+  status: string;
   benchmarks: {
     p25: number;
     p50: number;
@@ -51,6 +55,9 @@ const industryLabels: Record<string, string> = {
 };
 
 const metricLabels: Record<string, string> = {
+  sessions: "Sessions",
+  clicks: "Clicks",
+  impressions: "Impressions",
   organic_ctr: "Organic CTR",
   avg_position: "Avg. Position",
   bounce_rate: "Bounce Rate",
@@ -67,6 +74,13 @@ const metricLabels: Record<string, string> = {
   ctr_position_2: "CTR Position #2",
   ctr_position_3: "CTR Position #3",
   indexed_pages_ratio: "Indexed Pages",
+};
+
+const statusColors: Record<string, { bg: string; text: string; label: string }> = {
+  good: { bg: "bg-semantic-success-soft", text: "text-semantic-success", label: "Good" },
+  watch: { bg: "bg-semantic-warning-soft", text: "text-semantic-warning", label: "Watch" },
+  needs_improvement: { bg: "bg-semantic-danger-soft", text: "text-semantic-danger", label: "Needs Improvement" },
+  unknown: { bg: "bg-muted", text: "text-muted-foreground", label: "No Data" },
 };
 
 const percentileColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -95,9 +109,34 @@ function formatMetricValue(value: number | null, metric: string, unit: string | 
       return `#${value.toFixed(1)}`;
     case "count":
       return value.toFixed(1);
+    case "count_monthly":
+      return value.toLocaleString();
     default:
-      return value.toFixed(2);
+      return typeof value === 'number' ? value.toLocaleString() : String(value);
   }
+}
+
+function formatDelta(delta: number | null, deltaPct: number | null, unit: string | null): string {
+  if (delta === null || deltaPct === null) return "";
+  const sign = delta >= 0 ? "+" : "";
+  if (unit === "count_monthly") {
+    return `${sign}${delta.toLocaleString()} (${sign}${deltaPct}%)`;
+  }
+  if (unit === "percent") {
+    return `${sign}${delta.toFixed(1)}pp (${sign}${deltaPct}%)`;
+  }
+  if (unit === "position") {
+    return `${sign}${delta.toFixed(1)} (${sign}${deltaPct}%)`;
+  }
+  return `${sign}${delta.toFixed(1)} (${sign}${deltaPct}%)`;
+}
+
+function formatDateRange(dateStr: string): string {
+  if (!dateStr || dateStr.length < 8) return dateStr;
+  const year = dateStr.slice(0, 4);
+  const month = dateStr.slice(4, 6);
+  const day = dateStr.slice(6, 8);
+  return `${year}-${month}-${day}`;
 }
 
 function PercentileBar({ value, benchmarks, metric, unit }: { 
@@ -144,36 +183,57 @@ function PercentileBar({ value, benchmarks, metric, unit }: {
 }
 
 function MetricCard({ data }: { data: BenchmarkMetric }) {
-  const percentileStyle = percentileColors[data.percentile] || percentileColors.unknown;
+  const statusStyle = statusColors[data.status] || statusColors.unknown;
+  const isLowerBetter = ['avg_position', 'bounce_rate'].includes(data.metric);
   
   const getIcon = () => {
     if (data.actualValue === null) return <Minus className="w-4 h-4" />;
     
-    if (data.percentile === 'excellent' || data.percentile === 'above_average') {
+    if (data.status === 'good') {
       return <TrendingUp className="w-4 h-4 text-semantic-success" />;
     }
-    if (data.percentile === 'poor' || data.percentile === 'below_average') {
+    if (data.status === 'needs_improvement') {
       return <TrendingDown className="w-4 h-4 text-semantic-danger" />;
     }
     return <Minus className="w-4 h-4 text-semantic-warning" />;
   };
   
+  const getDeltaColor = () => {
+    if (data.delta === null) return "text-muted-foreground";
+    const isPositive = data.delta >= 0;
+    if (isLowerBetter) {
+      return isPositive ? "text-semantic-danger" : "text-semantic-success";
+    }
+    return isPositive ? "text-semantic-success" : "text-semantic-danger";
+  };
+  
   return (
     <div className="w-full p-4 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {metricLabels[data.metric] || data.metric}
-          </span>
-          <span className="text-lg font-semibold text-foreground">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-foreground">
+          {metricLabels[data.metric] || data.metric}
+        </span>
+        <Badge className={`${statusStyle.bg} ${statusStyle.text} border-0 text-xs`}>
+          {statusStyle.label}
+        </Badge>
+      </div>
+      
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <p className="text-2xl font-bold text-foreground">
             {formatMetricValue(data.actualValue, data.metric, data.unit)}
-          </span>
+          </p>
+          <p className="text-xs text-muted-foreground">Your site</p>
         </div>
-        <div className="flex items-center gap-2">
-          {getIcon()}
-          <Badge className={`${percentileStyle.bg} ${percentileStyle.text} border-0 text-xs`}>
-            {percentileStyle.label}
-          </Badge>
+        <div className="text-right">
+          <p className="text-sm text-muted-foreground">
+            Industry: {formatMetricValue(data.industryBaseline, data.metric, data.unit)}
+          </p>
+          {data.delta !== null && (
+            <p className={`text-sm font-medium ${getDeltaColor()}`}>
+              {formatDelta(data.delta, data.deltaPct, data.unit)}
+            </p>
+          )}
         </div>
       </div>
       
@@ -185,8 +245,8 @@ function MetricCard({ data }: { data: BenchmarkMetric }) {
       />
       
       {data.source && (
-        <p className="text-xs text-muted-foreground mt-2">
-          Source: {data.source} ({data.sourceYear})
+        <p className="text-xs text-muted-foreground mt-2 italic">
+          {data.source} ({data.sourceYear}) — estimated
         </p>
       )}
     </div>
@@ -298,42 +358,20 @@ export function BenchmarkComparison() {
           </div>
         ) : (
           <>
-            {comparisonData?.summary && (
-              <div className="flex flex-col gap-3 mb-6">
-                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Total Sessions</span>
-                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalSessions.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Total Clicks</span>
-                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalClicks.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Impressions</span>
-                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.totalImpressions.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Avg CTR</span>
-                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.avgCtr}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Avg Position</span>
-                  <span className="text-lg font-semibold text-foreground">{comparisonData.summary.avgPosition}</span>
-                </div>
-              </div>
+            {comparisonData?.dateRange && (
+              <p className="text-xs text-muted-foreground mb-4 flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-muted rounded text-xs">
+                  {formatDateRange(comparisonData.dateRange.start)} — {formatDateRange(comparisonData.dateRange.end)}
+                </span>
+                <span>Industry baseline: {industryLabels[selectedIndustry] || selectedIndustry} (estimated)</span>
+              </p>
             )}
             
-            <div className="flex flex-col gap-3">
-              {relevantMetrics.map((metric) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {comparisonData?.comparison.map((metric) => (
                 <MetricCard key={metric.metric} data={metric} />
               ))}
             </div>
-            
-            {comparisonData?.dateRange && (
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                Based on data from {comparisonData.dateRange.start} to {comparisonData.dateRange.end}
-              </p>
-            )}
           </>
         )}
       </CardContent>

@@ -25,11 +25,15 @@ export type OAuthToken = typeof oauthTokens.$inferSelect;
 // GA4 Daily Snapshots
 export const ga4Daily = pgTable("ga4_daily", {
   id: serial("id").primaryKey(),
+  siteId: text("site_id").default("default"), // Multi-site support
   date: text("date").notNull(), // YYYY-MM-DD
   sessions: integer("sessions").notNull(),
   users: integer("users").notNull(),
   events: integer("events").notNull(),
   conversions: integer("conversions").notNull(),
+  bounceRate: real("bounce_rate"), // percentage
+  avgSessionDuration: real("avg_session_duration"), // seconds
+  pagesPerSession: real("pages_per_session"),
   channel: text("channel"),
   landingPage: text("landing_page"),
   device: text("device"),
@@ -48,6 +52,7 @@ export type GA4Daily = typeof ga4Daily.$inferSelect;
 // Google Search Console Daily Snapshots
 export const gscDaily = pgTable("gsc_daily", {
   id: serial("id").primaryKey(),
+  siteId: text("site_id").default("default"), // Multi-site support
   date: text("date").notNull(), // YYYY-MM-DD
   clicks: integer("clicks").notNull(),
   impressions: integer("impressions").notNull(),

@@ -2282,40 +2282,57 @@ When answering:
       const totalConversions = ga4Data.reduce((sum, d) => sum + d.conversions, 0);
       const conversionRate = totalSessions > 0 ? (totalConversions / totalSessions) * 100 : null;
       
-      // Map benchmarks to comparison format
+      // Scale to monthly if date range differs (for sessions/clicks/impressions benchmarks)
+      const daysInRange = Math.max(1, Math.ceil((now.getTime() - thirtyDaysAgo.getTime()) / (1000 * 60 * 60 * 24)));
+      const scaleFactor = 30 / daysInRange;
+      
+      // Map actual values to metric keys
+      const actualMetrics: Record<string, number | null> = {
+        sessions: totalSessions > 0 ? Math.round(totalSessions * scaleFactor) : null,
+        clicks: totalClicks > 0 ? Math.round(totalClicks * scaleFactor) : null,
+        impressions: totalImpressions > 0 ? Math.round(totalImpressions * scaleFactor) : null,
+        organic_ctr: avgCtr,
+        avg_position: avgPosition,
+        conversion_rate: conversionRate,
+        bounce_rate: null,
+        session_duration: null,
+        pages_per_session: null,
+      };
+      
+      // Metrics where lower is better
+      const lowerIsBetter = ['avg_position', 'bounce_rate'];
+      
+      // Map benchmarks to comparison format with deltas
       const comparison = benchmarks.map(b => {
-        let actualValue: number | null = null;
+        const actualValue = actualMetrics[b.metric] ?? null;
+        const industryBaseline = b.percentile50;
+        const isLowerBetter = lowerIsBetter.includes(b.metric);
         
-        switch (b.metric) {
-          case 'organic_ctr':
-            actualValue = avgCtr;
-            break;
-          case 'avg_position':
-            actualValue = avgPosition;
-            break;
-          case 'conversion_rate':
-            actualValue = conversionRate;
-            break;
-          default:
-            actualValue = null;
+        // Calculate delta
+        let delta: number | null = null;
+        let deltaPct: number | null = null;
+        if (actualValue !== null && industryBaseline) {
+          delta = actualValue - industryBaseline;
+          deltaPct = industryBaseline !== 0 ? ((actualValue - industryBaseline) / industryBaseline) * 100 : 0;
         }
         
+        // Determine percentile category and status
         let percentile: string = 'unknown';
+        let status: string = 'unknown';
+        
         if (actualValue !== null) {
-          if (b.metric === 'avg_position' || b.metric === 'bounce_rate') {
-            // Lower is better for position and bounce rate
-            if (actualValue <= b.percentile90) percentile = 'excellent';
-            else if (actualValue <= b.percentile75) percentile = 'above_average';
-            else if (actualValue <= b.percentile50) percentile = 'average';
-            else if (actualValue <= b.percentile25) percentile = 'below_average';
-            else percentile = 'poor';
+          if (isLowerBetter) {
+            if (actualValue <= b.percentile90) { percentile = 'excellent'; status = 'good'; }
+            else if (actualValue <= b.percentile75) { percentile = 'above_average'; status = 'good'; }
+            else if (actualValue <= b.percentile50) { percentile = 'average'; status = 'watch'; }
+            else if (actualValue <= b.percentile25) { percentile = 'below_average'; status = 'needs_improvement'; }
+            else { percentile = 'poor'; status = 'needs_improvement'; }
           } else {
-            // Higher is better for most metrics
-            if (actualValue >= b.percentile90) percentile = 'excellent';
-            else if (actualValue >= b.percentile75) percentile = 'above_average';
-            else if (actualValue >= b.percentile50) percentile = 'average';
-            else if (actualValue >= b.percentile25) percentile = 'below_average';
-            else percentile = 'poor';
+            if (actualValue >= b.percentile90) { percentile = 'excellent'; status = 'good'; }
+            else if (actualValue >= b.percentile75) { percentile = 'above_average'; status = 'good'; }
+            else if (actualValue >= b.percentile50) { percentile = 'average'; status = 'watch'; }
+            else if (actualValue >= b.percentile25) { percentile = 'below_average'; status = 'needs_improvement'; }
+            else { percentile = 'poor'; status = 'needs_improvement'; }
           }
         }
         
@@ -2323,7 +2340,11 @@ When answering:
           metric: b.metric,
           unit: b.unit,
           actualValue,
+          industryBaseline,
+          delta,
+          deltaPct: deltaPct !== null ? Math.round(deltaPct * 10) / 10 : null,
           percentile,
+          status,
           benchmarks: {
             p25: b.percentile25,
             p50: b.percentile50,
