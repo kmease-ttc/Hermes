@@ -249,7 +249,7 @@ export const AGENTS: Record<string, CrewMember> = {
     service_id: "content_generator",
     nickname: "Hemingway",
     role: "Content Strategy",
-    color: "#1E3A8A",
+    color: "#60A5FA",
     icon: PenTool,
     avatar: hemingwayAvatar,
     blurb: "Writes and validates content optimized for humans and search engines.",
