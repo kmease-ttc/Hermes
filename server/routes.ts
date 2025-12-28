@@ -1351,6 +1351,182 @@ Format your response as JSON with these keys:
     }
   });
 
+  app.get("/api/export/fix-pack", async (req, res) => {
+    try {
+      const { 
+        site_id, 
+        scope = "top3", 
+        maxBlogs = "1", 
+        maxTech = "3", 
+        noUi = "true" 
+      } = req.query;
+
+      const siteId = site_id as string || "default";
+      const maxBlogsNum = parseInt(maxBlogs as string) || 1;
+      const maxTechNum = parseInt(maxTech as string) || 3;
+      const noUiChanges = (noUi as string) !== "false";
+      const isFullScope = scope === "full";
+
+      const site = await storage.getSite(siteId);
+      const domain = site?.baseUrl?.replace(/^https?:\/\//, "") || site?.displayName || siteId;
+
+      const [
+        latestSeoRun,
+        seoSuggestions,
+        kbaseInsights,
+        workerResults,
+        findings
+      ] = await Promise.all([
+        storage.getLatestSeoRun(siteId),
+        storage.getLatestSeoSuggestions(siteId, 20),
+        storage.getLatestSeoKbaseInsights(siteId, 10),
+        storage.getLatestSeoWorkerResults(siteId),
+        storage.getLatestFindings(siteId, 20)
+      ]);
+
+      const asOfDate = latestSeoRun?.startedAt || new Date();
+      const generatedAt = new Date().toISOString();
+
+      const priorities = seoSuggestions
+        .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
+        .slice(0, isFullScope ? 10 : 3);
+
+      const blockers = findings
+        .filter((f: any) => f.severity === 'critical' || f.severity === 'high')
+        .slice(0, 5);
+
+      let md = `# Mission Control Fix Pack — ${domain}\n\n`;
+      md += `**Generated:** ${generatedAt}\n`;
+      md += `**Site ID:** ${siteId}\n`;
+      md += `**Data freshness:** Based on ${asOfDate instanceof Date ? asOfDate.toISOString() : asOfDate} snapshots\n`;
+      md += `**Scope:** ${isFullScope ? 'Full Report' : 'Top 3 Priorities'}\n`;
+      md += `**Confidence:** ${priorities.length > 0 ? 'Medium' : 'Low'}\n\n`;
+
+      md += `---\n\n`;
+      md += `## 1. What Changed (Key Metrics Summary)\n\n`;
+      
+      if (workerResults && workerResults.length > 0) {
+        md += `| Metric | Source | Status |\n`;
+        md += `|--------|--------|--------|\n`;
+        workerResults.slice(0, 5).forEach((wr: any) => {
+          md += `| ${wr.serviceId || 'Unknown'} | ${wr.status || 'N/A'} | ${wr.errorMessage ? 'Error' : 'OK'} |\n`;
+        });
+      } else if (latestSeoRun) {
+        md += `| Metric | Status |\n`;
+        md += `|--------|--------|\n`;
+        md += `| Last Run | ${latestSeoRun.status || 'Unknown'} |\n`;
+      } else {
+        md += `*No recent metrics available. Run diagnostics first.*\n`;
+      }
+      md += `\n`;
+
+      md += `## 2. Top Priorities\n\n`;
+      
+      if (priorities.length > 0) {
+        priorities.forEach((p: any, idx: number) => {
+          md += `### Priority ${idx + 1}: ${p.title || p.suggestion || 'Action Item'}\n\n`;
+          md += `**Category:** ${p.category || 'General'}\n`;
+          md += `**Priority:** ${p.priority || 'Medium'}\n\n`;
+          md += `**Why it matters:** ${p.rationale || p.description || 'Based on recent analysis'}\n\n`;
+          md += `**Proposed actions:**\n`;
+          if (p.actionSteps && Array.isArray(p.actionSteps)) {
+            p.actionSteps.forEach((step: string) => {
+              md += `- ${step}\n`;
+            });
+          } else {
+            md += `- Review and address the identified issue\n`;
+            md += `- Verify changes with follow-up scan\n`;
+          }
+          md += `\n`;
+        });
+      } else {
+        md += `*No priority actions identified. System is healthy or needs more data.*\n\n`;
+      }
+
+      md += `## 3. Blockers\n\n`;
+      
+      if (blockers.length > 0) {
+        blockers.forEach((b: any) => {
+          md += `- **${b.title || b.description || 'Issue'}**\n`;
+          md += `  - Source: ${b.sourceIntegration || 'Unknown'}\n`;
+          md += `  - Severity: ${b.severity || 'Unknown'}\n`;
+          md += `  - Fix: ${b.recommendation || 'Review and resolve'}\n\n`;
+        });
+      } else {
+        md += `*No critical blockers detected.*\n\n`;
+      }
+
+      md += `---\n\n`;
+      md += `## 4. Implementation Instructions (Replit Prompt)\n\n`;
+      md += `Copy the following instructions to implement fixes:\n\n`;
+      md += `\`\`\`\n`;
+      md += `TASK: Implement SEO fixes for ${domain}\n`;
+      md += `SITE: ${siteId}\n\n`;
+      md += `CONSTRAINTS:\n`;
+      md += `- Do not publish more than ${maxBlogsNum} blog post(s) this run\n`;
+      md += `- Do not change more than ${maxTechNum} technical items this run\n`;
+      md += `- ${noUiChanges ? 'Do NOT change design/UI elements' : 'UI changes are permitted if needed'}\n`;
+      md += `- Prefer small, reversible changes\n`;
+      md += `- Only change what is clearly supported by evidence\n\n`;
+      md += `PRIORITY TASKS:\n`;
+      priorities.slice(0, 3).forEach((p: any, idx: number) => {
+        md += `${idx + 1}. ${p.title || p.suggestion || 'Address priority item'}\n`;
+      });
+      if (priorities.length === 0) {
+        md += `1. Run diagnostics to identify issues\n`;
+        md += `2. Review agent reports for recommendations\n`;
+      }
+      md += `\n`;
+      md += `ACCEPTANCE CRITERIA:\n`;
+      md += `- All changes pass existing tests\n`;
+      md += `- No new console errors introduced\n`;
+      md += `- Changes are scoped to identified issues only\n`;
+      md += `\`\`\`\n\n`;
+
+      md += `## 5. Guardrails & Best Practices\n\n`;
+      md += `- **Max blog posts:** ${maxBlogsNum}\n`;
+      md += `- **Max technical changes:** ${maxTechNum}\n`;
+      md += `- **UI changes:** ${noUiChanges ? 'Not allowed' : 'Allowed'}\n`;
+      md += `- Prefer small reversible changes\n`;
+      md += `- Avoid broad refactors\n`;
+      md += `- Only change what is clearly supported by evidence\n\n`;
+
+      md += `## 6. Appendix: Agent Details\n\n`;
+      
+      if (kbaseInsights && kbaseInsights.length > 0) {
+        kbaseInsights.forEach((insight: any) => {
+          md += `### ${insight.agentName || insight.agentId || 'Agent'}\n\n`;
+          md += `**Insight:** ${insight.insight || 'No details'}\n\n`;
+          if (insight.evidence) {
+            md += `**Evidence:** ${typeof insight.evidence === 'string' ? insight.evidence : JSON.stringify(insight.evidence)}\n\n`;
+          }
+          md += `**Last checked:** ${insight.updatedAt || insight.createdAt || 'Unknown'}\n\n`;
+        });
+      } else {
+        md += `*No agent details available. Connect agents and run diagnostics.*\n`;
+      }
+
+      const plainText = md
+        .replace(/#{1,6}\s/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/`{3}[\s\S]*?`{3}/g, (match) => match.replace(/`{3}/g, '---'))
+        .replace(/\|.*\|/g, '')
+        .replace(/---+/g, '---');
+
+      res.json({
+        title: "Mission Control Fix Pack",
+        generated_at: generatedAt,
+        site: { domain, site_id: siteId },
+        content_md: md,
+        content_txt: plainText,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to generate fix pack", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/report/latest", async (req, res) => {
     try {
       const report = await storage.getLatestReport();

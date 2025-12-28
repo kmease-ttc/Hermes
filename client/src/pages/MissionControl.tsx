@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,8 @@ import {
   ExternalLink,
   AlertTriangle,
   ChevronRight,
-  Info
+  Info,
+  Package
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +33,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
 import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
+import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 
 const verdictColors = {
   good: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", badge: "bg-green-100 text-green-700" },
@@ -581,6 +584,7 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
 export default function MissionControl() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const { data: dashboardStats } = useQuery({
     queryKey: ["dashboard-stats", currentSite?.siteId],
@@ -642,9 +646,14 @@ export default function MissionControl() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setExportModalOpen(true)}
+              data-testid="button-export"
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Export Fix Pack
             </Button>
             <Button 
               size="sm" 
@@ -680,6 +689,11 @@ export default function MissionControl() {
           <KnowledgeBaseCard />
         </div>
       </div>
+
+      <ExportFixPackModal 
+        open={exportModalOpen} 
+        onOpenChange={setExportModalOpen} 
+      />
     </DashboardLayout>
   );
 }
