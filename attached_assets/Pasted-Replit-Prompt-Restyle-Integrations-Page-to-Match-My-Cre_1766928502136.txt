@@ -1,0 +1,97 @@
+Replit Prompt: Restyle Integrations Page to Match “My Crew” + Use Arclo Pro Button System
+
+Objective
+The Integrations page currently looks like a different product: the background, cards, and especially the purple buttons don’t match the Arclo Pro marketing style or the “My Crew” in-app aesthetic. Update Integrations so it feels like it belongs to the same dark, premium, ship-console UI as My Crew, while also using the Arclo Pro button styling for primary CTAs.
+
+This is a styling + component alignment task. Do not change functionality.
+
+Reference
+
+* In-app target aesthetic: “My Crew” page (dark, glassy panels, soft glow, deep shadows, subtle gradients, premium spacing)
+* Button system target aesthetic: Arclo Pro marketing site (rounded gradient purple buttons, clean pill shapes, strong hover/active states)
+
+Requirements
+
+1. Background + Page Shell (Match My Crew)
+
+* Apply the same page background treatment used on My Crew:
+
+  * Dark gradient background
+  * Subtle vignette
+  * Optional noise texture if used elsewhere
+* Remove any lighter/flat backgrounds or mismatched canvas colors.
+* Ensure the Integrations page header and content sit on the same dark shell as other pages.
+
+2. Card / Panel System (Glass + Depth)
+   Restyle all Integrations containers to use the My Crew “glass” pattern:
+
+* Dark translucent backgrounds (e.g., black/indigo at ~30–60% opacity)
+* Soft inner border (light stroke at low opacity)
+* Subtle glow / shadow to separate layers
+* Consistent corner radius (match My Crew)
+* Increase spacing between sections instead of relying on thin dividers
+
+Applies to:
+
+* Site selector panel
+* Service Inventory / Cards View container
+* “Platform Dependencies” card
+* Stats row tiles (Services/Built/Ready/etc.)
+* Next Actions panel
+* Ask Hermes panel
+* Service table container
+
+3. Buttons (Match Arclo Pro)
+   Replace the current flat purple buttons with the Arclo Pro button style:
+   Primary buttons to update:
+
+* Run Daily Diagnosis
+* Run QA
+* Run Smoke Tests
+* Test Connections
+* Refresh (secondary)
+
+Button system requirements:
+
+* Primary = rounded pill + gradient purple (like Arclo Pro)
+* Primary has:
+
+  * subtle drop shadow
+  * hover lift (translateY -1) + slightly stronger glow
+  * active press (translateY +1) + reduced shadow
+* Secondary = dark glass button with subtle border and hover glow (not purple fill)
+* All buttons must have consistent height, padding, and font weight across the page.
+
+Implementation detail:
+
+* Create or update a shared button variant in your UI library:
+
+  * e.g. `variant="arcloPrimary"` and `variant="arcloSecondary"`
+* Replace per-page custom classes so Mission Control, My Crew, Integrations can share the same primitives.
+
+4. Typography + Contrast
+
+* Ensure headers are high-contrast (white/near-white)
+* Subtitles and helper text should be muted but readable
+* Increase contrast of table text (the service list) so it doesn’t feel washed out on the dark background
+* Reduce “flat gray” text
+
+5. Status Chips / Badges (Unify)
+
+* Re-style status chips (Ready/Blocked/Never ran/etc.) to match the My Crew chip style:
+
+  * softer fills
+  * subtle border
+  * consistent rounding
+  * avoid harsh neon colors
+* Keep semantic colors but make them premium and cohesive.
+
+6. Table (Make it Premium)
+   The service table should feel like a “console panel”:
+
+* Put the table inside a glass container
+* Add row hover highlight (subtle)
+* Make column headers slightly brighter and tighter
+* Ensure “Actions” chevron/arrow is consistent with other pages
+
+No functional chan

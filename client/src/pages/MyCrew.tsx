@@ -174,9 +174,9 @@ function StatusCard({
     : [];
   
   return (
-    <Card className="bg-slate-900/80 border-slate-700 text-white" data-testid="status-card">
+    <Card className="bg-card border-border" data-testid="status-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg text-white flex items-center gap-2">
+        <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-400" />
           Mission Status
         </CardTitle>
@@ -190,7 +190,7 @@ function StatusCard({
             <div className="flex items-center gap-2 mb-1">
               <MaturityBadge percent={percent} />
             </div>
-            <p className="text-lg font-semibold text-white">{percent}% Operational</p>
+            <p className="text-lg font-semibold text-foreground">{percent}% Operational</p>
             <p className="text-sm text-slate-400">{enabledCount} / {totalRoles} roles staffed</p>
           </div>
         </div>
@@ -295,7 +295,7 @@ function CrewModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-[560px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-popover border-border max-w-[560px] max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-4 border-b border-slate-700">
           <div className="flex items-center gap-4">
             {crew.avatar ? (
@@ -455,7 +455,7 @@ function CapabilityCard({
       "p-4 rounded-xl border transition-all",
       status === "active" ? "bg-slate-800/80 border-amber-500/50" :
       status === "partial" ? "bg-slate-800/50 border-slate-600" :
-      "bg-slate-900/50 border-slate-700 opacity-60"
+      "bg-muted border-border opacity-60"
     )}>
       <div className="flex items-center gap-3 mb-3">
         <div className={cn(
@@ -467,7 +467,7 @@ function CapabilityCard({
           <Icon className="w-4 h-4" />
         </div>
         <div>
-          <h4 className="font-semibold text-white text-sm">{group.title}</h4>
+          <h4 className="font-semibold text-foreground text-sm">{group.title}</h4>
           <Badge variant="outline" className={cn(
             "text-[10px] mt-1",
             status === "active" ? "border-green-500 text-green-400" :
@@ -536,9 +536,9 @@ function SetBonusCard({
     <div 
       className={cn(
         "p-3 rounded-xl border transition-all relative overflow-hidden",
-        bonus.comingSoon ? "bg-slate-900/30 border-slate-800 opacity-60" :
-        isActive ? "bg-gradient-to-br from-amber-900/30 to-slate-900 border-amber-500/50" :
-        "bg-slate-900/50 border-slate-700",
+        bonus.comingSoon ? "bg-muted/50 border-border opacity-60" :
+        isActive ? "bg-gradient-to-br from-progress-soft to-card border-progress/50" :
+        "bg-card border-border",
         canClick && "cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/50"
       )}
       onClick={handleClick}
@@ -554,7 +554,7 @@ function SetBonusCard({
           {bonus.comingSoon ? <Lock className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-white text-sm leading-tight">{bonus.title}</h4>
+          <h4 className="font-semibold text-foreground text-sm leading-tight">{bonus.title}</h4>
           <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">{bonus.valueProp}</p>
         </div>
       </div>
@@ -606,7 +606,7 @@ function SetBonusCard({
                   <span className="text-2xl">{nextCrew.avatar || "👤"}</span>
                 )}
                 <div>
-                  <p className="text-sm font-medium text-white">{nextCrew.nickname}</p>
+                  <p className="text-sm font-medium text-foreground">{nextCrew.nickname}</p>
                   <p className="text-xs text-slate-500">{nextCrew.signalType}</p>
                 </div>
               </div>
@@ -731,15 +731,15 @@ export default function MyCrew() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 -m-6">
-        <div className="mx-auto w-full max-w-[1400px] px-6 pt-6">
-          <h1 className="text-2xl font-semibold text-white/90">My Crew</h1>
-          <p className="mt-1 text-sm text-white/60">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">My Crew</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Staff AI specialists to unlock deeper insights.
           </p>
         </div>
 
-        <section className="mx-auto w-full max-w-[1400px] px-6 pt-6">
+        <section>
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
             <div className="min-w-0 space-y-4">
               <StatusCard 
@@ -749,11 +749,11 @@ export default function MyCrew() {
                 onAddRequiredCrew={handleAddRequiredCrew}
               />
               
-              <Card className="bg-slate-900/80 border-slate-700 text-white">
+              <Card className="bg-card border-border">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-amber-400" />
-                    <CardTitle className="text-lg text-white">Crew Collaboration</CardTitle>
+                    <Zap className="w-5 h-5 text-progress" />
+                    <CardTitle className="text-lg text-card-foreground">Crew Collaboration</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -785,12 +785,12 @@ export default function MyCrew() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-4">
-          <Card className="bg-slate-900/60 border-slate-700">
+        <section>
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-progress" />
-                <CardTitle className="text-white text-lg">Active Capabilities</CardTitle>
+                <CardTitle className="text-card-foreground text-lg">Active Capabilities</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
