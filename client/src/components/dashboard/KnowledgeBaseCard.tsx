@@ -125,12 +125,28 @@ export function KnowledgeBaseCard() {
         ) : !hasFindings ? (
           <div className="text-center py-6">
             <Lightbulb className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">
-              No Knowledge Base insights yet.
+            <p className="text-muted-foreground text-sm font-medium">
+              No insights found for this cycle
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Run the SEO KBase integration to get recommendations.
+            <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+              The Knowledge Base runs after diagnostics complete. Click refresh to check for new learnings, or run diagnostics first.
             </p>
+            {lastRunTime && (
+              <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1">
+                <Clock className="w-3 h-3" />
+                Last checked {lastRunTime}
+              </p>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="mt-4 rounded-xl"
+            >
+              {isRefreshing ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+              Get Insights
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">

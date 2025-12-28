@@ -456,7 +456,7 @@ function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: 
 
 function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: string; sourceAgents: string[]; impact: string; effort: string; status: string }> }) {
   return (
-    <Card className="glass-panel border-gold shadow-gold" data-testid="action-queue">
+    <Card className="bg-card/80 backdrop-blur-sm border-border rounded-2xl" data-testid="action-queue">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-foreground">Action Queue</CardTitle>
@@ -473,19 +473,18 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
           actions.map((action, idx) => (
             <div 
               key={action.id} 
-              className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border"
+              className="flex items-start gap-4 p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border hover:bg-card/80 transition-colors"
               data-testid={`action-item-${action.id}`}
             >
               <div className={cn(
-                "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                idx === 0 ? "bg-semantic-danger-soft text-semantic-danger" : "bg-muted text-muted-foreground"
+                "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                idx === 0 ? "bg-[var(--color-gold)] text-background" : "bg-muted text-muted-foreground"
               )}>
                 {idx + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-foreground">{action.title}</h4>
+                <h4 className="font-semibold text-sm text-foreground">{action.title}</h4>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  <span className="text-xs text-muted-foreground">Sources:</span>
                   {action.sourceAgents?.map((agentId) => {
                     const crew = getCrewMember(agentId);
                     return (
@@ -503,19 +502,24 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
                   })}
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <ImpactBadge impact={action.impact as any || "Medium"} />
+                  <Badge className={cn(
+                    "text-xs",
+                    action.impact === "High" ? "bg-semantic-danger-soft text-semantic-danger" :
+                    action.impact === "Low" ? "bg-semantic-success-soft text-semantic-success" :
+                    "bg-semantic-warning-soft text-semantic-warning"
+                  )}>
+                    Impact: {action.impact || "Medium"}
+                  </Badge>
                   <EffortBadge effort={action.effort as any || "M"} />
+                  <StatusBadge status={action.status} />
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Button size="sm" className="text-xs bg-card/80 hover:bg-muted border-0 ring-1 ring-border text-foreground rounded-xl focus-visible:ring-2 focus-visible:ring-primary">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-muted rounded-xl">
                   Review
                 </Button>
-                <Button size="sm" className="text-xs text-white rounded-xl border-0 shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-purple-accent hover:bg-purple-accent/90 focus-visible:ring-2 focus-visible:ring-white/50">
+                <Button variant="purple" size="sm" className="text-xs rounded-xl">
                   Approve
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground opacity-70 hover:opacity-100 border-0 focus-visible:ring-1 focus-visible:ring-border">
-                  Export Prompt
                 </Button>
               </div>
             </div>
@@ -571,27 +575,33 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-xl border border-gold bg-gold-soft p-4">
+        <div className="mb-4">
           <h4 className="text-sm font-semibold text-gold flex items-center gap-2 mb-3 tracking-wide">
             <Target className="w-4 h-4" />
             PRIORITY ACTIONS
           </h4>
-          <div className="space-y-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {priorities.slice(0, 3).map((priority, idx) => (
-              <div 
+              <Card 
                 key={idx} 
-                className="flex items-start gap-3 text-sm"
+                className="bg-card/80 backdrop-blur-sm border border-border rounded-xl overflow-hidden"
                 data-testid={`priority-${idx + 1}`}
               >
-                <div className={cn(
-                  "flex-shrink-0 w-6 h-6 rounded-full font-bold flex items-center justify-center text-xs mt-0.5",
-                  "bg-[var(--color-gold)] text-background"
-                )}>
-                  {idx + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-foreground">{priority.title}</span>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-7 h-7 rounded-full font-bold flex items-center justify-center text-sm",
+                      "bg-[var(--color-gold)] text-background"
+                    )}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-foreground leading-tight">{priority.title}</h4>
+                      <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{priority.why}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap mt-3">
                     {priority.agents?.map((agent: any) => {
                       const crew = getCrewMember(agent.id);
                       return (
@@ -608,16 +618,28 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                       );
                     })}
                   </div>
-                  <p className="text-muted-foreground text-xs mt-1">{priority.why}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <ImpactBadge impact={priority.impact || "Medium"} />
+                  
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                    <Badge className={cn(
+                      "text-xs",
+                      priority.impact === "High" ? "bg-semantic-danger-soft text-semantic-danger" :
+                      priority.impact === "Low" ? "bg-semantic-success-soft text-semantic-success" :
+                      "bg-semantic-warning-soft text-semantic-warning"
+                    )}>
+                      Impact: {priority.impact || "Medium"}
+                    </Badge>
                     <EffortBadge effort={priority.effort || "M"} />
-                    <Button variant="ghost" size="sm" className="text-xs h-6 px-2 ml-auto text-muted-foreground hover:text-foreground">
-                      Review <ArrowRight className="w-3 h-3 ml-1" />
-                    </Button>
                   </div>
-                </div>
-              </div>
+                  
+                  <Button 
+                    variant="gold" 
+                    size="sm" 
+                    className="w-full mt-3 text-xs rounded-xl"
+                  >
+                    Review <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

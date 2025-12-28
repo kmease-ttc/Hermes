@@ -17,10 +17,14 @@ import {
   Check, 
   Package,
   Shield,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  RefreshCw,
+  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ExportFixPackModalProps {
   open: boolean;
@@ -37,8 +41,22 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const [exportError, setExportError] = useState<{
+    code: string;
+    message: string;
+    hint: string;
+    requestId: string;
+    timestamp: string;
+  } | null>(null);
+
   const generateExport = useMutation({
     mutationFn: async () => {
+      setExportError(null);
+      const requestId = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      
+      // Warm-up request first (fire and forget, don't block)
+      fetch("/api/export/health", { method: "GET" }).catch(() => {});
+      
       const params = new URLSearchParams({
         site_id: currentSite?.siteId || "default",
         scope,
@@ -48,17 +66,58 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
       });
       
       const response = await fetch(`/api/export/fix-pack?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to generate export");
+      
+      // Try to parse JSON, but handle non-JSON responses gracefully
+      let data: any = null;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
       }
-      return response.json();
+      
+      if (!response.ok) {
+        const errorInfo = {
+          code: data?.code || `HTTP_${response.status}`,
+          message: data?.error || data?.message || `Request failed with status ${response.status}`,
+          hint: data?.hint || "Try again or check worker status in Integrations.",
+          requestId,
+          timestamp: new Date().toISOString(),
+        };
+        throw errorInfo;
+      }
+      
+      if (!data) {
+        throw {
+          code: "INVALID_RESPONSE",
+          message: "Server returned an empty or invalid response",
+          hint: "Check if the export endpoint is configured correctly.",
+          requestId,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
       setGeneratedContent(data.content_md);
       toast.success("Fix Pack generated successfully");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to generate export");
+      if (error.code) {
+        setExportError(error);
+      } else {
+        setExportError({
+          code: "UNKNOWN_ERROR",
+          message: error.message || "Failed to generate export",
+          hint: "Try again or check worker status in Integrations.",
+          requestId: `exp_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      toast.error("Export failed", { description: error.message });
     },
   });
 
@@ -104,22 +163,60 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
   const resetState = () => {
     setGeneratedContent(null);
     setCopied(false);
+    setExportError(null);
+  };
+
+  const handleRetry = () => {
+    setExportError(null);
+    generateExport.mutate();
   };
 
   return (
     <Dialog open={open} onOpenChange={(val) => { onOpenChange(val); if (!val) resetState(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="export-modal">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-border" data-testid="export-modal">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <Package className="w-5 h-5 text-purple-accent" />
             Export Fix Pack
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-muted-foreground">
             Generate a structured implementation document with priorities, evidence, and guardrails.
           </DialogDescription>
         </DialogHeader>
 
-        {!generatedContent ? (
+        {exportError ? (
+          <div className="space-y-4 py-4">
+            <div className="rounded-xl border border-semantic-danger-border bg-semantic-danger-soft/30 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-semantic-danger flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-semibold text-semantic-danger">Export Failed</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Error:</span>
+                      <Badge variant="outline" className="font-mono text-xs">{exportError.code}</Badge>
+                    </div>
+                    <p className="text-foreground">{exportError.message}</p>
+                    <p className="text-muted-foreground text-xs">{exportError.hint}</p>
+                  </div>
+                  <div className="pt-2 border-t border-border mt-3 space-y-1 text-xs text-muted-foreground">
+                    <p>Request ID: <span className="font-mono">{exportError.requestId}</span></p>
+                    <p>Timestamp: {new Date(exportError.timestamp).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleRetry} variant="purple" className="flex-1 rounded-xl">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry Export
+              </Button>
+              <Button onClick={resetState} variant="outline" className="rounded-xl">
+                Back
+              </Button>
+            </div>
+          </div>
+        ) : !generatedContent ? (
           <div className="space-y-6 py-4">
             <div className="space-y-3">
               <Label className="text-sm font-medium">Export Type</Label>
@@ -155,16 +252,16 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
               </RadioGroup>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Shield className="w-4 h-4 text-semantic-success" />
                 Safety Settings
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Max blog posts to publish</Label>
-                  <Badge variant="outline">{maxBlogs}</Badge>
+                  <Label className="text-sm text-foreground">Max blog posts to publish</Label>
+                  <Badge variant="outline" className="border-border">{maxBlogs}</Badge>
                 </div>
                 <Slider
                   value={[maxBlogs]}
@@ -179,14 +276,28 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm">Max technical changes</Label>
-                  <Badge variant="outline">{maxTech}</Badge>
+                  <div className="flex items-center gap-1">
+                    <Label className="text-sm text-foreground">Max technical changes</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground">
+                            <HelpCircle className="w-3 h-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p className="text-sm">Recommended: limit changes per cycle to avoid large-scale ranking volatility. Typically 5–20 changes per cycle depending on site size.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Badge variant="outline" className="border-border">{maxTech}</Badge>
                 </div>
                 <Slider
                   value={[maxTech]}
                   onValueChange={(v) => setMaxTech(v[0])}
                   min={1}
-                  max={5}
+                  max={20}
                   step={1}
                   className="w-full"
                   data-testid="slider-max-tech"
@@ -194,7 +305,7 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
               </div>
 
               <div className="flex items-center justify-between">
-                <Label className="text-sm">Do not change design/UI</Label>
+                <Label className="text-sm text-foreground">Do not change design/UI</Label>
                 <Switch
                   checked={noUiChanges}
                   onCheckedChange={setNoUiChanges}
@@ -206,7 +317,8 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
             <Button
               onClick={() => generateExport.mutate()}
               disabled={generateExport.isPending}
-              className="w-full"
+              variant="purple"
+              className="w-full rounded-xl"
               data-testid="button-generate"
             >
               {generateExport.isPending ? (
