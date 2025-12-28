@@ -320,6 +320,11 @@ function CrewModal({
               <DialogDescription className="text-slate-400 text-base">
                 {crew.role}
               </DialogDescription>
+              {crew.pricePerMonth && (
+                <p className="text-amber-400 font-semibold text-sm mt-1">
+                  ${crew.pricePerMonth}/month
+                </p>
+              )}
             </div>
           </div>
         </DialogHeader>

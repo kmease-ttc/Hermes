@@ -24,6 +24,7 @@ export type CrewMember = {
   avatar?: string;
   blurb?: string;
   shortDescription?: string;
+  pricePerMonth?: number;
   tooltipInfo?: {
     whatItDoes: string;
     outputs: string[];
@@ -95,6 +96,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: socratesAvatar,
     blurb: "Turns findings into durable knowledge and makes them searchable.",
     shortDescription: "Collects and summarizes learnings from all agents.",
+    pricePerMonth: 29,
     tooltipInfo: {
       whatItDoes: "Aggregates insights from every agent into a searchable knowledge base. Helps you understand patterns and make data-driven decisions.",
       outputs: ["Consolidated insights", "Searchable learnings", "Cross-agent patterns"],
@@ -118,6 +120,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: natashaAvatar,
     blurb: "Gathers competitive intelligence, SERP movements, and strategic gaps.",
     shortDescription: "Tracks competitors, content gaps, and market shifts.",
+    pricePerMonth: 79,
     tooltipInfo: {
       whatItDoes: "Monitors your competitors' rankings, content strategies, and market positioning. Identifies opportunities where you can outperform them.",
       outputs: ["Competitor rankings", "Content gap analysis", "Market shift alerts"],
@@ -142,6 +145,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: scottyAvatar,
     blurb: "Performs technical SEO audits and crawl diagnostics.",
     shortDescription: "Checks crawlability, rendering, and technical health.",
+    pricePerMonth: 49,
     tooltipInfo: {
       whatItDoes: "Crawls your site like Google does, checking for indexing blockers, render issues, and technical SEO problems that hurt rankings.",
       outputs: ["Crawl errors", "Render issues", "Index blockers"],
@@ -159,6 +163,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: beaconAvatar,
     blurb: "Tracks backlinks, domain authority, and link velocity.",
     shortDescription: "Monitors authority, backlinks, and link quality.",
+    pricePerMonth: 59,
     tooltipInfo: {
       whatItDoes: "Tracks your domain authority score, new and lost backlinks, and link quality changes. Helps you build a stronger link profile.",
       outputs: ["Authority score", "New backlinks", "Link quality alerts"],
@@ -176,6 +181,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: pulseAvatar,
     blurb: "Fetches analytics and search console data from Google APIs.",
     shortDescription: "Monitors traffic, conversions, and landing pages.",
+    pricePerMonth: 39,
     tooltipInfo: {
       whatItDoes: "Connects to Google Analytics and Search Console to track sessions, conversions, bounce rates, and landing page performance in real-time.",
       outputs: ["Traffic trends", "Conversion rates", "Top landing pages"],
@@ -203,6 +209,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: lookoutAvatar,
     blurb: "Tracks keyword rankings and SERP features over time.",
     shortDescription: "Tracks keyword rankings and SERP movements.",
+    pricePerMonth: 49,
     tooltipInfo: {
       whatItDoes: "Monitors your keyword positions daily, detects ranking changes, and identifies new opportunities in the search results.",
       outputs: ["Position tracking", "Ranking changes", "SERP feature alerts"],
@@ -220,6 +227,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: speedsterAvatar,
     blurb: "Monitors Core Web Vitals and page speed metrics.",
     shortDescription: "Monitors page speed and Core Web Vitals.",
+    pricePerMonth: 29,
     tooltipInfo: {
       whatItDoes: "Tracks LCP, CLS, and INP scores to ensure your site loads fast and provides a smooth user experience that Google rewards.",
       outputs: ["Core Web Vitals scores", "Speed insights", "Performance trends"],
@@ -237,6 +245,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: sentinelAvatar,
     blurb: "Identifies content losing traffic and prioritizes refreshes.",
     shortDescription: "Detects content losing traffic over time.",
+    pricePerMonth: 39,
     tooltipInfo: {
       whatItDoes: "Analyzes content performance trends to identify pages losing traffic. Prioritizes which content needs refreshing to recover rankings.",
       outputs: ["Decay alerts", "Refresh priorities", "Traffic trends"],
@@ -254,6 +263,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: hemingwayAvatar,
     blurb: "Writes and validates content optimized for humans and search engines.",
     shortDescription: "Recommends content topics and updates.",
+    pricePerMonth: 99,
     tooltipInfo: {
       whatItDoes: "Identifies content opportunities based on rankings and gaps. Recommends topics to write and existing content to update for better performance.",
       outputs: ["Topic recommendations", "Content briefs", "Update priorities"],
@@ -271,6 +281,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: draperAvatar,
     blurb: "Designs campaigns, messaging, and experiments that drive acquisition and conversion.",
     shortDescription: "Monitors ad spend, conversions, and campaigns.",
+    pricePerMonth: 69,
     tooltipInfo: {
       whatItDoes: "Connects to Google Ads to track campaign performance, conversion rates, and ROI. Identifies opportunities to improve your paid traffic.",
       outputs: ["Campaign performance", "Conversion tracking", "Spend analysis"],
@@ -329,6 +340,7 @@ export const AGENTS: Record<string, CrewMember> = {
     avatar: atlasAvatar,
     blurb: "Optimizes your site for AI assistants and LLM discovery.",
     shortDescription: "Improves AI discoverability and LLM-readiness.",
+    pricePerMonth: 89,
     tooltipInfo: {
       whatItDoes: "Ensures AI assistants can understand, trust, and recommend your content. Generates llms.txt, structured data, and AI-friendly summaries.",
       outputs: ["AI discoverability score", "LLM-ready content", "Structured data"],

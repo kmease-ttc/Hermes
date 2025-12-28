@@ -630,7 +630,7 @@ export default function MissionControl() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Diagnostics started (Run ID: ${data.runId?.slice(0, 12) || "started"})`);
+      toast.success("Diagnostics started. Results ready in ~2 minutes.");
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (error: Error) => {
