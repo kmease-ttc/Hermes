@@ -1,0 +1,76 @@
+Replit Prompt: Fix Benchmark Slider Indicator Overflow (Blue Dot Escaping Track)
+
+Problem
+The benchmark slider’s indicator dot (blue circle) can render partially or fully outside the track/container when the value is near the edges (e.g., close to P25 or below). This breaks visual containment and looks like a layout bug.
+
+Goal
+Ensure the indicator dot is always visually contained within the slider track/frame, regardless of value.
+
+Root cause (likely)
+
+* The dot is positioned using a percentage-based `left` transform without clamping.
+* The dot’s radius isn’t accounted for, so at low/high percentages it overflows the track bounds.
+* The track container doesn’t clip overflow.
+
+What to fix (implementation guidance)
+
+1. Clamp the indicator position
+   When computing the indicator’s horizontal position:
+
+* Clamp the value so it never reaches true 0% or 100%.
+* Offset by half the dot’s width.
+
+Example logic (conceptual):
+
+* minPosition = dotRadius
+* maxPosition = trackWidth - dotRadius
+* computedX = clamp(rawX, minPosition, maxPosition)
+
+If using percentages:
+
+* Clamp to something like 2%–98% instead of 0–100%, OR
+* Convert to px-based positioning using track width.
+
+2. Ensure the track clips overflow
+
+* The slider track container should have:
+
+  * `overflow-hidden`
+  * consistent border-radius
+    This ensures even if positioning math drifts slightly, nothing can escape the visual frame.
+
+3. Account for dot size explicitly
+
+* Do not assume the dot is negligible.
+* Use the actual rendered size (e.g., 10–12px radius).
+* If the dot size is themeable, derive radius from a constant.
+
+4. Verify transform origin
+   If using transforms like `translateX(-50%)`:
+
+* Make sure it’s applied consistently.
+* Avoid double-offsets (e.g., left % + translate that pushes it out again).
+
+5. Test edge cases
+   Verify visually for:
+
+* Very low values (near P25 or below)
+* Very high values (near P90)
+* Midpoint (P50)
+  The dot should always:
+* Sit fully on the bar
+* Never touch or cross the rounded ends
+* Feel centered relative to its value
+
+Do not change
+
+* Do not change the color, size, or style of the dot.
+* Do not change the benchmark labels or scale.
+* This is a containment/positioning fix only.
+
+Acceptance criteria
+
+* The indicator dot is always fully visible inside the slider track.
+* No overflow outside the rounded container at any value.
+* The fix works responsively at different widths.
+* No visual regression to the glass styling or gradient bar.
