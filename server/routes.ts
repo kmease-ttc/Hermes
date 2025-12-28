@@ -5721,42 +5721,60 @@ When answering:
                       const websitesData = JSON.parse(websitesBody);
                       const websites = websitesData.data?.websites || websitesData.websites || websitesData.data || [];
                       
-                      // Find matching website by domain
-                      const matchedSite = Array.isArray(websites) ? websites.find((w: any) => 
-                        w.domain === targetDomain || 
-                        w.domain?.includes(targetDomain.replace('https://', '').replace('http://', '')) ||
-                        w.url?.includes(targetDomain)
-                      ) : null;
+                      // Find matching website by domain or base_url
+                      const normalizedTarget = targetDomain.replace('https://', '').replace('http://', '').replace(/\/$/, '');
+                      const matchedSite = Array.isArray(websites) ? websites.find((w: any) => {
+                        const wDomain = w.domain || '';
+                        const wBaseUrl = (w.base_url || '').replace('https://', '').replace('http://', '').replace(/\/$/, '');
+                        const wUrl = (w.url || '').replace('https://', '').replace('http://', '').replace(/\/$/, '');
+                        return wDomain === targetDomain || 
+                               wDomain.includes(normalizedTarget) ||
+                               wBaseUrl === normalizedTarget ||
+                               wBaseUrl.includes(normalizedTarget) ||
+                               wUrl.includes(normalizedTarget);
+                      }) : null;
                       
-                      if (matchedSite?.id) {
-                        websiteId = matchedSite.id;
+                      if (matchedSite?.website_id || matchedSite?.id) {
+                        websiteId = matchedSite.website_id || matchedSite.id;
                         debug.matchedWebsiteId = websiteId;
                         
-                        // Step 2: Get summary for this website
-                        const summaryUrl = `${baseUrl}/api/v1/websites/${websiteId}/summary`;
-                        debug.requestedUrls.push(summaryUrl);
+                        // Step 2: Get latest results (has actual LCP/CLS/INP metrics)
+                        const latestUrl = `${baseUrl}/api/v1/websites/${websiteId}/results/latest`;
+                        debug.requestedUrls.push(latestUrl);
                         
-                        const summaryRes = await fetch(summaryUrl, {
+                        const latestRes = await fetch(latestUrl, {
                           method: "GET",
                           headers,
                           signal: AbortSignal.timeout(15000),
                         });
                         
-                        const summaryBody = await summaryRes.text().catch(() => "");
+                        const latestBody = await latestRes.text().catch(() => "");
                         debug.responses.push({ 
-                          url: summaryUrl, 
-                          status: summaryRes.status,
-                          ok: summaryRes.ok,
-                          bodySnippet: summaryBody.slice(0, 500),
+                          url: latestUrl, 
+                          status: latestRes.status,
+                          ok: latestRes.ok,
+                          bodySnippet: latestBody.slice(0, 500),
                         });
                         
-                        if (summaryRes.ok) {
-                          const summaryData = JSON.parse(summaryBody);
-                          cwvData = summaryData.data || summaryData;
+                        if (latestRes.ok) {
+                          const latestData = JSON.parse(latestBody);
+                          // Extract first result from latest array
+                          const results = latestData.latest || latestData.data || latestData.results || [];
+                          if (Array.isArray(results) && results.length > 0) {
+                            const firstResult = results[0];
+                            cwvData = {
+                              lcp_ms: firstResult.metrics?.lcp_ms,
+                              cls: firstResult.metrics?.cls,
+                              inp_ms: firstResult.metrics?.inp_ms,
+                              performance_score: firstResult.metrics?.performance_score,
+                              status: firstResult.status,
+                              collected_at: firstResult.collected_at,
+                            };
+                          }
                         }
                       } else {
                         debug.noMatchingWebsite = `No website found matching domain: ${targetDomain}`;
-                        debug.availableWebsites = Array.isArray(websites) ? websites.map((w: any) => w.domain || w.url) : [];
+                        debug.availableWebsites = Array.isArray(websites) ? websites.map((w: any) => w.domain || w.base_url || w.url) : [];
                       }
                     } catch (e) {
                       debug.parseError = (e as Error).message;
@@ -5794,11 +5812,13 @@ When answering:
                       };
                       
                       // Extract CWV metrics from response - handle various structures
+                      // Convert lcp_ms to seconds for display, keep others as-is
+                      const lcpMs = extractMetric(data, 'lcp_ms', 'lcp', 'largest_contentful_paint', 'metrics.lcp', 'metrics.lcp.p75');
                       const cwvMetrics = {
-                        lcp: extractMetric(data, 'lcp', 'largest_contentful_paint', 'metrics.lcp', 'metrics.lcp.p75', 'lighthouseResult.audits.largest-contentful-paint.numericValue'),
-                        cls: extractMetric(data, 'cls', 'cumulative_layout_shift', 'metrics.cls', 'metrics.cls.p75', 'lighthouseResult.audits.cumulative-layout-shift.numericValue'),
-                        inp: extractMetric(data, 'inp', 'interaction_to_next_paint', 'metrics.inp', 'metrics.inp.p75', 'lighthouseResult.audits.interaction-to-next-paint.numericValue'),
-                        performance_score: extractMetric(data, 'performance_score', 'score', 'metrics.performance_score', 'lighthouseResult.categories.performance.score'),
+                        lcp: lcpMs !== null ? lcpMs / 1000 : null, // Convert ms to seconds
+                        cls: extractMetric(data, 'cls', 'cumulative_layout_shift', 'metrics.cls', 'metrics.cls.p75'),
+                        inp: extractMetric(data, 'inp_ms', 'inp', 'interaction_to_next_paint', 'metrics.inp', 'metrics.inp.p75'),
+                        performance_score: extractMetric(data, 'performance_score', 'score', 'metrics.performance_score'),
                       };
                       
                       // Check for regressions
