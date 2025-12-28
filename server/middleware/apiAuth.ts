@@ -5,6 +5,7 @@ import { logger } from "../utils/logger";
 const DASHBOARD_GET_PATHS = [
   "/briefing",
   "/api/health",
+  "/api/system/health",
   "/api/status",
   "/api/report",
   "/api/tickets",

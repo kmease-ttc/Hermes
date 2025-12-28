@@ -1,4 +1,4 @@
-import { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
+import type { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
 import { bitwardenProvider } from "./BitwardenProvider";
 import { logger } from "../utils/logger";
 
@@ -110,5 +110,5 @@ export async function checkVaultHealth(): Promise<{
   };
 }
 
-export { VaultProvider, VaultHealthStatus, VaultSecretMeta };
+export type { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
 export { bitwardenProvider } from "./BitwardenProvider";

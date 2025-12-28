@@ -228,6 +228,166 @@ export async function registerRoutes(
     }
   });
 
+  // Comprehensive system health endpoint for Settings page
+  app.get("/api/system/health", async (req, res) => {
+    try {
+      const { checkVaultHealth } = await import("./vault");
+      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
+      
+      // Check database
+      let dbConnected = false;
+      let dbError: string | null = null;
+      try {
+        await storage.getConfig("test");
+        dbConnected = true;
+      } catch (err: any) {
+        dbError = err.message;
+      }
+
+      // Check vault/bitwarden (guard against unconfigured state)
+      let vaultHealth: any = { bitwarden: { connected: false }, env: { connected: true } };
+      let bitwardenStatus: any = { connected: false, lastError: null, secretKeys: [] };
+      
+      try {
+        if (process.env.BWS_ACCESS_TOKEN) {
+          vaultHealth = await checkVaultHealth();
+          bitwardenStatus = await bitwardenProvider.getDetailedStatus();
+        }
+      } catch (vaultErr: any) {
+        bitwardenStatus = { connected: false, lastError: vaultErr.message, secretKeys: [] };
+      }
+      
+      // Check env vars
+      const requiredEnvVars = {
+        GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
+        GA4_PROPERTY_ID: !!process.env.GA4_PROPERTY_ID,
+        GSC_SITE: !!process.env.GSC_SITE,
+        DATABASE_URL: !!process.env.DATABASE_URL,
+        BWS_ACCESS_TOKEN: !!process.env.BWS_ACCESS_TOKEN,
+        BWS_PROJECT_ID: !!process.env.BWS_PROJECT_ID,
+      };
+      const missingEnvVars = Object.entries(requiredEnvVars)
+        .filter(([_, present]) => !present)
+        .map(([key]) => key);
+
+      // Check Google auth
+      const token = await storage.getToken("google");
+      const googleAuth = {
+        configured: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+        authenticated: !!token,
+        tokenExpiry: token?.expiresAt || null,
+        missingKeys: [] as string[],
+      };
+      if (!process.env.GOOGLE_CLIENT_ID) googleAuth.missingKeys.push("GOOGLE_CLIENT_ID");
+      if (!process.env.GOOGLE_CLIENT_SECRET) googleAuth.missingKeys.push("GOOGLE_CLIENT_SECRET");
+
+      // Get data source stats from database
+      const endDate = new Date().toISOString().split("T")[0];
+      const startDate30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      
+      const [ga4Data, gscData, adsData, webChecks, latestRun] = await Promise.all([
+        storage.getGA4DataByDateRange(startDate30d, endDate),
+        storage.getGSCDataByDateRange(startDate30d, endDate),
+        storage.getAdsDataByDateRange(startDate30d, endDate),
+        storage.getWebChecksByDate(endDate),
+        storage.getLatestRun(),
+      ]);
+
+      const sourceStatuses = latestRun?.sourceStatuses as any || {};
+
+      // Build actionable error hints
+      const getVaultHint = () => {
+        if (vaultHealth.bitwarden.connected) return null;
+        if (!process.env.BWS_ACCESS_TOKEN) {
+          return { code: "MISSING_TOKEN", message: "Bitwarden access token not set", hint: "Add BWS_ACCESS_TOKEN secret in Replit Secrets", keys: ["BWS_ACCESS_TOKEN"] };
+        }
+        if (!process.env.BWS_PROJECT_ID) {
+          return { code: "MISSING_PROJECT", message: "Bitwarden project ID not set", hint: "Add BWS_PROJECT_ID secret", keys: ["BWS_PROJECT_ID"] };
+        }
+        if (bitwardenStatus.lastError?.includes("401") || bitwardenStatus.lastError?.includes("Unauthorized")) {
+          return { code: "UNAUTHORIZED", message: "Bitwarden token invalid or expired", hint: "Generate a new machine account token in Bitwarden", keys: [] };
+        }
+        if (bitwardenStatus.lastError?.includes("403") || bitwardenStatus.lastError?.includes("Forbidden")) {
+          return { code: "FORBIDDEN", message: "Token lacks permission to access project", hint: "Verify machine account has access to the project", keys: [] };
+        }
+        return { code: "CONNECTION_FAILED", message: bitwardenStatus.lastError || "Could not connect to vault", hint: "Check network access and try again", keys: [] };
+      };
+
+      res.json({
+        serverTime: new Date().toISOString(),
+        database: {
+          connected: dbConnected,
+          error: dbError,
+        },
+        bitwarden: {
+          configured: !!process.env.BWS_ACCESS_TOKEN,
+          connected: vaultHealth.bitwarden.connected,
+          secretsFound: bitwardenStatus.secretKeys?.length || 0,
+          lastCheckedAt: new Date().toISOString(),
+          error: vaultHealth.bitwarden.connected ? null : getVaultHint(),
+          details: {
+            tokenPresent: !!process.env.BWS_ACCESS_TOKEN,
+            projectIdPresent: !!process.env.BWS_PROJECT_ID,
+            orgIdPresent: !!process.env.BWS_ORGANIZATION_ID,
+          },
+        },
+        google: {
+          oauthConfigured: googleAuth.configured,
+          authenticated: googleAuth.authenticated,
+          tokenExpiry: googleAuth.tokenExpiry,
+          missingKeys: googleAuth.missingKeys,
+        },
+        envVars: {
+          allPresent: missingEnvVars.length === 0,
+          missing: missingEnvVars,
+          checked: requiredEnvVars,
+        },
+        dataSources: {
+          ga4: {
+            hasData: ga4Data.length > 0,
+            recordCount: ga4Data.length,
+            lastDataAt: ga4Data.length > 0 ? ga4Data[ga4Data.length - 1].createdAt : null,
+            lastError: sourceStatuses.ga4?.error || null,
+          },
+          gsc: {
+            hasData: gscData.length > 0,
+            recordCount: gscData.length,
+            lastDataAt: gscData.length > 0 ? gscData[gscData.length - 1].createdAt : null,
+            lastError: sourceStatuses.gsc?.error || null,
+          },
+          ads: {
+            hasData: adsData.length > 0,
+            recordCount: adsData.length,
+            lastDataAt: adsData.length > 0 ? adsData[adsData.length - 1].createdAt : null,
+            lastError: sourceStatuses.ads?.error || null,
+          },
+          websiteChecks: {
+            hasData: webChecks.length > 0,
+            recordCount: webChecks.length,
+            passed: webChecks.filter((c: any) => c.statusCode === 200).length,
+            lastDataAt: webChecks.length > 0 ? webChecks[0].createdAt : null,
+          },
+        },
+        lastDiagnosticRun: latestRun ? {
+          runId: latestRun.runId,
+          status: latestRun.status,
+          startedAt: latestRun.startedAt,
+          finishedAt: latestRun.finishedAt,
+        } : null,
+      });
+    } catch (error: any) {
+      logger.error("API", "System health check failed", { error: error.message });
+      res.status(500).json({ 
+        error: { 
+          code: "HEALTH_CHECK_FAILED", 
+          message: error.message,
+          hint: "Server error during health check",
+        } 
+      });
+    }
+  });
+
   // Debug endpoint for service config troubleshooting
   app.get("/api/debug/service-config/:serviceSlug", async (req, res) => {
     try {
