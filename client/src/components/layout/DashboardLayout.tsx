@@ -119,10 +119,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="p-6 flex items-center gap-3 border-b border-border/50">
           <img src={logoImage} alt="Logo" className="w-8 h-8 rounded-md" />
-          <div>
-            <h1 className="font-bold text-sm tracking-tight text-foreground">Arco</h1>
-            <p className="text-xs text-muted-foreground font-medium">Dashboard</p>
-          </div>
+          <h1 className="font-bold text-lg tracking-tight text-foreground">Arco</h1>
           <Button 
             variant="ghost" 
             size="icon" 
