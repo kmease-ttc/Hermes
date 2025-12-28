@@ -68,6 +68,123 @@ function generateRunId(): string {
   return `run_${Date.now()}_${randomUUID().slice(0, 8)}`;
 }
 
+// Helper: Compute fresh integration summary
+async function computeIntegrationSummary(siteId: string, storageInstance: typeof storage) {
+  const [integrations, recentRuns] = await Promise.all([
+    storageInstance.getIntegrations(),
+    storageInstance.getLatestServiceRuns(100),
+  ]);
+  
+  const { servicesCatalog } = await import("@shared/servicesCatalog");
+  
+  // Build last run by slug
+  const lastRunBySlug: Record<string, any> = {};
+  for (const run of recentRuns) {
+    if (!lastRunBySlug[run.serviceId]) {
+      lastRunBySlug[run.serviceId] = run;
+    }
+  }
+  
+  // Compute service statuses
+  const services = servicesCatalog.map(def => {
+    const integration = integrations.find(i => i.integrationId === def.slug);
+    const lastRun = lastRunBySlug[def.slug];
+    
+    return {
+      slug: def.slug,
+      displayName: def.displayName,
+      category: def.category,
+      buildState: integration?.buildState || 'planned',
+      configState: integration?.configState || 'missing_config',
+      runState: integration?.runState || 'never_ran',
+      healthStatus: integration?.healthStatus || 'unknown',
+      lastRunAt: lastRun?.finishedAt || null,
+      lastRunStatus: lastRun?.status || null,
+      lastRunSummary: lastRun?.summary || null,
+    };
+  });
+  
+  // Compute summary stats
+  const healthy = services.filter(s => s.healthStatus === 'healthy').length;
+  const degraded = services.filter(s => s.healthStatus === 'degraded').length;
+  const error = services.filter(s => s.healthStatus === 'error').length;
+  const configured = services.filter(s => s.configState === 'configured').length;
+  
+  // Compute next actions
+  const nextActions: Array<{ priority: string; action: string; target: string }> = [];
+  
+  for (const svc of services) {
+    if (svc.configState === 'missing_config') {
+      nextActions.push({
+        priority: 'high',
+        action: 'Configure',
+        target: svc.displayName,
+      });
+    } else if (svc.healthStatus === 'error') {
+      nextActions.push({
+        priority: 'high',
+        action: 'Fix',
+        target: svc.displayName,
+      });
+    } else if (svc.runState === 'never_ran') {
+      nextActions.push({
+        priority: 'medium',
+        action: 'Run first test',
+        target: svc.displayName,
+      });
+    }
+  }
+  
+  return {
+    summary: {
+      totalServices: services.length,
+      healthy,
+      degraded,
+      error,
+      configured,
+      unconfigured: services.length - configured,
+    },
+    services,
+    nextActions: nextActions.slice(0, 5),
+  };
+}
+
+// Helper: Refresh integration cache in background
+async function refreshIntegrationCache(siteId: string, storageInstance: typeof storage) {
+  const startTime = Date.now();
+  
+  try {
+    const freshData = await computeIntegrationSummary(siteId, storageInstance);
+    const durationMs = Date.now() - startTime;
+    
+    await storageInstance.saveIntegrationCache({
+      siteId,
+      payloadJson: freshData.summary,
+      servicesJson: freshData.services,
+      nextActionsJson: freshData.nextActions,
+      cachedAt: new Date(),
+      lastRefreshAttemptAt: new Date(),
+      lastRefreshStatus: 'success',
+      lastRefreshDurationMs: durationMs,
+      ttlSeconds: 60,
+    });
+    
+    logger.info("Cache", "Integration cache refreshed", { siteId, durationMs });
+  } catch (error: any) {
+    const durationMs = Date.now() - startTime;
+    
+    await storageInstance.updateIntegrationCacheRefreshStatus(
+      siteId,
+      'failed',
+      error.message,
+      durationMs
+    );
+    
+    logger.error("Cache", "Integration cache refresh failed", { siteId, error: error.message });
+    throw error;
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -4871,6 +4988,84 @@ When answering:
   // ==========================================
   // Platform Integrations API
   // ==========================================
+  
+  // Integration Summary with Stale-While-Revalidate (SWR) for instant loading
+  app.get("/api/integrations/summary", async (req, res) => {
+    try {
+      const { siteId, refresh } = req.query;
+      
+      // Resolve site ID
+      let targetSiteId = siteId as string;
+      if (!targetSiteId || targetSiteId === 'default') {
+        const allSites = await storage.getSites(true);
+        const activeSite = allSites.find(s => s.active);
+        targetSiteId = activeSite?.siteId || 'site_empathy_health_clinic';
+      }
+      
+      // Check for cached data
+      const cache = await storage.getIntegrationCache(targetSiteId);
+      const isStale = await storage.isIntegrationCacheStale(targetSiteId);
+      const forceRefresh = refresh === 'true';
+      
+      // If we have cache and not forcing refresh, return it immediately
+      if (cache && !forceRefresh) {
+        const response = {
+          siteId: targetSiteId,
+          cachedAt: cache.cachedAt.toISOString(),
+          isStale,
+          summary: cache.payloadJson,
+          services: cache.servicesJson || [],
+          nextActions: cache.nextActionsJson || [],
+          lastRefreshAttempt: cache.lastRefreshAttemptAt ? {
+            at: cache.lastRefreshAttemptAt.toISOString(),
+            status: cache.lastRefreshStatus,
+            durationMs: cache.lastRefreshDurationMs,
+          } : null,
+          lastRefreshError: cache.lastRefreshError,
+        };
+        
+        // If stale, trigger background refresh (fire-and-forget)
+        if (isStale) {
+          setImmediate(async () => {
+            try {
+              await refreshIntegrationCache(targetSiteId, storage);
+            } catch (err: any) {
+              logger.warn("API", "Background cache refresh failed", { error: err.message });
+            }
+          });
+        }
+        
+        return res.json(response);
+      }
+      
+      // No cache or force refresh - compute fresh data
+      const freshData = await computeIntegrationSummary(targetSiteId, storage);
+      
+      // Save to cache
+      await storage.saveIntegrationCache({
+        siteId: targetSiteId,
+        payloadJson: freshData.summary,
+        servicesJson: freshData.services,
+        nextActionsJson: freshData.nextActions,
+        cachedAt: new Date(),
+        ttlSeconds: 60,
+      });
+      
+      res.json({
+        siteId: targetSiteId,
+        cachedAt: new Date().toISOString(),
+        isStale: false,
+        summary: freshData.summary,
+        services: freshData.services,
+        nextActions: freshData.nextActions,
+        lastRefreshAttempt: null,
+        lastRefreshError: null,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get integrations summary", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
   
   // Get all platform integrations
   app.get("/api/integrations", async (req, res) => {
