@@ -1,0 +1,49 @@
+Replit Prompt: Make the Bottom Benchmark Chart Full-Width (Stop the Compressed Mini Card)
+
+Issue
+In “Compare to Industry Benchmarks”, the bottom chart card (Conversion Rate benchmark) is rendering as a narrow, compressed mini-card on the left, leaving a large empty area to the right. It should use the full width of the panel.
+
+Goal
+Make the bottom benchmark chart section span the full width of the container, matching the stacked metric rows above. No layout should feel “half empty”.
+
+Requirements
+
+* The Conversion Rate benchmark card must become a full-width row.
+* The chart/progress bar inside it should also expand horizontally and be centered/left-aligned cleanly.
+* Keep the current styling (dark glass, badge, typography) — only adjust layout and sizing.
+
+Implementation steps
+
+1. Locate the layout wrapper for the benchmark section (the container that holds the stacked metrics and the conversion benchmark card).
+2. Remove any grid/flex settings that constrain the conversion card to a column:
+
+   * If it’s inside a `grid` with multiple columns, set it to span all columns:
+
+     * `col-span-full` (Tailwind) / `grid-column: 1 / -1`
+   * If it’s inside a flex row, change to `flex-col` for that area.
+3. Set the Conversion Rate benchmark container to:
+
+   * `w-full`
+   * `min-w-0`
+4. Inside the conversion card, update inner layout:
+
+   * Use a two-column layout ONLY if helpful (left: value + verdict, right: percentile bar), otherwise stack.
+   * Ensure the bar/chart uses full width:
+
+     * `w-full`
+     * `max-w-none`
+     * remove any fixed width like `w-48`, `w-56`, etc.
+5. Ensure the card’s parent container does not have a max width constraint that causes shrink:
+
+   * Remove `max-w-*` or apply it only to the overall panel, not to the inner card.
+6. Confirm padding and spacing look consistent with the stacked metric rows above.
+
+Acceptance criteria
+
+* The conversion benchmark section spans the full width of the “Compare to Industry Benchmarks” panel.
+* The chart/bar uses the available width and no longer looks squished.
+* No empty dead space remains to the right of the chart.
+* No other components are moved or restyled beyond layout sizing.
+
+Notes
+If the conversion benchmark is currently rendered inside its own nested “mini card,” keep that card style, but make it full width rather than a narrow column.

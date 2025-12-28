@@ -703,10 +703,8 @@ export default function MissionControl() {
 
         <ActionQueueCard actions={mockActions} />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <BenchmarkComparison />
-          <KnowledgeBaseCard />
-        </div>
+        <BenchmarkComparison />
+        <KnowledgeBaseCard />
       </div>
 
       <ExportFixPackModal 
