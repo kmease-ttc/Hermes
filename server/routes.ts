@@ -1527,7 +1527,7 @@ Format your response as JSON with these keys:
       const noUiChanges = (noUi as string) !== "false";
       const isFullScope = scope === "full";
 
-      const site = await storage.getSite(siteId);
+      const site = await storage.getSiteById(siteId);
       const domain = site?.baseUrl?.replace(/^https?:\/\//, "") || site?.displayName || siteId;
 
       const [
@@ -1683,6 +1683,236 @@ Format your response as JSON with these keys:
       });
     } catch (error: any) {
       logger.error("API", "Failed to generate fix pack", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get real recommendations with provenance data
+  app.get("/api/missions/recommendations", async (req, res) => {
+    try {
+      const siteId = (req.query.site_id as string) || "default";
+      
+      const [
+        latestSeoRun,
+        seoSuggestions,
+        findings,
+        workerResults
+      ] = await Promise.all([
+        storage.getLatestSeoRun(siteId),
+        storage.getLatestSeoSuggestions(siteId, 20),
+        storage.getLatestFindings(siteId, 20),
+        storage.getLatestSeoWorkerResults(siteId)
+      ]);
+
+      const hasRealData = latestSeoRun && (seoSuggestions.length > 0 || findings.length > 0);
+      
+      // Build priorities from real data
+      const priorities = seoSuggestions
+        .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
+        .slice(0, 5)
+        .map((s: any, idx: number) => ({
+          id: `mission-${s.id || idx}`,
+          rank: idx + 1,
+          title: s.title || s.suggestion || "Review recommendation",
+          why: s.rationale || s.description || "Based on recent analysis",
+          impact: s.priority === 'high' ? 'High' : 'Medium',
+          effort: s.effort || 'M',
+          confidence: s.confidence || 60,
+          category: s.category || 'general',
+          status: (s.evidence || s.affectedUrls?.length > 0 || s.affectedQueries?.length > 0) ? 'verified' : 'unverified',
+          agents: [{
+            id: s.sourceAgentId || 'orchestrator',
+            agentId: s.sourceAgentId || 'orchestrator',
+            name: s.sourceAgentName || 'System'
+          }],
+          evidence: {
+            runId: latestSeoRun?.runId,
+            sourceConnector: s.sourceAgentId || 'orchestrator',
+            timestamp: s.createdAt || latestSeoRun?.startedAt,
+            metrics: [],
+            urls: s.affectedUrls || [],
+            queries: s.affectedQueries || []
+          },
+          recommendations: s.actionSteps?.map((step: string) => ({ step })) || [
+            { step: "Review the identified issue" },
+            { step: "Implement the suggested fix" },
+            { step: "Verify with a follow-up scan" }
+          ],
+          decisionRule: s.decisionRule || "Priority based on severity and impact analysis"
+        }));
+
+      // Build blockers from critical findings
+      const blockers = findings
+        .filter((f: any) => f.severity === 'critical' || f.severity === 'high')
+        .slice(0, 5)
+        .map((f: any) => ({
+          id: f.sourceIntegration || 'unknown',
+          title: f.title || f.description || 'Issue detected',
+          fix: f.recommendation || 'Review and resolve',
+          severity: f.severity
+        }));
+
+      // Determine contributing agents from worker results
+      const contributingAgents = [...new Set(
+        workerResults?.map((wr: any) => wr.serviceId).filter(Boolean) || []
+      )];
+
+      const activeCount = workerResults?.filter((wr: any) => wr.status === 'success').length || 0;
+      const blockedCount = workerResults?.filter((wr: any) => wr.status === 'error').length || 0;
+
+      res.json({
+        generated_at: latestSeoRun?.startedAt || new Date().toISOString(),
+        contributing_agents: contributingAgents,
+        coverage: {
+          active: activeCount,
+          total: workerResults?.length || 0,
+          blocked: blockedCount
+        },
+        priorities: hasRealData ? priorities : [],
+        blockers,
+        confidence: hasRealData && priorities.length > 0 ? "High" : "Low",
+        isRealData: hasRealData,
+        lastRunId: latestSeoRun?.runId,
+        lastRunAt: latestSeoRun?.startedAt,
+        placeholderReason: hasRealData ? null : "No diagnostic data available. Run diagnostics to generate real recommendations."
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch recommendations", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Validate recommendations - check provenance and evidence
+  app.post("/api/missions/validate", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || (req.query.site_id as string) || "default";
+      
+      const [
+        latestSeoRun,
+        seoSuggestions,
+        findings,
+        workerResults,
+        site
+      ] = await Promise.all([
+        storage.getLatestSeoRun(siteId),
+        storage.getLatestSeoSuggestions(siteId, 20),
+        storage.getLatestFindings(siteId, 20),
+        storage.getLatestSeoWorkerResults(siteId),
+        storage.getSiteById(siteId)
+      ]);
+
+      const validatedAt = new Date().toISOString();
+      const missions: any[] = [];
+
+      // Check each suggestion as a potential mission
+      const priorities = seoSuggestions
+        .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
+        .slice(0, 10);
+
+      for (const suggestion of priorities) {
+        const missionId = `mission-${suggestion.id}`;
+        const reasons: string[] = [];
+        const requiredFixes: any[] = [];
+
+        // Check if we have evidence
+        const hasEvidence = suggestion.evidence || suggestion.affectedUrls?.length > 0 || suggestion.affectedQueries?.length > 0;
+        if (!hasEvidence) {
+          reasons.push("NO_EVIDENCE_ROWS");
+          requiredFixes.push({
+            type: "DATA",
+            service: suggestion.sourceAgentId || "System",
+            hint: "No evidence data attached to this recommendation"
+          });
+        }
+
+        // Check if source connector ran successfully
+        const sourceWorker = workerResults?.find((wr: any) => wr.serviceId === suggestion.sourceAgentId);
+        if (!sourceWorker) {
+          reasons.push("CONNECTOR_NOT_RUNNING");
+          requiredFixes.push({
+            type: "WORKER",
+            service: suggestion.sourceAgentId || "Unknown",
+            hint: "Source worker not found in latest run"
+          });
+        } else if (sourceWorker.status === 'error') {
+          reasons.push("CONNECTOR_FAILED");
+          requiredFixes.push({
+            type: "WORKER",
+            service: suggestion.sourceAgentId,
+            hint: `Worker failed: ${sourceWorker.errorMessage || 'Unknown error'}`
+          });
+        }
+
+        // Determine status
+        let status: 'verified' | 'unverified' | 'placeholder' = 'verified';
+        if (reasons.length > 0) {
+          status = hasEvidence ? 'unverified' : 'placeholder';
+        }
+
+        missions.push({
+          missionId,
+          title: suggestion.title || suggestion.suggestion,
+          status,
+          reasons,
+          requiredFixes,
+          evidencePreview: hasEvidence ? {
+            urls: suggestion.affectedUrls?.slice(0, 3) || [],
+            queries: suggestion.affectedQueries?.slice(0, 3) || [],
+            summary: suggestion.evidence || null
+          } : null,
+          rulePreview: suggestion.decisionRule || "Standard priority-based ranking"
+        });
+      }
+
+      // If no suggestions exist, add a placeholder mission
+      if (missions.length === 0) {
+        missions.push({
+          missionId: "no-data",
+          title: "Connect Data Sources",
+          status: "placeholder",
+          reasons: ["NO_DIAGNOSTICS_RUN"],
+          requiredFixes: [
+            {
+              type: "CONFIG",
+              key: "GA4_PROPERTY_ID",
+              where: "Secrets",
+              hint: "Set GA4 property ID in secrets"
+            },
+            {
+              type: "CONFIG", 
+              key: "GSC_SITE",
+              where: "Secrets",
+              hint: "Set Google Search Console site URL"
+            },
+            {
+              type: "ACTION",
+              hint: "Run diagnostics to generate real recommendations"
+            }
+          ],
+          evidencePreview: null,
+          rulePreview: null
+        });
+      }
+
+      const verified = missions.filter(m => m.status === 'verified').length;
+      const unverified = missions.filter(m => m.status === 'unverified').length;
+      const placeholder = missions.filter(m => m.status === 'placeholder').length;
+
+      res.json({
+        siteId,
+        validatedAt,
+        summary: {
+          verified,
+          unverified,
+          placeholder,
+          total: missions.length
+        },
+        lastRunId: latestSeoRun?.runId || null,
+        lastRunAt: latestSeoRun?.startedAt || null,
+        missions
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to validate missions", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });

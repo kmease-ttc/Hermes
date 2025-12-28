@@ -41,11 +41,15 @@ interface MissionDetailsModalProps {
     category?: string;
     status?: string;
     evidence?: {
+      runId?: string;
+      sourceConnector?: string;
+      timestamp?: string;
       metrics?: Array<{ label: string; value: string; change?: string }>;
       urls?: string[];
       queries?: string[];
       sampleRows?: any[];
     };
+    decisionRule?: string;
     recommendations?: Array<{
       step: string;
       rationale?: string;
@@ -209,6 +213,67 @@ export function MissionDetailsModal({
                 </div>
               </div>
             )}
+
+            <Separator />
+
+            {/* Provenance Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4 text-purple-accent" />
+                Provenance
+              </h4>
+              <Card className="bg-card/60 backdrop-blur-sm border-border">
+                <CardContent className="p-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className={cn(
+                        "ml-2 font-medium",
+                        mission.status === 'verified' ? "text-semantic-success" :
+                        mission.status === 'unverified' ? "text-semantic-warning" :
+                        "text-semantic-danger"
+                      )}>
+                        {mission.status === 'verified' ? 'Verified' :
+                         mission.status === 'unverified' ? 'Unverified' : 'Placeholder'}
+                      </span>
+                    </div>
+                    {mission.evidence?.runId && (
+                      <div>
+                        <span className="text-muted-foreground">Run ID:</span>
+                        <span className="ml-2 font-mono text-foreground">{mission.evidence.runId}</span>
+                      </div>
+                    )}
+                    {mission.evidence?.sourceConnector && (
+                      <div>
+                        <span className="text-muted-foreground">Source:</span>
+                        <span className="ml-2 text-foreground">{mission.evidence.sourceConnector}</span>
+                      </div>
+                    )}
+                    {mission.evidence?.timestamp && (
+                      <div>
+                        <span className="text-muted-foreground">Generated:</span>
+                        <span className="ml-2 text-foreground">
+                          {new Date(mission.evidence.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {mission.decisionRule && (
+                    <div className="pt-2 border-t border-border">
+                      <span className="text-xs text-muted-foreground">Decision Rule:</span>
+                      <p className="text-xs text-foreground mt-1">{mission.decisionRule}</p>
+                    </div>
+                  )}
+                  {!mission.evidence?.runId && !mission.decisionRule && (
+                    <p className="text-xs text-muted-foreground italic">
+                      {mission.status === 'verified' 
+                        ? "This recommendation is backed by real diagnostic data."
+                        : "Run diagnostics to generate provenance data for this recommendation."}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             <Separator />
 

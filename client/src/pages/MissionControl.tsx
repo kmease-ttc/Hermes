@@ -21,7 +21,12 @@ import {
   ChevronRight,
   Info,
   Package,
-  Target
+  Target,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldX,
+  Settings,
+  Link as LinkIcon
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -531,13 +536,40 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
   );
 }
 
-function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview }: {
+function VerificationBadge({ status }: { status?: string }) {
+  if (status === 'verified') {
+    return (
+      <Badge className="bg-semantic-success-soft text-semantic-success text-xs">
+        <ShieldCheck className="w-3 h-3 mr-1" />
+        Verified
+      </Badge>
+    );
+  }
+  if (status === 'unverified') {
+    return (
+      <Badge className="bg-semantic-warning-soft text-semantic-warning text-xs">
+        <ShieldAlert className="w-3 h-3 mr-1" />
+        Unverified
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-semantic-danger-soft text-semantic-danger text-xs">
+      <ShieldX className="w-3 h-3 mr-1" />
+      Placeholder
+    </Badge>
+  );
+}
+
+function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview, isRealData, placeholderReason }: {
   priorities: any[];
   blockers: any[];
   confidence: string;
   coverage: { active: number; total: number };
   updatedAt?: string;
   onReview?: (mission: any) => void;
+  isRealData?: boolean;
+  placeholderReason?: string;
 }) {
   return (
     <Card className="glass-panel border-purple shadow-purple" data-testid="captains-recommendations">
@@ -573,6 +605,21 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
             <Badge variant="outline" className="text-xs border-border text-muted-foreground">
               {coverage.active}/{coverage.total} crew
             </Badge>
+            {isRealData === false && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge className="bg-semantic-danger-soft text-semantic-danger text-xs">
+                      <ShieldX className="w-3 h-3 mr-1" />
+                      Mock Data
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">{placeholderReason || "Run diagnostics to generate real recommendations"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -621,7 +668,8 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     })}
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                  <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-border">
+                    <VerificationBadge status={priority.status} />
                     <Badge className={cn(
                       "text-xs",
                       priority.impact === "High" ? "bg-semantic-danger-soft text-semantic-danger" :
@@ -745,15 +793,54 @@ export default function MissionControl() {
     };
   });
 
-  const captainData = getMockCaptainRecommendations();
+  // Fetch real recommendations from API
+  const { data: recommendationsData, isLoading: isLoadingRecommendations } = useQuery({
+    queryKey: ["recommendations", currentSite?.siteId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ site_id: currentSite?.siteId || "default" });
+      const res = await fetch(`/api/missions/recommendations?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch recommendations");
+      return res.json();
+    },
+    enabled: !!currentSite?.siteId,
+  });
 
-  const mockActions = captainData.priorities.map((p, idx) => ({
+  // Validation state
+  const [validationResults, setValidationResults] = useState<any>(null);
+  const [showValidationPanel, setShowValidationPanel] = useState(false);
+
+  const validateMissions = useMutation({
+    mutationFn: async () => {
+      const params = new URLSearchParams({ siteId: currentSite?.siteId || "default" });
+      const res = await fetch(`/api/missions/validate?${params}`, { method: "POST" });
+      if (!res.ok) throw new Error("Validation failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setValidationResults(data);
+      setShowValidationPanel(true);
+      toast.success(`Validated ${data.summary.total} recommendations`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Validation failed: ${error.message}`);
+    },
+  });
+
+  // Use real data if available, otherwise fall back to mock
+  const mockData = getMockCaptainRecommendations();
+  const captainData = recommendationsData?.isRealData ? recommendationsData : {
+    ...mockData,
+    isRealData: false,
+    placeholderReason: recommendationsData?.placeholderReason || "Using mock data - run diagnostics to generate real recommendations"
+  };
+
+  const mockActions = (captainData.priorities || []).map((p: any, idx: number) => ({
     id: idx + 1,
     title: p.title,
-    sourceAgents: p.agents.map((a: any) => a.id),
+    sourceAgents: p.agents?.map((a: any) => a.id || a.agentId) || [],
     impact: p.impact,
     effort: p.effort,
-    status: "new",
+    status: p.status || "new",
   }));
 
   return (
@@ -773,6 +860,21 @@ export default function MissionControl() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => validateMissions.mutate()}
+              disabled={validateMissions.isPending}
+              className="border-border text-foreground hover:bg-muted rounded-xl"
+              data-testid="button-validate"
+            >
+              {validateMissions.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-4 h-4 mr-2" />
+              )}
+              Validate
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -799,13 +901,99 @@ export default function MissionControl() {
           </div>
         </div>
 
+        {showValidationPanel && validationResults && (
+          <Card className="bg-card/80 backdrop-blur-sm border-border rounded-2xl" data-testid="validation-panel">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-purple-accent" />
+                  Recommendation Validation Results
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowValidationPanel(false)}>
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-semantic-success-soft text-semantic-success">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    {validationResults.summary.verified} Verified
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-semantic-warning-soft text-semantic-warning">
+                    <ShieldAlert className="w-3 h-3 mr-1" />
+                    {validationResults.summary.unverified} Unverified
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-semantic-danger-soft text-semantic-danger">
+                    <ShieldX className="w-3 h-3 mr-1" />
+                    {validationResults.summary.placeholder} Placeholder
+                  </Badge>
+                </div>
+              </div>
+
+              {validationResults.missions.some((m: any) => m.requiredFixes?.length > 0) && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-foreground">Required Fixes</h4>
+                  {validationResults.missions
+                    .filter((m: any) => m.requiredFixes?.length > 0)
+                    .slice(0, 5)
+                    .map((m: any, idx: number) => (
+                      <div key={idx} className="p-3 rounded-xl bg-card/60 border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          {m.status === 'placeholder' ? (
+                            <ShieldX className="w-4 h-4 text-semantic-danger" />
+                          ) : (
+                            <ShieldAlert className="w-4 h-4 text-semantic-warning" />
+                          )}
+                          <span className="font-medium text-sm">{m.title}</span>
+                        </div>
+                        <div className="space-y-1 pl-6">
+                          {m.requiredFixes.map((fix: any, fIdx: number) => (
+                            <div key={fIdx} className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {fix.type === 'CONFIG' && <Settings className="w-3 h-3" />}
+                              {fix.type === 'WORKER' && <LinkIcon className="w-3 h-3" />}
+                              {fix.type === 'DATA' && <AlertCircle className="w-3 h-3" />}
+                              {fix.type === 'ACTION' && <Play className="w-3 h-3" />}
+                              <span>{fix.hint}</span>
+                              {fix.where === 'Secrets' && (
+                                <Link href="/settings">
+                                  <Button variant="link" size="sm" className="text-xs h-auto p-0 text-primary">
+                                    Open Settings
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {validationResults.lastRunAt && (
+                <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Last diagnostic run: {new Date(validationResults.lastRunAt).toLocaleString()}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <CaptainsRecommendationsSection 
-          priorities={captainData.priorities}
-          blockers={captainData.blockers}
-          confidence={captainData.confidence}
-          coverage={captainData.coverage}
+          priorities={captainData.priorities || []}
+          blockers={captainData.blockers || []}
+          confidence={captainData.confidence || "Low"}
+          coverage={captainData.coverage || { active: 0, total: 0 }}
           updatedAt={captainData.generated_at ? new Date(captainData.generated_at).toLocaleDateString() : undefined}
           onReview={handleReviewMission}
+          isRealData={captainData.isRealData}
+          placeholderReason={captainData.placeholderReason}
         />
 
         <MetricCardsRow />
