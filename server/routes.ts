@@ -928,6 +928,211 @@ Format your response as JSON with these keys:
     }
   });
 
+  // Worker Findings Webhook - External workers push findings here
+  // This creates seo_suggestions from worker discoveries
+  const workerFindingSchema = z.object({
+    site_id: z.string().default("default"),
+    worker_key: z.string(), // e.g., "serp_intel", "content_decay"
+    run_id: z.string().optional(), // Links to a run if part of orchestration
+    findings: z.array(z.object({
+      type: z.string(), // "quick_win", "ranking_drop", "technical_issue", etc.
+      title: z.string(),
+      description: z.string().optional(),
+      severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+      category: z.enum(["serp", "technical", "content", "authority", "performance", "competitive"]).default("serp"),
+      evidence: z.object({
+        metrics: z.record(z.any()).optional(),
+        urls: z.array(z.string()).optional(),
+        keywords: z.array(z.string()).optional(),
+        screenshots: z.array(z.string()).optional(),
+        raw_data: z.any().optional(),
+      }).optional(),
+      actions: z.array(z.string()).optional(), // Recommended fix steps
+      impact: z.enum(["low", "medium", "high"]).optional(),
+      effort: z.enum(["quick_win", "moderate", "significant"]).optional(),
+      assignee: z.enum(["SEO", "Dev", "Content", "Ads"]).optional(),
+    })),
+  });
+
+  app.post("/api/worker-findings", apiKeyAuth, async (req, res) => {
+    try {
+      const parsed = workerFindingSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid payload",
+          details: parsed.error.issues,
+        });
+      }
+      
+      const { site_id, worker_key, run_id, findings } = parsed.data;
+      const timestamp = Date.now();
+      const actualRunId = run_id || `webhook_${timestamp}_${worker_key}`;
+      
+      logger.info("API", "Received worker findings", {
+        workerKey: worker_key,
+        siteId: site_id,
+        findingsCount: findings.length,
+      });
+      
+      // Convert findings to seo_suggestions
+      const suggestions = findings.map((finding, idx) => ({
+        suggestionId: `sug_${timestamp}_${worker_key}_${idx}`,
+        runId: actualRunId,
+        siteId: site_id,
+        suggestionType: finding.type,
+        title: finding.title,
+        description: finding.description || null,
+        severity: finding.severity,
+        category: finding.category,
+        evidenceJson: {
+          ...finding.evidence,
+          workerKey: worker_key,
+          receivedAt: new Date().toISOString(),
+        },
+        actionsJson: finding.actions || null,
+        impactedUrls: finding.evidence?.urls || null,
+        impactedKeywords: finding.evidence?.keywords || null,
+        estimatedImpact: finding.impact || "medium",
+        estimatedEffort: finding.effort || "moderate",
+        assignee: finding.assignee || "SEO",
+        sourceWorkers: [worker_key],
+        status: "open",
+      }));
+      
+      // Save to database
+      if (suggestions.length > 0) {
+        await storage.saveSeoSuggestions(suggestions);
+      }
+      
+      // Also create a finding record for tracking
+      const findingsToSave = findings.map((finding, idx) => ({
+        findingId: `find_${timestamp}_${worker_key}_${idx}`,
+        runId: actualRunId,
+        siteId: site_id,
+        sourceIntegration: worker_key,
+        category: finding.category,
+        severity: finding.severity,
+        title: finding.title,
+        description: finding.description || null,
+        evidence: finding.evidence || null,
+        recommendedActions: finding.actions || null,
+        status: "open",
+      }));
+      
+      if (findingsToSave.length > 0) {
+        await storage.saveFindings(findingsToSave);
+      }
+      
+      res.json({
+        ok: true,
+        received: findings.length,
+        suggestionIds: suggestions.map(s => s.suggestionId),
+        message: `Created ${suggestions.length} suggestions from ${worker_key}`,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to process worker findings", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Batch webhook for multiple workers
+  app.post("/api/worker-findings/batch", apiKeyAuth, async (req, res) => {
+    try {
+      const { workers } = req.body;
+      
+      if (!Array.isArray(workers)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Expected 'workers' array in body",
+        });
+      }
+      
+      const results: { workerKey: string; suggestionsCreated: number; error?: string }[] = [];
+      const timestamp = Date.now();
+      
+      for (const workerPayload of workers) {
+        const parsed = workerFindingSchema.safeParse(workerPayload);
+        
+        if (!parsed.success) {
+          results.push({
+            workerKey: workerPayload.worker_key || "unknown",
+            suggestionsCreated: 0,
+            error: parsed.error.issues.map(i => i.message).join(", "),
+          });
+          continue;
+        }
+        
+        const { site_id, worker_key, run_id, findings } = parsed.data;
+        const actualRunId = run_id || `webhook_${timestamp}_batch`;
+        
+        const suggestions = findings.map((finding, idx) => ({
+          suggestionId: `sug_${timestamp}_${worker_key}_${idx}`,
+          runId: actualRunId,
+          siteId: site_id,
+          suggestionType: finding.type,
+          title: finding.title,
+          description: finding.description || null,
+          severity: finding.severity,
+          category: finding.category,
+          evidenceJson: {
+            ...finding.evidence,
+            workerKey: worker_key,
+            receivedAt: new Date().toISOString(),
+          },
+          actionsJson: finding.actions || null,
+          impactedUrls: finding.evidence?.urls || null,
+          impactedKeywords: finding.evidence?.keywords || null,
+          estimatedImpact: finding.impact || "medium",
+          estimatedEffort: finding.effort || "moderate",
+          assignee: finding.assignee || "SEO",
+          sourceWorkers: [worker_key],
+          status: "open",
+        }));
+        
+        if (suggestions.length > 0) {
+          await storage.saveSeoSuggestions(suggestions);
+        }
+        
+        // Also create finding records for tracking (mirror single-worker behavior)
+        const findingsToSave = findings.map((finding, idx) => ({
+          findingId: `find_${timestamp}_${worker_key}_${idx}`,
+          runId: actualRunId,
+          siteId: site_id,
+          sourceIntegration: worker_key,
+          category: finding.category,
+          severity: finding.severity,
+          title: finding.title,
+          description: finding.description || null,
+          evidence: finding.evidence || null,
+          recommendedActions: finding.actions || null,
+          status: "open",
+        }));
+        
+        if (findingsToSave.length > 0) {
+          await storage.saveFindings(findingsToSave);
+        }
+        
+        results.push({
+          workerKey: worker_key,
+          suggestionsCreated: suggestions.length,
+        });
+      }
+      
+      const totalCreated = results.reduce((sum, r) => sum + r.suggestionsCreated, 0);
+      
+      res.json({
+        ok: true,
+        totalSuggestionsCreated: totalCreated,
+        workers: results,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to process batch worker findings", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // /api/latest/* endpoints for fast UI reads
   app.get("/api/latest/worker-results", async (req, res) => {
     const siteId = (req.query.siteId as string) || "empathyhealthclinic.com";
@@ -1704,41 +1909,43 @@ Format your response as JSON with these keys:
         storage.getLatestSeoWorkerResults(siteId)
       ]);
 
-      const hasRealData = latestSeoRun && (seoSuggestions.length > 0 || findings.length > 0);
+      const hasRealData = seoSuggestions.length > 0 || findings.length > 0;
       
-      // Build priorities from real data
+      // Build priorities from real data - use severity field (high/medium/critical)
       const priorities = seoSuggestions
-        .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
+        .filter((s: any) => s.severity === 'high' || s.severity === 'medium' || s.severity === 'critical')
         .slice(0, 5)
         .map((s: any, idx: number) => ({
           id: `mission-${s.id || idx}`,
           rank: idx + 1,
           title: s.title || s.suggestion || "Review recommendation",
           why: s.rationale || s.description || "Based on recent analysis",
-          impact: s.priority === 'high' ? 'High' : 'Medium',
+          impact: s.severity === 'high' || s.severity === 'critical' ? 'High' : 'Medium',
           effort: s.effort || 'M',
           confidence: s.confidence || 60,
           category: s.category || 'general',
-          status: (s.evidence || s.affectedUrls?.length > 0 || s.affectedQueries?.length > 0) ? 'verified' : 'unverified',
+          status: (s.evidenceJson || s.impactedUrls?.length > 0 || s.impactedKeywords?.length > 0) ? 'verified' : 'unverified',
           agents: [{
-            id: s.sourceAgentId || 'orchestrator',
-            agentId: s.sourceAgentId || 'orchestrator',
-            name: s.sourceAgentName || 'System'
+            id: s.sourceWorkers?.[0] || 'orchestrator',
+            agentId: s.sourceWorkers?.[0] || 'orchestrator',
+            name: s.sourceWorkers?.[0] || 'System'
           }],
           evidence: {
-            runId: latestSeoRun?.runId,
-            sourceConnector: s.sourceAgentId || 'orchestrator',
+            runId: s.runId || latestSeoRun?.runId,
+            sourceConnector: s.sourceWorkers?.[0] || 'orchestrator',
             timestamp: s.createdAt || latestSeoRun?.startedAt,
-            metrics: [],
-            urls: s.affectedUrls || [],
-            queries: s.affectedQueries || []
+            metrics: (s.evidenceJson as any)?.metrics || {},
+            urls: s.impactedUrls || (s.evidenceJson as any)?.urls || [],
+            queries: s.impactedKeywords || (s.evidenceJson as any)?.keywords || []
           },
-          recommendations: s.actionSteps?.map((step: string) => ({ step })) || [
-            { step: "Review the identified issue" },
-            { step: "Implement the suggested fix" },
-            { step: "Verify with a follow-up scan" }
-          ],
-          decisionRule: s.decisionRule || "Priority based on severity and impact analysis"
+          recommendations: Array.isArray(s.actionsJson) 
+            ? s.actionsJson.map((step: string) => ({ step })) 
+            : [
+                { step: "Review the identified issue" },
+                { step: "Implement the suggested fix" },
+                { step: "Verify with a follow-up scan" }
+              ],
+          decisionRule: `${s.severity} severity ${s.category} issue requiring ${s.estimatedEffort || 'moderate'} effort`
         }));
 
       // Build blockers from critical findings
@@ -1774,7 +1981,7 @@ Format your response as JSON with these keys:
         isRealData: hasRealData,
         lastRunId: latestSeoRun?.runId,
         lastRunAt: latestSeoRun?.startedAt,
-        placeholderReason: hasRealData ? null : "No diagnostic data available. Run diagnostics to generate real recommendations."
+        placeholderReason: hasRealData ? null : "No recommendations yet. Run diagnostics or wait for worker findings."
       });
     } catch (error: any) {
       logger.error("API", "Failed to fetch recommendations", { error: error.message });
