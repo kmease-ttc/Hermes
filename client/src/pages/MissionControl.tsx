@@ -454,14 +454,14 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
                   <EffortBadge effort={action.effort as any || "M"} />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" className="text-xs bg-card hover:bg-muted border border-border text-foreground rounded-xl">
+              <div className="flex items-center gap-3">
+                <Button size="sm" className="text-xs bg-card/80 hover:bg-muted border-0 ring-1 ring-border text-foreground rounded-xl focus-visible:ring-2 focus-visible:ring-primary">
                   Review
                 </Button>
-                <Button size="sm" className="text-xs text-white rounded-xl shadow-[0_0_20px_-3px_rgba(168,85,247,0.5)] hover:shadow-[0_0_25px_-3px_rgba(168,85,247,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-purple-600 via-fuchsia-500 to-violet-400">
+                <Button size="sm" className="text-xs text-white rounded-xl border-0 shadow-[0_0_20px_-3px_rgba(168,85,247,0.5)] hover:shadow-[0_0_25px_-3px_rgba(168,85,247,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-purple-600 via-fuchsia-500 to-violet-400 focus-visible:ring-2 focus-visible:ring-white/50">
                   Approve
                 </Button>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground opacity-70 hover:opacity-100">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground opacity-70 hover:opacity-100 border-0 focus-visible:ring-1 focus-visible:ring-border">
                   Export Prompt
                 </Button>
               </div>
