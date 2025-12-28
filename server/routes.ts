@@ -2263,10 +2263,11 @@ When answering:
       const now = new Date();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const formatDate = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
+      const targetSiteId = (siteId as string) || 'default';
       
       const [gscData, ga4Data] = await Promise.all([
-        storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now)),
-        storage.getGA4DataByDateRange(formatDate(thirtyDaysAgo), formatDate(now)),
+        storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
+        storage.getGA4DataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
       ]);
       
       // Calculate actual metrics - use null for missing data instead of 0

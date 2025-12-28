@@ -138,12 +138,12 @@ export interface IStorage {
   
   // GA4 Data
   saveGA4Data(data: InsertGA4Daily[]): Promise<void>;
-  getGA4DataByDateRange(startDate: string, endDate: string): Promise<GA4Daily[]>;
+  getGA4DataByDateRange(startDate: string, endDate: string, siteId?: string): Promise<GA4Daily[]>;
   upsertGA4Daily(data: InsertGA4Daily): Promise<void>;
   
   // GSC Data
   saveGSCData(data: InsertGSCDaily[]): Promise<void>;
-  getGSCDataByDateRange(startDate: string, endDate: string): Promise<GSCDaily[]>;
+  getGSCDataByDateRange(startDate: string, endDate: string, siteId?: string): Promise<GSCDaily[]>;
   upsertGSCDaily(data: InsertGSCDaily): Promise<void>;
   
   // Ads Data
@@ -427,11 +427,15 @@ class DBStorage implements IStorage {
     await db.insert(ga4Daily).values(data);
   }
 
-  async getGA4DataByDateRange(startDate: string, endDate: string): Promise<GA4Daily[]> {
+  async getGA4DataByDateRange(startDate: string, endDate: string, siteId?: string): Promise<GA4Daily[]> {
+    const conditions = [gte(ga4Daily.date, startDate), sql`${ga4Daily.date} <= ${endDate}`];
+    if (siteId) {
+      conditions.push(eq(ga4Daily.siteId, siteId));
+    }
     return db
       .select()
       .from(ga4Daily)
-      .where(and(gte(ga4Daily.date, startDate), sql`${ga4Daily.date} <= ${endDate}`))
+      .where(and(...conditions))
       .orderBy(ga4Daily.date);
   }
 
@@ -463,11 +467,15 @@ class DBStorage implements IStorage {
     await db.insert(gscDaily).values(data);
   }
 
-  async getGSCDataByDateRange(startDate: string, endDate: string): Promise<GSCDaily[]> {
+  async getGSCDataByDateRange(startDate: string, endDate: string, siteId?: string): Promise<GSCDaily[]> {
+    const conditions = [gte(gscDaily.date, startDate), sql`${gscDaily.date} <= ${endDate}`];
+    if (siteId) {
+      conditions.push(eq(gscDaily.siteId, siteId));
+    }
     return db
       .select()
       .from(gscDaily)
-      .where(and(gte(gscDaily.date, startDate), sql`${gscDaily.date} <= ${endDate}`))
+      .where(and(...conditions))
       .orderBy(gscDaily.date);
   }
 
