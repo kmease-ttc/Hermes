@@ -2646,7 +2646,14 @@ When answering:
       const now = new Date();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const formatDate = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
-      const targetSiteId = (siteId as string) || 'default';
+      
+      // Resolve default site ID to actual site ID
+      let targetSiteId = siteId as string;
+      if (!targetSiteId || targetSiteId === 'default') {
+        const allSites = await storage.getSites(true);
+        const activeSite = allSites.find(s => s.active);
+        targetSiteId = activeSite?.siteId || 'site_empathy_health_clinic';
+      }
       
       const [gscData, ga4Data, workerResults] = await Promise.all([
         storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
