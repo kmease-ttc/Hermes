@@ -1,7 +1,7 @@
 import { Map, Binoculars, Wrench, Radio, Activity, Key, GitBranch, Radar, Bot, BookOpen, BarChart3, Search, FileText, Zap, Bell, Database, Globe, Shield, TrendingUp, Link2, Eye, PenTool, Megaphone, BrainCircuit } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import socratesAvatar from "@assets/generated_images/socrates_friendly_robot_transparent.png";
+import socratesAvatar from "@assets/generated_images/socrates_toga_robot_avatar.png";
 import pulseAvatar from "@assets/generated_images/pulse_friendly_robot_transparent.png";
 import scottyAvatar from "@assets/generated_images/scotty_friendly_robot_transparent.png";
 import lookoutAvatar from "@assets/generated_images/lookout_friendly_robot_transparent.png";
@@ -13,7 +13,7 @@ import draperAvatar from "@assets/generated_images/draper_friendly_robot_transpa
 import speedsterAvatar from "@assets/generated_images/speedster_friendly_robot_transparent.png";
 import sentinelAvatar from "@assets/generated_images/sentinel_friendly_robot_transparent.png";
 import majorTomAvatar from "@assets/generated_images/major_tom_commander_transparent.png";
-import atlasAvatar from "@assets/generated_images/atlas_ai_robot_avatar.png";
+import atlasAvatar from "@assets/generated_images/socrates_friendly_robot_transparent.png";
 
 export type CrewMember = {
   service_id: string;
