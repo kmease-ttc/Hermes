@@ -42,6 +42,9 @@ import {
   integrationStatusCache,
   type IntegrationStatusCache,
   type InsertIntegrationStatusCache,
+  dashboardMetricSnapshots,
+  type DashboardMetricSnapshot,
+  type InsertDashboardMetricSnapshot,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -2147,6 +2150,85 @@ class DBStorage implements IStorage {
     const ageSeconds = (now.getTime() - cachedAt.getTime()) / 1000;
     
     return ageSeconds >= ttl;
+  }
+
+  // Dashboard Metric Snapshots - for SWR metrics display
+  async getDashboardMetricSnapshot(siteId: string): Promise<DashboardMetricSnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(dashboardMetricSnapshots)
+      .where(eq(dashboardMetricSnapshots.siteId, siteId))
+      .limit(1);
+    return snapshot;
+  }
+
+  async saveDashboardMetricSnapshot(
+    siteId: string,
+    metrics: Record<string, unknown>,
+    sourceRunIds?: string[],
+    dateRange?: { from: string; to: string }
+  ): Promise<DashboardMetricSnapshot> {
+    const existing = await this.getDashboardMetricSnapshot(siteId);
+    
+    const data: InsertDashboardMetricSnapshot = {
+      siteId,
+      metricsJson: metrics,
+      sourceRunIds: sourceRunIds || null,
+      dateRangeFrom: dateRange?.from || null,
+      dateRangeTo: dateRange?.to || null,
+      capturedAt: new Date(),
+      lastRefreshStatus: 'success',
+      lastRefreshAttemptAt: new Date(),
+    };
+    
+    if (existing) {
+      const [updated] = await db
+        .update(dashboardMetricSnapshots)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(dashboardMetricSnapshots.siteId, siteId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(dashboardMetricSnapshots)
+        .values(data)
+        .returning();
+      return created;
+    }
+  }
+
+  async updateDashboardSnapshotRefreshStatus(
+    siteId: string,
+    status: string,
+    error?: string
+  ): Promise<void> {
+    await db
+      .update(dashboardMetricSnapshots)
+      .set({
+        lastRefreshAttemptAt: new Date(),
+        lastRefreshStatus: status,
+        lastRefreshError: error || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(dashboardMetricSnapshots.siteId, siteId));
+  }
+
+  async mergeDashboardMetrics(
+    siteId: string,
+    newMetrics: Record<string, unknown>
+  ): Promise<DashboardMetricSnapshot> {
+    const existing = await this.getDashboardMetricSnapshot(siteId);
+    const existingMetrics = (existing?.metricsJson as Record<string, unknown>) || {};
+    
+    // Only overwrite with non-null values
+    const merged: Record<string, unknown> = { ...existingMetrics };
+    for (const [key, value] of Object.entries(newMetrics)) {
+      if (value !== null && value !== undefined) {
+        merged[key] = value;
+      }
+    }
+    
+    return this.saveDashboardMetricSnapshot(siteId, merged);
   }
 }
 

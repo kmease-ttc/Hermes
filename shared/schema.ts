@@ -1791,3 +1791,36 @@ export const insertIntegrationStatusCacheSchema = createInsertSchema(integration
 });
 export type InsertIntegrationStatusCache = z.infer<typeof insertIntegrationStatusCacheSchema>;
 export type IntegrationStatusCache = typeof integrationStatusCache.$inferSelect;
+
+// Dashboard Metric Snapshots - persists last known good metric values
+export const dashboardMetricSnapshots = pgTable("dashboard_metric_snapshots", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().unique(),
+  
+  // Metrics JSON containing all dashboard metric values
+  metricsJson: jsonb("metrics_json").notNull(),
+  
+  // Source tracking
+  sourceRunIds: jsonb("source_run_ids"), // Array of run IDs that contributed to this snapshot
+  dateRangeFrom: text("date_range_from"), // Start date of data range
+  dateRangeTo: text("date_range_to"), // End date of data range
+  
+  // Cache metadata
+  capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  
+  // Refresh tracking
+  lastRefreshAttemptAt: timestamp("last_refresh_attempt_at"),
+  lastRefreshStatus: text("last_refresh_status"), // success, failed, partial
+  lastRefreshError: text("last_refresh_error"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDashboardMetricSnapshotSchema = createInsertSchema(dashboardMetricSnapshots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertDashboardMetricSnapshot = z.infer<typeof insertDashboardMetricSnapshotSchema>;
+export type DashboardMetricSnapshot = typeof dashboardMetricSnapshots.$inferSelect;
