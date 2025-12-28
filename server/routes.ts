@@ -5652,84 +5652,166 @@ When answering:
             } else {
               const baseUrl = vitalsConfig.base_url.replace(/\/$/, '');
               debug.baseUrl = baseUrl;
-              const headers: Record<string, string> = {};
+              const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+              };
               if (vitalsConfig.api_key) {
                 headers["Authorization"] = `Bearer ${vitalsConfig.api_key}`;
                 headers["X-API-Key"] = vitalsConfig.api_key;
               }
               
+              // First check health
               const healthUrl = `${baseUrl}/health`;
               debug.requestedUrls.push(healthUrl);
               
               try {
-                const res = await fetch(healthUrl, {
+                const healthRes = await fetch(healthUrl, {
                   method: "GET",
                   headers,
                   signal: AbortSignal.timeout(10000),
                 });
                 
-                const bodyText = await res.text().catch(() => "");
+                const healthBody = await healthRes.text().catch(() => "");
                 debug.responses.push({ 
                   url: healthUrl, 
-                  status: res.status,
-                  ok: res.ok,
-                  bodySnippet: bodyText.slice(0, 200),
+                  status: healthRes.status,
+                  ok: healthRes.ok,
+                  bodySnippet: healthBody.slice(0, 200),
                 });
                 
-                if (res.ok) {
-                  // Worker is reachable - mark as configured but outputs pending validation
-                  checkResult = {
-                    status: "partial",
-                    summary: `Worker connected - run vitals check to validate outputs`,
-                    metrics: { 
-                      worker_configured: true,
-                      worker_reachable: true,
-                      outputs_pending: expectedOutputs.length,
-                    },
-                    details: { 
-                      baseUrl,
-                      debug,
-                      actualOutputs: [],
-                      pendingOutputs: expectedOutputs,
-                      note: "Connection verified. Run a vitals check to validate all outputs.",
-                    },
-                  };
-                } else {
+                if (!healthRes.ok) {
                   checkResult = {
                     status: "fail",
-                    summary: `Worker returned HTTP ${res.status}`,
-                    metrics: { 
-                      worker_configured: true,
-                      worker_reachable: false,
-                      http_status: res.status,
-                      outputs_available: 0,
-                      outputs_missing: expectedOutputs.length,
-                    },
-                    details: { 
-                      baseUrl,
-                      debug,
-                      actualOutputs: [],
-                      missingOutputs: expectedOutputs,
-                    },
+                    summary: `Worker returned HTTP ${healthRes.status}`,
+                    metrics: { worker_configured: true, worker_reachable: false, http_status: healthRes.status },
+                    details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
                   };
+                } else {
+                  // Worker is reachable - now fetch actual vitals data via /run
+                  const runUrl = `${baseUrl}/run`;
+                  debug.requestedUrls.push(runUrl);
+                  
+                  // Get target site URL
+                  const targetSite = await storage.getSiteById(site_id);
+                  const testUrl = targetSite?.domain ? `https://${targetSite.domain}` : "https://empathyhealthclinic.com";
+                  
+                  const runRes = await fetch(runUrl, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                      site_domain: targetSite?.domain || "empathyhealthclinic.com",
+                      page_urls: [testUrl],
+                      request_id: runId,
+                    }),
+                    signal: AbortSignal.timeout(30000),
+                  });
+                  
+                  const runBody = await runRes.text().catch(() => "");
+                  debug.responses.push({ 
+                    url: runUrl, 
+                    status: runRes.status,
+                    ok: runRes.ok,
+                    bodySnippet: runBody.slice(0, 500),
+                  });
+                  
+                  if (runRes.ok) {
+                    try {
+                      const runData = JSON.parse(runBody);
+                      const data = runData.data || runData;
+                      
+                      // Helper to extract metric value from various nested structures
+                      const extractMetric = (obj: any, ...paths: string[]): number | null => {
+                        for (const path of paths) {
+                          const keys = path.split('.');
+                          let val: any = obj;
+                          for (const k of keys) {
+                            if (val && typeof val === 'object') {
+                              val = val[k];
+                            } else {
+                              val = undefined;
+                              break;
+                            }
+                          }
+                          if (typeof val === 'number') return val;
+                          if (typeof val === 'string' && !isNaN(parseFloat(val))) return parseFloat(val);
+                        }
+                        // Check for array of pages and take first result
+                        const pages = obj.pages || obj.results || obj.metrics_by_page;
+                        if (Array.isArray(pages) && pages.length > 0) {
+                          return extractMetric(pages[0], ...paths);
+                        }
+                        return null;
+                      };
+                      
+                      // Extract CWV metrics from response - handle various structures
+                      const cwvMetrics = {
+                        lcp: extractMetric(data, 'lcp', 'largest_contentful_paint', 'metrics.lcp', 'metrics.lcp.p75', 'lighthouseResult.audits.largest-contentful-paint.numericValue'),
+                        cls: extractMetric(data, 'cls', 'cumulative_layout_shift', 'metrics.cls', 'metrics.cls.p75', 'lighthouseResult.audits.cumulative-layout-shift.numericValue'),
+                        inp: extractMetric(data, 'inp', 'interaction_to_next_paint', 'metrics.inp', 'metrics.inp.p75', 'lighthouseResult.audits.interaction-to-next-paint.numericValue'),
+                        performance_score: extractMetric(data, 'performance_score', 'score', 'metrics.performance_score', 'lighthouseResult.categories.performance.score'),
+                      };
+                      
+                      // Check for regressions
+                      const regressions = data.regressions || data.alerts || [];
+                      
+                      const actualOutputs: string[] = [];
+                      if (cwvMetrics.lcp !== null) actualOutputs.push('lcp');
+                      if (cwvMetrics.cls !== null) actualOutputs.push('cls');
+                      if (cwvMetrics.inp !== null) actualOutputs.push('inp');
+                      if (cwvMetrics.performance_score !== null) actualOutputs.push('performance_score');
+                      if (Array.isArray(regressions)) actualOutputs.push('regressions');
+                      
+                      const missingOutputs = expectedOutputs.filter(o => !actualOutputs.includes(o));
+                      
+                      // Save to seo_worker_results for dashboard consumption
+                      await storage.saveSeoWorkerResult({
+                        runId,
+                        siteId: site_id,
+                        workerKey: "core_web_vitals",
+                        status: actualOutputs.length > 0 ? "success" : "partial",
+                        metricsJson: { ...cwvMetrics, regressions: regressions.length },
+                        outputsJson: data,
+                        durationMs: Date.now() - startTime,
+                        startedAt: new Date(startTime),
+                        finishedAt: new Date(),
+                      });
+                      
+                      checkResult = {
+                        status: actualOutputs.length >= 3 ? "pass" : "partial",
+                        summary: `Smoke: ${actualOutputs.length}/${expectedOutputs.length} outputs`,
+                        metrics: { 
+                          ...cwvMetrics,
+                          regressions_count: regressions.length,
+                          worker_configured: true,
+                          worker_reachable: true,
+                          outputs_available: actualOutputs.length,
+                        },
+                        details: { baseUrl, debug, actualOutputs, missingOutputs, cwvMetrics },
+                      };
+                    } catch (parseErr: any) {
+                      checkResult = {
+                        status: "partial",
+                        summary: "Worker responded but output parsing failed",
+                        metrics: { worker_configured: true, worker_reachable: true },
+                        details: { baseUrl, debug, parseError: parseErr.message, actualOutputs: [], pendingOutputs: expectedOutputs },
+                      };
+                    }
+                  } else {
+                    checkResult = {
+                      status: "partial",
+                      summary: `Worker connected but /run returned ${runRes.status}`,
+                      metrics: { worker_configured: true, worker_reachable: true },
+                      details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
+                    };
+                  }
                 }
               } catch (err: any) {
                 debug.error = err.message;
                 checkResult = {
                   status: "fail",
                   summary: `Worker unreachable: ${err.message}`,
-                  metrics: { 
-                    worker_configured: true,
-                    worker_reachable: false,
-                    outputs_available: 0,
-                    outputs_missing: expectedOutputs.length,
-                  },
-                  details: { 
-                    baseUrl,
-                    debug,
-                    actualOutputs: [],
-                    missingOutputs: expectedOutputs,
-                  },
+                  metrics: { worker_configured: true, worker_reachable: false },
+                  details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
                 };
               }
             }
@@ -7927,21 +8009,21 @@ When answering:
         // Analysis Services
         {
           integrationId: "serp_intel",
-          name: "Worker: SERP & Keyword Intelligence Service",
+          name: "Radar",
           description: "Remote worker for keyword rank tracking, SERP snapshots, and position monitoring. Supports async job execution.",
           category: "analysis",
           expectedSignals: ["serp_rank_snapshots", "serp_serp_snapshots", "serp_tracked_keywords", "serp_top_keywords"],
         },
         {
           integrationId: "crawl_render",
-          name: "Technical SEO",
+          name: "Inspector",
           description: "Technical SEO: status codes, redirects, canonicals, indexability, internal links, orphan pages, sitemap/robots, JS rendering",
           category: "analysis",
           expectedSignals: ["crawl_status", "render_status", "robots_txt", "sitemap", "meta_tags", "redirect_chains", "orphan_pages"],
         },
         {
           integrationId: "core_web_vitals",
-          name: "Core Web Vitals Monitor",
+          name: "Speedster",
           description: "PageSpeed Insights/CrUX performance signals - LCP, CLS, INP tracking and regression alerts",
           category: "analysis",
           expectedSignals: ["lcp", "cls", "inp", "performance_score", "regressions"],
@@ -7962,14 +8044,14 @@ When answering:
         },
         {
           integrationId: "content_decay",
-          name: "Content Decay Monitor",
+          name: "Archivist",
           description: "Identify pages losing impressions/clicks/rank over time, prioritize refresh candidates",
           category: "analysis",
           expectedSignals: ["decay_signals", "refresh_candidates", "competitor_replacement"],
         },
         {
           integrationId: "content_qa",
-          name: "Content QA / Policy Validator",
+          name: "Scholar",
           description: "Best-practice ruleset, E-E-A-T/compliance checks, structure validation, thin content detection",
           category: "analysis",
           expectedSignals: ["qa_score", "violations", "compliance_status", "fix_list"],
