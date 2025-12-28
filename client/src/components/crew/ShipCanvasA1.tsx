@@ -13,21 +13,22 @@ type GridSlot = {
   crewId: string | null;
   row: number;
   col: number;
+  colSpan?: number;
 };
 
 const GRID_SLOTS: GridSlot[] = [
-  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", row: 1, col: 2 },
+  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", row: 1, col: 2, colSpan: 2 },
   { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", row: 2, col: 1 },
   { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", row: 2, col: 2 },
-  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", row: 2, col: 3 },
+  { roleId: "analytics_signals", roleName: "Analytics", roleIcon: BarChart3, crewId: "google_data_connector", row: 2, col: 3 },
   { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", row: 3, col: 1 },
-  { roleId: "performance_monitoring", roleName: "Performance", roleIcon: Zap, crewId: "core_web_vitals", row: 3, col: 2 },
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", row: 3, col: 3 },
-  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", row: 3, col: 4 },
-  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", row: 4, col: 1 },
-  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", row: 4, col: 2 },
-  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", row: 4, col: 3 },
-  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", row: 4, col: 4 },
+  { roleId: "performance_monitoring", roleName: "Performance", roleIcon: Zap, crewId: "core_web_vitals", row: 3, col: 3 },
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", row: 4, col: 1 },
+  { roleId: "content_strategy", roleName: "Content", roleIcon: PenTool, crewId: "content_generator", row: 4, col: 3 },
+  { roleId: "domain_authority", roleName: "Authority", roleIcon: Link2, crewId: "backlink_authority", row: 5, col: 1 },
+  { roleId: "ai_optimization", roleName: "AI", roleIcon: BrainCircuit, crewId: "ai_optimization", row: 5, col: 3 },
+  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", row: 6, col: 2, colSpan: 2 },
+  { roleId: "knowledge_base", roleName: "Knowledge", roleIcon: BookOpen, crewId: "seo_kbase", row: 3, col: 2 },
 ];
 
 function RoleInfoTooltip({ roleId }: { roleId: string }) {
@@ -81,7 +82,6 @@ function CrewCard({
   isEmpty, 
   isMissionControl, 
   isEnabled, 
-  isSelected, 
   badge, 
   badgeClass, 
   ringClass, 
@@ -131,7 +131,7 @@ function CrewCard({
         <div className="absolute inset-0 flex items-center justify-center pb-10">
           {isEmpty ? (
             <div className="flex flex-col items-center gap-2">
-              <RoleIcon className="w-12 h-12 text-white/20 group-hover:text-white/35 transition-colors" />
+              <RoleIcon className="w-10 h-10 text-white/20 group-hover:text-white/35 transition-colors" />
               <div className="flex items-center gap-1 text-white/30 group-hover:text-white/50 transition-colors">
                 <Plus className="w-3 h-3" />
                 <span className="text-xs font-medium">Add crew</span>
@@ -140,23 +140,23 @@ function CrewCard({
           ) : slot.crewId && (
             <CrewAvatarTooltip crewId={slot.crewId}>
               {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
-                <div className="w-[85%] h-[85%] max-w-[160px] max-h-[160px] overflow-hidden flex items-center justify-center">
+                <div className="w-[80%] h-[80%] max-w-[130px] max-h-[130px] overflow-hidden flex items-center justify-center">
                   <img 
                     src={crew.avatar} 
                     alt={crew.nickname || slot.roleName}
                     className="w-full h-full object-contain drop-shadow-lg"
-                    style={{ transform: "scale(1.45) translateY(4px)" }}
+                    style={{ transform: "scale(1.4) translateY(2px)" }}
                   />
                 </div>
               ) : (
-                <span className="text-6xl drop-shadow-lg">{crew?.avatar || "👤"}</span>
+                <span className="text-5xl drop-shadow-lg">{crew?.avatar || "👤"}</span>
               )}
             </CrewAvatarTooltip>
           )}
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 h-11 flex flex-col items-center justify-center px-2" style={{ background: isEmpty ? "transparent" : "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}>
-          <div className={`text-base font-semibold leading-tight text-center truncate w-full ${isEmpty ? "text-white/40" : "text-white"}`}>
+        <div className="absolute inset-x-0 bottom-0 z-10 h-10 flex flex-col items-center justify-center px-1.5 rounded-b-xl" style={{ background: isEmpty ? "transparent" : "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}>
+          <div className={`text-sm font-semibold leading-tight text-center truncate w-full ${isEmpty ? "text-white/40" : "text-white"}`}>
             {isEmpty ? slot.roleName : (crew?.nickname || "Unknown")}
           </div>
         </div>
@@ -174,64 +174,64 @@ export function ShipCanvasA1(props: {
 
   return (
     <TooltipProvider>
-      <div className="relative w-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent overflow-hidden">
-        <div 
-          className="absolute inset-0 pointer-events-none z-0"
-          style={{ background: "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(245,158,11,0.06) 0%, transparent 60%)" }}
-        />
-        
-        <ShipHullSvg className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-30" />
+      <div className="relative w-full flex justify-center">
+        <div className="relative w-full max-w-[600px]">
+          <ShipHullSvg className="absolute inset-0 w-full h-full pointer-events-none z-0" />
 
-        <div className="relative z-10 w-full p-6 md:p-10">
-          <div 
-            className="grid gap-7 mx-auto max-w-[1000px]"
-            style={{
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gridTemplateRows: "repeat(4, 200px)",
-            }}
-          >
-            {GRID_SLOTS.map((slot) => {
-              const crew = slot.crewId ? getCrewMember(slot.crewId) : null;
-              const isMissionControl = slot.roleId === "mission_control";
-              const isEnabled = slot.crewId && (enabledAgents.includes(slot.crewId) || isMissionControl);
-              const isSelected = slot.crewId && selectedAgents.includes(slot.crewId);
-              const isEmpty = !isEnabled && !isSelected;
+          <div className="relative z-10 w-full px-8 py-12" style={{ minHeight: "1100px" }}>
+            <div 
+              className="grid gap-4 mx-auto"
+              style={{
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gridTemplateRows: "repeat(6, 150px)",
+                maxWidth: "480px",
+              }}
+            >
+              {GRID_SLOTS.map((slot) => {
+                const crew = slot.crewId ? getCrewMember(slot.crewId) : null;
+                const isMissionControl = slot.roleId === "mission_control";
+                const isEnabled = slot.crewId && (enabledAgents.includes(slot.crewId) || isMissionControl);
+                const isSelected = slot.crewId && selectedAgents.includes(slot.crewId);
+                const isEmpty = !isEnabled && !isSelected;
 
-              const badge = isMissionControl ? "Included" : isEnabled ? "Active" : isSelected ? "Selected" : null;
+                const badge = isMissionControl ? "Included" : isEnabled ? "Active" : isSelected ? "Selected" : null;
 
-              const ringClass = isEnabled
-                ? "ring-2 shadow-[0_0_0_2px_var(--color-progress-soft),0_12px_32px_rgba(0,0,0,0.4)]"
-                : isSelected
-                  ? "ring-2 shadow-[0_0_0_2px_var(--color-primary-soft),0_12px_32px_rgba(0,0,0,0.3)]"
-                  : "";
+                const ringClass = isEnabled
+                  ? "ring-2 shadow-[0_0_0_2px_var(--color-progress-soft),0_12px_32px_rgba(0,0,0,0.4)]"
+                  : isSelected
+                    ? "ring-2 shadow-[0_0_0_2px_var(--color-primary-soft),0_12px_32px_rgba(0,0,0,0.3)]"
+                    : "";
 
-              const ringColor = isEnabled ? "var(--color-progress)" : isSelected ? "var(--color-primary)" : undefined;
-              const badgeClass = isMissionControl || isEnabled ? "bg-progress-soft text-white/90" : isSelected ? "bg-[rgba(124,58,237,0.18)] text-white/90" : "";
+                const ringColor = isEnabled ? "var(--color-progress)" : isSelected ? "var(--color-primary)" : undefined;
+                const badgeClass = isMissionControl || isEnabled ? "bg-progress-soft text-white/90" : isSelected ? "bg-[rgba(124,58,237,0.18)] text-white/90" : "";
 
-              return (
-                <div 
-                  key={slot.roleId}
-                  style={{
-                    gridRow: slot.row,
-                    gridColumn: slot.col,
-                  }}
-                >
-                  <CrewCard
-                    slot={slot}
-                    crew={crew}
-                    isEmpty={isEmpty}
-                    isMissionControl={isMissionControl}
-                    isEnabled={!!isEnabled}
-                    isSelected={!!isSelected}
-                    badge={badge}
-                    badgeClass={badgeClass}
-                    ringClass={ringClass}
-                    ringColor={ringColor}
-                    onSlotClick={onSlotClick}
-                  />
-                </div>
-              );
-            })}
+                return (
+                  <div 
+                    key={slot.roleId}
+                    style={{
+                      gridRow: slot.row,
+                      gridColumn: slot.colSpan ? `${slot.col} / span ${slot.colSpan}` : slot.col,
+                      justifySelf: slot.colSpan ? "center" : undefined,
+                      maxWidth: slot.colSpan ? "160px" : undefined,
+                    }}
+                  >
+                    <CrewCard
+                      slot={slot}
+                      crew={crew}
+                      isEmpty={isEmpty}
+                      isMissionControl={isMissionControl}
+                      isEnabled={!!isEnabled}
+                      isSelected={!!isSelected}
+                      badge={badge}
+                      badgeClass={badgeClass}
+                      ringClass={ringClass}
+                      ringColor={ringColor}
+                      onSlotClick={onSlotClick}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

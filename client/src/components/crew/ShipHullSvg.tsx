@@ -7,89 +7,143 @@ export function ShipHullSvg({
 }) {
   return (
     <svg
-      viewBox="0 0 1000 560"
+      viewBox="0 0 400 900"
       className={className}
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="hullFill" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor="rgba(255,255,255,0.12)" />
-          <stop offset="1" stopColor="rgba(255,255,255,0.06)" />
+        <linearGradient id="hullBodyGradient" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#3a4a5c" />
+          <stop offset="50%" stopColor="#2a3a4c" />
+          <stop offset="100%" stopColor="#1a2a3c" />
         </linearGradient>
-        <linearGradient id="hullStroke" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="1" stopColor="rgba(255,255,255,0.08)" />
+        <linearGradient id="hullHighlight" x1="0.5" x2="0.5" y1="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </linearGradient>
-        <radialGradient id="hullGlow" cx="0.25" cy="0.15" r="0.9">
-          <stop offset="0" stopColor="rgba(245,158,11,0.14)" />
-          <stop offset="0.5" stopColor="rgba(255,255,255,0.06)" />
-          <stop offset="1" stopColor="rgba(0,0,0,0)" />
-        </radialGradient>
+        <linearGradient id="cockpitGradient" x1="0.5" x2="0.5" y1="0" y2="1">
+          <stop offset="0%" stopColor="#4a5a6c" />
+          <stop offset="100%" stopColor="#2a3a4c" />
+        </linearGradient>
+        <linearGradient id="engineGlow" x1="0.5" x2="0.5" y1="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#0ea5e9" />
+          <stop offset="100%" stopColor="#0284c7" />
+        </linearGradient>
+        <filter id="engineBlur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
+        </filter>
+        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+        </filter>
       </defs>
 
       <path
-        d="M110,80 C180,30 300,10 500,10 C700,10 820,30 890,80
-           C945,120 980,175 980,280
-           C980,385 945,440 890,480
-           C820,530 700,550 500,550
-           C300,550 180,530 110,480
-           C55,440 20,385 20,280
-           C20,175 55,120 110,80 Z"
-        fill="url(#hullFill)"
-        stroke="url(#hullStroke)"
+        d="M200,15
+           C230,15 270,40 290,80
+           L320,160
+           L350,280
+           L360,400
+           L355,520
+           L340,620
+           L320,700
+           L290,760
+           L260,800
+           L240,830
+           L200,850
+           L160,830
+           L140,800
+           L110,760
+           L80,700
+           L60,620
+           L45,520
+           L40,400
+           L50,280
+           L80,160
+           L110,80
+           C130,40 170,15 200,15 Z"
+        fill="url(#hullBodyGradient)"
+        stroke="rgba(100,120,140,0.6)"
         strokeWidth="2"
       />
 
       <path
-        d="M110,80 C180,30 300,10 500,10 C700,10 820,30 890,80
-           C945,120 980,175 980,280
-           C980,385 945,440 890,480
-           C820,530 700,550 500,550
-           C300,550 180,530 110,480
-           C55,440 20,385 20,280
-           C20,175 55,120 110,80 Z"
-        fill="url(#hullGlow)"
-        opacity="0.9"
+        d="M200,15
+           C230,15 270,40 290,80
+           L320,160
+           L350,280
+           L360,400
+           L200,400
+           L40,400
+           L50,280
+           L80,160
+           L110,80
+           C130,40 170,15 200,15 Z"
+        fill="url(#hullHighlight)"
+        opacity="0.5"
       />
 
       <path
-        d="M380,80 C420,55 465,45 500,45 C535,45 580,55 620,80
-           C610,120 575,145 500,145 C425,145 390,120 380,80 Z"
-        fill="rgba(255,255,255,0.07)"
-        stroke="rgba(255,255,255,0.10)"
+        d="M200,25
+           C220,25 250,45 265,75
+           L280,120
+           L200,130
+           L120,120
+           L135,75
+           C150,45 180,25 200,25 Z"
+        fill="url(#cockpitGradient)"
+        stroke="rgba(255,200,100,0.4)"
+        strokeWidth="2"
+      />
+
+      <ellipse cx="200" cy="80" rx="35" ry="20" fill="rgba(100,150,200,0.3)" stroke="rgba(150,180,210,0.4)" strokeWidth="1" />
+
+      <path
+        d="M70,720 L50,780 L40,850 L55,870 L80,850 L95,780 L85,720 Z"
+        fill="#2a3a4c"
+        stroke="rgba(100,120,140,0.5)"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M330,720 L350,780 L360,850 L345,870 L320,850 L305,780 L315,720 Z"
+        fill="#2a3a4c"
+        stroke="rgba(100,120,140,0.5)"
         strokeWidth="1.5"
       />
 
+      <ellipse cx="60" cy="875" rx="18" ry="30" fill="url(#engineGlow)" filter="url(#engineBlur)" opacity="0.9" />
+      <ellipse cx="60" cy="865" rx="12" ry="20" fill="#7dd3fc" />
+      
+      <ellipse cx="340" cy="875" rx="18" ry="30" fill="url(#engineGlow)" filter="url(#engineBlur)" opacity="0.9" />
+      <ellipse cx="340" cy="865" rx="12" ry="20" fill="#7dd3fc" />
+
+      <ellipse cx="200" cy="860" rx="15" ry="25" fill="url(#engineGlow)" filter="url(#engineBlur)" opacity="0.7" />
+      <ellipse cx="200" cy="855" rx="10" ry="18" fill="#7dd3fc" />
+
       <path
-        d="M150,160 C260,110 350,95 500,95 C650,95 740,110 850,160"
-        fill="none"
+        d="M140,200 L260,200"
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth="1"
+      />
+      <path
+        d="M100,350 L300,350"
         stroke="rgba(255,255,255,0.06)"
         strokeWidth="1"
       />
       <path
-        d="M110,280 C260,250 380,240 500,240 C620,240 740,250 890,280"
-        fill="none"
-        stroke="rgba(255,255,255,0.05)"
+        d="M90,500 L310,500"
+        stroke="rgba(255,255,255,0.06)"
         strokeWidth="1"
       />
       <path
-        d="M150,400 C270,440 365,455 500,455 C635,455 730,440 850,400"
-        fill="none"
+        d="M100,650 L300,650"
         stroke="rgba(255,255,255,0.05)"
         strokeWidth="1"
       />
 
-      <path
-        d="M360,520 C410,540 450,550 500,550 C550,550 590,540 640,520
-           C610,510 565,505 500,505 C435,505 390,510 360,520 Z"
-        fill="rgba(255,255,255,0.05)"
-        stroke="rgba(255,255,255,0.08)"
-        strokeWidth="1.5"
-      />
-
-      <circle cx="475" cy="532" r="4" fill="rgba(56,189,248,0.55)" />
-      <circle cx="525" cy="532" r="4" fill="rgba(56,189,248,0.55)" />
+      <circle cx="200" cy="420" r="8" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      <circle cx="200" cy="420" r="3" fill="rgba(255,255,255,0.15)" />
     </svg>
   );
 }
