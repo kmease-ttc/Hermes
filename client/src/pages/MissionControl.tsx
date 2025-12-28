@@ -263,6 +263,15 @@ function MetricCardsRow() {
   
   // Preserve last known values to prevent blanks
   const lastKnownMetricsRef = useRef<Record<string, any>>({});
+  const lastSiteIdRef = useRef<string>(siteId);
+  
+  // Clear cache when site changes to prevent data leakage between sites
+  useEffect(() => {
+    if (lastSiteIdRef.current !== siteId) {
+      lastKnownMetricsRef.current = {};
+      lastSiteIdRef.current = siteId;
+    }
+  }, [siteId]);
   
   const { data: benchmarkData, isStale } = useQuery({
     queryKey: ['benchmark-comparison', 'psychiatry', siteId],

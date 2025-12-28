@@ -2925,8 +2925,14 @@ When answering:
   });
 
   app.get("/api/benchmarks/compare", async (req, res) => {
+    // Hoist variables for catch block access
+    const industryParam = req.query.industry as string | undefined;
+    const siteIdParam = req.query.siteId as string | undefined;
+    let resolvedSiteId = siteIdParam || 'site_empathy_health_clinic';
+    
     try {
-      const { industry, siteId } = req.query;
+      const industry = industryParam;
+      const siteId = siteIdParam;
       
       if (!industry || typeof industry !== 'string') {
         return res.status(400).json({ error: "Industry parameter required" });
@@ -2949,6 +2955,7 @@ When answering:
         const activeSite = allSites.find(s => s.active);
         targetSiteId = activeSite?.siteId || 'site_empathy_health_clinic';
       }
+      resolvedSiteId = targetSiteId; // Update hoisted variable for catch block
       
       const [gscData, ga4Data, workerResults] = await Promise.all([
         storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
@@ -3115,24 +3122,17 @@ When answering:
     } catch (error: any) {
       logger.error("API", "Failed to compare benchmarks", { error: error.message });
       
-      // Try to return cached snapshot on error
+      // Try to return cached snapshot on error using hoisted variables
       try {
-        let targetSiteId = siteId as string;
-        if (!targetSiteId || targetSiteId === 'default') {
-          const allSites = await storage.getSites(true);
-          const activeSite = allSites.find(s => s.active);
-          targetSiteId = activeSite?.siteId || 'site_empathy_health_clinic';
-        }
-        
-        const snapshot = await storage.getDashboardMetricSnapshot(targetSiteId);
+        const snapshot = await storage.getDashboardMetricSnapshot(resolvedSiteId);
         if (snapshot) {
-          await storage.updateDashboardSnapshotRefreshStatus(targetSiteId, 'failed', error.message);
+          await storage.updateDashboardSnapshotRefreshStatus(resolvedSiteId, 'failed', error.message);
           const cachedMetrics = snapshot.metricsJson as Record<string, any>;
           
           // Return cached data with stale indicator
           return res.json({
-            industry,
-            siteId: siteId || 'default',
+            industry: industryParam,
+            siteId: siteIdParam || 'default',
             isStale: true,
             capturedAt: snapshot.capturedAt,
             lastRefreshError: error.message,
