@@ -115,16 +115,24 @@ function PercentileBar({ value, benchmarks, metric, unit }: {
   
   const getPosition = (val: number) => {
     const pos = ((val - min) / range) * 100;
-    return Math.max(0, Math.min(100, pos));
+    const clampedPos = Math.max(0, Math.min(100, pos));
+    const dotRadiusPercent = 5;
+    return Math.max(dotRadiusPercent, Math.min(100 - dotRadiusPercent, clampedPos));
   };
   
   return (
     <div className="relative mt-2 mb-1">
-      <div className="h-2 bg-gradient-to-r from-semantic-danger-soft via-semantic-warning-soft to-semantic-success-soft rounded-full" 
-           style={{ transform: isLowerBetter ? 'scaleX(-1)' : 'none' }} />
+      <div className="relative h-2 rounded-full overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-semantic-danger-soft via-semantic-warning-soft to-semantic-success-soft" 
+             style={{ transform: isLowerBetter ? 'scaleX(-1)' : 'none' }} />
+      </div>
       <div 
-        className="absolute top-1/2 w-3 h-3 bg-semantic-info border-2 border-white rounded-full shadow-md transform -translate-y-1/2 -translate-x-1/2"
-        style={{ left: `${getPosition(value)}%` }}
+        className="absolute top-1/2 w-3 h-3 bg-semantic-info border-2 border-white rounded-full shadow-md"
+        style={{ 
+          left: `${getPosition(value)}%`,
+          transform: 'translate(-50%, -50%)',
+          marginTop: '-3px'
+        }}
       />
       <div className="flex justify-between text-xs text-muted-foreground mt-1">
         <span>P25: {formatMetricValue(benchmarks.p25, metric, unit)}</span>
