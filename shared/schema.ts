@@ -1527,6 +1527,26 @@ export const insertSeoWorkerResultSchema = createInsertSchema(seoWorkerResults).
 export type InsertSeoWorkerResult = z.infer<typeof insertSeoWorkerResultSchema>;
 export type SeoWorkerResult = typeof seoWorkerResults.$inferSelect;
 
+// Normalized Metric Events - canonical metric storage with consistent keys
+export const seoMetricEvents = pgTable("seo_metric_events", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  serviceId: text("service_id").notNull(), // e.g., "core_web_vitals", "google_data_connector"
+  crewId: text("crew_id").notNull(), // e.g., "speedster", "popular"
+  runId: text("run_id"), // Links to runs.runId if applicable
+  collectedAt: timestamp("collected_at").defaultNow().notNull(),
+  metricsJson: jsonb("metrics_json").notNull(), // { "vitals.lcp": 6.706, "vitals.cls": 0.1 }
+  rawJson: jsonb("raw_json"), // Original worker output for debugging
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSeoMetricEventSchema = createInsertSchema(seoMetricEvents).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSeoMetricEvent = z.infer<typeof insertSeoMetricEventSchema>;
+export type SeoMetricEvent = typeof seoMetricEvents.$inferSelect;
+
 // SEO Suggestions - generated recommendations from combined worker signals
 export const seoSuggestions = pgTable("seo_suggestions", {
   id: serial("id").primaryKey(),

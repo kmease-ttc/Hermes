@@ -2591,6 +2591,90 @@ When answering:
     }
   });
   
+  // Unified Metrics API - Single source of truth for all metrics
+  app.get("/api/metrics/latest", async (req, res) => {
+    try {
+      const { siteId } = req.query;
+      
+      // Resolve site ID
+      let targetSiteId = siteId as string;
+      if (!targetSiteId || targetSiteId === 'default') {
+        const allSites = await storage.getSites(true);
+        const activeSite = allSites.find(s => s.active);
+        targetSiteId = activeSite?.siteId || 'site_empathy_health_clinic';
+      }
+      
+      // First try the new normalized metric events table
+      const metricEvents = await storage.getLatestMetricsBySite(targetSiteId);
+      
+      // Also get legacy worker results for backwards compatibility
+      const workerResults = await storage.getLatestSeoWorkerResults(targetSiteId);
+      
+      // Import normalizer to translate legacy data
+      const { flattenWorkerResultsToCanonical, normalizeCWVMetrics } = await import('./metricsNormalizer');
+      
+      // Merge metrics from both sources (new events take precedence)
+      const legacyMetrics = flattenWorkerResultsToCanonical(workerResults);
+      const newMetrics: Record<string, any> = {};
+      
+      for (const event of metricEvents) {
+        const metrics = event.metricsJson as Record<string, any>;
+        if (metrics) {
+          Object.assign(newMetrics, metrics);
+        }
+      }
+      
+      // Merge: new metrics override legacy
+      const allMetrics = { ...legacyMetrics, ...newMetrics };
+      
+      // Determine coverage (which metrics are missing vs expected)
+      const { METRIC_KEYS, SERVICES } = await import('../shared/registry');
+      const expectedMetrics = Object.keys(METRIC_KEYS);
+      const presentMetrics = Object.keys(allMetrics).filter(k => allMetrics[k] !== null);
+      const missingMetrics = expectedMetrics.filter(k => !(k in allMetrics) || allMetrics[k] === null);
+      
+      // Find stale metrics (older than 24 hours)
+      const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const staleMetrics: string[] = [];
+      
+      for (const event of metricEvents) {
+        if (new Date(event.collectedAt) < staleThreshold) {
+          const metrics = event.metricsJson as Record<string, any>;
+          if (metrics) {
+            staleMetrics.push(...Object.keys(metrics));
+          }
+        }
+      }
+      
+      // Get latest collection times by service
+      const serviceTimestamps: Record<string, string> = {};
+      for (const event of metricEvents) {
+        serviceTimestamps[event.serviceId] = event.collectedAt.toISOString();
+      }
+      for (const result of workerResults) {
+        if (!serviceTimestamps[result.workerKey]) {
+          serviceTimestamps[result.workerKey] = result.createdAt.toISOString();
+        }
+      }
+      
+      res.json({
+        siteId: targetSiteId,
+        collectedAt: new Date().toISOString(),
+        metrics: allMetrics,
+        coverage: {
+          total: expectedMetrics.length,
+          present: presentMetrics.length,
+          missing: missingMetrics,
+          stale: staleMetrics,
+        },
+        sources: serviceTimestamps,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch latest metrics", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   app.get("/api/benchmarks", async (req, res) => {
     try {
       const { industry } = req.query;

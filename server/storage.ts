@@ -118,6 +118,9 @@ import {
   seoWorkerResults,
   type SeoWorkerResult,
   type InsertSeoWorkerResult,
+  seoMetricEvents,
+  type SeoMetricEvent,
+  type InsertSeoMetricEvent,
   seoSuggestions,
   type SeoSuggestion,
   type InsertSeoSuggestion,
@@ -359,6 +362,13 @@ export interface IStorage {
   getSeoWorkerResultsBySite(siteId: string, limit?: number): Promise<SeoWorkerResult[]>;
   getLatestSeoWorkerResults(siteId: string): Promise<SeoWorkerResult[]>;
   updateSeoWorkerResult(id: number, updates: Partial<InsertSeoWorkerResult>): Promise<SeoWorkerResult | undefined>;
+  
+  // SEO Metric Events (normalized metrics with canonical keys)
+  saveMetricEvent(event: InsertSeoMetricEvent): Promise<SeoMetricEvent>;
+  saveMetricEvents(events: InsertSeoMetricEvent[]): Promise<SeoMetricEvent[]>;
+  getLatestMetricsByService(siteId: string, serviceId: string): Promise<SeoMetricEvent | undefined>;
+  getLatestMetricsBySite(siteId: string): Promise<SeoMetricEvent[]>;
+  getAllLatestMetrics(siteId: string): Promise<Record<string, any>>;
   
   // SEO Suggestions
   saveSeoSuggestion(suggestion: InsertSeoSuggestion): Promise<SeoSuggestion>;
@@ -1812,6 +1822,66 @@ class DBStorage implements IStorage {
       .where(eq(seoWorkerResults.id, id))
       .returning();
     return updated;
+  }
+
+  // SEO Metric Events (normalized metrics with canonical keys)
+  async saveMetricEvent(event: InsertSeoMetricEvent): Promise<SeoMetricEvent> {
+    const [created] = await db.insert(seoMetricEvents).values(event).returning();
+    return created;
+  }
+
+  async saveMetricEvents(events: InsertSeoMetricEvent[]): Promise<SeoMetricEvent[]> {
+    if (events.length === 0) return [];
+    return db.insert(seoMetricEvents).values(events).returning();
+  }
+
+  async getLatestMetricsByService(siteId: string, serviceId: string): Promise<SeoMetricEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(seoMetricEvents)
+      .where(and(
+        eq(seoMetricEvents.siteId, siteId),
+        eq(seoMetricEvents.serviceId, serviceId)
+      ))
+      .orderBy(desc(seoMetricEvents.collectedAt))
+      .limit(1);
+    return event;
+  }
+
+  async getLatestMetricsBySite(siteId: string): Promise<SeoMetricEvent[]> {
+    const subquery = db
+      .select({
+        serviceId: seoMetricEvents.serviceId,
+        maxCollectedAt: sql<Date>`max(${seoMetricEvents.collectedAt})`.as('max_collected_at'),
+      })
+      .from(seoMetricEvents)
+      .where(eq(seoMetricEvents.siteId, siteId))
+      .groupBy(seoMetricEvents.serviceId)
+      .as('latest');
+    
+    return db
+      .select()
+      .from(seoMetricEvents)
+      .innerJoin(subquery, and(
+        eq(seoMetricEvents.serviceId, subquery.serviceId),
+        eq(seoMetricEvents.collectedAt, subquery.maxCollectedAt)
+      ))
+      .where(eq(seoMetricEvents.siteId, siteId))
+      .then(rows => rows.map(r => r.seo_metric_events));
+  }
+
+  async getAllLatestMetrics(siteId: string): Promise<Record<string, any>> {
+    const events = await this.getLatestMetricsBySite(siteId);
+    const allMetrics: Record<string, any> = {};
+    
+    for (const event of events) {
+      const metrics = event.metricsJson as Record<string, any>;
+      if (metrics) {
+        Object.assign(allMetrics, metrics);
+      }
+    }
+    
+    return allMetrics;
   }
 
   // SEO Suggestions
