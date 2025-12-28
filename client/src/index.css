@@ -34,10 +34,28 @@
   --color-border: rgba(255,255,255,0.10);
   --color-input: rgba(255,255,255,0.10);
   
-  /* Surfaces */
+  /* Surfaces - My Crew Glass System */
   --color-surface-1: rgba(255,255,255,0.04);
   --color-surface-2: rgba(255,255,255,0.07);
   --color-surface-3: rgba(255,255,255,0.10);
+  
+  /* Panel surfaces */
+  --color-surface-panel: rgba(15, 23, 42, 0.60);
+  --color-surface-card: rgba(255,255,255,0.04);
+  --color-surface-card-active: rgba(255,255,255,0.06);
+  --color-surface-card-disabled: rgba(255,255,255,0.02);
+  
+  /* Gold highlight system */
+  --color-gold: #F59E0B;
+  --color-gold-soft: rgba(245, 158, 11, 0.15);
+  --color-gold-border: rgba(245, 158, 11, 0.40);
+  --color-gold-glow: rgba(245, 158, 11, 0.25);
+  
+  /* Purple accent system */
+  --color-purple: #A855F7;
+  --color-purple-soft: rgba(168, 85, 247, 0.15);
+  --color-purple-border: rgba(168, 85, 247, 0.40);
+  --color-purple-glow: rgba(168, 85, 247, 0.30);
 
   /* ========================================
      LAYER 2: ACCENT COLORS
@@ -159,4 +177,63 @@
   .bg-system { background-color: var(--color-system); }
   .bg-system-soft { background-color: var(--color-system-soft); }
   .text-system { color: var(--color-system); }
+  
+  /* Gold accent utilities */
+  .bg-gold { background-color: var(--color-gold); }
+  .bg-gold-soft { background-color: var(--color-gold-soft); }
+  .text-gold { color: var(--color-gold); }
+  .border-gold { border-color: var(--color-gold-border); }
+  .shadow-gold { box-shadow: 0 0 20px -5px var(--color-gold-glow); }
+  
+  /* Purple accent utilities */
+  .bg-purple-accent { background-color: var(--color-purple); }
+  .bg-purple-soft { background-color: var(--color-purple-soft); }
+  .text-purple-accent { color: var(--color-purple); }
+  .border-purple { border-color: var(--color-purple-border); }
+  .shadow-purple { box-shadow: 0 0 20px -5px var(--color-purple-glow); }
+  
+  /* Surface utilities */
+  .bg-panel { background-color: var(--color-surface-panel); }
+  .bg-surface-card { background-color: var(--color-surface-card); }
+  .bg-surface-card-active { background-color: var(--color-surface-card-active); }
+  
+  /* Glass panel - My Crew style */
+  .glass-panel {
+    background: var(--color-surface-panel);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+  }
+  
+  /* Glass card - My Crew style */
+  .glass-card {
+    background: var(--color-surface-card);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+  }
+  
+  .glass-card-active {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  
+  .glass-card-gold {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.35);
+    box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.20);
+  }
+  
+  .glass-card-purple {
+    background: rgba(168, 85, 247, 0.08);
+    border-color: rgba(168, 85, 247, 0.35);
+    box-shadow: 0 0 20px -5px rgba(168, 85, 247, 0.20);
+  }
+  
+  .glass-card-disabled {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.05);
+    border-style: dashed;
+    opacity: 0.6;
+  }
 }

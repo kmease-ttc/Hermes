@@ -403,7 +403,7 @@ function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: 
 
 function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: string; sourceAgents: string[]; impact: string; effort: string; status: string }> }) {
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-border" data-testid="action-queue">
+    <Card className="glass-panel border-gold shadow-gold" data-testid="action-queue">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-foreground">Action Queue</CardTitle>
@@ -481,12 +481,12 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
   updatedAt?: string;
 }) {
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-primary/30 shadow-[inset_0_1px_0_0_rgba(56,189,248,0.1),0_0_30px_-10px_rgba(56,189,248,0.2)]" data-testid="captains-recommendations">
+    <Card className="glass-panel border-purple shadow-purple" data-testid="captains-recommendations">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Compass className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-lg bg-purple-soft flex items-center justify-center">
+              <Compass className="w-5 h-5 text-purple-accent" />
             </div>
             <div>
               <CardTitle className="text-lg text-foreground">Missions</CardTitle>
