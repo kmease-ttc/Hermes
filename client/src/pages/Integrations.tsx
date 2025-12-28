@@ -299,7 +299,7 @@ function getConfigStateBadge(configState: string | null) {
     blocked: "Blocked",
   };
   return (
-    <Badge className={cn("text-xs", CONFIG_STATE_COLORS[configState] || "bg-gray-100")}>
+    <Badge className={cn("text-xs", CONFIG_STATE_COLORS[configState] || "bg-muted")}>
       {labels[configState] || configState}
     </Badge>
   );
@@ -313,7 +313,7 @@ function getBuildStateBadge(buildState: string | null) {
     deprecated: "Deprecated",
   };
   return (
-    <Badge variant="outline" className={cn("text-xs", BUILD_STATE_COLORS[buildState] || "bg-gray-100")}>
+    <Badge variant="outline" className={cn("text-xs", BUILD_STATE_COLORS[buildState] || "bg-muted")}>
       {labels[buildState] || buildState}
     </Badge>
   );
@@ -322,13 +322,13 @@ function getBuildStateBadge(buildState: string | null) {
 function getStatusIcon(status: string | null | undefined) {
   switch (status) {
     case "healthy":
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+      return <CheckCircle className="w-5 h-5 text-semantic-success" />;
     case "degraded":
-      return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      return <AlertTriangle className="w-5 h-5 text-semantic-warning" />;
     case "error":
-      return <XCircle className="w-5 h-5 text-red-500" />;
+      return <XCircle className="w-5 h-5 text-semantic-danger" />;
     default:
-      return <Clock className="w-5 h-5 text-gray-400" />;
+      return <Clock className="w-5 h-5 text-muted-foreground" />;
   }
 }
 
@@ -1328,14 +1328,14 @@ export default function Integrations() {
                         </p>
                       </div>
                       {platformDeps?.postgres?.connected ? (
-                        <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                        <CheckCircle className="w-4 h-4 text-semantic-success ml-auto" />
                       ) : (
-                        <XCircle className="w-4 h-4 text-red-500 ml-auto" />
+                        <XCircle className="w-4 h-4 text-semantic-danger ml-auto" />
                       )}
                     </div>
                   </div>
                   {platformDeps?.bitwarden && !platformDeps.bitwarden.connected && platformDeps.bitwarden.lastError && (
-                    <div className="mt-3 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                    <div className="mt-3 text-xs text-semantic-warning bg-semantic-warning-soft p-2 rounded">
                       {platformDeps.bitwarden.lastError}
                     </div>
                   )}
@@ -1346,7 +1346,7 @@ export default function Integrations() {
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <Card className="p-3" data-testid="stat-services">
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-blue-500" />
+                    <Activity className="w-4 h-4 text-semantic-info" />
                     <div>
                       <p className="text-lg font-bold">{siteSummary?.rollups?.totalServices ?? summaryStats.total}</p>
                       <p className="text-xs text-muted-foreground">Services</p>
@@ -1355,7 +1355,7 @@ export default function Integrations() {
                 </Card>
                 <Card className="p-3" data-testid="stat-built">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-semantic-success" />
                     <div>
                       <p className="text-lg font-bold">{siteSummary?.rollups?.built ?? 0}</p>
                       <p className="text-xs text-muted-foreground">Built</p>
@@ -1364,7 +1364,7 @@ export default function Integrations() {
                 </Card>
                 <Card className="p-3" data-testid="stat-ready">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-500" />
+                    <Zap className="w-4 h-4 text-semantic-info" />
                     <div>
                       <p className="text-lg font-bold">{siteSummary?.rollups?.ready ?? 0}</p>
                       <p className="text-xs text-muted-foreground">Ready</p>
@@ -1373,29 +1373,29 @@ export default function Integrations() {
                 </Card>
                 <Card className="p-3" data-testid="stat-ran24h">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-purple-500" />
+                    <Clock className="w-4 h-4 text-purple-accent" />
                     <div>
                       <p className="text-lg font-bold">{siteSummary?.rollups?.ran24h ?? uniqueServicesRan24h}</p>
                       <p className="text-xs text-muted-foreground">Ran 24h</p>
                     </div>
                   </div>
                 </Card>
-                <Card className={cn("p-3", (siteSummary?.rollups?.failed ?? 0) > 0 && "border-red-200 bg-red-50 dark:bg-red-900/20")} data-testid="stat-failed">
+                <Card className={cn("p-3", (siteSummary?.rollups?.failed ?? 0) > 0 && "border-semantic-danger-border bg-semantic-danger-soft")} data-testid="stat-failed">
                   <div className="flex items-center gap-2">
-                    <XCircle className={cn("w-4 h-4", (siteSummary?.rollups?.failed ?? 0) > 0 ? "text-red-500" : "text-gray-400")} />
+                    <XCircle className={cn("w-4 h-4", (siteSummary?.rollups?.failed ?? 0) > 0 ? "text-semantic-danger" : "text-muted-foreground")} />
                     <div>
-                      <p className={cn("text-lg font-bold", (siteSummary?.rollups?.failed ?? 0) > 0 && "text-red-600")}>{siteSummary?.rollups?.failed ?? 0}</p>
-                      <p className={cn("text-xs", (siteSummary?.rollups?.failed ?? 0) > 0 ? "text-red-600" : "text-muted-foreground")}>Failed</p>
+                      <p className={cn("text-lg font-bold", (siteSummary?.rollups?.failed ?? 0) > 0 && "text-semantic-danger")}>{siteSummary?.rollups?.failed ?? 0}</p>
+                      <p className={cn("text-xs", (siteSummary?.rollups?.failed ?? 0) > 0 ? "text-semantic-danger" : "text-muted-foreground")}>Failed</p>
                     </div>
                   </div>
                 </Card>
                 {(siteSummary?.rollups?.blocked ?? 0) > 0 && (
-                  <Card className="p-3 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20" data-testid="stat-blocked">
+                  <Card className="p-3 border-semantic-warning-border bg-semantic-warning-soft" data-testid="stat-blocked">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                      <AlertTriangle className="w-4 h-4 text-semantic-warning" />
                       <div>
-                        <p className="text-lg font-bold text-yellow-600">{siteSummary?.rollups?.blocked ?? 0}</p>
-                        <p className="text-xs text-yellow-600">Blocked</p>
+                        <p className="text-lg font-bold text-semantic-warning">{siteSummary?.rollups?.blocked ?? 0}</p>
+                        <p className="text-xs text-semantic-warning">Blocked</p>
                       </div>
                     </div>
                   </Card>
@@ -1404,10 +1404,10 @@ export default function Integrations() {
 
               {/* Next Actions Panel */}
               {siteSummary?.nextActions && siteSummary.nextActions.length > 0 && (
-                <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/20" data-testid="next-actions-panel">
+                <Card className="border-gold bg-gold-soft" data-testid="next-actions-panel">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-orange-500" />
+                      <AlertTriangle className="w-4 h-4 text-gold" />
                       Next Actions ({siteSummary.nextActions.length})
                     </CardTitle>
                   </CardHeader>
@@ -1418,11 +1418,11 @@ export default function Integrations() {
                         return (
                           <div 
                             key={`${action.serviceSlug}-${idx}`} 
-                            className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border"
+                            className="flex items-center justify-between p-2 bg-background rounded border border-border"
                             data-testid={`next-action-${action.serviceSlug}`}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">
+                              <span className="text-xs font-medium text-gold bg-gold-soft px-1.5 py-0.5 rounded">
                                 P{action.priority}
                               </span>
                               <span className="font-medium text-sm">{service?.displayName || action.serviceSlug}</span>
