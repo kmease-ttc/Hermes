@@ -1,0 +1,118 @@
+Replit Prompt: Verify Whether Mission Recommendations Are Real (Provenance Audit + Data Validation) and Make Them Real If Not
+
+Goal
+I’m not convinced the Mission Control recommendations are real. Build a verification workflow that can confirm/deny whether each recommendation is grounded in actual data, and if not, tell me exactly what’s missing or misconfigured so we can make them real.
+
+Definition: “Real” recommendation
+A recommendation is “real” only if it includes:
+
+* Provenance: which connector(s) produced it (GA4, GSC, Ads, Crawl, etc.) + runId/timestamp
+* Evidence: actual numbers/rows supporting the claim (e.g., pages list, queries list, deltas, errors)
+* Decision rule: the logic used to turn evidence into that mission (thresholds, rank bands, etc.)
+  If any of those are missing, mark it as “Synthetic/Placeholder” and show what needs to be fixed.
+
+Part 1 — Add a “Provenance & Evidence” panel to every mission
+
+1. Add a “Verified” indicator on each Priority Action card
+
+* Status states:
+
+  * Verified (green)
+  * Unverified (gold)
+  * Placeholder/Synthetic (red)
+* Determine status automatically using rules above.
+
+2. Mission details must include:
+
+* Inputs used (connectors + run ids)
+* Evidence payload (small table/list of the top evidence rows)
+* Decision rule summary (1–2 lines, e.g., “Rank 4–20 + volume > X + declining clicks WoW”)
+
+Part 2 — Build a Recommendation Validator (server-side)
+3) Create a backend endpoint to validate missions:
+POST /api/missions/validate?siteId=...
+
+* It loads the latest diagnostics run
+* For each mission:
+
+  * checks required connectors are configured AND last run succeeded
+  * checks evidence exists in DB for that mission
+  * reruns the decision rule against the stored evidence to confirm it reproduces the mission
+* Returns:
+  {
+  siteId,
+  validatedAt,
+  missions: [
+  {
+  missionId,
+  title,
+  status: "verified" | "unverified" | "placeholder",
+  reasons: ["NO_EVIDENCE_ROWS", "CONNECTOR_NOT_RUNNING", "RULE_DID_NOT_REPRODUCE", ...],
+  requiredFixes: [
+  { type: "CONFIG", key: "GA4_PROPERTY_ID", where: "Secrets", hint: "Set GA4 property id" },
+  { type: "WORKER", service: "Google Data Connector", hint: "Worker unreachable; warm-up/retry or fix base URL" },
+  { type: "DATA", service: "GSC", hint: "No recent data; run connector smoke test" }
+  ],
+  evidencePreview: {...},
+  rulePreview: "..."
+  }
+  ]
+  }
+
+Part 3 — Add a “Reality Check” button in Mission Control
+4) Add a button near “Run Diagnostics”:
+
+* “Validate Recommendations”
+* Calls POST /api/missions/validate
+* Shows a results panel:
+
+  * # verified
+  * # unverified
+  * # placeholder
+* For failures, show a “Fix checklist” grouped by:
+
+  * Missing secrets/config
+  * Worker unreachable/cold start
+  * OAuth not connected
+  * No data ingested
+
+Part 4 — Make recommendations real when they aren’t
+5) If a mission is placeholder/synthetic, the UI must explicitly say so
+
+* Replace vague recommendation text with:
+
+  * “This recommendation is currently placeholder because <reason>”
+  * “To generate real recommendations, do these steps: …”
+* Provide a one-click CTA where possible:
+
+  * “Run Smoke Test for Google Data Connector”
+  * “Connect OAuth”
+  * “Open Settings → Required Keys”
+
+6. Ensure missions are generated only from persisted evidence
+
+* During diagnostics run:
+
+  * Store connector outputs (or summaries) in DB with runId
+  * Generate missions from those stored outputs (not from hardcoded examples)
+  * Store each mission with references to evidence rows (foreign keys or JSON pointers)
+
+Part 5 — Quick sanity checks specific to the example concerns
+7) Add guardrails to prevent obviously-wrong missions:
+
+* If keyword rank is already 1–3 for the exact query, don’t recommend targeting it again.
+* If GA4/GSC data missing, don’t invent SEO missions; create a “Connect Data Sources” mission instead.
+
+Acceptance criteria
+
+* I can click any mission and see evidence (actual numbers/rows) + which systems produced it + when.
+* “Validate Recommendations” clearly tells me whether the missions are real.
+* If not real, it gives me a concrete fix list (keys, OAuth, worker URLs, smoke tests) and links/CTAs to resolve.
+* No more “plausible sounding” missions without evidence.
+
+Do this now
+
+1. Implement /api/missions/validate
+2. Add “Validate Recommendations” button and results UI
+3. Add Provenance & Evidence section to mission details
+4. Add placeholder detection + “how to fix” messaging

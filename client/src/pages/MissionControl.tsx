@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
 import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
+import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
 
 const verdictColors = {
   good: { bg: "bg-semantic-success-soft", border: "border-semantic-success-border", text: "text-semantic-success", badge: "bg-semantic-success-soft text-semantic-success" },
@@ -530,12 +531,13 @@ function ActionQueueCard({ actions }: { actions: Array<{ id: number; title: stri
   );
 }
 
-function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt }: {
+function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview }: {
   priorities: any[];
   blockers: any[];
   confidence: string;
   coverage: { active: number; total: number };
   updatedAt?: string;
+  onReview?: (mission: any) => void;
 }) {
   return (
     <Card className="glass-panel border-purple shadow-purple" data-testid="captains-recommendations">
@@ -635,6 +637,13 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     variant="gold" 
                     size="sm" 
                     className="w-full mt-3 text-xs rounded-xl"
+                    onClick={() => onReview?.({ 
+                      ...priority,
+                      id: priority.id || `priority-${idx}`,
+                      status: priority.status || 'open',
+                      sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
+                    })}
+                    data-testid={`button-review-priority-${idx + 1}`}
                   >
                     Review <ArrowRight className="w-3 h-3 ml-1" />
                   </Button>
@@ -678,6 +687,18 @@ export default function MissionControl() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [missionModalOpen, setMissionModalOpen] = useState(false);
+  const [selectedMission, setSelectedMission] = useState<any>(null);
+
+  const handleReviewMission = (mission: any) => {
+    setSelectedMission(mission);
+    setMissionModalOpen(true);
+  };
+
+  const handleMarkMissionDone = (missionId: string | number) => {
+    toast.success("Mission marked as done");
+    setMissionModalOpen(false);
+  };
 
   const { data: dashboardStats } = useQuery({
     queryKey: ["dashboard-stats", currentSite?.siteId],
@@ -784,6 +805,7 @@ export default function MissionControl() {
           confidence={captainData.confidence}
           coverage={captainData.coverage}
           updatedAt={captainData.generated_at ? new Date(captainData.generated_at).toLocaleDateString() : undefined}
+          onReview={handleReviewMission}
         />
 
         <MetricCardsRow />
@@ -799,6 +821,14 @@ export default function MissionControl() {
       <ExportFixPackModal 
         open={exportModalOpen} 
         onOpenChange={setExportModalOpen} 
+      />
+
+      <MissionDetailsModal
+        open={missionModalOpen}
+        onOpenChange={setMissionModalOpen}
+        mission={selectedMission}
+        onExportFixPack={() => setExportModalOpen(true)}
+        onMarkDone={handleMarkMissionDone}
       />
     </DashboardLayout>
   );
