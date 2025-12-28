@@ -13,22 +13,22 @@ type GridSlot = {
   crewId: string | null;
   row: number;
   col: number;
-  colSpan?: number;
+  valueProp?: string;
 };
 
 const GRID_SLOTS: GridSlot[] = [
-  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", row: 1, col: 2, colSpan: 2 },
-  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", row: 2, col: 1 },
-  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", row: 2, col: 2 },
-  { roleId: "analytics_signals", roleName: "Analytics", roleIcon: BarChart3, crewId: "google_data_connector", row: 2, col: 3 },
-  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", row: 3, col: 1 },
-  { roleId: "performance_monitoring", roleName: "Performance", roleIcon: Zap, crewId: "core_web_vitals", row: 3, col: 3 },
-  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", row: 4, col: 1 },
-  { roleId: "content_strategy", roleName: "Content", roleIcon: PenTool, crewId: "content_generator", row: 4, col: 3 },
-  { roleId: "domain_authority", roleName: "Authority", roleIcon: Link2, crewId: "backlink_authority", row: 5, col: 1 },
-  { roleId: "ai_optimization", roleName: "AI", roleIcon: BrainCircuit, crewId: "ai_optimization", row: 5, col: 3 },
-  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", row: 6, col: 2, colSpan: 2 },
-  { roleId: "knowledge_base", roleName: "Knowledge", roleIcon: BookOpen, crewId: "seo_kbase", row: 3, col: 2 },
+  { roleId: "mission_control", roleName: "Mission Control", roleIcon: Compass, crewId: "orchestrator", row: 1, col: 2 },
+  { roleId: "competitive_intel", roleName: "Competitive Intel", roleIcon: Eye, crewId: "competitive_snapshot", row: 2, col: 1, valueProp: "Monitor competitor movements." },
+  { roleId: "serp_tracking", roleName: "SERP Tracking", roleIcon: Target, crewId: "serp_intel", row: 2, col: 2, valueProp: "Track rankings and explain movement." },
+  { roleId: "analytics_signals", roleName: "Analytics & Signals", roleIcon: BarChart3, crewId: "google_data_connector", row: 2, col: 3, valueProp: "Tie SEO work to traffic outcomes." },
+  { roleId: "technical_seo", roleName: "Technical SEO", roleIcon: Wrench, crewId: "crawl_render", row: 3, col: 1, valueProp: "Find crawl/render issues blocking rank." },
+  { roleId: "performance_monitoring", roleName: "Performance", roleIcon: Zap, crewId: "core_web_vitals", row: 3, col: 2, valueProp: "Fix speed issues hurting conversion." },
+  { roleId: "content_decay", roleName: "Content Decay", roleIcon: Search, crewId: "content_decay", row: 3, col: 3, valueProp: "Detect declining content before it tanks." },
+  { roleId: "content_strategy", roleName: "Content Strategy", roleIcon: PenTool, crewId: "content_generator", row: 3, col: 4, valueProp: "Generate optimized content at scale." },
+  { roleId: "domain_authority", roleName: "Domain Authority", roleIcon: Link2, crewId: "backlink_authority", row: 4, col: 1, valueProp: "Build and monitor link equity." },
+  { roleId: "ai_optimization", roleName: "AI Optimization", roleIcon: BrainCircuit, crewId: "ai_optimization", row: 4, col: 2, valueProp: "Make your site discoverable to AI." },
+  { roleId: "paid_ads", roleName: "Paid Ads", roleIcon: Megaphone, crewId: "google_ads_connector", row: 4, col: 3, valueProp: "Turn learnings into faster growth." },
+  { roleId: "knowledge_base", roleName: "Knowledge Base", roleIcon: BookOpen, crewId: "seo_kbase", row: 4, col: 4, valueProp: "Store insights and learn over time." },
 ];
 
 function RoleInfoTooltip({ roleId }: { roleId: string }) {
@@ -104,7 +104,7 @@ function CrewCard({
 
   return (
     <button
-      className="w-full h-full transition-all duration-200 hover:scale-[1.03] group"
+      className="w-full h-full transition-all duration-200 hover:scale-[1.02] group"
       onClick={() => slot.crewId && onSlotClick(slot.crewId)}
       data-testid={`ship-slot-${slot.roleId}`}
     >
@@ -112,7 +112,7 @@ function CrewCard({
         className={[
           "relative h-full w-full rounded-xl",
           isEmpty 
-            ? "border-2 border-dashed border-white/20 bg-white/[0.02] group-hover:border-white/35 group-hover:bg-white/[0.04]" 
+            ? "border-2 border-dashed border-white/20 bg-white/[0.03] group-hover:border-white/40 group-hover:bg-white/[0.06]" 
             : "bg-white/[0.06] backdrop-blur-sm border border-white/20 group-hover:bg-white/[0.08]",
           ringClass,
         ].join(" ")}
@@ -128,37 +128,46 @@ function CrewCard({
           </div>
         )}
 
-        <div className="absolute inset-0 flex items-center justify-center pb-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-2 pt-2 pb-2">
           {isEmpty ? (
-            <div className="flex flex-col items-center gap-2">
-              <RoleIcon className="w-10 h-10 text-white/20 group-hover:text-white/35 transition-colors" />
-              <div className="flex items-center gap-1 text-white/30 group-hover:text-white/50 transition-colors">
+            <div className="flex flex-col items-center gap-1.5 text-center">
+              <RoleIcon className="w-9 h-9 text-white/25 group-hover:text-white/40 transition-colors" />
+              <div className="text-sm font-medium text-white/40">{slot.roleName}</div>
+              <div className="flex items-center gap-1 text-white/35 group-hover:text-white/55 transition-colors">
                 <Plus className="w-3 h-3" />
                 <span className="text-xs font-medium">Add crew</span>
               </div>
+              {slot.valueProp && (
+                <div className="text-[10px] text-white/25 leading-tight mt-1 max-w-[140px] truncate">
+                  {slot.valueProp}
+                </div>
+              )}
             </div>
           ) : slot.crewId && (
-            <CrewAvatarTooltip crewId={slot.crewId}>
-              {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
-                <div className="w-[80%] h-[80%] max-w-[130px] max-h-[130px] overflow-hidden flex items-center justify-center">
-                  <img 
-                    src={crew.avatar} 
-                    alt={crew.nickname || slot.roleName}
-                    className="w-full h-full object-contain drop-shadow-lg"
-                    style={{ transform: "scale(1.4) translateY(2px)" }}
-                  />
+            <>
+              <div className="flex-1 flex items-center justify-center">
+                <CrewAvatarTooltip crewId={slot.crewId}>
+                  {crew?.avatar && typeof crew.avatar === 'string' && crew.avatar.includes('/') ? (
+                    <div className="w-[85%] h-[85%] max-w-[130px] max-h-[130px] overflow-hidden flex items-center justify-center">
+                      <img 
+                        src={crew.avatar} 
+                        alt={crew.nickname || slot.roleName}
+                        className="w-full h-full object-contain drop-shadow-lg"
+                        style={{ transform: "scale(1.4) translateY(2px)" }}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-5xl drop-shadow-lg">{crew?.avatar || "👤"}</span>
+                  )}
+                </CrewAvatarTooltip>
+              </div>
+              <div className="w-full h-10 flex items-center justify-center px-1 rounded-b-xl" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 70%, transparent 100%)" }}>
+                <div className="text-sm font-semibold text-white/80 text-center truncate w-full">
+                  {crew?.nickname || "Unknown"}
                 </div>
-              ) : (
-                <span className="text-5xl drop-shadow-lg">{crew?.avatar || "👤"}</span>
-              )}
-            </CrewAvatarTooltip>
+              </div>
+            </>
           )}
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 z-10 h-10 flex flex-col items-center justify-center px-1.5 rounded-b-xl" style={{ background: isEmpty ? "transparent" : "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}>
-          <div className={`text-sm font-semibold leading-tight text-center truncate w-full ${isEmpty ? "text-white/40" : "text-white"}`}>
-            {isEmpty ? slot.roleName : (crew?.nickname || "Unknown")}
-          </div>
         </div>
       </div>
     </button>
@@ -174,64 +183,65 @@ export function ShipCanvasA1(props: {
 
   return (
     <TooltipProvider>
-      <div className="relative w-full flex justify-center">
-        <div className="relative w-full max-w-[600px]">
-          <ShipHullSvg className="absolute inset-0 w-full h-full pointer-events-none z-0" />
+      <div className="relative w-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent overflow-hidden">
+        <ShipHullSvg className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-40" />
 
-          <div className="relative z-10 w-full px-8 py-12" style={{ minHeight: "1100px" }}>
-            <div 
-              className="grid gap-4 mx-auto"
-              style={{
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gridTemplateRows: "repeat(6, 150px)",
-                maxWidth: "480px",
-              }}
-            >
-              {GRID_SLOTS.map((slot) => {
-                const crew = slot.crewId ? getCrewMember(slot.crewId) : null;
-                const isMissionControl = slot.roleId === "mission_control";
-                const isEnabled = slot.crewId && (enabledAgents.includes(slot.crewId) || isMissionControl);
-                const isSelected = slot.crewId && selectedAgents.includes(slot.crewId);
-                const isEmpty = !isEnabled && !isSelected;
+        <div className="relative z-10 w-full p-6 lg:p-10">
+          <div 
+            className="grid gap-x-7 gap-y-8 mx-auto"
+            style={{
+              gridTemplateColumns: "repeat(4, minmax(150px, 200px))",
+              gridTemplateRows: "repeat(4, 180px)",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ gridRow: 1, gridColumn: 1 }} />
+            
+            {GRID_SLOTS.map((slot) => {
+              const crew = slot.crewId ? getCrewMember(slot.crewId) : null;
+              const isMissionControl = slot.roleId === "mission_control";
+              const isEnabled = slot.crewId && (enabledAgents.includes(slot.crewId) || isMissionControl);
+              const isSelected = slot.crewId && selectedAgents.includes(slot.crewId);
+              const isEmpty = !isEnabled && !isSelected;
 
-                const badge = isMissionControl ? "Included" : isEnabled ? "Active" : isSelected ? "Selected" : null;
+              const badge = isMissionControl ? "Included" : isEnabled ? "Active" : isSelected ? "Selected" : null;
 
-                const ringClass = isEnabled
-                  ? "ring-2 shadow-[0_0_0_2px_var(--color-progress-soft),0_12px_32px_rgba(0,0,0,0.4)]"
-                  : isSelected
-                    ? "ring-2 shadow-[0_0_0_2px_var(--color-primary-soft),0_12px_32px_rgba(0,0,0,0.3)]"
-                    : "";
+              const ringClass = isEnabled
+                ? "ring-2 shadow-[0_0_0_2px_var(--color-progress-soft),0_8px_24px_rgba(0,0,0,0.4)]"
+                : isSelected
+                  ? "ring-2 shadow-[0_0_0_2px_var(--color-primary-soft),0_8px_24px_rgba(0,0,0,0.3)]"
+                  : "";
 
-                const ringColor = isEnabled ? "var(--color-progress)" : isSelected ? "var(--color-primary)" : undefined;
-                const badgeClass = isMissionControl || isEnabled ? "bg-progress-soft text-white/90" : isSelected ? "bg-[rgba(124,58,237,0.18)] text-white/90" : "";
+              const ringColor = isEnabled ? "var(--color-progress)" : isSelected ? "var(--color-primary)" : undefined;
+              const badgeClass = isMissionControl || isEnabled ? "bg-progress-soft text-white/90" : isSelected ? "bg-[rgba(124,58,237,0.18)] text-white/90" : "";
 
-                return (
-                  <div 
-                    key={slot.roleId}
-                    style={{
-                      gridRow: slot.row,
-                      gridColumn: slot.colSpan ? `${slot.col} / span ${slot.colSpan}` : slot.col,
-                      justifySelf: slot.colSpan ? "center" : undefined,
-                      maxWidth: slot.colSpan ? "160px" : undefined,
-                    }}
-                  >
-                    <CrewCard
-                      slot={slot}
-                      crew={crew}
-                      isEmpty={isEmpty}
-                      isMissionControl={isMissionControl}
-                      isEnabled={!!isEnabled}
-                      isSelected={!!isSelected}
-                      badge={badge}
-                      badgeClass={badgeClass}
-                      ringClass={ringClass}
-                      ringColor={ringColor}
-                      onSlotClick={onSlotClick}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div 
+                  key={slot.roleId}
+                  style={{
+                    gridRow: slot.row,
+                    gridColumn: slot.col,
+                  }}
+                >
+                  <CrewCard
+                    slot={slot}
+                    crew={crew}
+                    isEmpty={isEmpty}
+                    isMissionControl={isMissionControl}
+                    isEnabled={!!isEnabled}
+                    isSelected={!!isSelected}
+                    badge={badge}
+                    badgeClass={badgeClass}
+                    ringClass={ringClass}
+                    ringColor={ringColor}
+                    onSlotClick={onSlotClick}
+                  />
+                </div>
+              );
+            })}
+            
+            <div style={{ gridRow: 1, gridColumn: 3 }} />
+            <div style={{ gridRow: 1, gridColumn: 4 }} />
           </div>
         </div>
       </div>
