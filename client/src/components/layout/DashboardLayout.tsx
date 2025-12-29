@@ -120,7 +120,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-6 flex items-center gap-3 border-b border-border/50">
           <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity" data-testid="link-home">
             <img src={logoImage} alt="Logo" className="w-8 h-8 rounded-md" />
-            <h1 className="font-bold text-lg tracking-tight text-foreground">Arco</h1>
+            <h1 className="font-bold text-lg tracking-tight text-foreground">Arclo</h1>
           </Link>
           <Button 
             variant="ghost" 
