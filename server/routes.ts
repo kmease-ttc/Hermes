@@ -9988,13 +9988,22 @@ When answering:
       // Get latest metrics from storage if not provided
       let vitals = currentMetrics;
       if (!vitals) {
+        // First try dashboard_metric_snapshots which has direct vitals
+        const snapshot = await storage.getDashboardMetricSnapshot(siteId);
+        const snapshotMetrics = snapshot?.metricsJson as Record<string, any> || {};
+        
+        // Also check seo_metric_events
         const latestMetrics = await storage.getAllLatestMetrics(siteId);
+        
         vitals = {
-          lcp: latestMetrics?.['vitals.lcp']?.value,
-          cls: latestMetrics?.['vitals.cls']?.value,
-          inp: latestMetrics?.['vitals.inp']?.value,
-          performanceScore: latestMetrics?.['vitals.performance_score']?.value,
+          // Prefer direct keys (lcp, cls, inp) over vitals.lcp format
+          lcp: snapshotMetrics?.lcp || snapshotMetrics?.['vitals.lcp'] || latestMetrics?.['vitals.lcp']?.value || latestMetrics?.lcp,
+          cls: snapshotMetrics?.cls || snapshotMetrics?.['vitals.cls'] || latestMetrics?.['vitals.cls']?.value || latestMetrics?.cls,
+          inp: snapshotMetrics?.inp || snapshotMetrics?.['vitals.inp'] || latestMetrics?.['vitals.inp']?.value || latestMetrics?.inp,
+          performanceScore: snapshotMetrics?.performanceScore || snapshotMetrics?.['vitals.performance_score'] || latestMetrics?.['vitals.performance_score']?.value,
         };
+        
+        logger.info("FixPlan", "Retrieved vitals from storage", { vitals });
       }
       
       // Query Socrates for prior learnings

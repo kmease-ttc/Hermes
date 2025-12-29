@@ -26,7 +26,11 @@ import {
   GitPullRequest,
   Loader2,
   Shield,
-  FileCode
+  FileCode,
+  Sparkles,
+  ChevronRight,
+  BookOpen,
+  Settings2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -189,11 +193,41 @@ function MissingDataCard({ vital, reason }: { vital: string; reason: string }) {
   );
 }
 
+interface FixPlanItem {
+  id: string;
+  title: string;
+  why: string;
+  proposedChanges: { type: string; fileHint?: string; description: string }[];
+  expectedOutcome: string;
+  risk: 'low' | 'medium' | 'high';
+  confidence: 'low' | 'medium' | 'high';
+  sources: string[];
+}
+
+interface FixPlanData {
+  planId: string;
+  generatedAt: string;
+  expiresAt: string;
+  cooldown: {
+    allowed: boolean;
+    nextAllowedAt: string | null;
+    reason: string | null;
+    lastPrAt: string | null;
+  };
+  maxChangesRecommended: number;
+  items: FixPlanItem[];
+  consultedSocrates: boolean;
+  priorLearningsCount: number;
+  metricsSnapshot: any;
+}
+
 export default function SpeedsterContent() {
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || 'site_empathy_health_clinic';
   
   const [showFixModal, setShowFixModal] = useState(false);
+  const [showCooldownOverride, setShowCooldownOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
   const [maxChanges, setMaxChanges] = useState("10");
   const [fixResult, setFixResult] = useState<{
     prUrl?: string;
@@ -207,6 +241,76 @@ export default function SpeedsterContent() {
     consultedSocrates?: boolean;
     priorLearningsUsed?: number;
   } | null>(null);
+  
+  // Fix Plan query - fetches latest pending plan
+  const { data: fixPlanResponse, isLoading: isPlanLoading, refetch: refetchPlan } = useQuery({
+    queryKey: ['fix-plan-speedster', siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/fix-plan/speedster/latest?siteId=${siteId}`);
+      if (!res.ok) throw new Error('Failed to fetch fix plan');
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+  
+  const fixPlan: FixPlanData | null = fixPlanResponse?.data || null;
+  
+  // Generate fix plan mutation
+  const generatePlanMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/fix-plan/speedster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId }),
+      });
+      if (!res.ok) throw new Error('Failed to generate fix plan');
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchPlan();
+    },
+  });
+  
+  // Execute fix plan mutation
+  const executePlanMutation = useMutation({
+    mutationFn: async (data: { planId: string; maxChanges: number; overrideCooldown?: boolean; overrideReason?: string }) => {
+      const res = await fetch('/api/fix-plan/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId, ...data }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        if (json.cooldown) {
+          return { ...json, status: 'cooldown_blocked' };
+        }
+        throw new Error(json.error || 'Failed to execute fix plan');
+      }
+      return json;
+    },
+    onSuccess: (data) => {
+      if (data.status === 'cooldown_blocked') {
+        setShowCooldownOverride(true);
+      } else if (data.ok) {
+        setFixResult({
+          prUrl: data.data?.prUrl,
+          branchName: data.data?.branchName,
+          filesChanged: data.data?.filesChanged,
+          summary: `Executed ${data.data?.itemsExecuted} fix items`,
+          status: 'success',
+          consultedSocrates: fixPlan?.consultedSocrates,
+          priorLearningsUsed: fixPlan?.priorLearningsCount,
+        });
+        refetchPlan();
+      }
+    },
+    onError: (error: Error) => {
+      setFixResult({
+        status: 'error',
+        error: error.message,
+      });
+    },
+  });
   
   const fixMutation = useMutation({
     mutationFn: async (data: { siteId: string; maxChanges: number; issues: any }) => {
@@ -407,17 +511,6 @@ export default function SpeedsterContent() {
           
           <div className="flex items-center gap-3 pt-2 border-t">
             <Button 
-              onClick={() => {
-                setFixResult(null);
-                setShowFixModal(true);
-              }}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="button-create-fix-pr"
-            >
-              <GitPullRequest className="w-4 h-4 mr-2" />
-              Create Fix PR
-            </Button>
-            <Button 
               variant="outline" 
               onClick={() => refetch()}
               disabled={isRefetching}
@@ -431,6 +524,211 @@ export default function SpeedsterContent() {
               Export Fix Pack
             </Button>
           </div>
+        </CardContent>
+      </Card>
+      
+      {/* Fix Plan Section */}
+      <Card className="border-l-4 border-l-amber-500">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Fix Plan</CardTitle>
+                <CardDescription>
+                  Proposed changes based on current vitals + past learnings
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {fixPlan?.consultedSocrates && (
+                <Badge variant="outline" className="text-lime-600 border-lime-500/30 bg-lime-500/10">
+                  <BookOpen className="w-3 h-3 mr-1" />
+                  Socrates
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => generatePlanMutation.mutate()}
+                disabled={generatePlanMutation.isPending}
+              >
+                {generatePlanMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isPlanLoading || generatePlanMutation.isPending ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                <span className="text-sm text-muted-foreground">Generating plan...</span>
+              </div>
+            </div>
+          ) : !fixPlan || fixPlan.items.length === 0 ? (
+            <div className="py-6 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="p-3 rounded-full bg-muted">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium">No recommended fixes right now</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your Core Web Vitals are within acceptable thresholds
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => generatePlanMutation.mutate()}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Check Again
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Plan Items */}
+              <div className="space-y-3">
+                {fixPlan.items.map((item, index) => (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground font-mono">#{index + 1}</span>
+                          <h4 className="font-medium">{item.title}</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{item.why}</p>
+                        
+                        {/* Proposed Changes */}
+                        <div className="space-y-1 pt-2">
+                          {item.proposedChanges.map((change, ci) => (
+                            <div key={ci} className="flex items-center gap-2 text-sm">
+                              <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">{change.description}</span>
+                              {change.fileHint && (
+                                <Badge variant="outline" className="text-xs">
+                                  {change.fileHint}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex items-center gap-4 pt-2 text-xs">
+                          <span className="text-green-600">{item.expectedOutcome}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs",
+                            item.risk === 'low' && "text-green-600 border-green-500/30",
+                            item.risk === 'medium' && "text-yellow-600 border-yellow-500/30",
+                            item.risk === 'high' && "text-red-600 border-red-500/30"
+                          )}
+                        >
+                          {item.risk} risk
+                        </Badge>
+                        <div className="flex gap-1">
+                          {item.sources.map(src => (
+                            <Badge key={src} variant="secondary" className="text-xs">
+                              {src}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Safety Strip */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                <div className="flex items-center gap-4 text-sm">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-blue-500" />
+                          <span>Max changes: <strong>{fixPlan.maxChangesRecommended}</strong></span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Recommended to limit changes per cycle to reduce ranking volatility</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <div className="w-px h-4 bg-border" />
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span>
+                            {fixPlan.cooldown.lastPrAt 
+                              ? `Last PR: ${Math.round((Date.now() - new Date(fixPlan.cooldown.lastPrAt).getTime()) / (24*60*60*1000))} days ago`
+                              : 'No prior PRs'}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {fixPlan.cooldown.allowed 
+                          ? "Cooldown period has passed, you can create a new PR"
+                          : fixPlan.cooldown.reason || "Wait before creating another PR"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {!fixPlan.cooldown.allowed && (
+                    <>
+                      <div className="w-px h-4 bg-border" />
+                      <Badge variant="outline" className="text-yellow-600 border-yellow-500/30">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Cooldown Active
+                      </Badge>
+                    </>
+                  )}
+                </div>
+                
+                <Button
+                  onClick={() => {
+                    setFixResult(null);
+                    if (!fixPlan.cooldown.allowed) {
+                      setShowCooldownOverride(true);
+                    } else {
+                      setShowFixModal(true);
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={!fixPlan.items.length || executePlanMutation.isPending}
+                  data-testid="button-fix-it"
+                >
+                  {executePlanMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  Fix It
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
       
@@ -686,26 +984,91 @@ export default function SpeedsterContent() {
         </Card>
       )}
       
+      {/* Cooldown Override Dialog */}
+      <Dialog open={showCooldownOverride} onOpenChange={setShowCooldownOverride}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              Cooldown Active
+            </DialogTitle>
+            <DialogDescription>
+              {fixPlan?.cooldown.reason || "A cooldown period is active to reduce ranking volatility."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="w-4 h-4 text-yellow-600" />
+                <span>
+                  {fixPlan?.cooldown.nextAllowedAt 
+                    ? `Next recommended: ${new Date(fixPlan.cooldown.nextAllowedAt).toLocaleDateString()}`
+                    : 'Cooldown period not yet passed'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="override-reason">Reason for override (required)</Label>
+              <textarea
+                id="override-reason"
+                className="w-full min-h-[80px] p-3 rounded-lg border bg-background text-sm resize-none"
+                placeholder="Explain why this change is urgent and cannot wait..."
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowCooldownOverride(false);
+              setOverrideReason("");
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (fixPlan?.planId && overrideReason.trim()) {
+                  executePlanMutation.mutate({
+                    planId: fixPlan.planId,
+                    maxChanges: parseInt(maxChanges),
+                    overrideCooldown: true,
+                    overrideReason: overrideReason.trim(),
+                  });
+                  setShowCooldownOverride(false);
+                  setShowFixModal(true);
+                }
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700"
+              disabled={!overrideReason.trim()}
+            >
+              Override & Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Fix Execution Dialog */}
       <Dialog open={showFixModal} onOpenChange={setShowFixModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <GitPullRequest className="w-5 h-5 text-green-600" />
-              Create Fix PR
+              <Zap className="w-5 h-5 text-green-600" />
+              Execute Fix Plan
             </DialogTitle>
             <DialogDescription>
-              Automatically analyze issues and create a GitHub pull request with recommended fixes.
+              Create a GitHub pull request with the recommended fixes from your plan.
             </DialogDescription>
           </DialogHeader>
           
-          {fixMutation.isPending ? (
+          {executePlanMutation.isPending || fixMutation.isPending ? (
             <div className="py-8 space-y-4">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-green-600" />
                 <div className="text-center">
-                  <p className="font-medium">
-                    {fixMutation.variables ? 'Creating PR...' : 'Analyzing issues...'}
-                  </p>
+                  <p className="font-medium">Creating PR...</p>
                   <p className="text-sm text-muted-foreground">
                     This may take a moment
                   </p>
@@ -877,22 +1240,31 @@ export default function SpeedsterContent() {
                 </Button>
                 <Button 
                   onClick={() => {
-                    fixMutation.mutate({
-                      siteId,
-                      maxChanges: parseInt(maxChanges),
-                      issues: {
-                        lcp: metrics['vitals.lcp'],
-                        cls: metrics['vitals.cls'],
-                        inp: metrics['vitals.inp'],
-                        performanceScore: performanceScore,
-                        opportunities: speedsterData?.opportunities || [],
-                      },
-                    });
+                    if (fixPlan?.planId) {
+                      executePlanMutation.mutate({
+                        planId: fixPlan.planId,
+                        maxChanges: parseInt(maxChanges),
+                      });
+                    } else {
+                      // Fallback to old mutation if no plan exists
+                      fixMutation.mutate({
+                        siteId,
+                        maxChanges: parseInt(maxChanges),
+                        issues: {
+                          lcp: metrics['vitals.lcp'],
+                          cls: metrics['vitals.cls'],
+                          inp: metrics['vitals.inp'],
+                          performanceScore: performanceScore,
+                          opportunities: speedsterData?.opportunities || [],
+                        },
+                      });
+                    }
                   }}
                   className="bg-green-600 hover:bg-green-700"
+                  disabled={executePlanMutation.isPending}
                 >
-                  <GitPullRequest className="w-4 h-4 mr-2" />
-                  Create Fix PR
+                  <Zap className="w-4 h-4 mr-2" />
+                  Fix It
                 </Button>
               </DialogFooter>
             </>
