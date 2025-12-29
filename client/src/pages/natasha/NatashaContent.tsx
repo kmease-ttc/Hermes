@@ -425,7 +425,9 @@ function TrendAlertCard({ alert }: { alert: TrendAlert }) {
 // Inspector Content Panels
 // ═══════════════════════════════════════════════════════════════════════════
 
-function OverviewPanel({ data, onRefresh }: { data: CompetitiveOverview; onRefresh: () => void }) {
+function OverviewPanel({ data, onRefresh, isRefreshing }: { data: CompetitiveOverview; onRefresh: () => void; isRefreshing?: boolean }) {
+  const hasData = data.competitors.length > 0 || data.shareOfVoice > 0;
+  
   const statusConfig = {
     ahead: { label: "Ahead", icon: Trophy, color: "text-semantic-success", bg: "bg-semantic-success-soft" },
     parity: { label: "At parity", icon: Swords, color: "text-semantic-warning", bg: "bg-semantic-warning-soft" },
@@ -434,6 +436,57 @@ function OverviewPanel({ data, onRefresh }: { data: CompetitiveOverview; onRefre
 
   const posConfig = statusConfig[data.competitivePosition];
   const PosIcon = posConfig.icon;
+
+  if (!hasData) {
+    return (
+      <div className="space-y-6 py-4">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-purple-accent/10 flex items-center justify-center mx-auto mb-4">
+            <Compass className="w-8 h-8 text-purple-accent" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No Competitive Data Yet</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+            Run an analysis to discover your competitors, track keyword rankings, and identify content opportunities.
+          </p>
+          <Button 
+            variant="gold" 
+            size="lg" 
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="rounded-xl"
+            data-testid="button-run-competitive-analysis"
+          >
+            {isRefreshing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2" />
+                Run Competitive Analysis
+              </>
+            )}
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
+          <div className="text-center p-4 rounded-xl bg-muted/30">
+            <Users className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Competitor Detection</p>
+          </div>
+          <div className="text-center p-4 rounded-xl bg-muted/30">
+            <TrendingUp className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Keyword Tracking</p>
+          </div>
+          <div className="text-center p-4 rounded-xl bg-muted/30">
+            <Target className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Gap Analysis</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -800,7 +853,7 @@ export default function NatashaContent() {
         id: "overview",
         label: "Overview",
         icon: <Eye className="w-4 h-4" />,
-        content: <OverviewPanel data={data} onRefresh={handleRefresh} />,
+        content: <OverviewPanel data={data} onRefresh={handleRefresh} isRefreshing={isRunning} />,
         state: tabState,
       },
       {
@@ -834,7 +887,7 @@ export default function NatashaContent() {
         state: tabState,
       },
     ];
-  }, [data, summary, error, isLoading]);
+  }, [data, summary, error, isLoading, isRunning, handleRefresh]);
 
   return (
     <CrewDashboardShell
