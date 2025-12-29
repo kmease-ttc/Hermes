@@ -9949,6 +9949,446 @@ When answering:
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // FIX PLAN API - Generate and execute review-first fix plans
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * POST /api/fix-plan/speedster
+   * Generate a fix plan for Core Web Vitals based on current metrics + Socrates learnings
+   */
+  app.post("/api/fix-plan/speedster", async (req, res) => {
+    try {
+      const { siteId = "default", currentMetrics, context } = req.body;
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+      const planId = `plan_${Date.now()}_${randomUUID().slice(0, 8)}`;
+      
+      logger.info("FixPlan", "Generating Speedster fix plan", { siteId, planId });
+      
+      // Check cooldown - get last executed plan for this topic
+      const lastExecuted = await storage.getLastExecutedPlan(siteId, "speedster", "core_web_vitals");
+      const cooldownDays = 3; // Default 3 days between PRs
+      const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
+      
+      let cooldownAllowed = true;
+      let cooldownNextAllowedAt: Date | null = null;
+      let cooldownReason: string | null = null;
+      
+      if (lastExecuted?.executedAt) {
+        const lastExecTime = new Date(lastExecuted.executedAt).getTime();
+        const now = Date.now();
+        const timeSinceLast = now - lastExecTime;
+        
+        if (timeSinceLast < cooldownMs) {
+          cooldownAllowed = false;
+          cooldownNextAllowedAt = new Date(lastExecTime + cooldownMs);
+          cooldownReason = `Last PR was ${Math.round(timeSinceLast / (24 * 60 * 60 * 1000))} days ago. Recommended to wait ${cooldownDays} days between changes to reduce ranking volatility.`;
+        }
+      }
+      
+      // Get latest metrics from storage if not provided
+      let vitals = currentMetrics;
+      if (!vitals) {
+        const latestMetrics = await storage.getAllLatestMetrics(siteId);
+        vitals = {
+          lcp: latestMetrics?.['vitals.lcp']?.value,
+          cls: latestMetrics?.['vitals.cls']?.value,
+          inp: latestMetrics?.['vitals.inp']?.value,
+          performanceScore: latestMetrics?.['vitals.performance_score']?.value,
+        };
+      }
+      
+      // Query Socrates for prior learnings
+      let priorLearnings: any[] = [];
+      let consultedSocrates = false;
+      
+      try {
+        const kbaseSecret = await getSecretForService("SEO_KBASE", siteId);
+        if (kbaseSecret?.base_url && kbaseSecret?.api_key) {
+          const kbResponse = await fetch(`${kbaseSecret.base_url}/query`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": kbaseSecret.api_key,
+              "X-Request-Id": requestId,
+            },
+            body: JSON.stringify({
+              siteId,
+              topic: "core_web_vitals",
+              query: "performance fixes that worked or failed",
+              limit: 10,
+            }),
+          });
+          
+          if (kbResponse.ok) {
+            const kbData = await kbResponse.json();
+            priorLearnings = kbData.entries || kbData.results || [];
+            consultedSocrates = true;
+            logger.info("FixPlan", `Retrieved ${priorLearnings.length} prior learnings from Socrates`);
+          }
+        }
+      } catch (kbErr: any) {
+        logger.warn("FixPlan", "Failed to consult Socrates (non-fatal)", { error: kbErr.message });
+      }
+      
+      // Generate fix plan items based on vitals thresholds
+      const planItems: any[] = [];
+      
+      // LCP fixes
+      if (vitals?.lcp && vitals.lcp > 2.5) {
+        planItems.push({
+          id: `fix_lcp_${Date.now()}`,
+          title: "Optimize Largest Contentful Paint",
+          why: `LCP is ${vitals.lcp.toFixed(2)}s, exceeding the 2.5s threshold for good user experience`,
+          proposedChanges: [
+            { type: "code", fileHint: "images, fonts", description: "Add lazy loading to below-fold images" },
+            { type: "config", fileHint: "nginx/CDN", description: "Enable compression and caching headers" },
+            { type: "code", fileHint: "hero section", description: "Preload critical hero image" },
+          ],
+          expectedOutcome: `Reduce LCP by ~0.5-1.5s, targeting <2.5s`,
+          risk: vitals.lcp > 4 ? "low" : "medium",
+          confidence: vitals.lcp > 4 ? "high" : "medium",
+          sources: ["speedster", ...(consultedSocrates ? ["socrates"] : [])],
+        });
+      }
+      
+      // CLS fixes
+      if (vitals?.cls && vitals.cls > 0.1) {
+        planItems.push({
+          id: `fix_cls_${Date.now()}`,
+          title: "Reduce Cumulative Layout Shift",
+          why: `CLS is ${vitals.cls.toFixed(3)}, exceeding the 0.1 threshold causing poor visual stability`,
+          proposedChanges: [
+            { type: "code", fileHint: "images", description: "Add explicit width/height to images" },
+            { type: "code", fileHint: "fonts", description: "Use font-display: swap with size-adjust" },
+            { type: "code", fileHint: "ads/embeds", description: "Reserve space for dynamic content" },
+          ],
+          expectedOutcome: `Reduce CLS to <0.1 for stable visual experience`,
+          risk: "low",
+          confidence: "high",
+          sources: ["speedster", ...(consultedSocrates ? ["socrates"] : [])],
+        });
+      }
+      
+      // INP fixes
+      if (vitals?.inp && vitals.inp > 200) {
+        planItems.push({
+          id: `fix_inp_${Date.now()}`,
+          title: "Improve Interaction to Next Paint",
+          why: `INP is ${vitals.inp}ms, exceeding the 200ms threshold for responsive interactions`,
+          proposedChanges: [
+            { type: "code", fileHint: "event handlers", description: "Break up long tasks and use requestIdleCallback" },
+            { type: "code", fileHint: "JavaScript", description: "Defer non-critical JavaScript" },
+            { type: "code", fileHint: "main thread", description: "Move heavy computation to Web Workers" },
+          ],
+          expectedOutcome: `Reduce INP to <200ms for snappy interactions`,
+          risk: "medium",
+          confidence: vitals.inp > 500 ? "high" : "medium",
+          sources: ["speedster", ...(consultedSocrates ? ["socrates"] : [])],
+        });
+      }
+      
+      // Add Socrates-informed items if available
+      for (const learning of priorLearnings.slice(0, 3)) {
+        if (learning.recommendation && learning.outcome?.status === "success") {
+          planItems.push({
+            id: `socrates_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            title: learning.title || "Recommended from past success",
+            why: learning.observation || "Previously successful fix for similar issue",
+            proposedChanges: [
+              { type: "recommendation", description: learning.recommendation },
+            ],
+            expectedOutcome: learning.outcome?.metrics_after || "Improvement based on past results",
+            risk: "low",
+            confidence: "high",
+            sources: ["socrates"],
+          });
+        }
+      }
+      
+      // Calculate recommended max changes
+      const maxChangesRecommended = Math.min(Math.max(planItems.length, 3), 10);
+      
+      // Store the plan
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
+      
+      const plan = await storage.createFixPlan({
+        planId,
+        siteId,
+        crewId: "speedster",
+        topic: "core_web_vitals",
+        status: "pending",
+        cooldownAllowed,
+        cooldownNextAllowedAt,
+        cooldownReason,
+        lastPrCreatedAt: lastExecuted?.executedAt || null,
+        maxChangesRecommended,
+        itemsJson: planItems,
+        metricsSnapshot: vitals,
+        socratesContext: { consultedSocrates, priorLearningsCount: priorLearnings.length },
+        generatedAt: new Date(),
+        expiresAt,
+      });
+      
+      logger.info("FixPlan", `Generated fix plan with ${planItems.length} items`, { planId });
+      
+      res.json({
+        ok: true,
+        service: "fix-plan",
+        request_id: requestId,
+        data: {
+          planId: plan.planId,
+          generatedAt: plan.generatedAt,
+          expiresAt: plan.expiresAt,
+          cooldown: {
+            allowed: cooldownAllowed,
+            nextAllowedAt: cooldownNextAllowedAt,
+            reason: cooldownReason,
+            lastPrAt: lastExecuted?.executedAt || null,
+          },
+          maxChangesRecommended,
+          items: planItems,
+          consultedSocrates,
+          priorLearningsCount: priorLearnings.length,
+          metricsSnapshot: vitals,
+        },
+      });
+      
+    } catch (error: any) {
+      logger.error("FixPlan", "Failed to generate fix plan", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/fix-plan/speedster/latest
+   * Get the latest pending fix plan for Speedster
+   */
+  app.get("/api/fix-plan/speedster/latest", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+      
+      const plan = await storage.getLatestFixPlan(siteId, "speedster");
+      
+      if (!plan) {
+        return res.json({
+          ok: true,
+          service: "fix-plan",
+          request_id: requestId,
+          data: null,
+          message: "No pending fix plan. Generate one to get started.",
+        });
+      }
+      
+      // Check if expired
+      if (plan.expiresAt && new Date(plan.expiresAt) < new Date()) {
+        await storage.updateFixPlan(plan.planId, { status: "expired" });
+        return res.json({
+          ok: true,
+          service: "fix-plan",
+          request_id: requestId,
+          data: null,
+          message: "Previous plan expired. Generate a new one.",
+        });
+      }
+      
+      res.json({
+        ok: true,
+        service: "fix-plan",
+        request_id: requestId,
+        data: {
+          planId: plan.planId,
+          generatedAt: plan.generatedAt,
+          expiresAt: plan.expiresAt,
+          cooldown: {
+            allowed: plan.cooldownAllowed,
+            nextAllowedAt: plan.cooldownNextAllowedAt,
+            reason: plan.cooldownReason,
+            lastPrAt: plan.lastPrCreatedAt,
+          },
+          maxChangesRecommended: plan.maxChangesRecommended,
+          items: plan.itemsJson,
+          metricsSnapshot: plan.metricsSnapshot,
+          socratesContext: plan.socratesContext,
+        },
+      });
+      
+    } catch (error: any) {
+      logger.error("FixPlan", "Failed to get latest fix plan", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/fix-plan/execute
+   * Execute a fix plan by creating a GitHub PR
+   */
+  app.post("/api/fix-plan/execute", async (req, res) => {
+    try {
+      const { siteId = "default", planId, maxChanges, overrideCooldown, overrideReason } = req.body;
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+      
+      if (!planId) {
+        return res.status(400).json({ ok: false, error: "planId is required" });
+      }
+      
+      logger.info("FixPlan", "Executing fix plan", { siteId, planId });
+      
+      // Load plan from DB
+      const plan = await storage.getFixPlanById(planId);
+      
+      if (!plan) {
+        return res.status(404).json({ ok: false, error: "Fix plan not found" });
+      }
+      
+      if (plan.status !== "pending") {
+        return res.status(400).json({ ok: false, error: `Plan is ${plan.status}, not pending` });
+      }
+      
+      // Check expiry
+      if (plan.expiresAt && new Date(plan.expiresAt) < new Date()) {
+        await storage.updateFixPlan(planId, { status: "expired" });
+        return res.status(400).json({ ok: false, error: "Plan has expired. Generate a new one." });
+      }
+      
+      // Check cooldown
+      if (!plan.cooldownAllowed && !overrideCooldown) {
+        return res.status(400).json({
+          ok: false,
+          error: "Cooldown active",
+          cooldown: {
+            allowed: false,
+            nextAllowedAt: plan.cooldownNextAllowedAt,
+            reason: plan.cooldownReason,
+          },
+          message: "Provide overrideCooldown=true and overrideReason to bypass",
+        });
+      }
+      
+      // Clamp max changes
+      const items = (plan.itemsJson as any[]) || [];
+      const effectiveMax = Math.min(maxChanges || plan.maxChangesRecommended || 5, items.length);
+      const itemsToExecute = items.slice(0, effectiveMax);
+      
+      // Prepare fix summary for PR
+      const fixSummary = itemsToExecute.map((item: any, i: number) => 
+        `${i + 1}. **${item.title}**\n   - Why: ${item.why}\n   - Expected: ${item.expectedOutcome}`
+      ).join("\n\n");
+      
+      // Get Change Executor secret
+      const changeSecret = await getSecretForService("SEO_Changes", siteId);
+      
+      if (!changeSecret?.base_url || !changeSecret?.api_key) {
+        return res.status(400).json({
+          ok: false,
+          error: "Change Executor not configured",
+          message: "Set up SEO_Changes secret in Bitwarden vault to enable PR creation",
+        });
+      }
+      
+      // Call Change Executor to create PR
+      const prResponse = await fetch(`${changeSecret.base_url}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": changeSecret.api_key,
+          "X-Request-Id": requestId,
+        },
+        body: JSON.stringify({
+          siteId,
+          mode: "pr_only",
+          planId,
+          fixes: itemsToExecute,
+          prTitle: `[Speedster] Core Web Vitals Optimization - ${new Date().toISOString().slice(0, 10)}`,
+          prBody: `## Fix Plan Execution\n\nThis PR was generated by the Speedster agent based on Core Web Vitals analysis.\n\n### Changes\n\n${fixSummary}\n\n### Metrics Snapshot\n\n- LCP: ${(plan.metricsSnapshot as any)?.lcp?.toFixed(2) || 'N/A'}s\n- CLS: ${(plan.metricsSnapshot as any)?.cls?.toFixed(3) || 'N/A'}\n- INP: ${(plan.metricsSnapshot as any)?.inp || 'N/A'}ms\n\n---\n*Generated by Arco Dashboard - Fix Plan ${planId}*`,
+        }),
+      });
+      
+      let prResult: any = null;
+      if (prResponse.ok) {
+        const prData = await prResponse.json();
+        prResult = prData.data || prData;
+      } else {
+        const prError = await prResponse.text();
+        logger.error("FixPlan", "Change Executor failed", { status: prResponse.status, error: prError });
+        return res.status(500).json({ ok: false, error: `PR creation failed: ${prError}` });
+      }
+      
+      // Update plan as executed
+      await storage.updateFixPlan(planId, {
+        status: "executed",
+        executedAt: new Date(),
+        executedItemsCount: itemsToExecute.length,
+        prUrl: prResult?.prUrl,
+        prBranch: prResult?.branchName,
+        executionResult: prResult,
+      });
+      
+      // Write outcome to Socrates
+      try {
+        const kbaseSecret = await getSecretForService("SEO_KBASE", siteId);
+        if (kbaseSecret?.base_url && kbaseSecret?.api_key) {
+          await fetch(`${kbaseSecret.base_url}/write`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": kbaseSecret.api_key,
+              "X-Request-Id": requestId,
+            },
+            body: JSON.stringify({
+              siteId,
+              entry: {
+                type: "fix_result",
+                topic: "core_web_vitals",
+                source: "speedster",
+                title: `Fix Plan Executed: ${planId}`,
+                observation: `Executed ${itemsToExecute.length} fixes based on vitals: LCP=${(plan.metricsSnapshot as any)?.lcp}, CLS=${(plan.metricsSnapshot as any)?.cls}, INP=${(plan.metricsSnapshot as any)?.inp}`,
+                recommendation: itemsToExecute.map((i: any) => i.title).join(", "),
+                evidence: {
+                  planId,
+                  prUrl: prResult?.prUrl,
+                  itemsExecuted: itemsToExecute.length,
+                  metricsSnapshot: plan.metricsSnapshot,
+                },
+                outcome: {
+                  status: "pending",
+                  notes: "Awaiting PR merge and metrics verification",
+                },
+                tags: ["cwv", "automated-fix", "pr-created"],
+                createdAt: new Date().toISOString(),
+              },
+            }),
+          });
+          logger.info("FixPlan", "Wrote execution outcome to Socrates");
+        }
+      } catch (kbErr: any) {
+        logger.warn("FixPlan", "Failed to write to Socrates (non-fatal)", { error: kbErr.message });
+      }
+      
+      logger.info("FixPlan", "Fix plan executed successfully", { planId, prUrl: prResult?.prUrl });
+      
+      res.json({
+        ok: true,
+        service: "fix-plan",
+        request_id: requestId,
+        data: {
+          planId,
+          status: "executed",
+          prUrl: prResult?.prUrl,
+          branchName: prResult?.branchName,
+          filesChanged: prResult?.filesChanged?.length || 0,
+          itemsExecuted: itemsToExecute.length,
+          overrideCooldown: overrideCooldown || false,
+        },
+      });
+      
+    } catch (error: any) {
+      logger.error("FixPlan", "Failed to execute fix plan", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // Atlas (AI Optimization) API - Stub endpoints
   // ═══════════════════════════════════════════════════════════════════════════
 
