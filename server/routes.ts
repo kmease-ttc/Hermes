@@ -9516,7 +9516,8 @@ When answering:
       for (const key of cwvMetricKeys) {
         const benchmark = allBenchmarks.find(b => b.metric === key);
         if (benchmark) {
-          const currentValue = metrics[key as keyof typeof metrics];
+          const rawValue = metrics[key as keyof typeof metrics];
+          const currentValue = rawValue !== undefined ? rawValue : null;
           let percentile: string | null = null;
           let comparison: 'better' | 'average' | 'worse' | null = null;
           

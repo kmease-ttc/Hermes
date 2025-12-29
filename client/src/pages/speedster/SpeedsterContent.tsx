@@ -431,25 +431,20 @@ export default function SpeedsterContent() {
       {speedsterData?.benchmarks && Object.keys(speedsterData.benchmarks).length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-500" />
-                <div>
-                  <CardTitle className="text-base">Industry Benchmarks</CardTitle>
-                  <CardDescription>
-                    Compare your metrics against {speedsterData.industry || 'healthcare'} industry standards
-                  </CardDescription>
-                </div>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <div>
+                <CardTitle className="text-base">Industry Benchmarks</CardTitle>
+                <CardDescription>
+                  Compare your metrics against {speedsterData.industry || 'healthcare'} industry standards
+                </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs">
-                Source: CrUX 2024
-              </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {Object.entries(speedsterData.benchmarks).map(([key, bench]: [string, any]) => {
-                if (!bench || bench.currentValue === null) return null;
+                if (!bench || bench.currentValue === null || bench.currentValue === undefined) return null;
                 
                 const metricLabels: Record<string, string> = {
                   'vitals.lcp': 'LCP (Loading)',
@@ -483,7 +478,12 @@ export default function SpeedsterContent() {
                 return (
                   <div key={key} className="p-3 rounded-lg border">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{metricLabels[key] || key}</span>
+                      <div>
+                        <span className="font-medium text-sm">{metricLabels[key] || key}</span>
+                        {bench.source && (
+                          <span className="text-xs text-muted-foreground ml-2">({bench.source})</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         {bench.percentile && (
                           <Badge 
