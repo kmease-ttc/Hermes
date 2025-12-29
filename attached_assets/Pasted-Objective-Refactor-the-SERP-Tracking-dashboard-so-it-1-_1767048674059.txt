@@ -1,0 +1,65 @@
+Objective
+Refactor the SERP Tracking dashboard so it:
+
+1. Generates/maintains a canonical list of ~100 “target keywords we want to rank for”
+2. Uses the SERP worker to fetch positions for those keywords
+3. Lets the user review/edit/approve the keyword list (feedback loop)
+4. Removes the “Top Ranking Keywords” section and relies on a single “All Keywords” table + KPI cards
+
+Key Product Behavior (What the user should experience)
+A) On first load (no keyword list saved yet)
+
+* The page shows a setup state with a CTA: “Generate my target keywords”
+* When clicked, the system generates ~100 target keywords (via AI or another agent), saves them, then runs SERP to fetch rankings.
+
+B) On normal load (keyword list exists)
+
+* The page loads instantly from saved keywords + last known SERP results.
+* User can click “Quick Check” or “Full Check”:
+
+  * Quick Check = only refresh keywords missing recent data (respect 7-day rule)
+  * Full Check = refresh rankings for all keywords (still respect the 7-day rule unless user explicitly forces override)
+
+C) Feedback / editing
+
+* User can add/remove/edit keywords directly from the UI.
+* User can optionally ask AI to “suggest replacements” for low-performing or irrelevant keywords.
+* Any edits are persisted as the canonical target list and are used in the next SERP run.
+
+D) UI simplification
+
+* Remove the “Top Ranking Keywords” section entirely.
+* Keep:
+
+  * KPI cards (Top 1 / Top 3 / Top 10 / Total Ranking) using exclusive buckets + movement per card
+  * One “All Keywords” table as the main view
+
+Architecture: Keyword Source of Truth
+Create a canonical “Target Keywords” list stored in DB:
+
+* target_keywords table (or equivalent):
+
+  * id
+  * domain
+  * keyword
+  * priority (optional)
+  * intent/category (optional)
+  * created_at, updated_at
+  * is_active (soft delete)
+  * source (AI/manual/import)
+  * notes/feedback (optional)
+
+IMPORTANT: SERP checks should run ONLY against this target list (not against what happens to be returned from other sources).
+
+How to Generate the 100 Target Keywords (choose one and implement cleanly)
+Implement ONE primary method now, but structure it so swapping sources later is easy.
+
+Option 1 (Recommended): Use ChatGPT directly (Replit integrated LLM)
+
+* Add server endpoint: POST /api/keywords/generate
+* Input: domain, business type/category, location (optional), services (optional)
+* Output: array of ~100 keywords with optional metadata (priority, intent)
+* Save them to target_keywords
+* Return the saved list to the client
+
+Option 2: Use an internal “Keyword Research” agent/worker (if it

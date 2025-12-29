@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy, Zap, Settings2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface RankingData {
   id: number;
@@ -41,7 +43,11 @@ export default function SERPContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isChecking, setIsChecking] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupDomain, setSetupDomain] = useState('empathyhealthclinic.com');
+  const [setupBusinessType, setSetupBusinessType] = useState('psychiatry clinic');
+  const [setupLocation, setSetupLocation] = useState('Orlando, Florida');
 
   const { data: overview, isLoading } = useQuery<SerpOverview>({
     queryKey: ['serp-overview'],
@@ -104,45 +110,52 @@ export default function SERPContent() {
     },
   });
 
-  const seedKeywords = useMutation({
-    mutationFn: async () => {
-      const res = await fetch('/api/serp/seed', { 
+  const generateKeywords = useMutation({
+    mutationFn: async (params: { domain: string; businessType: string; location: string }) => {
+      const res = await fetch('/api/keywords/generate', { 
         method: 'POST',
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(params),
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'Failed to seed keywords');
+        throw new Error(error.error || 'Failed to generate keywords');
       }
       return res.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "Keywords Seeded",
-        description: `Added ${data.saved} keywords for tracking.`,
+        title: "Keywords Generated",
+        description: data.message || `Created ${data.added || data.saved} target keywords for tracking.`,
       });
       queryClient.invalidateQueries({ queryKey: ['serp-overview'] });
       queryClient.invalidateQueries({ queryKey: ['serp-rankings-full'] });
-      setIsSeeding(false);
+      setIsGenerating(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Seed Failed",
+        title: "Generation Failed",
         description: error.message,
         variant: "destructive",
       });
-      setIsSeeding(false);
+      setIsGenerating(false);
     },
   });
 
-  const handleCheck = (limit: number) => {
+  const handleCheck = (mode: 'quick' | 'full') => {
     setIsChecking(true);
-    runCheck.mutate(limit);
+    // Quick check = 10 keywords, Full check = 100 keywords
+    runCheck.mutate(mode === 'quick' ? 10 : 100);
   };
 
-  const handleSeed = () => {
-    setIsSeeding(true);
-    seedKeywords.mutate();
+  const handleGenerate = () => {
+    setIsGenerating(true);
+    generateKeywords.mutate({
+      domain: setupDomain,
+      businessType: setupBusinessType,
+      location: setupLocation,
+    });
   };
 
   const getPositionColor = (pos: number | null) => {
@@ -170,7 +183,87 @@ export default function SERPContent() {
   }
 
   const stats = overview?.stats || { ranking: 0, notRanking: 0, numberOne: 0, inTop3: 0, inTop10: 0, inTop20: 0, avgPosition: null, winners: 0, losers: 0 };
-  const totalTracked = stats.ranking + stats.notRanking;
+  const hasKeywords = (overview?.totalKeywords || 0) > 0;
+
+  // Show setup state if no keywords exist
+  if (!hasKeywords && !isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold">SERP Tracking</h2>
+            <p className="text-muted-foreground text-sm">
+              Track keyword rankings and position changes
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Generate Target Keywords</CardTitle>
+            <CardDescription className="text-base">
+              Let AI create a list of ~100 target keywords tailored to your business. 
+              You can review and edit them before tracking.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 max-w-md mx-auto">
+            <div className="space-y-2">
+              <Label htmlFor="domain">Domain</Label>
+              <Input 
+                id="domain"
+                value={setupDomain}
+                onChange={(e) => setSetupDomain(e.target.value)}
+                placeholder="yourdomain.com"
+                data-testid="input-setup-domain"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="businessType">Business Type</Label>
+              <Input 
+                id="businessType"
+                value={setupBusinessType}
+                onChange={(e) => setSetupBusinessType(e.target.value)}
+                placeholder="e.g., psychiatry clinic, dental practice"
+                data-testid="input-setup-business-type"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input 
+                id="location"
+                value={setupLocation}
+                onChange={(e) => setSetupLocation(e.target.value)}
+                placeholder="e.g., Orlando, Florida"
+                data-testid="input-setup-location"
+              />
+            </div>
+            <Button 
+              onClick={handleGenerate}
+              disabled={isGenerating || !setupDomain}
+              className="w-full mt-4"
+              size="lg"
+              data-testid="button-generate-keywords"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                  Generating Keywords...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Generate My Target Keywords
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -178,37 +271,27 @@ export default function SERPContent() {
         <div>
           <h2 className="text-xl font-bold">SERP Tracking</h2>
           <p className="text-muted-foreground text-sm">
-            Monitor keyword rankings and position changes
+            {overview?.totalKeywords || 0} target keywords • Last check: {overview?.lastCheck || 'Never'}
           </p>
         </div>
         <div className="flex gap-2">
-          {overview?.totalKeywords === 0 && (
-            <Button 
-              onClick={handleSeed} 
-              disabled={isSeeding}
-              variant="outline"
-              size="sm"
-              data-testid="button-seed-keywords"
-            >
-              {isSeeding ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Seed Keywords
-            </Button>
-          )}
           <Button 
-            onClick={() => handleCheck(10)} 
-            disabled={isChecking || !overview?.configured || overview?.totalKeywords === 0}
+            onClick={() => handleCheck('quick')} 
+            disabled={isChecking || !overview?.configured}
             variant="outline"
             size="sm"
             data-testid="button-quick-check"
+            title="Check keywords missing recent data (respects 7-day rule)"
           >
-            {isChecking ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+            {isChecking ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
             Quick Check
           </Button>
           <Button 
-            onClick={() => handleCheck(50)} 
-            disabled={isChecking || !overview?.configured || overview?.totalKeywords === 0}
+            onClick={() => handleCheck('full')} 
+            disabled={isChecking || !overview?.configured}
             size="sm"
             data-testid="button-full-check"
+            title="Refresh rankings for all keywords (respects 7-day rule)"
           >
             {isChecking ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Target className="h-4 w-4 mr-2" />}
             Full Check
@@ -303,55 +386,6 @@ export default function SERPContent() {
             <p className="text-xs text-muted-foreground">Movement</p>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card data-testid="card-top-rankings">
-          <CardHeader>
-            <CardTitle>Top Ranking Keywords</CardTitle>
-            <CardDescription>
-              Best performing keywords by position
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {overview?.topKeywords && overview.topKeywords.length > 0 ? (
-              <div className="space-y-3">
-                {overview.topKeywords.map((r, idx) => (
-                  <div key={r.id || idx} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm" data-testid={`text-keyword-${r.keywordId}`}>
-                        {r.keyword || `Keyword #${r.keywordId}`}
-                      </p>
-                      {r.url && (
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {r.url}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-lg font-bold ${getPositionColor(r.position)}`}>
-                        #{r.position}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {getChangeIcon(r.change)}
-                        {r.change !== null && r.change !== 0 && (
-                          <span className={r.change > 0 ? 'text-semantic-success text-sm' : 'text-semantic-danger text-sm'}>
-                            {r.change > 0 ? '+' : ''}{r.change}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No ranking data yet. Run a SERP check to start tracking.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
       </div>
 
       <Card data-testid="card-all-rankings">

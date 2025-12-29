@@ -1,0 +1,124 @@
+Objective
+Enhance the SERP Tracking “All Keywords” table so each keyword includes:
+
+* Search Volume (monthly volume)
+* Difficulty (how hard it is to rank)
+* Priority (how likely it is to drive leads for this business)
+
+The goal is to make the keyword list actionable for lead growth, not just rankings.
+
+UI Changes (All Keywords Table)
+
+1. Add 3 new columns to the All Keywords table:
+
+* Volume (Monthly)
+* Difficulty
+* Priority
+
+2. Column behavior
+
+* Volume: numeric monthly search volume (e.g., 40, 210, 1,900). Show “—” if unknown.
+* Difficulty: 0–100 score (or Low/Med/High if that’s all we have). Show “—” if unknown.
+* Priority: 1–5 (or High/Med/Low), where Priority reflects lead-driving potential. Must not be the same as difficulty.
+
+3. Sorting & filtering
+
+* Add sort support for Volume, Difficulty, Priority
+* Default sort option: Priority desc, then Volume desc
+* Add quick filters:
+
+  * Priority: High/Med/Low (or 1–5)
+  * Difficulty: Easy/Medium/Hard (mapped from score thresholds)
+  * Volume ranges (optional)
+
+Data Model / Persistence (Required)
+Update the target keywords source-of-truth to store these fields (per domain, per keyword):
+
+* keyword
+* volume_monthly (int, nullable)
+* difficulty (int 0–100, nullable)
+* priority (int 1–5 or enum, required once computed)
+* priority_reason (text, optional; short explanation)
+* intent (optional: transactional / informational / local)
+* updated_at
+
+IMPORTANT: These values must be stored and not recomputed on every page load.
+
+How to Populate Volume + Difficulty
+Use one of these approaches (implement the best available based on current integrations):
+A) If SERP worker already returns volume/difficulty:
+
+* Parse it and persist into the keyword records.
+* Backfill existing keywords on next refresh.
+
+B) If SERP worker does NOT return volume/difficulty:
+
+* Add a keyword enrichment step:
+
+  * Create endpoint: POST /api/keywords/enrich
+  * For each keyword missing volume/difficulty, call an external provider (if configured) OR store as null and proceed.
+  * Persist results.
+
+Do not block the UI on this enrichment. It should run async-ish via a “Enrich Keywords” button or run during Full Check and update when complete.
+
+How to Compute “Priority” (Lead Impact)
+Priority is NOT difficulty and NOT volume alone. It is “expected lead value.”
+Compute Priority using an AI scoring step (since you have ChatGPT integrated) plus simple heuristics.
+
+Create endpoint: POST /api/keywords/score-priority
+Inputs:
+
+* domain
+* business type: Psychiatry clinic
+* location: Orlando (or configured location)
+* list of keywords with volume + difficulty (if present)
+  Outputs per keyword:
+* priority (1–5)
+* short reason (1 sentence)
+* optional intent tag: “high-intent / informational / brand / insurance / urgent / medication management”
+
+Scoring guidance (rules)
+
+* Highest priority keywords are those with strong purchase/appointment intent:
+
+  * “psychiatrist orlando”, “telepsychiatry orlando”, “same day psychiatrist orlando”, “psychiatrist near me”, “anxiety psychiatrist orlando”, “depression psychiatrist orlando”
+* Penalize low-conversion informational queries unless they are part of a content strategy.
+* Prefer local + service keywords over generic mental health terms.
+* Consider volume, but do not over-prioritize volume if intent is weak.
+* Difficulty should influence priority only as a secondary “effort” signal (e.g., high intent but very hard can still be high priority, just flagged).
+
+Display Requirements
+
+* Priority should render as:
+
+  * A small badge (High/Med/Low) or 1–5 dots
+  * Tooltip showing “reason” on hover
+* Difficulty should render as:
+
+  * Score + subtle label (Easy/Med/Hard)
+* Volume should render as:
+
+  * formatted number with commas
+
+Workflow Integration
+
+* On “Generate my target keywords”:
+
+  1. Generate keywords
+  2. Enrich volume/difficulty (if possible)
+  3. Score priority
+  4. Save all fields
+  5. Run SERP check
+
+* On “Full Check”:
+
+  * Refresh SERP positions (respect 7-day rule unless force)
+  * Enrich missing volume/difficulty
+  * Re-score priority if new keywords were added or if volume/difficulty changed
+
+Acceptance Criteria
+
+* All Keywords table shows Volume, Difficulty, Priority for each row (or “—” if unavailable)
+* Priority is visibly actionable and aligns with “drives most leads”
+* User can sort by Priority and quickly see the lead-focused targets first
+* Data persists; reload does not lose values

@@ -4130,6 +4130,158 @@ When answering:
   });
 
   // SERP Tracking Endpoints
+  
+  // Generate target keywords using AI
+  app.post("/api/keywords/generate", async (req, res) => {
+    try {
+      const { domain, businessType, location, services } = req.body;
+      
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+      
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      
+      const prompt = `Generate 100 SEO target keywords for a business with these details:
+- Domain: ${domain}
+- Business Type: ${businessType || 'healthcare/mental health clinic'}
+- Location: ${location || 'Orlando, Florida'}
+- Services: ${services || 'psychiatry, therapy, mental health treatment'}
+
+Generate keywords in these categories:
+1. Core service keywords (20-25) - High priority, transactional intent (e.g., "psychiatrist orlando")
+2. Condition-specific keywords (20-25) - Medium-high priority (e.g., "adhd psychiatrist orlando")  
+3. Insurance keywords (15-20) - Medium priority (e.g., "psychiatrist accepts cigna")
+4. Intent keywords (15-20) - High conversion (e.g., "same day psychiatrist", "psychiatrist accepting new patients")
+5. Location variants (10-15) - Nearby areas (e.g., "psychiatrist winter park")
+6. Informational/service keywords (10-15) - Lower priority but good for traffic
+
+For each keyword, provide:
+- keyword: the search term
+- priority: "critical" (100), "high" (80), "medium" (60), or "low" (40)
+- category: core, condition, insurance, intent, location, or service
+- volume: estimated monthly search volume (use realistic estimates)
+
+Return as JSON array. Only return the JSON array, no other text.`;
+
+      logger.info("Keywords", `Generating keywords for ${domain}`);
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are an SEO expert. Generate keyword lists in valid JSON format only. Return an array of objects with keyword, priority, category, and volume fields." 
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 8000,
+      });
+      
+      const responseText = completion.choices[0]?.message?.content || "[]";
+      
+      // Parse the JSON response
+      let keywords;
+      try {
+        // Clean up the response - remove markdown code blocks if present
+        const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        keywords = JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        logger.error("Keywords", "Failed to parse AI response", { response: responseText.substring(0, 500) });
+        return res.status(500).json({ error: "Failed to generate keywords. Please try again." });
+      }
+      
+      if (!Array.isArray(keywords)) {
+        logger.error("Keywords", "AI returned non-array response");
+        return res.status(500).json({ error: "Failed to generate keywords. Please try again." });
+      }
+      
+      // Map priority strings to numbers
+      const priorityMap: Record<string, number> = {
+        'critical': 100,
+        'high': 80,
+        'medium': 60,
+        'low': 40,
+      };
+      
+      // Import serpKeywords table for upsert
+      const { serpKeywords } = await import("@shared/schema");
+      
+      // Prepare keyword data for upsert
+      const keywordsToUpsert = keywords
+        .slice(0, 100)
+        .filter((kw: any) => kw.keyword)
+        .map((kw: any) => ({
+          keyword: kw.keyword,
+          intent: kw.category || 'transactional',
+          priority: typeof kw.priority === 'string' ? (priorityMap[kw.priority] || 50) : (kw.priority || 50),
+          targetUrl: null,
+          tags: kw.category ? [kw.category] : [],
+          volume: kw.volume || null,
+          active: true,
+        }));
+      
+      // Use transaction for atomic read-upsert-count
+      let addedCount = 0;
+      let updatedCount = 0;
+      let totalCount = 0;
+      
+      await db.transaction(async (tx) => {
+        // Get existing ACTIVE keyword IDs within transaction for accurate counting
+        const existingRows = await tx.select({ id: serpKeywords.id }).from(serpKeywords).where(sql`active = true`);
+        const existingActiveIds = new Set(existingRows.map(r => r.id));
+        
+        // Perform atomic upsert with RETURNING
+        let upsertedRows: any[] = [];
+        if (keywordsToUpsert.length > 0) {
+          upsertedRows = await tx.insert(serpKeywords)
+            .values(keywordsToUpsert)
+            .onConflictDoUpdate({
+              target: serpKeywords.keyword,
+              set: {
+                intent: sql`EXCLUDED.intent`,
+                priority: sql`EXCLUDED.priority`,
+                tags: sql`EXCLUDED.tags`,
+                volume: sql`EXCLUDED.volume`,
+                active: sql`true`, // Reactivate any soft-deleted keywords
+              },
+            })
+            .returning();
+        }
+        
+        // Count: new = ID not in active set, updated = ID was in active set
+        addedCount = upsertedRows.filter(row => !existingActiveIds.has(row.id)).length;
+        updatedCount = upsertedRows.filter(row => existingActiveIds.has(row.id)).length;
+        
+        // Get final count within same transaction
+        const countResult = await tx.select({ count: sql<number>`count(*)` }).from(serpKeywords).where(sql`active = true`);
+        totalCount = countResult[0]?.count || 0;
+      });
+      
+      logger.info("Keywords", `Generated ${keywords.length}, added ${addedCount}, updated ${updatedCount} for ${domain}`);
+      
+      res.json({
+        generated: keywords.length,
+        added: addedCount,
+        updated: updatedCount,
+        total: totalCount,
+        message: addedCount > 0 
+          ? `Added ${addedCount} new keywords${updatedCount > 0 ? `, updated ${updatedCount} existing` : ''}`
+          : updatedCount > 0
+            ? `Updated ${updatedCount} existing keywords`
+            : 'No changes made',
+      });
+      
+    } catch (error: any) {
+      logger.error("Keywords", "Failed to generate keywords", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   app.get("/api/serp/keywords", async (req, res) => {
     try {
       const activeOnly = req.query.active !== 'false';
