@@ -9897,5 +9897,286 @@ When answering:
     });
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SOCRATES (KNOWLEDGE BASE) PROXY ENDPOINTS
+  // Hermes is the single integration point for KB read/write operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * POST /api/kb/write
+   * Write a learning entry to the Knowledge Base
+   * Body: { siteId, entry: KBEntry }
+   */
+  app.post("/api/kb/write", async (req, res) => {
+    try {
+      const { siteId, entry } = req.body;
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+
+      if (!siteId) {
+        return res.status(400).json({ ok: false, error: "siteId is required" });
+      }
+      if (!entry || !entry.type || !entry.topic) {
+        return res.status(400).json({ ok: false, error: "entry with type and topic is required" });
+      }
+
+      // Validate entry structure
+      const validTypes = ["observation", "recommendation", "fix_result", "experiment", "incident"];
+      if (!validTypes.includes(entry.type)) {
+        return res.status(400).json({ 
+          ok: false, 
+          error: `Invalid entry type. Must be one of: ${validTypes.join(", ")}` 
+        });
+      }
+
+      // Get KB service configuration
+      const { getServiceSecrets } = await import("./vault");
+      const kbaseConfig = await getServiceSecrets('seo_kbase');
+
+      if (!kbaseConfig?.base_url || !kbaseConfig?.api_key) {
+        // Fallback: Store locally if KB worker not configured
+        logger.warn("KB", "Knowledge Base worker not configured, storing locally");
+        
+        // Store in audit log as fallback
+        await storage.saveAuditLog({
+          siteId,
+          action: 'kb_entry_local',
+          details: {
+            entryType: entry.type,
+            topic: entry.topic,
+            title: entry.title,
+            summary: entry.summary,
+            evidence: entry.evidence,
+            decision: entry.decision,
+            outcome: entry.outcome,
+            tags: entry.tags,
+            storedLocally: true,
+          },
+        });
+
+        return res.json({
+          ok: true,
+          service: "socrates",
+          request_id: requestId,
+          data: {
+            stored: true,
+            storageType: "local_fallback",
+            entryId: `local_${Date.now()}`,
+            message: "Entry stored locally. Configure SEO_KBASE for full Knowledge Base functionality.",
+          },
+        });
+      }
+
+      // Forward to Knowledge Base worker
+      logger.info("KB", `Writing entry to Socrates KB for site ${siteId}`, { 
+        type: entry.type, 
+        topic: entry.topic 
+      });
+
+      const kbResponse = await fetch(`${kbaseConfig.base_url}/write`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': kbaseConfig.api_key,
+          'Authorization': `Bearer ${kbaseConfig.api_key}`,
+          'X-Request-Id': requestId,
+        },
+        body: JSON.stringify({
+          siteId,
+          entry: {
+            ...entry,
+            createdAt: entry.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!kbResponse.ok) {
+        const errText = await kbResponse.text();
+        throw new Error(`KB write failed: ${kbResponse.status} - ${errText}`);
+      }
+
+      const kbResult = await kbResponse.json();
+
+      res.json({
+        ok: true,
+        service: "socrates",
+        request_id: requestId,
+        data: {
+          stored: true,
+          storageType: "knowledge_base",
+          entryId: kbResult.entryId || kbResult.id,
+          ...kbResult,
+        },
+      });
+    } catch (error: any) {
+      logger.error("KB", "Failed to write to Knowledge Base", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/kb/query
+   * Query the Knowledge Base for relevant learnings/guidance
+   * Body: { siteId, query, filters?, limit? }
+   */
+  app.post("/api/kb/query", async (req, res) => {
+    try {
+      const { siteId, query, filters, limit = 10 } = req.body;
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+
+      if (!siteId) {
+        return res.status(400).json({ ok: false, error: "siteId is required" });
+      }
+      if (!query) {
+        return res.status(400).json({ ok: false, error: "query is required" });
+      }
+
+      // Get KB service configuration
+      const { getServiceSecrets } = await import("./vault");
+      const kbaseConfig = await getServiceSecrets('seo_kbase');
+
+      if (!kbaseConfig?.base_url || !kbaseConfig?.api_key) {
+        // Return empty result if KB not configured
+        logger.warn("KB", "Knowledge Base worker not configured, returning empty results");
+        
+        return res.json({
+          ok: true,
+          service: "socrates",
+          request_id: requestId,
+          data: {
+            entries: [],
+            totalCount: 0,
+            message: "Knowledge Base not configured. Set up SEO_KBASE to enable learnings.",
+            consulted: false,
+          },
+        });
+      }
+
+      // Query Knowledge Base worker
+      logger.info("KB", `Querying Socrates KB for site ${siteId}`, { query, filters });
+
+      const kbResponse = await fetch(`${kbaseConfig.base_url}/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': kbaseConfig.api_key,
+          'Authorization': `Bearer ${kbaseConfig.api_key}`,
+          'X-Request-Id': requestId,
+        },
+        body: JSON.stringify({
+          siteId,
+          query,
+          filters: {
+            ...filters,
+            namespace: filters?.namespace || 'history', // default to history namespace
+          },
+          limit,
+        }),
+      });
+
+      if (!kbResponse.ok) {
+        const errText = await kbResponse.text();
+        throw new Error(`KB query failed: ${kbResponse.status} - ${errText}`);
+      }
+
+      const kbResult = await kbResponse.json();
+
+      res.json({
+        ok: true,
+        service: "socrates",
+        request_id: requestId,
+        data: {
+          entries: kbResult.entries || kbResult.results || [],
+          totalCount: kbResult.totalCount || kbResult.count || 0,
+          summary: kbResult.summary,
+          consulted: true,
+          queryTime: kbResult.queryTime,
+        },
+      });
+    } catch (error: any) {
+      logger.error("KB", "Failed to query Knowledge Base", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/kb/status
+   * Get Knowledge Base health and recent activity
+   */
+  app.get("/api/kb/status", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "site_empathy_health_clinic";
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+
+      // Get KB service configuration
+      const { getServiceSecrets } = await import("./vault");
+      const kbaseConfig = await getServiceSecrets('seo_kbase');
+
+      if (!kbaseConfig?.base_url || !kbaseConfig?.api_key) {
+        return res.json({
+          ok: true,
+          service: "socrates",
+          request_id: requestId,
+          data: {
+            configured: false,
+            status: "not_configured",
+            message: "Knowledge Base worker not configured. Set up SEO_KBASE secret.",
+            lastWriteAt: null,
+            lastQueryAt: null,
+            recentLearnings: [],
+          },
+        });
+      }
+
+      // Check KB worker health
+      try {
+        const healthResponse = await fetch(`${kbaseConfig.base_url}/health`, {
+          method: 'GET',
+          headers: {
+            'x-api-key': kbaseConfig.api_key,
+          },
+        });
+
+        if (!healthResponse.ok) {
+          throw new Error(`Health check failed: ${healthResponse.status}`);
+        }
+
+        const healthData = await healthResponse.json();
+
+        res.json({
+          ok: true,
+          service: "socrates",
+          request_id: requestId,
+          data: {
+            configured: true,
+            status: "healthy",
+            workerVersion: healthData.version,
+            lastWriteAt: healthData.lastWriteAt || null,
+            lastQueryAt: healthData.lastQueryAt || null,
+            entriesCount: healthData.entriesCount || 0,
+            recentLearnings: healthData.recentEntries || [],
+          },
+        });
+      } catch (healthErr: any) {
+        res.json({
+          ok: true,
+          service: "socrates",
+          request_id: requestId,
+          data: {
+            configured: true,
+            status: "unreachable",
+            error: healthErr.message,
+            lastWriteAt: null,
+            lastQueryAt: null,
+            recentLearnings: [],
+          },
+        });
+      }
+    } catch (error: any) {
+      logger.error("KB", "Failed to get KB status", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   return httpServer;
 }

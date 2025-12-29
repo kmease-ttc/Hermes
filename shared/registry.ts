@@ -75,6 +75,11 @@ export const METRIC_KEYS = {
   // AI Optimization
   'ai.coverage_score': { label: 'AI Coverage Score', unit: 'percent', source: 'ai_optimization' },
   'ai.llm_visibility': { label: 'LLM Visibility', unit: 'score', source: 'ai_optimization' },
+
+  // Knowledge Base (Socrates)
+  'kb.insights_written': { label: 'Insights Written', unit: 'count', source: 'seo_kbase' },
+  'kb.guidance_used': { label: 'Guidance Used', unit: 'count', source: 'seo_kbase' },
+  'kb.last_sync_at': { label: 'Last KB Sync', unit: 'timestamp', source: 'seo_kbase' },
 } as const;
 
 export type MetricKey = keyof typeof METRIC_KEYS;
@@ -89,6 +94,7 @@ export interface ServiceDefinition {
   description: string;
   metricsProduced: MetricKey[];
   secretName?: string;
+  capabilities?: { read?: boolean; write?: boolean };
 }
 
 export const SERVICES: Record<string, ServiceDefinition> = {
@@ -161,10 +167,11 @@ export const SERVICES: Record<string, ServiceDefinition> = {
   },
   seo_kbase: {
     id: 'seo_kbase',
-    displayName: 'SEO Knowledge Base',
-    description: 'Stores and retrieves SEO learnings',
-    metricsProduced: [],
+    displayName: 'Knowledge Base Worker',
+    description: 'Stores learnings and returns guidance for future decisions. Read/write flywheel for self-learning system.',
+    metricsProduced: ['kb.insights_written', 'kb.guidance_used', 'kb.last_sync_at'],
     secretName: 'SEO_KBASE',
+    capabilities: { read: true, write: true },
   },
   ai_optimization: {
     id: 'ai_optimization',
@@ -279,7 +286,7 @@ export const CREW: Record<string, CrewDefinition> = {
     nickname: 'Socrates',
     role: 'Knowledge Base',
     services: ['seo_kbase'],
-    metricsOwned: [],
+    metricsOwned: ['kb.insights_written', 'kb.guidance_used', 'kb.last_sync_at'],
     color: '#84CC16',
   },
   atlas: {
