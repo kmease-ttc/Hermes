@@ -40,6 +40,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
 import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
+import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
 
@@ -1066,7 +1067,11 @@ export default function MissionControl() {
         <ActionQueueCard actions={mockActions} />
 
         <BenchmarkComparison />
-        <KnowledgeBaseCard />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SocratesMemoryCard />
+          <KnowledgeBaseCard />
+        </div>
       </div>
 
       <ExportFixPackModal 

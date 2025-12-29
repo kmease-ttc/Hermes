@@ -204,6 +204,8 @@ export default function SpeedsterContent() {
     error?: string;
     blockedBy?: string[];
     hint?: string;
+    consultedSocrates?: boolean;
+    priorLearningsUsed?: number;
   } | null>(null);
   
   const fixMutation = useMutation({
@@ -237,6 +239,8 @@ export default function SpeedsterContent() {
           filesChanged: data.filesChanged,
           summary: data.summary,
           status: 'success',
+          consultedSocrates: data.consultedSocrates,
+          priorLearningsUsed: data.priorLearningsUsed,
         });
       }
     },
@@ -719,6 +723,19 @@ export default function SpeedsterContent() {
                   </p>
                 </div>
               </div>
+              
+              {fixResult.consultedSocrates && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-lime-500/10 border border-lime-500/30">
+                  <Badge className="bg-lime-500/20 text-lime-600 border-lime-500/30">
+                    Consulted Socrates
+                  </Badge>
+                  {fixResult.priorLearningsUsed !== undefined && fixResult.priorLearningsUsed > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      ({fixResult.priorLearningsUsed} prior learnings used)
+                    </span>
+                  )}
+                </div>
+              )}
               
               {fixResult.summary && (
                 <div className="p-3 rounded-lg bg-muted">

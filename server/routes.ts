@@ -9642,7 +9642,49 @@ When answering:
         });
       }
       
-      // Step B: Generate fix plan using Knowledge Base
+      // Step B: KB Preflight - Query Socrates for prior learnings
+      // This enables the "consult before action" pattern
+      let priorLearnings: any[] = [];
+      let consultedSocrates = false;
+      
+      try {
+        logger.info("Fix", "KB Preflight: Querying Socrates for past CWV fixes");
+        
+        const preflightResponse = await fetch(`${kbaseConfig.base_url}/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': kbaseConfig.api_key,
+            'Authorization': `Bearer ${kbaseConfig.api_key}`,
+          },
+          body: JSON.stringify({
+            siteId,
+            query: "core web vitals fixes lcp cls inp performance",
+            filters: {
+              namespace: 'history',
+              topic: 'core_web_vitals',
+              types: ['fix_result', 'recommendation', 'experiment'],
+            },
+            limit: 5,
+          }),
+        });
+        
+        if (preflightResponse.ok) {
+          const preflightData = await preflightResponse.json();
+          priorLearnings = preflightData.entries || preflightData.results || [];
+          consultedSocrates = true;
+          logger.info("Fix", `KB Preflight: Found ${priorLearnings.length} prior learnings`);
+        } else {
+          logger.warn("Fix", "KB Preflight: Query returned non-OK status, proceeding without history");
+        }
+      } catch (preflightErr: any) {
+        // Non-fatal - continue without prior learnings
+        logger.warn("Fix", "KB Preflight failed, continuing without prior learnings", { 
+          error: preflightErr.message 
+        });
+      }
+      
+      // Step C: Generate fix plan using Knowledge Base (with prior learnings context)
       logger.info("Fix", "Calling Knowledge Base for fix recommendations");
       
       let fixPlan;
@@ -9663,6 +9705,15 @@ When answering:
               safeMode: true,
               prioritize: ['lcp', 'cls', 'inp'],
             },
+            // Include prior learnings from KB preflight for smarter recommendations
+            priorLearnings: priorLearnings.map(l => ({
+              type: l.type,
+              topic: l.topic,
+              title: l.title,
+              outcome: l.outcome,
+              decision: l.decision,
+            })),
+            consultedSocrates,
           }),
         });
         
@@ -9732,8 +9783,69 @@ When answering:
           branchName: prResult?.branchName,
           filesChanged: prResult?.filesChanged?.length || 0,
           summary: fixPlan?.summary,
+          consultedSocrates,
+          priorLearningsCount: priorLearnings.length,
         },
       });
+      
+      // Step E: Write outcome back to Socrates KB (flywheel - learning from actions)
+      try {
+        logger.info("Fix", "Writing fix outcome back to Socrates KB");
+        
+        await fetch(`${kbaseConfig.base_url}/write`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': kbaseConfig.api_key,
+            'Authorization': `Bearer ${kbaseConfig.api_key}`,
+          },
+          body: JSON.stringify({
+            siteId,
+            entry: {
+              type: 'fix_result',
+              topic: 'core_web_vitals',
+              title: `CWV Fix PR: ${prResult?.branchName || 'cwv-fix'}`,
+              summary: fixPlan?.summary || 'Automated Core Web Vitals performance fix',
+              sourceCrewId: 'speedster',
+              sourceServiceId: 'core_web_vitals',
+              evidence: {
+                metrics: {
+                  lcp: evidence.lcp,
+                  cls: evidence.cls,
+                  inp: evidence.inp,
+                  performanceScore: evidence.performanceScore,
+                },
+                urls: evidence.topAffectedUrls?.slice(0, 5) || [],
+              },
+              decision: {
+                proposedAction: {
+                  type: 'create_pr',
+                  editsCount: fixPlan?.edits?.length || 0,
+                  maxChanges,
+                },
+                executedAction: {
+                  type: 'pr_created',
+                  prUrl: prResult?.prUrl,
+                  branchName: prResult?.branchName,
+                  filesChanged: prResult?.filesChanged?.length || 0,
+                },
+                prUrl: prResult?.prUrl,
+              },
+              outcome: {
+                status: 'pending', // Will be updated when PR is merged and metrics improve
+                notes: 'Awaiting PR merge and metrics verification',
+              },
+              tags: ['cwv', 'performance', 'automated-fix', 'pr-created'],
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+        
+        logger.info("Fix", "KB writeback completed successfully");
+      } catch (writebackErr: any) {
+        // Non-fatal - log but don't fail the request
+        logger.warn("Fix", "KB writeback failed (non-fatal)", { error: writebackErr.message });
+      }
       
       logger.info("Fix", "CWV fix PR created successfully", { prUrl: prResult?.prUrl });
       
@@ -9744,6 +9856,8 @@ When answering:
         filesChanged: prResult?.filesChanged?.length || 0,
         summary: fixPlan?.summary,
         recommendations: fixPlan?.checklist || [],
+        consultedSocrates,
+        priorLearningsUsed: priorLearnings.length,
       });
       
     } catch (error: any) {
