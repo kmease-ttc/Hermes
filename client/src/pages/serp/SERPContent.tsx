@@ -53,10 +53,21 @@ export default function SERPContent() {
     refetchInterval: 60000,
   });
 
-  const { data: rankingsData } = useQuery({
-    queryKey: ['serp-rankings'],
+  const { data: rankingsData } = useQuery<{
+    keywords: Array<{
+      id: number;
+      keyword: string;
+      currentPosition: number | null;
+      trend: string;
+      avg7Day: number | null;
+      avg30Day: number | null;
+      targetUrl: string | null;
+      currentUrl: string | null;
+    }>;
+  }>({
+    queryKey: ['serp-rankings-full'],
     queryFn: async () => {
-      const res = await fetch('/api/serp/rankings');
+      const res = await fetch('/api/serp/rankings/full');
       if (!res.ok) throw new Error('Failed to fetch rankings');
       return res.json();
     },
@@ -80,7 +91,7 @@ export default function SERPContent() {
         description: `Checked ${data.checked} keywords. ${data.stats.ranking} ranking, ${data.stats.inTop10} in top 10.`,
       });
       queryClient.invalidateQueries({ queryKey: ['serp-overview'] });
-      queryClient.invalidateQueries({ queryKey: ['serp-rankings'] });
+      queryClient.invalidateQueries({ queryKey: ['serp-rankings-full'] });
       setIsChecking(false);
     },
     onError: (error: Error) => {
@@ -111,7 +122,7 @@ export default function SERPContent() {
         description: `Added ${data.saved} keywords for tracking.`,
       });
       queryClient.invalidateQueries({ queryKey: ['serp-overview'] });
-      queryClient.invalidateQueries({ queryKey: ['serp-keywords'] });
+      queryClient.invalidateQueries({ queryKey: ['serp-rankings-full'] });
       setIsSeeding(false);
     },
     onError: (error: Error) => {
@@ -370,55 +381,53 @@ export default function SERPContent() {
 
       <Card data-testid="card-all-rankings">
         <CardHeader>
-          <CardTitle>All Keywords</CardTitle>
+          <CardTitle>All Keywords ({rankingsData?.keywords?.length || 0})</CardTitle>
           <CardDescription>
             Complete keyword ranking data • Last check: {overview?.lastCheck || 'Never'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {rankingsData?.rankings && rankingsData.rankings.length > 0 ? (
-            <div className="overflow-x-auto">
+          {rankingsData?.keywords && rankingsData.keywords.length > 0 ? (
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky top-0 bg-background">
                   <tr className="border-b">
                     <th className="text-left py-2 font-medium">Keyword</th>
                     <th className="text-center py-2 font-medium">Position</th>
-                    <th className="text-center py-2 font-medium">Change</th>
-                    <th className="text-left py-2 font-medium">URL</th>
-                    <th className="text-center py-2 font-medium">Features</th>
+                    <th className="text-center py-2 font-medium">Trend</th>
+                    <th className="text-center py-2 font-medium">7d Avg</th>
+                    <th className="text-center py-2 font-medium">30d Avg</th>
+                    <th className="text-left py-2 font-medium">Ranking URL</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rankingsData.rankings.slice(0, 50).map((r: RankingData, idx: number) => (
-                    <tr key={r.id || idx} className="border-b hover:bg-muted/50" data-testid={`row-ranking-${r.keywordId}`}>
+                  {rankingsData.keywords.map((kw, idx) => (
+                    <tr key={kw.id || idx} className="border-b hover:bg-muted/50" data-testid={`row-keyword-${kw.id}`}>
                       <td className="py-2 font-medium">
-                        {r.keyword || `Keyword #${r.keywordId}`}
+                        {kw.keyword}
                       </td>
-                      <td className={`py-2 text-center ${getPositionColor(r.position)}`}>
-                        {r.position ? `#${r.position}` : '—'}
-                      </td>
-                      <td className="py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {getChangeIcon(r.change)}
-                          {r.change !== null && r.change !== 0 && (
-                            <span className={r.change > 0 ? 'text-semantic-success' : 'text-semantic-danger'}>
-                              {r.change > 0 ? '+' : ''}{r.change}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2 text-muted-foreground truncate max-w-[200px]">
-                        {r.url || '—'}
+                      <td className={`py-2 text-center font-bold ${getPositionColor(kw.currentPosition)}`}>
+                        {kw.currentPosition ? (
+                          <span className="flex items-center justify-center gap-1">
+                            {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            #{kw.currentPosition}
+                          </span>
+                        ) : '—'}
                       </td>
                       <td className="py-2 text-center">
-                        <div className="flex justify-center gap-1">
-                          {r.serpFeatures?.featuredSnippet && (
-                            <Badge variant="secondary" className="text-xs">FS</Badge>
-                          )}
-                          {r.serpFeatures?.localPack && (
-                            <Badge variant="secondary" className="text-xs">LP</Badge>
-                          )}
-                        </div>
+                        {kw.trend === 'up' && <TrendingUp className="h-4 w-4 text-semantic-success mx-auto" />}
+                        {kw.trend === 'down' && <TrendingDown className="h-4 w-4 text-semantic-danger mx-auto" />}
+                        {kw.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground mx-auto" />}
+                        {kw.trend === 'new' && <Badge variant="outline" className="text-xs">New</Badge>}
+                      </td>
+                      <td className="py-2 text-center text-muted-foreground">
+                        {kw.avg7Day ? `#${kw.avg7Day.toFixed(1)}` : '—'}
+                      </td>
+                      <td className="py-2 text-center text-muted-foreground">
+                        {kw.avg30Day ? `#${kw.avg30Day.toFixed(1)}` : '—'}
+                      </td>
+                      <td className="py-2 text-muted-foreground truncate max-w-[250px]">
+                        {kw.currentUrl || kw.targetUrl || '—'}
                       </td>
                     </tr>
                   ))}
@@ -427,7 +436,7 @@ export default function SERPContent() {
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
-              No rankings data. Seed keywords and run a SERP check to start tracking.
+              No keywords tracked. Seed keywords and run a SERP check to start tracking.
             </p>
           )}
         </CardContent>
