@@ -46,6 +46,10 @@ export default function AgentDetail() {
     );
   }
 
+  // Agents that use CrewDashboardShell and handle their own header
+  const agentsWithOwnHeader = ["competitive_snapshot", "backlink_authority", "serp_intel", "google_data_connector", "core_web_vitals"];
+  const usesOwnHeader = agentsWithOwnHeader.includes(agentId);
+
   const renderAgentContent = () => {
     switch (agentId) {
       case "backlink_authority":
@@ -63,6 +67,28 @@ export default function AgentDetail() {
     }
   };
 
+  // For agents with their own CrewDashboardShell, render minimal wrapper with just back button
+  if (usesOwnHeader) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4" data-testid={`agent-detail-${agentId}`}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/crew")}
+            data-testid="button-back"
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Crew
+          </Button>
+          {renderAgentContent()}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // For agents without their own header, render full wrapper
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid={`agent-detail-${agentId}`}>
