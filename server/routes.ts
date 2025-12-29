@@ -3745,16 +3745,18 @@ When answering:
             logger.info("Competitive", "Worker capabilities fetched", { capabilities: capData });
           }
           
-          // Build payload with correct input format for the worker
-          // Worker expects: targetKeywords, competitorDomains, serpApiKey
+          // Build payload matching worker's /capabilities schema:
+          // Required: target.domain
+          // Optional: target.serviceTopics, target.city, target.state, competitors, options.max_competitors
           const workerPayload = {
-            targetKeywords: targetKeywords.length > 0 ? targetKeywords : serviceTopics,
-            competitorDomains: [], // Will be auto-discovered by worker
-            serpApiKey: serpApiKey,
             target: {
               domain: targetDomain,
-              category: siteCategory,
+              serviceTopics: targetKeywords.length > 0 ? targetKeywords : serviceTopics,
+              city: "Orlando",
+              state: "FL",
             },
+            competitors: [], // Will be auto-discovered by worker
+            serpApiKey: serpApiKey,
             options: {
               max_competitors: 5,
             },
@@ -3762,7 +3764,7 @@ When answering:
           
           logger.info("Competitive", "Calling worker with correct inputs", { 
             targetDomain, 
-            keywordCount: targetKeywords.length,
+            serviceTopicsCount: workerPayload.target.serviceTopics.length,
             hasSerpKey: !!serpApiKey,
           });
           
@@ -3891,6 +3893,30 @@ When answering:
       
       logger.info("Competitive", "Starting competitive analysis", { siteId });
       
+      // Get site info and keywords (same as GET /overview)
+      const sites = await storage.getSites();
+      const site = sites.find(s => s.siteId === siteId || (siteId === "default" && s.status === "active"));
+      
+      let targetDomain = "empathyhealthclinic.com";
+      let siteCategory = "clinic";
+      
+      if (site?.baseUrl) {
+        try {
+          const url = new URL(site.baseUrl);
+          targetDomain = url.hostname;
+        } catch {
+          targetDomain = site.baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        }
+        siteCategory = site.category || "clinic";
+      }
+      
+      // Get tracked keywords
+      const serpKeywords = await storage.getSerpKeywords(true);
+      const targetKeywords = serpKeywords.map(k => k.keyword).slice(0, 20);
+      
+      // Get SERP API key
+      const serpApiKey = process.env.SERP_API_KEY || "";
+      
       // Try to call the competitive_snapshot worker if configured
       const { resolveWorkerConfig } = await import("./workerConfigResolver");
       const compConfig = await resolveWorkerConfig("competitive_snapshot");
@@ -3906,30 +3932,54 @@ When answering:
           headers["X-API-Key"] = compConfig.api_key;
         }
         
+        // Build full payload matching worker's /capabilities schema
+        const workerPayload = {
+          target: {
+            domain: targetDomain,
+            serviceTopics: targetKeywords.length > 0 ? targetKeywords : ["psychiatry", "mental health", "therapy"],
+            city: "Orlando",
+            state: "FL",
+          },
+          competitors: [],
+          serpApiKey: serpApiKey,
+          options: {
+            max_competitors: 5,
+          },
+        };
+        
+        logger.info("Competitive", "Calling worker /run with full payload", { 
+          targetDomain,
+          keywordCount: workerPayload.target.serviceTopics.length,
+          hasSerpKey: !!serpApiKey,
+        });
+        
         try {
           const runRes = await fetch(`${baseUrl}/run`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ siteId }),
+            body: JSON.stringify(workerPayload),
             signal: AbortSignal.timeout(60000),
           });
           
           if (runRes.ok) {
             const data = await runRes.json();
-            logger.info("Competitive", "Analysis completed via worker", { siteId });
+            logger.info("Competitive", "Analysis completed via worker", { siteId, data });
             return res.json({
               ok: true,
               service: "competitive_snapshot",
               request_id: requestId,
               data: data.data || data,
             });
+          } else {
+            const errorText = await runRes.text();
+            logger.warn("Competitive", "Worker returned error", { status: runRes.status, error: errorText.substring(0, 200) });
           }
         } catch (workerErr: any) {
-          logger.warn("Competitive", "Worker call failed, using mock data", { error: workerErr.message });
+          logger.warn("Competitive", "Worker call failed", { error: workerErr.message });
         }
       }
       
-      // Return mock success if worker not configured
+      // Return mock success if worker not configured or failed
       res.json({
         ok: true,
         service: "competitive_snapshot",
