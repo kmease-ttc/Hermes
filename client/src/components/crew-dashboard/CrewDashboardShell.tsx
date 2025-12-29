@@ -132,44 +132,45 @@ export function CrewDashboardShell({
     kpis.length > 0 && kpis.some((k) => k.value !== null) ? "ready" : "empty";
 
   return (
-    <div className="space-y-6">
-      {/* 1. Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
+    <div className="space-y-5">
+      {/* Unified Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
           <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: `${crew.accentColor}20` }}
           >
             {crew.avatar}
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{crew.crewName}</h1>
-            <p className="text-muted-foreground">{crew.subtitle}</p>
-            <p className="text-sm text-muted-foreground mt-1">{crew.description}</p>
-
-            {crew.monitors.length > 0 && (
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-xs text-muted-foreground">Monitors:</span>
-                {crew.monitors.map((monitor) => (
-                  <Badge
-                    key={monitor}
-                    variant="secondary"
-                    className="text-xs"
-                    style={{
-                      backgroundColor: `${crew.accentColor}15`,
-                      color: crew.accentColor,
-                      borderColor: `${crew.accentColor}30`,
-                    }}
-                  >
-                    {monitor}
-                  </Badge>
-                ))}
-              </div>
-            )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl font-bold text-foreground">{crew.crewName}</h1>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{crew.subtitle}</span>
+              {crew.monitors.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {crew.monitors.map((monitor) => (
+                    <Badge
+                      key={monitor}
+                      variant="secondary"
+                      className="text-xs"
+                      style={{
+                        backgroundColor: `${crew.accentColor}15`,
+                        color: crew.accentColor,
+                        borderColor: `${crew.accentColor}30`,
+                      }}
+                    >
+                      {monitor}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">{crew.description}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <AgentScoreDisplay
             score={agentScore}
             tooltip={agentScoreTooltip}
@@ -199,10 +200,9 @@ export function CrewDashboardShell({
         </div>
       </div>
 
-      {/* 2. Mission Status Widget */}
+      {/* Mission Status Widget */}
       <CrewMissionStatusWidget
         status={missionStatus}
-        crewName={crew.crewName}
         state={missionStatusState}
         onFixEverything={onFixEverything}
         onRetry={onRefresh}

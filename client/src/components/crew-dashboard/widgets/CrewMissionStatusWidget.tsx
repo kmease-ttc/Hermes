@@ -26,7 +26,6 @@ import type { MissionStatusState, WidgetState } from "../types";
 
 interface CrewMissionStatusWidgetProps {
   status: MissionStatusState;
-  crewName?: string;
   state?: WidgetState;
   onFixEverything?: () => void;
   onRetry?: () => void;
@@ -103,7 +102,6 @@ function StatusUnavailable({ onRetry }: { onRetry?: () => void }) {
 
 export function CrewMissionStatusWidget({
   status,
-  crewName,
   state = "ready",
   onFixEverything,
   onRetry,
@@ -137,7 +135,7 @@ export function CrewMissionStatusWidget({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-lg font-semibold text-foreground">
-                  {crewName ? `${crewName} Status` : "Mission Status"}
+                  Mission Status
                 </h2>
                 <Badge
                   variant="outline"
@@ -207,8 +205,7 @@ export function CrewMissionStatusWidget({
               Confirm Fix Everything
             </DialogTitle>
             <DialogDescription>
-              This will create a PR with {status.autoFixableCount} auto-fixable items for{" "}
-              {crewName || "this crew"}.
+              This will create a PR with {status.autoFixableCount} auto-fixable items.
             </DialogDescription>
           </DialogHeader>
 
