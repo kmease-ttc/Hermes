@@ -63,11 +63,29 @@ function getPositionBadge(position: number | null) {
   if (position === null) {
     return <Badge variant="outline" className="text-muted-foreground">Not Ranking</Badge>;
   }
+  if (position === 1) {
+    return (
+      <Badge className="bg-yellow-500 text-black flex items-center gap-1">
+        <Crown className="h-3 w-3" />
+        {position}
+      </Badge>
+    );
+  }
   if (position <= 3) {
-    return <Badge className="bg-semantic-success">{position}</Badge>;
+    return (
+      <Badge className="bg-slate-400 text-black flex items-center gap-1">
+        <Trophy className="h-3 w-3" />
+        {position}
+      </Badge>
+    );
   }
   if (position <= 10) {
-    return <Badge className="bg-semantic-info">{position}</Badge>;
+    return (
+      <Badge className="bg-amber-600 text-white flex items-center gap-1">
+        <Trophy className="h-3 w-3" />
+        {position}
+      </Badge>
+    );
   }
   if (position <= 20) {
     return <Badge className="bg-semantic-warning text-black">{position}</Badge>;

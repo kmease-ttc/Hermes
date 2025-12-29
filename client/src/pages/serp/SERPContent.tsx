@@ -147,10 +147,11 @@ export default function SERPContent() {
 
   const getPositionColor = (pos: number | null) => {
     if (!pos) return 'text-muted-foreground';
-    if (pos <= 3) return 'text-semantic-success font-bold';
-    if (pos <= 10) return 'text-semantic-success';
+    if (pos === 1) return 'text-yellow-500 font-bold'; // Gold for #1
+    if (pos <= 3) return 'text-slate-400 font-bold'; // Silver for top 3
+    if (pos <= 10) return 'text-amber-600 font-semibold'; // Bronze for top 10
     if (pos <= 20) return 'text-semantic-warning';
-    if (pos <= 50) return 'text-gold';
+    if (pos <= 50) return 'text-muted-foreground';
     return 'text-semantic-danger';
   };
 
@@ -423,10 +424,12 @@ export default function SERPContent() {
                       <td className="py-2 font-medium">
                         {kw.keyword}
                       </td>
-                      <td className={`py-2 text-center font-bold ${getPositionColor(kw.currentPosition)}`}>
+                      <td className={`py-2 text-center ${getPositionColor(kw.currentPosition)}`}>
                         {kw.currentPosition ? (
                           <span className="flex items-center justify-center gap-1">
                             {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            {kw.currentPosition >= 2 && kw.currentPosition <= 3 && <Trophy className="h-4 w-4 text-slate-400" />}
+                            {kw.currentPosition >= 4 && kw.currentPosition <= 10 && <Trophy className="h-4 w-4 text-amber-600" />}
                             #{kw.currentPosition}
                           </span>
                         ) : '—'}
