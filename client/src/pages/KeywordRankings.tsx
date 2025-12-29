@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Download, ArrowUp, ArrowDown, Target, Filter } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Download, ArrowUp, ArrowDown, Target, Filter, Trophy, Crown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -35,6 +35,8 @@ interface FullRankingsResponse {
   summary: {
     ranking: number;
     notRanking: number;
+    numberOne: number;
+    inTop3: number;
     inTop10: number;
     inTop20: number;
     improving: number;
@@ -143,12 +145,9 @@ export default function KeywordRankings() {
   }) || [];
 
   return (
-    <DashboardLayout 
-      title="Keyword Rankings" 
-      description="Track your top 100 keywords with position history"
-    >
+    <DashboardLayout>
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold" data-testid="stat-total-keywords">
@@ -157,12 +156,30 @@ export default function KeywordRankings() {
               <div className="text-sm text-muted-foreground">Total Keywords</div>
             </CardContent>
           </Card>
+          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1" data-testid="stat-number-one">
+                <Crown className="h-5 w-5" />
+                {data?.summary.numberOne ?? '-'}
+              </div>
+              <div className="text-sm text-muted-foreground">#1 Rankings</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/30">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-amber-500 flex items-center gap-1" data-testid="stat-in-top3">
+                <Trophy className="h-4 w-4" />
+                {data?.summary.inTop3 ?? '-'}
+              </div>
+              <div className="text-sm text-muted-foreground">Top 3</div>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold text-semantic-success" data-testid="stat-in-top10">
                 {data?.summary.inTop10 ?? '-'}
               </div>
-              <div className="text-sm text-muted-foreground">In Top 10</div>
+              <div className="text-sm text-muted-foreground">Top 10</div>
             </CardContent>
           </Card>
           <Card>
@@ -170,7 +187,7 @@ export default function KeywordRankings() {
               <div className="text-2xl font-bold text-semantic-info" data-testid="stat-in-top20">
                 {data?.summary.inTop20 ?? '-'}
               </div>
-              <div className="text-sm text-muted-foreground">In Top 20</div>
+              <div className="text-sm text-muted-foreground">Top 20</div>
             </CardContent>
           </Card>
           <Card>

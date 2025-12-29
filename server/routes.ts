@@ -4385,6 +4385,8 @@ When answering:
       ]);
 
       const lastCheck = rankings.length > 0 ? rankings[0].date : null;
+      const numberOne = rankings.filter(r => r.position === 1).length;
+      const inTop3 = rankings.filter(r => r.position && r.position <= 3).length;
       const inTop10 = rankings.filter(r => r.position && r.position <= 10).length;
       const inTop20 = rankings.filter(r => r.position && r.position <= 20).length;
       const ranking = rankings.filter(r => r.position !== null).length;
@@ -4404,6 +4406,8 @@ When answering:
         stats: {
           ranking,
           notRanking,
+          numberOne,
+          inTop3,
           inTop10,
           inTop20,
           avgPosition,
@@ -4525,6 +4529,8 @@ When answering:
       
       // Summary stats
       const withPosition = keywordData.filter(k => k.currentPosition !== null);
+      const numberOne = withPosition.filter(k => k.currentPosition === 1).length;
+      const inTop3 = withPosition.filter(k => k.currentPosition! <= 3).length;
       const inTop10 = withPosition.filter(k => k.currentPosition! <= 10).length;
       const inTop20 = withPosition.filter(k => k.currentPosition! <= 20).length;
       const improving = keywordData.filter(k => k.trend === 'up').length;
@@ -4538,6 +4544,8 @@ When answering:
         summary: {
           ranking: withPosition.length,
           notRanking: keywordData.length - withPosition.length,
+          numberOne,
+          inTop3,
           inTop10,
           inTop20,
           improving,
