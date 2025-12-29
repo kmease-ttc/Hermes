@@ -178,37 +178,38 @@ export default function SpeedsterContent() {
   
   const metrics = speedsterData?.metrics || {};
   
+  // Use canonical metric keys from registry
   const vitals: VitalMetric[] = [
     {
       key: 'vitals.lcp',
       name: 'Largest Contentful Paint',
-      value: metrics.lcp ?? null,
+      value: metrics['vitals.lcp'] ?? null,
       unit: 's',
-      status: getVitalStatus(metrics.lcp, { good: 2.5, needsImprovement: 4.0 }),
+      status: getVitalStatus(metrics['vitals.lcp'], { good: 2.5, needsImprovement: 4.0 }),
       thresholds: { good: 2.5, needsImprovement: 4.0 },
-      trend: metrics.lcpTrend,
+      trend: metrics['vitals.lcp.trend'],
       description: 'Measures loading performance. LCP should occur within 2.5 seconds of when the page first starts loading.',
       icon: Eye,
     },
     {
       key: 'vitals.cls',
       name: 'Cumulative Layout Shift',
-      value: metrics.cls ?? null,
+      value: metrics['vitals.cls'] ?? null,
       unit: '',
-      status: getVitalStatus(metrics.cls, { good: 0.1, needsImprovement: 0.25 }),
+      status: getVitalStatus(metrics['vitals.cls'], { good: 0.1, needsImprovement: 0.25 }),
       thresholds: { good: 0.1, needsImprovement: 0.25 },
-      trend: metrics.clsTrend,
+      trend: metrics['vitals.cls.trend'],
       description: 'Measures visual stability. Pages should maintain a CLS of 0.1 or less.',
       icon: Activity,
     },
     {
       key: 'vitals.inp',
       name: 'Interaction to Next Paint',
-      value: metrics.inp ?? null,
+      value: metrics['vitals.inp'] ?? null,
       unit: 'ms',
-      status: getVitalStatus(metrics.inp, { good: 200, needsImprovement: 500 }),
+      status: getVitalStatus(metrics['vitals.inp'], { good: 200, needsImprovement: 500 }),
       thresholds: { good: 200, needsImprovement: 500 },
-      trend: metrics.inpTrend,
+      trend: metrics['vitals.inp.trend'],
       description: 'Measures responsiveness. INP should be 200 milliseconds or less.',
       icon: MousePointer,
     },

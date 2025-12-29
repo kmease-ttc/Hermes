@@ -9447,19 +9447,33 @@ When answering:
       const cwvResult = workerResults.find(r => r.workerKey === 'core_web_vitals');
       const metricsJson = cwvResult?.metricsJson as Record<string, any> | null;
       
-      // Also check dashboard snapshot for fallback
+      // Also check dashboard snapshot for fallback (uses canonical keys)
       const snapshot = await storage.getDashboardMetricSnapshot(siteId);
       const snapshotMetrics = (snapshot?.metricsJson as Record<string, any>) || {};
       
-      // Build metrics with fallback to snapshot
+      // Helper to get value from worker (non-canonical) or snapshot (canonical)
+      const getMetric = (workerKey: string, canonicalKey: string) => {
+        // Worker may use lcp, lcp_ms, or canonical key
+        const workerVal = metricsJson?.[workerKey] ?? metricsJson?.[canonicalKey] ?? null;
+        const snapshotVal = snapshotMetrics?.[canonicalKey] ?? null;
+        return workerVal ?? snapshotVal ?? null;
+      };
+      
+      // Build metrics using canonical keys
+      // Worker returns lcp_ms in milliseconds, convert to seconds for consistency
+      let lcpValue = getMetric('lcp', 'vitals.lcp');
+      if (lcpValue === null && metricsJson?.lcp_ms) {
+        lcpValue = metricsJson.lcp_ms / 1000;
+      }
+      
       const metrics = {
-        lcp: metricsJson?.lcp ?? snapshotMetrics?.lcp ?? null,
-        cls: metricsJson?.cls ?? snapshotMetrics?.cls ?? null,
-        inp: metricsJson?.inp ?? snapshotMetrics?.inp ?? null,
-        score: metricsJson?.score ?? null,
-        lcpTrend: metricsJson?.lcpTrend ?? null,
-        clsTrend: metricsJson?.clsTrend ?? null,
-        inpTrend: metricsJson?.inpTrend ?? null,
+        'vitals.lcp': lcpValue,
+        'vitals.cls': getMetric('cls', 'vitals.cls'),
+        'vitals.inp': getMetric('inp', 'vitals.inp'),
+        'vitals.performance_score': getMetric('score', 'vitals.performance_score') ?? getMetric('performance_score', 'vitals.performance_score'),
+        'vitals.lcp.trend': metricsJson?.lcpTrend ?? null,
+        'vitals.cls.trend': metricsJson?.clsTrend ?? null,
+        'vitals.inp.trend': metricsJson?.inpTrend ?? null,
       };
       
       // Get additional data from raw results if available
