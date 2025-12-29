@@ -537,7 +537,7 @@ function AgentSummaryCard({ agent }: { agent: { serviceId: string; score: number
 
 function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: string; score: number; status: 'good' | 'watch' | 'bad' }>; totalAgents: number }) {
   const enabledCount = agents.length;
-  const agentData = agents.slice(0, 6).map(agent => {
+  const agentData = agents.map(agent => {
     const mockData = getMockAgentData(agent.serviceId);
     const finding = mockData?.findings?.[0];
     return {
@@ -556,13 +556,8 @@ function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: 
           <h2 className="text-lg font-semibold text-foreground">Crew Summary</h2>
           <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">{enabledCount} of {totalAgents} enabled</Badge>
         </div>
-        <Link href="/crew">
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
-            View all crew <ChevronRight className="w-3 h-3 ml-1" />
-          </Button>
-        </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {agentData.map((agent) => (
           <AgentSummaryCard key={agent.serviceId} agent={agent} />
         ))}
