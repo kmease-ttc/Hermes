@@ -21,6 +21,9 @@ export interface SerpKeyword {
   previousPosition: number | null;
   delta: number;
   url?: string;
+  volume?: number;
+  priority?: string;
+  category?: string;
 }
 
 export interface SerpSnapshot {

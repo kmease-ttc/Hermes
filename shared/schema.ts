@@ -310,10 +310,11 @@ export type Hypothesis = typeof hypotheses.$inferSelect;
 export const serpKeywords = pgTable("serp_keywords", {
   id: serial("id").primaryKey(),
   keyword: text("keyword").notNull().unique(),
-  intent: text("intent"), // informational, transactional, navigational
-  priority: integer("priority").default(50), // 1-100
+  intent: text("intent"), // informational, transactional, navigational, or category
+  priority: integer("priority").default(50), // 1-100 (critical=100, high=80, medium=60, low=40)
   targetUrl: text("target_url"), // Expected landing page
   tags: text("tags").array(), // e.g., ["therapy", "local", "branded"]
+  volume: integer("volume"), // Monthly search volume
   active: boolean("active").default(true),
   lastChecked: timestamp("last_checked"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

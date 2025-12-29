@@ -4614,41 +4614,53 @@ When answering:
         });
       }
       
-      // Get keywords from the service
-      const serviceKeywords = await serpWorkerClient.getKeywords(domain);
+      // Get keywords from the service - response is { keywords: [...] }
+      const serviceResponse = await serpWorkerClient.getKeywords(domain) as any;
+      const serviceKeywords = serviceResponse?.keywords || serviceResponse;
       
-      if (!serviceKeywords || serviceKeywords.length === 0) {
+      if (!serviceKeywords || !Array.isArray(serviceKeywords) || serviceKeywords.length === 0) {
         return res.json({ 
           synced: 0, 
-          message: "No keywords returned from SERP service. Run a scan first."
+          message: "No keywords returned from SERP service. Run a scan first.",
+          debug: { responseType: typeof serviceResponse, keys: Object.keys(serviceResponse || {}) }
         });
       }
       
-      // Map service keywords to our format
-      const keywordsToSave = serviceKeywords.slice(0, 100).map(sk => ({
+      // Map service keywords to our format with volume and priority
+      // SERP worker uses: keyword, cur_pos, prev_pos, delta, status, url, volume, priority, category
+      const priorityMap: Record<string, number> = {
+        'critical': 100,
+        'high': 80,
+        'medium': 60,
+        'low': 40,
+      };
+      
+      const keywordsToSave = serviceKeywords.slice(0, 100).map((sk: any) => ({
         keyword: sk.keyword,
-        intent: 'transactional' as const,
-        priority: 50,
+        intent: sk.category || 'transactional',
+        priority: priorityMap[sk.priority || 'medium'] || 50,
         targetUrl: sk.url || null,
-        tags: [],
+        tags: sk.category ? [sk.category] : [],
         active: true,
+        volume: sk.volume || sk.vol || null,
       }));
       
       // Save to database (upsert)
       const saved = await storage.saveSerpKeywords(keywordsToSave);
       
-      // Also save current rankings if available
+      // Also save current rankings if available (SERP worker uses cur_pos)
       const rankingsToSave = serviceKeywords
-        .filter(sk => sk.currentPosition !== null)
-        .map(sk => {
+        .filter((sk: any) => sk.cur_pos !== null && sk.cur_pos !== undefined)
+        .map((sk: any) => {
           const savedKw = saved.find(s => s.keyword === sk.keyword);
           if (!savedKw) return null;
           return {
             keywordId: savedKw.id,
             date: new Date().toISOString().split('T')[0],
-            position: sk.currentPosition,
+            position: sk.cur_pos,
             url: sk.url || null,
             change: sk.delta || null,
+            volume: sk.volume || sk.vol || null,
           };
         })
         .filter(Boolean) as any[];
