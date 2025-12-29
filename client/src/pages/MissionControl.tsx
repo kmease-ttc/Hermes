@@ -403,7 +403,9 @@ function AgentSummaryCard({ agent }: { agent: { serviceId: string; score: number
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <h4 className="font-semibold text-base" style={{ color: crew.color }}>{crew.nickname}</h4>
+                <Link href={`/agents/${agent.serviceId}`}>
+                  <h4 className="font-semibold text-base cursor-pointer hover:underline" style={{ color: crew.color }}>{crew.nickname}</h4>
+                </Link>
                 {crew.tooltipInfo && (
                   <TooltipProvider>
                     <Tooltip>
@@ -596,16 +598,17 @@ function ActionQueueCard({ actions, siteId }: { actions: Array<{ id: number; tit
                   {action.sourceAgents?.map((agentId) => {
                     const crew = getCrewMember(agentId);
                     return (
-                      <Badge 
-                        key={agentId} 
-                        className="text-xs font-medium border-0"
-                        style={{ 
-                          backgroundColor: `${crew.color}26`,
-                          color: crew.color 
-                        }}
-                      >
-                        {crew.nickname}
-                      </Badge>
+                      <Link key={agentId} href={`/agents/${agentId}`}>
+                        <Badge 
+                          className="text-xs font-medium border-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{ 
+                            backgroundColor: `${crew.color}26`,
+                            color: crew.color 
+                          }}
+                        >
+                          {crew.nickname}
+                        </Badge>
+                      </Link>
                     );
                   })}
                 </div>
@@ -760,16 +763,17 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     {priority.agents?.map((agent: any) => {
                       const crew = getCrewMember(agent.id);
                       return (
-                        <Badge 
-                          key={agent.id} 
-                          className="text-xs font-medium border-0"
-                          style={{ 
-                            backgroundColor: `${crew.color}26`,
-                            color: crew.color 
-                          }}
-                        >
-                          {agent.name}
-                        </Badge>
+                        <Link key={agent.id} href={`/agents/${agent.id}`}>
+                          <Badge 
+                            className="text-xs font-medium border-0 cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ 
+                              backgroundColor: `${crew.color}26`,
+                              color: crew.color 
+                            }}
+                          >
+                            {agent.name}
+                          </Badge>
+                        </Link>
                       );
                     })}
                   </div>
@@ -822,7 +826,9 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     <div key={idx} className="flex items-start gap-3 text-sm">
                       <AlertCircle className="w-4 h-4 text-semantic-warning flex-shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-medium" style={{ color: crew.color }}>{blocker.title}</span>
+                        <Link href={`/agents/${blocker.id}`}>
+                          <span className="font-medium cursor-pointer hover:underline" style={{ color: crew.color }}>{blocker.title}</span>
+                        </Link>
                         <span className="text-muted-foreground"> — {blocker.fix}</span>
                       </div>
                     </div>
