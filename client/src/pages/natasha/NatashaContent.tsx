@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Users, 
   TrendingUp, 
@@ -36,7 +37,10 @@ import {
   Swords,
   Clock,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Compass,
+  Settings,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -132,6 +136,7 @@ interface TrendAlert {
 interface CompetitiveOverview {
   configured: boolean;
   isRealData?: boolean;
+  status?: "ready" | "loading" | "empty" | "unavailable";
   lastRunAt: string | null;
   competitivePosition: "ahead" | "parity" | "behind";
   positionExplanation: string;
@@ -158,18 +163,195 @@ interface CompetitiveOverview {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Competitive Status Strip (Summary)
+// Skeleton Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+function SectionSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-card/40 border border-border">
+          <Skeleton className="w-10 h-10 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="h-8 w-20" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusStripSkeleton() {
+  return (
+    <Card className="bg-card/60 backdrop-blur-sm border-border">
+      <CardContent className="py-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="w-12 h-12 rounded-xl" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Degraded State / Unavailable Card
+// ═══════════════════════════════════════════════════════════════════════════
+
+function UnavailableSection({ 
+  title, 
+  onRetry 
+}: { 
+  title: string; 
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="p-6 rounded-xl bg-muted/30 border border-border text-center">
+      <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
+        <AlertCircle className="w-6 h-6 text-muted-foreground" />
+      </div>
+      <h4 className="font-medium text-foreground mb-1">{title} temporarily unavailable</h4>
+      <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+        This can happen if the integration is still initializing, credentials are missing, or the scan hasn't completed yet.
+      </p>
+      {onRetry && (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function EmptySection({ 
+  title, 
+  description,
+  actionLabel,
+  onAction 
+}: { 
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="p-6 rounded-xl bg-muted/20 border border-dashed border-border text-center">
+      <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
+        <Search className="w-6 h-6 text-muted-foreground" />
+      </div>
+      <h4 className="font-medium text-foreground mb-1">{title}</h4>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
+      {actionLabel && onAction && (
+        <Button variant="outline" size="sm" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Educational Fallback Panel
+// ═══════════════════════════════════════════════════════════════════════════
+
+function WhatNatashaDoes({ onConfigure, onRunScan }: { onConfigure?: () => void; onRunScan?: () => void }) {
+  return (
+    <Card className="bg-gradient-to-br from-purple-accent/10 to-purple-accent/5 border-purple-accent/30" data-testid="what-natasha-does">
+      <CardContent className="py-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-xl bg-purple-accent/20 flex items-center justify-center shrink-0">
+            <Compass className="w-7 h-7 text-purple-accent" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-foreground mb-2">What Natasha Does</h3>
+            <p className="text-muted-foreground mb-4">
+              Natasha monitors your competitors, tracks ranking shifts, and identifies strategic gaps you can exploit to improve your search visibility.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3 mb-4">
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-purple-accent shrink-0" />
+                <span className="text-muted-foreground">Competitor ranking comparisons</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-purple-accent shrink-0" />
+                <span className="text-muted-foreground">Keyword gap detection</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-purple-accent shrink-0" />
+                <span className="text-muted-foreground">SERP feature opportunities</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="w-4 h-4 text-purple-accent shrink-0" />
+                <span className="text-muted-foreground">Authority & backlink gaps</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {onRunScan && (
+                <Button onClick={onRunScan} className="bg-purple-accent hover:bg-purple-accent/90 text-white">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Run Initial Scan
+                </Button>
+              )}
+              {onConfigure && (
+                <Button variant="outline" onClick={onConfigure}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Competitive Status Strip
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CompetitiveStatusStrip({ 
   position, 
   explanation, 
-  onImprove 
+  onImprove,
+  isLoading,
+  isUnavailable
 }: { 
   position: "ahead" | "parity" | "behind"; 
   explanation: string;
   onImprove: () => void;
+  isLoading?: boolean;
+  isUnavailable?: boolean;
 }) {
+  if (isLoading) {
+    return <StatusStripSkeleton />;
+  }
+
+  if (isUnavailable) {
+    return (
+      <Card className="bg-muted/30 border-border" data-testid="competitive-status-strip">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+              <Swords className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+              <span className="font-medium text-muted-foreground">Competitive position pending</span>
+              <p className="text-sm text-muted-foreground">Score will update once competitive data is available.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const statusConfig = {
     ahead: {
       label: "Ahead of competitors",
@@ -263,7 +445,7 @@ function ShareOfVoiceBar({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Competitor Card (Enhanced)
+// Competitor Row
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CompetitorRow({ 
@@ -295,11 +477,11 @@ function CompetitorRow({
         </div>
         <p className="text-xs text-muted-foreground">{competitor.domain}</p>
       </div>
-      <div className="text-center px-3">
+      <div className="text-center px-3 hidden sm:block">
         <p className="text-xs text-muted-foreground">Overlap</p>
         <p className="font-bold text-foreground">{competitor.marketOverlap}%</p>
       </div>
-      <div className="text-center px-3">
+      <div className="text-center px-3 hidden sm:block">
         <p className="text-xs text-muted-foreground">Keywords</p>
         <p className="font-bold text-foreground">{competitor.keywords}</p>
       </div>
@@ -346,7 +528,7 @@ function KeywordPositionTable({
 }) {
   const sortedRankings = [...rankings].sort((a, b) => {
     if (sort === "gap") {
-      return a.gap - b.gap; // Largest negative delta first
+      return a.gap - b.gap;
     }
     return (b.trafficImpact || 0) - (a.trafficImpact || 0);
   });
@@ -358,6 +540,15 @@ function KeywordPositionTable({
     return true;
   });
 
+  if (filteredRankings.length === 0) {
+    return (
+      <EmptySection 
+        title="No keywords match this filter"
+        description="Try adjusting your filter settings."
+      />
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -367,7 +558,7 @@ function KeywordPositionTable({
             <th className="text-center py-2 px-3 text-muted-foreground font-medium">Your Rank</th>
             <th className="text-center py-2 px-3 text-muted-foreground font-medium">Competitor</th>
             <th className="text-center py-2 px-3 text-muted-foreground font-medium">Delta</th>
-            <th className="text-right py-2 px-3 text-muted-foreground font-medium">Traffic Impact</th>
+            <th className="text-right py-2 px-3 text-muted-foreground font-medium hidden sm:table-cell">Traffic Impact</th>
           </tr>
         </thead>
         <tbody>
@@ -402,7 +593,7 @@ function KeywordPositionTable({
                     {delta > 0 ? `+${delta}` : delta}
                   </Badge>
                 </td>
-                <td className="text-right py-3 px-3">
+                <td className="text-right py-3 px-3 hidden sm:table-cell">
                   <span className="text-muted-foreground">{ranking.trafficImpact ? `${ranking.trafficImpact.toLocaleString()}/mo` : "—"}</span>
                 </td>
               </tr>
@@ -441,13 +632,13 @@ function ContentGapCard({ gap, onAction }: { gap: ContentGap; onAction?: (action
     <div className="p-4 rounded-xl bg-card/40 border border-border hover:border-primary/30 transition-colors" data-testid={`content-gap-${gap.id}`}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="font-medium text-foreground">{gap.keyword}</h4>
             {gap.cluster && (
               <Badge variant="secondary" className="text-xs">{gap.cluster}</Badge>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
             <span className="flex items-center gap-1">
               <Search className="w-3 h-3" />
               {gap.searchVolume.toLocaleString()}/mo
@@ -465,12 +656,12 @@ function ContentGapCard({ gap, onAction }: { gap: ContentGap; onAction?: (action
           {gap.opportunity} priority
         </Badge>
       </div>
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between mt-3 gap-3">
         <p className="text-sm text-muted-foreground flex-1">{gap.suggestedAction}</p>
         <Button 
           variant="outline" 
           size="sm" 
-          className="ml-3 shrink-0"
+          className="shrink-0"
           onClick={() => onAction?.(gap.actionType)}
           data-testid={`button-gap-action-${gap.id}`}
         >
@@ -496,8 +687,8 @@ function AuthorityGapCard({ gap }: { gap: AuthorityGap }) {
         </div>
         <Badge variant="secondary" className="text-xs capitalize">{gap.linkType.replace("-", " ")}</Badge>
       </div>
-      <div className="flex items-center justify-between mt-3">
-        <p className="text-sm text-muted-foreground">{gap.suggestedAction}</p>
+      <div className="flex items-center justify-between mt-3 gap-3">
+        <p className="text-sm text-muted-foreground flex-1">{gap.suggestedAction}</p>
         <Button variant="outline" size="sm" className="shrink-0" data-testid={`button-authority-action-${gap.id}`}>
           Pursue Link
         </Button>
@@ -526,7 +717,7 @@ function SerpFeatureGapCard({ gap }: { gap: SerpFeatureGap }) {
             <Icon className="w-5 h-5 text-purple-accent" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-medium text-foreground">{gap.keyword}</h4>
               <Badge variant="secondary" className="text-xs">{config.label}</Badge>
             </div>
@@ -535,8 +726,8 @@ function SerpFeatureGapCard({ gap }: { gap: SerpFeatureGap }) {
         </div>
       </div>
       <p className="text-sm text-muted-foreground mt-2">{gap.structuralHint}</p>
-      <div className="flex items-center justify-between mt-3">
-        <p className="text-sm text-purple-accent">{gap.suggestedAction}</p>
+      <div className="flex items-center justify-between mt-3 gap-3">
+        <p className="text-sm text-purple-accent flex-1">{gap.suggestedAction}</p>
         <Button variant="outline" size="sm" className="shrink-0" data-testid={`button-serp-action-${gap.id}`}>
           Optimize
         </Button>
@@ -546,7 +737,7 @@ function SerpFeatureGapCard({ gap }: { gap: SerpFeatureGap }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Competitive Mission Card
+// Mission Card
 // ═══════════════════════════════════════════════════════════════════════════
 
 function MissionCard({ mission, index }: { mission: CompetitiveMission; index: number }) {
@@ -582,11 +773,9 @@ function MissionCard({ mission, index }: { mission: CompetitiveMission; index: n
           </span>
         </div>
       </div>
-      <div className="flex gap-2 shrink-0">
-        <Button variant="outline" size="sm" data-testid={`button-create-mission-${mission.id}`}>
-          Create Mission
-        </Button>
-      </div>
+      <Button variant="outline" size="sm" className="shrink-0" data-testid={`button-create-mission-${mission.id}`}>
+        Create Mission
+      </Button>
     </div>
   );
 }
@@ -633,7 +822,7 @@ export default function NatashaContent() {
 
   const siteId = currentSite?.siteId || "default";
 
-  const { data: overview, isLoading, error } = useQuery<CompetitiveOverview>({
+  const { data: overview, isLoading, error, refetch } = useQuery<CompetitiveOverview>({
     queryKey: ["competitive-overview", siteId],
     queryFn: async () => {
       const res = await fetch(`/api/competitive/overview?siteId=${siteId}`);
@@ -641,6 +830,7 @@ export default function NatashaContent() {
       return res.json();
     },
     staleTime: 60000,
+    retry: 1,
   });
 
   const runAnalysis = useMutation({
@@ -676,108 +866,55 @@ export default function NatashaContent() {
     toast.success("Competitor ignored");
   };
 
+  const handleRetry = () => {
+    refetch();
+  };
+
   const scrollToMissions = () => {
     document.getElementById("competitive-missions")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  // Determine data state
+  const isUnavailable = !!error;
+  const hasData = !!overview && !isLoading && !error;
+  const isEmpty = hasData && overview.competitors.length === 0;
+  const isUsingMockData = hasData && !(overview as any)?.isRealData;
 
-  if (error) {
-    return (
-      <Card className="border-semantic-danger-border bg-semantic-danger-soft/30">
-        <CardContent className="py-6">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-semantic-danger" />
-            <div>
-              <h3 className="font-semibold text-foreground">Failed to load competitive data</h3>
-              <p className="text-sm text-muted-foreground">{error.message}</p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-4"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["competitive-overview"] })}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Mock data for demonstration
+  // Use data or provide empty defaults (never block page render)
   const data: CompetitiveOverview = overview || {
     configured: false,
     isRealData: false,
-    lastRunAt: new Date(Date.now() - 86400000).toISOString(),
-    competitivePosition: "behind",
-    positionExplanation: "You trail top competitors in 12 high-value keywords and 3 content clusters.",
-    shareOfVoice: 18,
-    avgRank: 14.2,
-    competitors: [
-      { id: "1", name: "Competitor A", domain: "competitora.com", type: "direct", visibility: 78, visibilityChange: 5, marketOverlap: 85, keywords: 234, topKeywords: ["mental health", "therapy", "counseling"], lastUpdated: new Date().toISOString(), deltaScore: -18 },
-      { id: "2", name: "Competitor B", domain: "competitorb.com", type: "direct", visibility: 65, visibilityChange: -3, marketOverlap: 72, keywords: 189, topKeywords: ["psychiatry", "medication", "treatment"], lastUpdated: new Date().toISOString(), deltaScore: -12 },
-      { id: "3", name: "Competitor C", domain: "competitorc.com", type: "indirect", visibility: 52, visibilityChange: 2, marketOverlap: 45, keywords: 145, topKeywords: ["telehealth", "virtual care", "online therapy"], lastUpdated: new Date().toISOString(), deltaScore: -5 },
-    ],
-    contentGaps: [
-      { id: "1", keyword: "online psychiatrist Florida", cluster: "Telehealth", searchVolume: 2400, difficulty: 35, competitorsCovering: 3, yourCoverage: "none", opportunity: "high", suggestedAction: "Create dedicated landing page targeting this keyword", actionType: "create" },
-      { id: "2", keyword: "telehealth therapy near me", cluster: "Telehealth", searchVolume: 1800, difficulty: 42, competitorsCovering: 2, yourCoverage: "thin", opportunity: "high", suggestedAction: "Expand existing telehealth page with location-specific content", actionType: "expand" },
-      { id: "3", keyword: "anxiety treatment without medication", cluster: "Treatment Options", searchVolume: 1200, difficulty: 28, competitorsCovering: 2, yourCoverage: "outdated", opportunity: "medium", suggestedAction: "Update blog post with latest research and techniques", actionType: "optimize" },
-      { id: "4", keyword: "virtual mental health counseling", cluster: "Telehealth", searchVolume: 890, difficulty: 38, competitorsCovering: 3, yourCoverage: "none", opportunity: "medium", suggestedAction: "Add new service page for virtual counseling", actionType: "create" },
-    ],
-    authorityGaps: [
-      { id: "1", domain: "healthline.com", competitor: "Competitor A", authority: 92, linkType: "editorial", suggestedAction: "Pitch a guest article or expert quote for their mental health section" },
-      { id: "2", domain: "psychologytoday.com", competitor: "Competitor B", authority: 88, linkType: "directory", suggestedAction: "Create or claim your profile on Psychology Today" },
-      { id: "3", domain: "webmd.com", competitor: "Competitor A", authority: 95, linkType: "guest-post", suggestedAction: "Propose a collaborative piece on telehealth psychiatry" },
-    ],
-    serpFeatureGaps: [
-      { id: "1", keyword: "what is cognitive behavioral therapy", feature: "featured_snippet", competitorOwning: "Competitor B", pageType: "Blog article", structuralHint: "Uses definition format with bullet points", suggestedAction: "Restructure content with clear definition and steps" },
-      { id: "2", keyword: "anxiety symptoms", feature: "people_also_ask", competitorOwning: "Competitor A", pageType: "Resource page", structuralHint: "Has FAQ schema and clear Q&A sections", suggestedAction: "Add FAQ schema to symptoms page" },
-      { id: "3", keyword: "telehealth therapy", feature: "video", competitorOwning: "Competitor C", pageType: "YouTube video", structuralHint: "5-minute explainer video embedded on landing page", suggestedAction: "Create and embed a video explaining telehealth services" },
-    ],
-    rankingPages: [
-      { url: "/services/psychiatry", keyword: "psychiatrist Orlando", yourPosition: 8, competitorPosition: 3, competitor: "Competitor A", gap: -5, trafficImpact: 1200, intent: "commercial" },
-      { url: "/services/therapy", keyword: "therapy near me", yourPosition: 12, competitorPosition: 5, competitor: "Competitor B", gap: -7, trafficImpact: 3500, intent: "commercial" },
-      { url: "/blog/anxiety-tips", keyword: "anxiety treatment tips", yourPosition: 4, competitorPosition: 6, competitor: "Competitor A", gap: 2, trafficImpact: 890, intent: "informational" },
-      { url: "/services/telehealth", keyword: "telehealth psychiatry", yourPosition: null, competitorPosition: 2, competitor: "Competitor C", gap: 0, trafficImpact: 2100, intent: "transactional" },
-    ],
-    missions: [
-      { id: "1", title: "Close content gap on telehealth keywords", description: "Create comprehensive landing pages for 'online psychiatrist Florida' and related terms to capture high-intent traffic.", type: "content", expectedImpact: "high", difficulty: "medium", executingCrew: "Atlas", keywords: ["online psychiatrist Florida", "telehealth therapy near me"] },
-      { id: "2", title: "Target featured snippet for CBT definition", description: "Restructure CBT page with clear definition, steps, and FAQ schema to capture the featured snippet.", type: "serp", expectedImpact: "high", difficulty: "easy", executingCrew: "Scotty", keywords: ["what is cognitive behavioral therapy"] },
-      { id: "3", title: "Build authority through Psychology Today profile", description: "Claim and optimize Psychology Today listing to gain authoritative backlink and referral traffic.", type: "authority", expectedImpact: "medium", difficulty: "easy", executingCrew: "Link Builder" },
-    ],
-    alerts: [
-      { id: "1", type: "rank_jump", message: "Competitor A jumped ahead in 5 high-value keywords in the last 7 days", competitor: "Competitor A", severity: "warning", timestamp: new Date(Date.now() - 172800000).toISOString() },
-      { id: "2", type: "content_surge", message: "Competitor B published 8 new blog posts this month targeting your core keywords", competitor: "Competitor B", severity: "warning", timestamp: new Date(Date.now() - 604800000).toISOString() },
-      { id: "3", type: "new_competitor", message: "New competitor detected: betterhelp-local.com now ranks for 12 of your tracked keywords", severity: "info", timestamp: new Date(Date.now() - 1209600000).toISOString() },
-    ],
+    status: isUnavailable ? "unavailable" : isLoading ? "loading" : "empty",
+    lastRunAt: null,
+    competitivePosition: "parity",
+    positionExplanation: "Competitive data not yet available.",
+    shareOfVoice: 0,
+    avgRank: 0,
+    competitors: [],
+    contentGaps: [],
+    authorityGaps: [],
+    serpFeatureGaps: [],
+    rankingPages: [],
+    missions: [],
+    alerts: [],
     summary: {
-      totalCompetitors: 5,
-      totalGaps: 23,
-      highPriorityGaps: 8,
-      avgVisibilityGap: 15,
-      keywordsTracked: 48,
-      keywordsWinning: 12,
-      keywordsLosing: 18,
-      referringDomains: 145,
-      competitorAvgDomains: 312,
+      totalCompetitors: 0,
+      totalGaps: 0,
+      highPriorityGaps: 0,
+      avgVisibilityGap: 0,
+      keywordsTracked: 0,
+      keywordsWinning: 0,
+      keywordsLosing: 0,
+      referringDomains: 0,
+      competitorAvgDomains: 0,
     },
   };
 
   const summary = data.summary;
-  const isUsingMockData = !(overview as any)?.isRealData;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - Always renders */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-foreground">Competitive Intelligence</h2>
@@ -803,7 +940,7 @@ export default function NatashaContent() {
       </div>
 
       {/* Sample Data Warning */}
-      {isUsingMockData && (
+      {isUsingMockData && !isUnavailable && (
         <Card className="border-semantic-warning-border bg-semantic-warning-soft/30">
           <CardContent className="py-3">
             <div className="flex items-center gap-2 text-sm">
@@ -815,15 +952,25 @@ export default function NatashaContent() {
         </Card>
       )}
 
-      {/* 1. Competitive Status Strip */}
+      {/* Educational Panel - Show when unavailable or empty */}
+      {(isUnavailable || isEmpty) && (
+        <WhatNatashaDoes 
+          onRunScan={handleRunAnalysis}
+          onConfigure={() => toast.info("Open Settings to configure competitive intelligence")}
+        />
+      )}
+
+      {/* 1. Competitive Status Strip - Always renders with appropriate state */}
       <CompetitiveStatusStrip 
         position={data.competitivePosition}
         explanation={data.positionExplanation}
         onImprove={scrollToMissions}
+        isLoading={isLoading}
+        isUnavailable={isUnavailable}
       />
 
       {/* Last Run Info */}
-      {data.lastRunAt && (
+      {data.lastRunAt && !isUnavailable && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="w-3 h-3" />
           Last analysis: {new Date(data.lastRunAt).toLocaleString()}
@@ -838,22 +985,49 @@ export default function NatashaContent() {
               <CardTitle className="text-lg">Share of Voice</CardTitle>
               <CardDescription>SERP visibility across tracked keywords</CardDescription>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-purple-accent">{data.shareOfVoice}%</p>
-              <p className="text-xs text-muted-foreground">Avg. rank: {data.avgRank}</p>
-            </div>
+            {hasData && data.shareOfVoice > 0 && (
+              <div className="text-right">
+                <p className="text-2xl font-bold text-purple-accent">{data.shareOfVoice}%</p>
+                <p className="text-xs text-muted-foreground">Avg. rank: {data.avgRank}</p>
+              </div>
+            )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <ShareOfVoiceBar name="Your Site" value={data.shareOfVoice} isYou />
-          {data.competitors.slice(0, 3).map((comp, idx) => (
-            <ShareOfVoiceBar 
-              key={comp.id} 
-              name={comp.name} 
-              value={comp.visibility} 
-              color={["#ef4444", "#f97316", "#eab308"][idx]}
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-10" />
+                  </div>
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : isUnavailable ? (
+            <UnavailableSection title="Share of voice data" onRetry={handleRetry} />
+          ) : isEmpty || data.competitors.length === 0 ? (
+            <EmptySection 
+              title="No competitors detected yet"
+              description="Run an analysis to discover competitors in your space."
+              actionLabel="Run First Scan"
+              onAction={handleRunAnalysis}
             />
-          ))}
+          ) : (
+            <div className="space-y-3">
+              <ShareOfVoiceBar name="Your Site" value={data.shareOfVoice} isYou />
+              {data.competitors.slice(0, 3).map((comp, idx) => (
+                <ShareOfVoiceBar 
+                  key={comp.id} 
+                  name={comp.name} 
+                  value={comp.visibility} 
+                  color={["#ef4444", "#f97316", "#eab308"][idx]}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -871,14 +1045,29 @@ export default function NatashaContent() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {data.competitors.map((competitor) => (
-            <CompetitorRow 
-              key={competitor.id} 
-              competitor={competitor} 
-              onRemove={handleRemoveCompetitor}
+        <CardContent>
+          {isLoading ? (
+            <SectionSkeleton rows={3} />
+          ) : isUnavailable ? (
+            <UnavailableSection title="Competitor data" onRetry={handleRetry} />
+          ) : data.competitors.length === 0 ? (
+            <EmptySection 
+              title="No competitors detected"
+              description="We haven't detected competitors for this domain yet."
+              actionLabel="Add Competitor"
+              onAction={() => toast.info("Add competitor functionality coming soon")}
             />
-          ))}
+          ) : (
+            <div className="space-y-3">
+              {data.competitors.map((competitor) => (
+                <CompetitorRow 
+                  key={competitor.id} 
+                  competitor={competitor} 
+                  onRemove={handleRemoveCompetitor}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -890,59 +1079,76 @@ export default function NatashaContent() {
               <CardTitle className="text-lg">Keyword Position Comparison</CardTitle>
               <CardDescription>Head-to-head ranking battles with competitors</CardDescription>
             </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Winning:</span>
-                <Badge className="bg-semantic-success-soft text-semantic-success">{summary.keywordsWinning}</Badge>
+            {hasData && summary.keywordsTracked > 0 && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Winning:</span>
+                  <Badge className="bg-semantic-success-soft text-semantic-success">{summary.keywordsWinning}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Losing:</span>
+                  <Badge className="bg-semantic-danger-soft text-semantic-danger">{summary.keywordsLosing}</Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Losing:</span>
-                <Badge className="bg-semantic-danger-soft text-semantic-danger">{summary.keywordsLosing}</Badge>
-              </div>
-            </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2 mb-4">
-            <Button 
-              variant={keywordFilter === "all" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => setKeywordFilter("all")}
-            >
-              All
-            </Button>
-            <Button 
-              variant={keywordFilter === "losing" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => setKeywordFilter("losing")}
-            >
-              Losing
-            </Button>
-            <Button 
-              variant={keywordFilter === "winning" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => setKeywordFilter("winning")}
-            >
-              Winning
-            </Button>
-            <Separator orientation="vertical" className="h-6" />
-            <span className="text-xs text-muted-foreground">Sort:</span>
-            <Button 
-              variant={keywordSort === "gap" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => setKeywordSort("gap")}
-            >
-              Largest Gap
-            </Button>
-            <Button 
-              variant={keywordSort === "traffic" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => setKeywordSort("traffic")}
-            >
-              Traffic Impact
-            </Button>
-          </div>
-          <KeywordPositionTable rankings={data.rankingPages} filter={keywordFilter} sort={keywordSort} />
+          {isLoading ? (
+            <SectionSkeleton rows={4} />
+          ) : isUnavailable ? (
+            <UnavailableSection title="Keyword position data" onRetry={handleRetry} />
+          ) : data.rankingPages.length === 0 ? (
+            <EmptySection 
+              title="No keyword data yet"
+              description="Run an analysis to start tracking keyword positions."
+              actionLabel="Run Analysis"
+              onAction={handleRunAnalysis}
+            />
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <Button 
+                  variant={keywordFilter === "all" ? "secondary" : "ghost"} 
+                  size="sm"
+                  onClick={() => setKeywordFilter("all")}
+                >
+                  All
+                </Button>
+                <Button 
+                  variant={keywordFilter === "losing" ? "secondary" : "ghost"} 
+                  size="sm"
+                  onClick={() => setKeywordFilter("losing")}
+                >
+                  Losing
+                </Button>
+                <Button 
+                  variant={keywordFilter === "winning" ? "secondary" : "ghost"} 
+                  size="sm"
+                  onClick={() => setKeywordFilter("winning")}
+                >
+                  Winning
+                </Button>
+                <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                <span className="text-xs text-muted-foreground hidden sm:inline">Sort:</span>
+                <Button 
+                  variant={keywordSort === "gap" ? "secondary" : "ghost"} 
+                  size="sm"
+                  onClick={() => setKeywordSort("gap")}
+                >
+                  Largest Gap
+                </Button>
+                <Button 
+                  variant={keywordSort === "traffic" ? "secondary" : "ghost"} 
+                  size="sm"
+                  onClick={() => setKeywordSort("traffic")}
+                >
+                  Traffic Impact
+                </Button>
+              </div>
+              <KeywordPositionTable rankings={data.rankingPages} filter={keywordFilter} sort={keywordSort} />
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -957,53 +1163,96 @@ export default function NatashaContent() {
             <TabsList className="mb-4">
               <TabsTrigger value="content" className="flex items-center gap-1">
                 <FileText className="w-4 h-4" />
-                Content Gaps
+                <span className="hidden sm:inline">Content Gaps</span>
                 <Badge variant="secondary" className="ml-1 text-xs">{data.contentGaps.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="authority" className="flex items-center gap-1">
                 <Link2 className="w-4 h-4" />
-                Authority Gaps
+                <span className="hidden sm:inline">Authority</span>
                 <Badge variant="secondary" className="ml-1 text-xs">{data.authorityGaps.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="serp" className="flex items-center gap-1">
                 <Layout className="w-4 h-4" />
-                SERP Features
+                <span className="hidden sm:inline">SERP Features</span>
                 <Badge variant="secondary" className="ml-1 text-xs">{data.serpFeatureGaps.length}</Badge>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="content" className="space-y-3">
-              {data.contentGaps.map((gap) => (
-                <ContentGapCard key={gap.id} gap={gap} onAction={() => toast.success("Action initiated")} />
-              ))}
+            <TabsContent value="content">
+              {isLoading ? (
+                <SectionSkeleton rows={3} />
+              ) : isUnavailable ? (
+                <UnavailableSection title="Content gap data" onRetry={handleRetry} />
+              ) : data.contentGaps.length === 0 ? (
+                <EmptySection 
+                  title="No content gaps found"
+                  description="Great! You're covering the same topics as your competitors."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {data.contentGaps.map((gap) => (
+                    <ContentGapCard key={gap.id} gap={gap} onAction={() => toast.success("Action initiated")} />
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="authority" className="space-y-3">
-              <div className="flex items-center gap-4 mb-4 p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-sm font-medium">Your Referring Domains</p>
-                  <p className="text-2xl font-bold text-foreground">{summary.referringDomains}</p>
-                </div>
-                <div className="text-muted-foreground">vs</div>
-                <div>
-                  <p className="text-sm font-medium">Competitor Average</p>
-                  <p className="text-2xl font-bold text-semantic-danger">{summary.competitorAvgDomains}</p>
-                </div>
-                <div className="ml-auto">
-                  <Badge className="bg-semantic-danger-soft text-semantic-danger">
-                    {summary.competitorAvgDomains - summary.referringDomains} domain gap
-                  </Badge>
-                </div>
-              </div>
-              {data.authorityGaps.map((gap) => (
-                <AuthorityGapCard key={gap.id} gap={gap} />
-              ))}
+            <TabsContent value="authority">
+              {isLoading ? (
+                <SectionSkeleton rows={3} />
+              ) : isUnavailable ? (
+                <UnavailableSection title="Authority gap data" onRetry={handleRetry} />
+              ) : data.authorityGaps.length === 0 ? (
+                <EmptySection 
+                  title="No authority gaps detected"
+                  description="Your backlink profile is competitive."
+                />
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 mb-4 p-3 rounded-lg bg-muted/50 flex-wrap">
+                    <div>
+                      <p className="text-sm font-medium">Your Referring Domains</p>
+                      <p className="text-2xl font-bold text-foreground">{summary.referringDomains}</p>
+                    </div>
+                    <div className="text-muted-foreground">vs</div>
+                    <div>
+                      <p className="text-sm font-medium">Competitor Average</p>
+                      <p className="text-2xl font-bold text-semantic-danger">{summary.competitorAvgDomains}</p>
+                    </div>
+                    {summary.competitorAvgDomains > summary.referringDomains && (
+                      <div className="ml-auto">
+                        <Badge className="bg-semantic-danger-soft text-semantic-danger">
+                          {summary.competitorAvgDomains - summary.referringDomains} domain gap
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {data.authorityGaps.map((gap) => (
+                      <AuthorityGapCard key={gap.id} gap={gap} />
+                    ))}
+                  </div>
+                </>
+              )}
             </TabsContent>
 
-            <TabsContent value="serp" className="space-y-3">
-              {data.serpFeatureGaps.map((gap) => (
-                <SerpFeatureGapCard key={gap.id} gap={gap} />
-              ))}
+            <TabsContent value="serp">
+              {isLoading ? (
+                <SectionSkeleton rows={3} />
+              ) : isUnavailable ? (
+                <UnavailableSection title="SERP feature data" onRetry={handleRetry} />
+              ) : data.serpFeatureGaps.length === 0 ? (
+                <EmptySection 
+                  title="No SERP feature gaps"
+                  description="You're capturing available SERP features."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {data.serpFeatureGaps.map((gap) => (
+                    <SerpFeatureGapCard key={gap.id} gap={gap} />
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -1022,35 +1271,63 @@ export default function NatashaContent() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {data.missions.map((mission, idx) => (
-            <MissionCard key={mission.id} mission={mission} index={idx} />
-          ))}
+        <CardContent>
+          {isLoading ? (
+            <SectionSkeleton rows={3} />
+          ) : isUnavailable ? (
+            <UnavailableSection title="Mission recommendations" onRetry={handleRetry} />
+          ) : data.missions.length === 0 ? (
+            <EmptySection 
+              title="No missions yet"
+              description="Run an analysis to generate competitive missions."
+              actionLabel="Run Analysis"
+              onAction={handleRunAnalysis}
+            />
+          ) : (
+            <div className="space-y-3">
+              {data.missions.map((mission, idx) => (
+                <MissionCard key={mission.id} mission={mission} index={idx} />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* 7. Competitive Trends & Alerts */}
-      {data.alerts.length > 0 && (
-        <Card className="bg-card/60 backdrop-blur-sm border-border">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Competitive Movement & Alerts
-                </CardTitle>
-                <CardDescription>Recent changes in the competitive landscape</CardDescription>
-              </div>
-              <Badge variant="outline">{data.alerts.length} alerts</Badge>
+      <Card className="bg-card/60 backdrop-blur-sm border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Competitive Movement & Alerts
+              </CardTitle>
+              <CardDescription>Recent changes in the competitive landscape</CardDescription>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.alerts.map((alert) => (
-              <TrendAlertCard key={alert.id} alert={alert} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
+            {data.alerts.length > 0 && (
+              <Badge variant="outline">{data.alerts.length} alerts</Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <SectionSkeleton rows={2} />
+          ) : isUnavailable ? (
+            <UnavailableSection title="Alert data" onRetry={handleRetry} />
+          ) : data.alerts.length === 0 ? (
+            <EmptySection 
+              title="No recent alerts"
+              description="We'll notify you when competitors make significant moves."
+            />
+          ) : (
+            <div className="space-y-3">
+              {data.alerts.map((alert) => (
+                <TrendAlertCard key={alert.id} alert={alert} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
