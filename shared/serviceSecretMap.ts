@@ -280,10 +280,21 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "site_executor",  // Matches catalog
     displayName: "Site Change Executor",
-    bitwardenSecret: null,
-    type: "planned",
-    requiresBaseUrl: false,
-    category: "execution"
+    bitwardenSecret: "SEO_DEPLOYER",
+    aliasSecrets: ["SEO_Deployer", "seo_deployer", "Site_Executor"],
+    type: "worker",
+    requiresBaseUrl: true,
+    category: "execution",
+    fallbackEnvVar: "SEO_DEPLOYER_API_KEY",
+    fallbackBaseUrlEnvVar: "SEO_DEPLOYER_BASE_URL",
+    workerEndpoints: {
+      health: "/api/health",
+      smokeTest: "/api/smoke-test",
+      capabilities: "/api/capabilities",
+      run: "/api/run",
+      createPr: "/api/pr/create",
+      prStatus: "/api/pr/status"
+    }
   }
 ];
 

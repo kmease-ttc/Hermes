@@ -18,6 +18,7 @@ import { randomUUID } from "crypto";
 import OpenAI from "openai";
 import { z } from "zod";
 import { getServiceBySlug } from "@shared/servicesCatalog";
+import { resolveWorkerConfig } from "./workerConfigResolver";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -9952,6 +9953,73 @@ When answering:
   // FIX PLAN API - Generate and execute review-first fix plans
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // Helper to resolve secrets for worker services
+  async function getSecretForService(serviceSlug: string, siteId?: string): Promise<{ base_url: string | null; api_key: string | null } | null> {
+    const config = await resolveWorkerConfig(serviceSlug, siteId);
+    if (!config.valid) {
+      logger.warn("FixPlan", `Service ${serviceSlug} not configured: ${config.error}`);
+      return null;
+    }
+    return { base_url: config.base_url, api_key: config.api_key };
+  }
+
+  /**
+   * GET /api/site-executor/health
+   * Test connection to Site Change Executor
+   */
+  app.get("/api/site-executor/health", async (req, res) => {
+    try {
+      const config = await resolveWorkerConfig("site_executor");
+      
+      if (!config.valid) {
+        return res.json({
+          ok: false,
+          configured: false,
+          error: config.error,
+          message: "Set SEO_DEPLOYER_API_KEY and SEO_DEPLOYER_BASE_URL env vars",
+        });
+      }
+      
+      // Test the worker health endpoint
+      const healthUrl = `${config.base_url}/api/health`;
+      const healthRes = await fetch(healthUrl, {
+        headers: {
+          "X-API-Key": config.api_key || "",
+        },
+      });
+      
+      if (!healthRes.ok) {
+        return res.json({
+          ok: false,
+          configured: true,
+          reachable: false,
+          httpStatus: healthRes.status,
+          error: `Health check failed with status ${healthRes.status}`,
+        });
+      }
+      
+      const healthData = await healthRes.json();
+      
+      res.json({
+        ok: true,
+        configured: true,
+        reachable: true,
+        workerStatus: healthData.status || "healthy",
+        adapters: healthData.adapters,
+        timestamp: healthData.timestamp,
+        baseUrl: config.base_url,
+      });
+    } catch (error: any) {
+      logger.error("API", "Site executor health check failed", { error: error.message });
+      res.json({
+        ok: false,
+        configured: true,
+        reachable: false,
+        error: error.message,
+      });
+    }
+  });
+
   /**
    * POST /api/fix-plan/speedster
    * Generate a fix plan for Core Web Vitals based on current metrics + Socrates learnings
@@ -10284,19 +10352,19 @@ When answering:
         `${i + 1}. **${item.title}**\n   - Why: ${item.why}\n   - Expected: ${item.expectedOutcome}`
       ).join("\n\n");
       
-      // Get Change Executor secret
-      const changeSecret = await getSecretForService("SEO_Changes", siteId);
+      // Get Site Executor secret
+      const changeSecret = await getSecretForService("site_executor", siteId);
       
       if (!changeSecret?.base_url || !changeSecret?.api_key) {
         return res.status(400).json({
           ok: false,
-          error: "Change Executor not configured",
-          message: "Set up SEO_Changes secret in Bitwarden vault to enable PR creation",
+          error: "Site Change Executor not configured",
+          message: "Set up SEO_DEPLOYER secret in Bitwarden vault or set SEO_DEPLOYER_API_KEY env var to enable PR creation",
         });
       }
       
-      // Call Change Executor to create PR
-      const prResponse = await fetch(`${changeSecret.base_url}/run`, {
+      // Call Site Change Executor to create PR
+      const prResponse = await fetch(`${changeSecret.base_url}/api/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
