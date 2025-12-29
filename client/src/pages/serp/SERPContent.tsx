@@ -525,7 +525,7 @@ export default function SERPContent() {
         </Card>
       )}
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <Card data-testid="card-total-keywords">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold">{overview?.totalKeywords || 0}</div>
@@ -567,35 +567,6 @@ export default function SERPContent() {
               {stats.inTop10}
             </div>
             <p className="text-xs text-muted-foreground">Top 10</p>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-avg-position">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">
-              {stats.avgPosition ? `#${stats.avgPosition}` : '—'}
-            </div>
-            <p className="text-xs text-muted-foreground">Avg Position</p>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-changes">
-          <CardContent className="pt-4">
-            <div className="flex gap-3">
-              <div>
-                <span className="text-lg font-bold text-semantic-success flex items-center gap-1">
-                  <ArrowUp className="h-3 w-3" />
-                  {stats.winners}
-                </span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-semantic-danger flex items-center gap-1">
-                  <ArrowDown className="h-3 w-3" />
-                  {stats.losers}
-                </span>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">Movement</p>
           </CardContent>
         </Card>
       </div>
