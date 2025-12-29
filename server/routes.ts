@@ -9601,7 +9601,8 @@ When answering:
       }
       
       // Get latest worker results for context
-      const cwvResult = await storage.getLatestWorkerResultByType(siteId, 'core_web_vitals');
+      const allWorkerResults = await storage.getLatestSeoWorkerResults(siteId);
+      const cwvResult = allWorkerResults.find(r => r.workerKey === 'core_web_vitals');
       const rawData = cwvResult?.resultData as any || {};
       
       const evidence = {
@@ -9620,6 +9621,7 @@ When answering:
       };
       
       // Step B: Check if Knowledge Base service is configured
+      const { getServiceSecrets } = await import("./vault");
       const kbaseConfig = await getServiceSecrets('seo_kbase');
       const changeWorkerConfig = await getServiceSecrets('seo_change_executor');
       

@@ -110,5 +110,43 @@ export async function checkVaultHealth(): Promise<{
   };
 }
 
+export async function getServiceSecrets(
+  serviceName: string
+): Promise<{ base_url?: string; api_key?: string } | null> {
+  const envKeyMap: Record<string, { baseUrl: string; apiKey: string }> = {
+    'seo_kbase': { 
+      baseUrl: 'SEO_KBASE_BASE_URL', 
+      apiKey: 'SEO_KBASE_API_KEY' 
+    },
+    'seo_change_executor': { 
+      baseUrl: 'SEO_CHANGE_EXECUTOR_BASE_URL', 
+      apiKey: 'SEO_CHANGE_EXECUTOR_API_KEY' 
+    },
+    'seo_serp': { 
+      baseUrl: 'SEO_SERP_BASE_URL', 
+      apiKey: 'SEO_SERP_API_KEY' 
+    },
+    'seo_core_web_vitals': { 
+      baseUrl: 'SEO_CORE_WEB_VITALS_BASE_URL', 
+      apiKey: 'SEO_CORE_WEB_VITALS_API_KEY' 
+    },
+  };
+  
+  const envKeys = envKeyMap[serviceName];
+  if (!envKeys) {
+    logger.warn("Vault", `Unknown service: ${serviceName}`);
+    return null;
+  }
+  
+  const base_url = process.env[envKeys.baseUrl];
+  const api_key = process.env[envKeys.apiKey];
+  
+  if (!base_url && !api_key) {
+    return null;
+  }
+  
+  return { base_url, api_key };
+}
+
 export type { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
 export { bitwardenProvider } from "./BitwardenProvider";

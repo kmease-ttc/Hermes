@@ -200,8 +200,10 @@ export default function SpeedsterContent() {
     branchName?: string;
     filesChanged?: number;
     summary?: string;
-    status?: 'success' | 'error';
+    status?: 'success' | 'error' | 'blocked';
     error?: string;
+    blockedBy?: string[];
+    hint?: string;
   } | null>(null);
   
   const fixMutation = useMutation({
@@ -211,20 +213,32 @@ export default function SpeedsterContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      const json = await res.json();
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to create fix PR');
+        if (json.blockedBy) {
+          return json;
+        }
+        throw new Error(json.error || 'Failed to create fix PR');
       }
-      return res.json();
+      return json;
     },
     onSuccess: (data) => {
-      setFixResult({
-        prUrl: data.prUrl,
-        branchName: data.branchName,
-        filesChanged: data.filesChanged,
-        summary: data.summary,
-        status: 'success',
-      });
+      if (data.ok === false && data.blockedBy) {
+        setFixResult({
+          status: 'blocked',
+          blockedBy: data.blockedBy,
+          hint: data.hint,
+          error: data.error,
+        });
+      } else {
+        setFixResult({
+          prUrl: data.prUrl,
+          branchName: data.branchName,
+          filesChanged: data.filesChanged,
+          summary: data.summary,
+          status: 'success',
+        });
+      }
     },
     onError: (error: Error) => {
       setFixResult({
@@ -724,6 +738,42 @@ export default function SpeedsterContent() {
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Open Pull Request
+              </Button>
+            </div>
+          ) : fixResult?.status === 'blocked' ? (
+            <div className="py-4 space-y-4">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <AlertTriangle className="w-6 h-6 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-yellow-600">Integration Required</p>
+                  <p className="text-sm text-muted-foreground">{fixResult.error}</p>
+                </div>
+              </div>
+              
+              {fixResult.blockedBy && fixResult.blockedBy.length > 0 && (
+                <div className="p-3 rounded-lg border space-y-2">
+                  <p className="text-sm font-medium">Missing Integrations:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {fixResult.blockedBy.map((blocker, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        {blocker}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {fixResult.hint && (
+                <p className="text-xs text-muted-foreground">{fixResult.hint}</p>
+              )}
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowFixModal(false)}
+              >
+                Close
               </Button>
             </div>
           ) : fixResult?.status === 'error' ? (
