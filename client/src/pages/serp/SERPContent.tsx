@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface RankingData {
@@ -25,6 +25,8 @@ interface SerpOverview {
   stats: {
     ranking: number;
     notRanking: number;
+    numberOne: number;
+    inTop3: number;
     inTop10: number;
     inTop20: number;
     avgPosition: number | null;
@@ -155,7 +157,7 @@ export default function SERPContent() {
     );
   }
 
-  const stats = overview?.stats || { ranking: 0, notRanking: 0, inTop10: 0, inTop20: 0, avgPosition: null, winners: 0, losers: 0 };
+  const stats = overview?.stats || { ranking: 0, notRanking: 0, numberOne: 0, inTop3: 0, inTop10: 0, inTop20: 0, avgPosition: null, winners: 0, losers: 0 };
   const totalTracked = stats.ranking + stats.notRanking;
 
   return (
@@ -216,65 +218,67 @@ export default function SERPContent() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card data-testid="card-total-keywords">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Keywords</CardTitle>
-            <Search className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">{overview?.totalKeywords || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.ranking} ranking, {stats.notRanking} not found
-            </p>
+            <p className="text-xs text-muted-foreground">Total Keywords</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30" data-testid="card-number-one">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1">
+              <Crown className="h-5 w-5" />
+              {stats.numberOne}
+            </div>
+            <p className="text-xs text-muted-foreground">#1 Rankings</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/30" data-testid="card-top-3">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-amber-500 flex items-center gap-1">
+              <Trophy className="h-4 w-4" />
+              {stats.inTop3}
+            </div>
+            <p className="text-xs text-muted-foreground">Top 3</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-top-10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top 10 Positions</CardTitle>
-            <TrendingUp className="h-4 w-4 text-semantic-success" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold text-semantic-success">{stats.inTop10}</div>
-            <Progress value={totalTracked > 0 ? (stats.inTop10 / totalTracked) * 100 : 0} className="mt-2" />
+            <p className="text-xs text-muted-foreground">Top 10</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-avg-position">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Position</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">
               {stats.avgPosition ? `#${stats.avgPosition}` : '—'}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.inTop20} in top 20
-            </p>
+            <p className="text-xs text-muted-foreground">Avg Position</p>
           </CardContent>
         </Card>
 
         <Card data-testid="card-changes">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Changes</CardTitle>
-            <div className="flex gap-1">
-              <ArrowUp className="h-4 w-4 text-semantic-success" />
-              <ArrowDown className="h-4 w-4 text-semantic-danger" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
+          <CardContent className="pt-4">
+            <div className="flex gap-3">
               <div>
-                <span className="text-2xl font-bold text-semantic-success">{stats.winners}</span>
-                <p className="text-xs text-semantic-success">improved</p>
+                <span className="text-lg font-bold text-semantic-success flex items-center gap-1">
+                  <ArrowUp className="h-3 w-3" />
+                  {stats.winners}
+                </span>
               </div>
               <div>
-                <span className="text-2xl font-bold text-semantic-danger">{stats.losers}</span>
-                <p className="text-xs text-semantic-danger">declined</p>
+                <span className="text-lg font-bold text-semantic-danger flex items-center gap-1">
+                  <ArrowDown className="h-3 w-3" />
+                  {stats.losers}
+                </span>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">Movement</p>
           </CardContent>
         </Card>
       </div>
