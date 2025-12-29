@@ -395,20 +395,12 @@ export default function SERPContent() {
     return <TrendingDown className="h-4 w-4 text-semantic-danger" />;
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   const stats = overview?.stats || { ranking: 0, notRanking: 0, numberOne: 0, inTop3: 0, inTop5: 0, inTop10: 0, inTop20: 0, avgPosition: null, winners: 0, losers: 0 };
   const hasKeywords = (overview?.totalKeywords || 0) > 0;
 
   const crewMember = getCrewMember("serp_intel");
 
-  const crew: CrewIdentity = {
+  const crew: CrewIdentity = useMemo(() => ({
     crewId: "serp_intel",
     crewName: crewMember.nickname,
     subtitle: crewMember.role,
@@ -421,7 +413,7 @@ export default function SERPContent() {
     accentColor: crewMember.color,
     capabilities: crewMember.capabilities || ["Rank Tracking", "SERP Snapshots", "Position Monitoring"],
     monitors: ["Keyword Rankings", "Position Changes", "SERP Features"],
-  };
+  }), [crewMember]);
 
   const missionStatus: MissionStatusState = useMemo(() => {
     const totalKeywords = overview?.totalKeywords || 0;
@@ -581,6 +573,15 @@ export default function SERPContent() {
       <Badge variant="outline" className="text-xs">{intent}</Badge>
     );
   };
+
+  // Loading state - after all hooks
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // Show setup state if no keywords exist
   if (!hasKeywords && !isLoading) {
