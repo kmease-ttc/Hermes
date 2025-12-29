@@ -428,13 +428,14 @@ function TrendAlertCard({ alert }: { alert: TrendAlert }) {
 function OverviewPanel({ data, onRefresh, isRefreshing }: { data: CompetitiveOverview; onRefresh: () => void; isRefreshing?: boolean }) {
   const hasData = data.competitors.length > 0 || data.shareOfVoice > 0;
   
-  const statusConfig = {
+  const statusConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
     ahead: { label: "Ahead", icon: Trophy, color: "text-semantic-success", bg: "bg-semantic-success-soft" },
     parity: { label: "At parity", icon: Swords, color: "text-semantic-warning", bg: "bg-semantic-warning-soft" },
     behind: { label: "Behind", icon: Shield, color: "text-semantic-danger", bg: "bg-semantic-danger-soft" },
+    unknown: { label: "Not analyzed", icon: Compass, color: "text-muted-foreground", bg: "bg-muted" },
   };
 
-  const posConfig = statusConfig[data.competitivePosition];
+  const posConfig = statusConfig[data.competitivePosition] || statusConfig.unknown;
   const PosIcon = posConfig.icon;
 
   if (!hasData) {
