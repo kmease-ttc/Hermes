@@ -3709,6 +3709,13 @@ When answering:
         serviceTopics = categoryTopics.psychiatry;
       }
       
+      // Get tracked keywords from database
+      const serpKeywords = await storage.getSerpKeywords(true);
+      const targetKeywords = serpKeywords.map(k => k.keyword).slice(0, 20);
+      
+      // Get SERP API key from environment
+      const serpApiKey = process.env.SERP_API_KEY || "";
+      
       // Check if worker is configured
       const { resolveWorkerConfig } = await import("./workerConfigResolver");
       const compConfig = await resolveWorkerConfig("competitive_snapshot");
@@ -3738,26 +3745,31 @@ When answering:
             logger.info("Competitive", "Worker capabilities fetched", { capabilities: capData });
           }
           
-          // Call the worker's run endpoint with target domain and service context
-          logger.info("Competitive", "Calling worker with context", { 
+          // Build payload with correct input format for the worker
+          // Worker expects: targetKeywords, competitorDomains, serpApiKey
+          const workerPayload = {
+            targetKeywords: targetKeywords.length > 0 ? targetKeywords : serviceTopics,
+            competitorDomains: [], // Will be auto-discovered by worker
+            serpApiKey: serpApiKey,
+            target: {
+              domain: targetDomain,
+              category: siteCategory,
+            },
+            options: {
+              max_competitors: 5,
+            },
+          };
+          
+          logger.info("Competitive", "Calling worker with correct inputs", { 
             targetDomain, 
-            serviceTopics,
-            category: siteCategory 
+            keywordCount: targetKeywords.length,
+            hasSerpKey: !!serpApiKey,
           });
           
           const overviewRes = await fetch(`${baseUrl}/run`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ 
-              target: {
-                domain: targetDomain,
-                serviceTopics: serviceTopics,
-                category: siteCategory,
-              },
-              options: {
-                max_competitors: 5,
-              },
-            }),
+            body: JSON.stringify(workerPayload),
             signal: AbortSignal.timeout(60000),
           });
           
