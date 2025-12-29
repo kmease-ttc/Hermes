@@ -12,6 +12,7 @@ import AuthorityContent from "./authority/AuthorityContent";
 import SERPContent from "./serp/SERPContent";
 import PulseContent from "./pulse/PulseContent";
 import SpeedsterContent from "./speedster/SpeedsterContent";
+import NatashaContent from "./natasha/NatashaContent";
 import GenericAgentContent from "./agents/GenericAgentContent";
 
 function getScoreColor(score: number): string {
@@ -55,6 +56,8 @@ export default function AgentDetail() {
         return <PulseContent />;
       case "core_web_vitals":
         return <SpeedsterContent />;
+      case "competitive_snapshot":
+        return <NatashaContent />;
       default:
         return <GenericAgentContent agentId={agentId} />;
     }

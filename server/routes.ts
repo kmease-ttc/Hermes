@@ -3657,6 +3657,125 @@ When answering:
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Competitive Intelligence (Natasha) Endpoints
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.get("/api/competitive/overview", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      logger.info("Competitive", "Fetching overview", { siteId });
+      
+      // Check if worker is configured
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
+      const compConfig = await resolveWorkerConfig("competitive_snapshot");
+      const workerConfigured = compConfig.valid && !!compConfig.base_url;
+      
+      // Return mock competitive intelligence data with metadata
+      const overview = {
+        configured: workerConfigured,
+        isRealData: false,
+        dataSource: workerConfigured ? "worker_fallback" : "mock",
+        lastRunAt: new Date(Date.now() - 86400000).toISOString(),
+        competitors: [
+          { id: "1", name: "Competitor A", domain: "competitora.com", visibility: 78, visibilityChange: 5, keywords: 234, topKeywords: ["mental health", "therapy", "counseling"], lastUpdated: new Date().toISOString() },
+          { id: "2", name: "Competitor B", domain: "competitorb.com", visibility: 65, visibilityChange: -3, keywords: 189, topKeywords: ["psychiatry", "medication", "treatment"], lastUpdated: new Date().toISOString() },
+          { id: "3", name: "Competitor C", domain: "competitorc.com", visibility: 52, visibilityChange: 2, keywords: 145, topKeywords: ["telehealth", "virtual care", "online therapy"], lastUpdated: new Date().toISOString() },
+        ],
+        contentGaps: [
+          { id: "1", keyword: "online psychiatrist Florida", searchVolume: 2400, difficulty: 35, competitorsCovering: 3, opportunity: "high", suggestedAction: "Create dedicated landing page targeting this keyword" },
+          { id: "2", keyword: "telehealth therapy near me", searchVolume: 1800, difficulty: 42, competitorsCovering: 2, opportunity: "high", suggestedAction: "Add location-specific content for telehealth services" },
+          { id: "3", keyword: "anxiety treatment without medication", searchVolume: 1200, difficulty: 28, competitorsCovering: 2, opportunity: "medium", suggestedAction: "Write blog post about alternative anxiety treatments" },
+          { id: "4", keyword: "virtual mental health counseling", searchVolume: 890, difficulty: 38, competitorsCovering: 3, opportunity: "medium", suggestedAction: "Optimize existing service pages for this term" },
+        ],
+        rankingPages: [
+          { url: "/services/psychiatry", keyword: "psychiatrist Orlando", yourPosition: 8, competitorPosition: 3, competitor: "Competitor A", gap: -5 },
+          { url: "/services/therapy", keyword: "therapy near me", yourPosition: 12, competitorPosition: 5, competitor: "Competitor B", gap: -7 },
+          { url: "/blog/anxiety-tips", keyword: "anxiety treatment tips", yourPosition: 4, competitorPosition: 6, competitor: "Competitor A", gap: 2 },
+          { url: "/services/telehealth", keyword: "telehealth psychiatry", yourPosition: null, competitorPosition: 2, competitor: "Competitor C", gap: 0 },
+        ],
+        summary: {
+          totalCompetitors: 5,
+          totalGaps: 23,
+          highPriorityGaps: 8,
+          avgVisibilityGap: 15,
+          keywordsTracked: 48,
+          keywordsWinning: 12,
+          keywordsLosing: 18,
+        },
+      };
+      
+      res.json(overview);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch competitive overview", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/competitive/run", async (req, res) => {
+    try {
+      const { siteId = "default" } = req.body;
+      const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+      
+      logger.info("Competitive", "Starting competitive analysis", { siteId });
+      
+      // Try to call the competitive_snapshot worker if configured
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
+      const compConfig = await resolveWorkerConfig("competitive_snapshot");
+      
+      if (compConfig.valid && compConfig.base_url) {
+        const baseUrl = compConfig.base_url.replace(/\/$/, '');
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          "X-Request-Id": requestId,
+        };
+        if (compConfig.api_key) {
+          headers["Authorization"] = `Bearer ${compConfig.api_key}`;
+          headers["X-API-Key"] = compConfig.api_key;
+        }
+        
+        try {
+          const runRes = await fetch(`${baseUrl}/run`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ siteId }),
+            signal: AbortSignal.timeout(60000),
+          });
+          
+          if (runRes.ok) {
+            const data = await runRes.json();
+            logger.info("Competitive", "Analysis completed via worker", { siteId });
+            return res.json({
+              ok: true,
+              service: "competitive_snapshot",
+              request_id: requestId,
+              data: data.data || data,
+            });
+          }
+        } catch (workerErr: any) {
+          logger.warn("Competitive", "Worker call failed, using mock data", { error: workerErr.message });
+        }
+      }
+      
+      // Return mock success if worker not configured
+      res.json({
+        ok: true,
+        service: "competitive_snapshot",
+        request_id: requestId,
+        message: "Analysis completed (mock data - configure worker for real data)",
+        data: {
+          competitorsAnalyzed: 5,
+          gapsFound: 23,
+          rankingBattles: 48,
+        },
+      });
+      
+    } catch (error: any) {
+      logger.error("Competitive", "Failed to run competitive analysis", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // SERP Tracking Endpoints
   app.get("/api/serp/keywords", async (req, res) => {
     try {
