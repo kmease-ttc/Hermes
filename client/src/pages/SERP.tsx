@@ -218,7 +218,7 @@ export default function SERP() {
           </Card>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card data-testid="card-total-keywords">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Keywords</CardTitle>
@@ -243,42 +243,6 @@ export default function SERP() {
             </CardContent>
           </Card>
 
-          <Card data-testid="card-avg-position">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Position</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats.avgPosition ? `#${stats.avgPosition}` : '—'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats.inTop20} in top 20
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-changes">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recent Changes</CardTitle>
-              <div className="flex gap-1">
-                <ArrowUp className="h-4 w-4 text-semantic-success" />
-                <ArrowDown className="h-4 w-4 text-semantic-danger" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div>
-                  <span className="text-2xl font-bold text-semantic-success">{stats.winners}</span>
-                  <p className="text-xs text-semantic-success">improved</p>
-                </div>
-                <div>
-                  <span className="text-2xl font-bold text-semantic-danger">{stats.losers}</span>
-                  <p className="text-xs text-semantic-danger">declined</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
