@@ -3762,60 +3762,58 @@ When answering:
             },
           };
           
-          logger.info("Competitive", "Calling worker with correct inputs", { 
+          logger.info("Competitive", "Worker configured, returning configured status", { 
             targetDomain, 
-            serviceTopicsCount: workerPayload.target.serviceTopics.length,
-            hasSerpKey: !!serpApiKey,
+            hasSerp: !!serpApiKey,
           });
           
-          const overviewRes = await fetch(`${baseUrl}/run`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(workerPayload),
-            signal: AbortSignal.timeout(60000),
-          });
-          
-          if (overviewRes.ok) {
-            const workerData = await overviewRes.json();
-            logger.info("Competitive", "Overview fetched from worker", { siteId });
+          // For GET /overview, check if there's a recent report available
+          // Don't call /run here (that would queue a new job)
+          // Instead, check /health to see if worker is available
+          try {
+            const healthRes = await fetch(`${baseUrl}/health`, {
+              headers,
+              signal: AbortSignal.timeout(5000),
+            });
             
-            // Transform worker response to match expected format
-            const data = workerData.data || workerData;
-            return res.json({
-              configured: true,
-              isRealData: true,
-              dataSource: "worker",
-              lastRunAt: data.lastRunAt || new Date().toISOString(),
-              competitivePosition: data.competitivePosition || "parity",
-              positionExplanation: data.positionExplanation || "Competitive data from worker",
-              shareOfVoice: data.shareOfVoice || 0,
-              avgRank: data.avgRank || 0,
-              agentScore: data.agentScore || null,
-              competitors: data.competitors || [],
-              contentGaps: data.contentGaps || [],
-              authorityGaps: data.authorityGaps || [],
-              serpFeatureGaps: data.serpFeatureGaps || [],
-              rankingPages: data.rankingPages || [],
-              missions: data.missions || [],
-              alerts: data.alerts || [],
-              summary: data.summary || {
-                totalCompetitors: (data.competitors || []).length,
-                totalGaps: (data.contentGaps || []).length,
-                highPriorityGaps: 0,
-                avgVisibilityGap: 0,
-                keywordsTracked: 0,
-                keywordsWinning: 0,
-                keywordsLosing: 0,
-                referringDomains: 0,
-                competitorAvgDomains: 0,
-              },
-            });
-          } else {
-            const errorText = await overviewRes.text();
-            logger.warn("Competitive", "Worker returned error, falling back to mock", { 
-              status: overviewRes.status, 
-              error: errorText.substring(0, 200) 
-            });
+            if (healthRes.ok) {
+              const healthData = await healthRes.json();
+              logger.info("Competitive", "Worker health check passed", { healthData });
+              
+              // Return a "not yet analyzed" state - user needs to click Run Analysis
+              return res.json({
+                configured: true,
+                isRealData: false,
+                dataSource: "worker",
+                workerStatus: "available",
+                lastRunAt: null,
+                competitivePosition: "unknown",
+                positionExplanation: "Click 'Run Competitive Analysis' to gather data from this worker",
+                shareOfVoice: 0,
+                avgRank: 0,
+                agentScore: null,
+                competitors: [],
+                contentGaps: [],
+                authorityGaps: [],
+                serpFeatureGaps: [],
+                rankingPages: [],
+                missions: [],
+                alerts: [],
+                summary: {
+                  totalCompetitors: 0,
+                  totalGaps: 0,
+                  highPriorityGaps: 0,
+                  avgVisibilityGap: 0,
+                  keywordsTracked: targetKeywords.length,
+                  keywordsWinning: 0,
+                  keywordsLosing: 0,
+                  referringDomains: 0,
+                  competitorAvgDomains: 0,
+                },
+              });
+            }
+          } catch (healthErr: any) {
+            logger.warn("Competitive", "Worker health check failed, falling back to mock", { error: healthErr.message });
           }
         } catch (workerErr: any) {
           logger.warn("Competitive", "Worker call failed, falling back to mock", { error: workerErr.message });
@@ -3962,13 +3960,66 @@ When answering:
           });
           
           if (runRes.ok) {
-            const data = await runRes.json();
-            logger.info("Competitive", "Analysis completed via worker", { siteId, data });
+            const runData = await runRes.json();
+            logger.info("Competitive", "Worker run response", { siteId, runData });
+            
+            // Worker returns { ok: true, report_id: "...", status: "queued" }
+            // We need to poll for the actual report
+            const reportId = runData.report_id || runData.data?.report_id;
+            
+            if (reportId) {
+              // Poll for the report (with retries)
+              let attempts = 0;
+              const maxAttempts = 10;
+              const pollInterval = 2000; // 2 seconds
+              
+              while (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+                attempts++;
+                
+                try {
+                  const reportRes = await fetch(`${baseUrl}/report/${reportId}`, {
+                    headers,
+                    signal: AbortSignal.timeout(10000),
+                  });
+                  
+                  if (reportRes.ok) {
+                    const reportData = await reportRes.json();
+                    logger.info("Competitive", "Report fetched", { reportId, status: reportData.status, attempt: attempts });
+                    
+                    if (reportData.status === "completed" || reportData.data) {
+                      return res.json({
+                        ok: true,
+                        service: "competitive_snapshot",
+                        request_id: requestId,
+                        report_id: reportId,
+                        data: reportData.data || reportData,
+                      });
+                    }
+                    // Still processing, continue polling
+                  }
+                } catch (pollErr: any) {
+                  logger.warn("Competitive", "Poll attempt failed", { attempt: attempts, error: pollErr.message });
+                }
+              }
+              
+              // Timeout - return queued status
+              return res.json({
+                ok: true,
+                service: "competitive_snapshot",
+                request_id: requestId,
+                report_id: reportId,
+                message: "Analysis in progress. Results will appear shortly.",
+                data: { status: "processing", report_id: reportId },
+              });
+            }
+            
+            // No report_id, return the raw response
             return res.json({
               ok: true,
               service: "competitive_snapshot",
               request_id: requestId,
-              data: data.data || data,
+              data: runData.data || runData,
             });
           } else {
             const errorText = await runRes.text();
