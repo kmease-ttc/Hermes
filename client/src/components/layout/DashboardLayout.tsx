@@ -10,6 +10,7 @@ import {
   X,
   Globe,
   ChevronDown,
+  ChevronRight,
   Plus,
   Check,
   Link2,
@@ -17,6 +18,8 @@ import {
   HelpCircle,
   Users
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { USER_FACING_AGENTS, AGENTS } from "@/config/agents";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -89,13 +92,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     addSiteMutation.mutate({ displayName: newSiteName.trim(), baseUrl: url });
   };
 
+  const [crewExpanded, setCrewExpanded] = useState(false);
+  
   const navItems = [
     { href: "/dashboard", label: "Mission Control", icon: LayoutDashboard },
-    { href: "/crew", label: "My Crew", icon: Users },
     { href: "/integrations", label: "Integrations", icon: Link2 },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/help", label: "Help", icon: HelpCircle },
   ];
+  
+  const crewMembers = USER_FACING_AGENTS.map(id => AGENTS[id]).filter(Boolean);
 
   const activeSite = currentSite || selectedSite;
   const siteInitials = activeSite?.displayName?.slice(0, 2).toUpperCase() || "??";
@@ -182,8 +188,85 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </DropdownMenu>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <Link href="/dashboard">
+            <div 
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                location === "/dashboard" || location === "/mission-control"
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+              data-testid="link-nav-mission-control"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Mission Control
+            </div>
+          </Link>
+          
+          <Collapsible open={crewExpanded} onOpenChange={setCrewExpanded}>
+            <CollapsibleTrigger asChild>
+              <div 
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                  location.startsWith("/agents/") || location === "/crew"
+                    ? "bg-primary/10 text-primary" 
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                data-testid="link-nav-my-crew"
+              >
+                <Users className="w-4 h-4" />
+                <span className="flex-1">My Crew</span>
+                <ChevronRight className={cn("w-4 h-4 transition-transform", crewExpanded && "rotate-90")} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
+              {crewMembers.map((member) => {
+                const isActive = location === `/agents/${member.service_id}`;
+                return (
+                  <Link key={member.service_id} href={`/agents/${member.service_id}`}>
+                    <div 
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer",
+                        isActive 
+                          ? "bg-primary/10 text-primary" 
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                      data-testid={`link-nav-crew-${member.service_id}`}
+                    >
+                      {member.avatar ? (
+                        <img src={member.avatar} alt={member.nickname} className="w-5 h-5 object-contain" />
+                      ) : (
+                        <div 
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                          style={{ backgroundColor: member.color }}
+                        >
+                          {member.nickname.slice(0, 1)}
+                        </div>
+                      )}
+                      <span className="truncate">{member.nickname}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+              <Link href="/crew">
+                <div 
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer",
+                    location === "/crew"
+                      ? "bg-primary/10 text-primary" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  data-testid="link-nav-view-all-crew"
+                >
+                  <Users className="w-4 h-4" />
+                  <span>View All</span>
+                </div>
+              </Link>
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {navItems.slice(1).map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
             
