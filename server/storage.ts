@@ -39,6 +39,9 @@ import {
   crewState,
   type CrewState,
   type InsertCrewState,
+  fixPlans,
+  type FixPlan,
+  type InsertFixPlan,
   integrationStatusCache,
   type IntegrationStatusCache,
   type InsertIntegrationStatusCache,
@@ -405,6 +408,14 @@ export interface IStorage {
   getCrewState(siteId: string): Promise<CrewState[]>;
   enableCrewAgent(siteId: string, agentId: string): Promise<CrewState>;
   disableCrewAgent(siteId: string, agentId: string): Promise<void>;
+  
+  // Fix Plans
+  createFixPlan(plan: InsertFixPlan): Promise<FixPlan>;
+  getFixPlanById(planId: string): Promise<FixPlan | undefined>;
+  getLatestFixPlan(siteId: string, crewId: string): Promise<FixPlan | undefined>;
+  updateFixPlan(planId: string, updates: Partial<InsertFixPlan>): Promise<FixPlan | undefined>;
+  getLastExecutedPlan(siteId: string, crewId: string, topic: string): Promise<FixPlan | undefined>;
+  getRecentFixPlans(siteId: string, crewId: string, limit?: number): Promise<FixPlan[]>;
 }
 
 class DBStorage implements IStorage {
@@ -2229,6 +2240,71 @@ class DBStorage implements IStorage {
     }
     
     return this.saveDashboardMetricSnapshot(siteId, merged);
+  }
+  
+  // Fix Plans
+  async createFixPlan(plan: InsertFixPlan): Promise<FixPlan> {
+    const [created] = await db.insert(fixPlans).values(plan).returning();
+    return created;
+  }
+  
+  async getFixPlanById(planId: string): Promise<FixPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(fixPlans)
+      .where(eq(fixPlans.planId, planId))
+      .limit(1);
+    return plan;
+  }
+  
+  async getLatestFixPlan(siteId: string, crewId: string): Promise<FixPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(fixPlans)
+      .where(and(
+        eq(fixPlans.siteId, siteId),
+        eq(fixPlans.crewId, crewId),
+        eq(fixPlans.status, 'pending')
+      ))
+      .orderBy(desc(fixPlans.generatedAt))
+      .limit(1);
+    return plan;
+  }
+  
+  async updateFixPlan(planId: string, updates: Partial<InsertFixPlan>): Promise<FixPlan | undefined> {
+    const [updated] = await db
+      .update(fixPlans)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(fixPlans.planId, planId))
+      .returning();
+    return updated;
+  }
+  
+  async getLastExecutedPlan(siteId: string, crewId: string, topic: string): Promise<FixPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(fixPlans)
+      .where(and(
+        eq(fixPlans.siteId, siteId),
+        eq(fixPlans.crewId, crewId),
+        eq(fixPlans.topic, topic),
+        eq(fixPlans.status, 'executed')
+      ))
+      .orderBy(desc(fixPlans.executedAt))
+      .limit(1);
+    return plan;
+  }
+  
+  async getRecentFixPlans(siteId: string, crewId: string, limit: number = 10): Promise<FixPlan[]> {
+    return db
+      .select()
+      .from(fixPlans)
+      .where(and(
+        eq(fixPlans.siteId, siteId),
+        eq(fixPlans.crewId, crewId)
+      ))
+      .orderBy(desc(fixPlans.generatedAt))
+      .limit(limit);
   }
 }
 

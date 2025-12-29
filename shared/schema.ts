@@ -1824,3 +1824,66 @@ export const insertDashboardMetricSnapshotSchema = createInsertSchema(dashboardM
 });
 export type InsertDashboardMetricSnapshot = z.infer<typeof insertDashboardMetricSnapshotSchema>;
 export type DashboardMetricSnapshot = typeof dashboardMetricSnapshots.$inferSelect;
+
+// Fix Plans - stores generated fix plans before execution
+export const fixPlans = pgTable("fix_plans", {
+  id: serial("id").primaryKey(),
+  planId: text("plan_id").notNull().unique(), // Unique plan identifier
+  siteId: text("site_id").notNull(),
+  crewId: text("crew_id").notNull(), // speedster, scout, etc.
+  topic: text("topic").notNull(), // core_web_vitals, indexing, etc.
+  
+  // Plan status
+  status: text("status").notNull().default("pending"), // pending, executed, expired, cancelled
+  
+  // Cooldown tracking
+  cooldownAllowed: boolean("cooldown_allowed").notNull().default(true),
+  cooldownNextAllowedAt: timestamp("cooldown_next_allowed_at"),
+  cooldownReason: text("cooldown_reason"),
+  lastPrCreatedAt: timestamp("last_pr_created_at"),
+  
+  // Plan items and recommendations
+  maxChangesRecommended: integer("max_changes_recommended").default(5),
+  itemsJson: jsonb("items_json").notNull(), // Array of fix plan items
+  
+  // Context that generated this plan
+  metricsSnapshot: jsonb("metrics_snapshot"), // Vitals/metrics at time of plan
+  socratesContext: jsonb("socrates_context"), // Prior learnings used
+  
+  // Execution results (populated after execute)
+  executedAt: timestamp("executed_at"),
+  executedItemsCount: integer("executed_items_count"),
+  prUrl: text("pr_url"),
+  prBranch: text("pr_branch"),
+  executionResult: jsonb("execution_result"),
+  
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Plans expire after 24h by default
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertFixPlanSchema = createInsertSchema(fixPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertFixPlan = z.infer<typeof insertFixPlanSchema>;
+export type FixPlan = typeof fixPlans.$inferSelect;
+
+// Fix Plan Item schema for validation
+export const fixPlanItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  why: z.string(),
+  proposedChanges: z.array(z.object({
+    type: z.string(), // code, config, asset, etc.
+    fileHint: z.string().optional(),
+    description: z.string(),
+  })),
+  expectedOutcome: z.string(),
+  risk: z.enum(["low", "medium", "high"]),
+  confidence: z.enum(["low", "medium", "high"]),
+  sources: z.array(z.string()), // ["speedster", "socrates"]
+});
+export type FixPlanItem = z.infer<typeof fixPlanItemSchema>;
