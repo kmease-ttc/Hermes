@@ -1,5 +1,10 @@
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { SocratesContent } from "./socrates/SocratesContent";
 
 export default function Socrates() {
-  return <SocratesContent />;
+  return (
+    <DashboardLayout>
+      <SocratesContent />
+    </DashboardLayout>
+  );
 }
