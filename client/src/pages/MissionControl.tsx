@@ -26,7 +26,8 @@ import {
   ShieldAlert,
   ShieldX,
   Settings,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Zap
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -591,176 +592,265 @@ function VerificationBadge({ status }: { status?: string }) {
   );
 }
 
-function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview, isRealData, placeholderReason }: {
+function MissionScoreRing({ score }: { score: number }) {
+  const circumference = 2 * Math.PI * 40;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const scoreColor = score >= 70 ? 'var(--semantic-success)' : score >= 40 ? 'var(--semantic-warning)' : 'var(--semantic-danger)';
+  
+  return (
+    <div className="relative w-24 h-24 shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="8"
+          className="text-muted/30"
+        />
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke={scoreColor}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-foreground">{score}</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Score</span>
+      </div>
+    </div>
+  );
+}
+
+function ImpactIndicator({ impact }: { impact: string }) {
+  const config = {
+    High: { color: 'bg-red-500', bars: 3 },
+    Medium: { color: 'bg-yellow-500', bars: 2 },
+    Low: { color: 'bg-green-500', bars: 1 },
+  }[impact] || { color: 'bg-muted', bars: 1 };
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-end gap-0.5 h-4">
+            {[1, 2, 3].map((bar) => (
+              <div
+                key={bar}
+                className={cn(
+                  "w-1 rounded-sm transition-colors",
+                  bar <= config.bars ? config.color : "bg-muted/40"
+                )}
+                style={{ height: `${bar * 4 + 4}px` }}
+              />
+            ))}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent><p>{impact} Impact</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function EffortIndicator({ effort }: { effort: string }) {
+  const effortMap: Record<string, { label: string; icon: string }> = {
+    'XS': { label: 'Quick', icon: '⚡' },
+    'S': { label: 'Quick', icon: '⚡' },
+    'M': { label: 'Medium', icon: '⏱' },
+    'L': { label: 'Long', icon: '📅' },
+    'XL': { label: 'Long', icon: '📅' },
+  };
+  const config = effortMap[effort] || effortMap['M'];
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-xs text-muted-foreground">{config.icon}</span>
+        </TooltipTrigger>
+        <TooltipContent><p>{config.label} effort</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function CrewAvatars({ agents }: { agents: any[] }) {
+  if (!agents?.length) return null;
+  
+  return (
+    <div className="flex -space-x-1.5">
+      {agents.slice(0, 3).map((agent: any) => {
+        const crew = getCrewMember(agent.id || agent.agentId);
+        return (
+          <TooltipProvider key={agent.id || agent.agentId}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href={`/agents/${agent.id || agent.agentId}`}>
+                  <div 
+                    className="w-6 h-6 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white cursor-pointer hover:scale-110 transition-transform"
+                    style={{ backgroundColor: crew.color }}
+                  >
+                    {crew.nickname?.slice(0, 1) || '?'}
+                  </div>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent><p>{crew.nickname}</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      })}
+      {agents.length > 3 && (
+        <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+          +{agents.length - 3}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview, isRealData, placeholderReason, onFixEverything }: {
   priorities: any[];
   blockers: any[];
   confidence: string;
   coverage: { active: number; total: number };
   updatedAt?: string;
   onReview?: (mission: any) => void;
+  onFixEverything?: () => void;
   isRealData?: boolean;
   placeholderReason?: string;
 }) {
+  const terminalStatuses = ['completed', 'done', 'approved', 'verified', 'resolved'];
+  const completedCount = priorities.filter(p => terminalStatuses.includes(p.status)).length;
+  const totalMissions = priorities.length;
+  const blockerPenalty = blockers.length * 10;
+  const highImpactPenalty = priorities.filter(p => p.impact === 'High' && !terminalStatuses.includes(p.status)).length * 5;
+  const missionScore = Math.max(0, Math.min(100, Math.round(
+    (totalMissions > 0 ? (completedCount / totalMissions) * 100 : 100) - blockerPenalty - highImpactPenalty
+  )));
+  
+  const healthStatus = missionScore >= 70 ? 'Healthy' : missionScore >= 40 ? 'Needs Attention' : 'Critical';
+  const healthColor = missionScore >= 70 ? 'text-semantic-success' : missionScore >= 40 ? 'text-semantic-warning' : 'text-semantic-danger';
+
   return (
-    <Card className="glass-panel border-purple shadow-purple" data-testid="captains-recommendations">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-soft flex items-center justify-center">
-              <Compass className="w-5 h-5 text-purple-accent" />
-            </div>
-            <div>
-              <CardTitle className="text-lg text-foreground">Missions</CardTitle>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>Sourced from {coverage.active} crew members</span>
-                {updatedAt && (
-                  <>
-                    <span>•</span>
-                    <Clock className="w-3 h-3" />
-                    <span>Updated {updatedAt}</span>
-                  </>
-                )}
+    <div className="space-y-6" data-testid="captains-recommendations">
+      <Card className="glass-panel border-purple shadow-purple">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-6">
+            <MissionScoreRing score={missionScore} />
+            <div className="flex-1 min-w-0">
+              <h3 className={cn("text-xl font-semibold", healthColor)}>{healthStatus}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {completedCount} of {totalMissions} missions complete
+                {blockers.length > 0 && ` • ${blockers.length} blocker${blockers.length > 1 ? 's' : ''}`}
               </p>
+              {isRealData === false && (
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  {placeholderReason || "Run diagnostics for real data"}
+                </p>
+              )}
             </div>
+            <Button 
+              variant="purple" 
+              size="lg" 
+              className="rounded-xl shrink-0"
+              onClick={onFixEverything}
+              data-testid="button-fix-everything"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Fix Everything
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className={cn(
-              "text-xs",
-              confidence === "High" ? "bg-semantic-success-soft text-semantic-success" :
-              confidence === "Medium" ? "bg-semantic-warning-soft text-semantic-warning" :
-              "bg-semantic-danger-soft text-semantic-danger"
-            )}>
-              {confidence} Confidence
-            </Badge>
-            <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-              {coverage.active}/{coverage.total} crew
-            </Badge>
-            {isRealData === false && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge className="bg-semantic-danger-soft text-semantic-danger text-xs">
-                      <ShieldX className="w-3 h-3 mr-1" />
-                      Mock Data
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-sm">{placeholderReason || "Run diagnostics to generate real recommendations"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold text-gold flex items-center gap-2 mb-3 tracking-wide">
-            <Target className="w-4 h-4" />
-            PRIORITY ACTIONS
-          </h4>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {priorities.slice(0, 3).map((priority, idx) => (
-              <Card 
-                key={idx} 
-                className="bg-card/80 backdrop-blur-sm border border-border rounded-xl overflow-hidden"
-                data-testid={`priority-${idx + 1}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "flex-shrink-0 w-7 h-7 rounded-full font-bold flex items-center justify-center text-sm",
-                      "bg-[var(--color-gold)] text-background"
-                    )}>
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm text-foreground leading-tight">{priority.title}</h4>
-                      <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{priority.why}</p>
-                    </div>
+        </CardContent>
+      </Card>
+
+      <div>
+        <h4 className="text-sm font-semibold text-gold flex items-center gap-2 mb-3 tracking-wide">
+          <Target className="w-4 h-4" />
+          MISSIONS
+        </h4>
+        <div className="space-y-3">
+          {priorities.map((priority, idx) => (
+            <Card 
+              key={idx} 
+              className="bg-card/80 backdrop-blur-sm border border-border rounded-xl overflow-hidden hover:border-primary/30 transition-colors cursor-pointer"
+              onClick={() => onReview?.({ 
+                ...priority,
+                id: priority.id || `priority-${idx}`,
+                status: priority.status || 'open',
+                sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
+              })}
+              data-testid={`priority-${idx + 1}`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm text-foreground leading-tight">{priority.title}</h4>
+                    <p className="text-muted-foreground text-xs mt-1.5 line-clamp-1">{priority.why}</p>
                   </div>
-                  
-                  <div className="flex items-center gap-2 flex-wrap mt-3">
-                    {priority.agents?.map((agent: any) => {
-                      const crew = getCrewMember(agent.id);
-                      return (
-                        <Link key={agent.id} href={`/agents/${agent.id}`}>
-                          <Badge 
-                            className="text-xs font-medium border-0 cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ 
-                              backgroundColor: `${crew.color}26`,
-                              color: crew.color 
-                            }}
-                          >
-                            {agent.name}
-                          </Badge>
-                        </Link>
-                      );
-                    })}
+                  {priority.metric && (
+                    <span className="text-xs font-medium text-semantic-danger shrink-0">{priority.metric}</span>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <ImpactIndicator impact={priority.impact || "Medium"} />
+                    <EffortIndicator effort={priority.effort || "M"} />
+                    <CrewAvatars agents={priority.agents || []} />
                   </div>
-                  
-                  <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-border">
-                    <VerificationBadge status={priority.status} />
-                    <Badge className={cn(
-                      "text-xs",
-                      priority.impact === "High" ? "bg-semantic-danger-soft text-semantic-danger" :
-                      priority.impact === "Low" ? "bg-semantic-success-soft text-semantic-success" :
-                      "bg-semantic-warning-soft text-semantic-warning"
-                    )}>
-                      Impact: {priority.impact || "Medium"}
-                    </Badge>
-                    <EffortBadge effort={priority.effort || "M"} />
-                  </div>
-                  
                   <Button 
-                    variant="gold" 
+                    variant="ghost" 
                     size="sm" 
-                    className="w-full mt-3 text-xs rounded-xl"
-                    onClick={() => onReview?.({ 
-                      ...priority,
-                      id: priority.id || `priority-${idx}`,
-                      status: priority.status || 'open',
-                      sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
-                    })}
+                    className="text-xs h-7 px-3"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReview?.({ 
+                        ...priority,
+                        id: priority.id || `priority-${idx}`,
+                        status: priority.status || 'open',
+                        sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
+                      });
+                    }}
                     data-testid={`button-review-priority-${idx + 1}`}
                   >
-                    Review <ArrowRight className="w-3 h-3 ml-1" />
+                    Review
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {blockers.length > 0 && (
+        <div className="rounded-xl border border-semantic-warning-border bg-semantic-warning-soft/30 p-4" data-testid="blockers-section">
+          <h4 className="text-sm font-semibold text-semantic-warning flex items-center gap-2 mb-3 tracking-wide">
+            <AlertTriangle className="w-4 h-4" />
+            BLOCKERS
+          </h4>
+          <div className="space-y-2">
+            {blockers.map((blocker, idx) => {
+              const crew = getCrewMember(blocker.id);
+              return (
+                <div key={idx} className="flex items-start gap-3 text-sm">
+                  <AlertCircle className="w-4 h-4 text-semantic-warning flex-shrink-0 mt-0.5" />
+                  <div>
+                    <Link href={`/agents/${blocker.id}`}>
+                      <span className="font-medium cursor-pointer hover:underline" style={{ color: crew.color }}>{blocker.title}</span>
+                    </Link>
+                    <span className="text-muted-foreground"> — {blocker.fix}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-
-        {blockers.length > 0 && (
-          <>
-            <Separator className="my-4 bg-border" />
-            <div className="rounded-xl border border-semantic-warning-border bg-semantic-warning-soft/30 p-4" data-testid="blockers-section">
-              <h4 className="text-sm font-semibold text-semantic-warning flex items-center gap-2 mb-3 tracking-wide">
-                <AlertTriangle className="w-4 h-4" />
-                BLOCKERS
-              </h4>
-              <div className="space-y-2">
-                {blockers.map((blocker, idx) => {
-                  const crew = getCrewMember(blocker.id);
-                  return (
-                    <div key={idx} className="flex items-start gap-3 text-sm">
-                      <AlertCircle className="w-4 h-4 text-semantic-warning flex-shrink-0 mt-0.5" />
-                      <div>
-                        <Link href={`/agents/${blocker.id}`}>
-                          <span className="font-medium cursor-pointer hover:underline" style={{ color: crew.color }}>{blocker.title}</span>
-                        </Link>
-                        <span className="text-muted-foreground"> — {blocker.fix}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }
 
@@ -1028,6 +1118,9 @@ export default function MissionControl() {
           coverage={captainData.coverage || { active: 0, total: 0 }}
           updatedAt={captainData.generated_at ? new Date(captainData.generated_at).toLocaleDateString() : undefined}
           onReview={handleReviewMission}
+          onFixEverything={() => {
+            console.log("Fix Everything clicked - queuing all missions");
+          }}
           isRealData={captainData.isRealData}
           placeholderReason={captainData.placeholderReason}
         />
