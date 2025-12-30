@@ -142,6 +142,10 @@ import {
   seoRuns,
   type SeoRun,
   type InsertSeoRun,
+  achievementTracks,
+  type AchievementTrack,
+  type InsertAchievementTrack,
+  ACHIEVEMENT_TIERS,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -420,6 +424,14 @@ export interface IStorage {
   updateFixPlan(planId: string, updates: Partial<InsertFixPlan>): Promise<FixPlan | undefined>;
   getLastExecutedPlan(siteId: string, crewId: string, topic: string): Promise<FixPlan | undefined>;
   getRecentFixPlans(siteId: string, crewId: string, limit?: number): Promise<FixPlan[]>;
+  
+  // Achievement Tracks
+  getAchievementTracks(siteId: string, crewId?: string): Promise<AchievementTrack[]>;
+  getAchievementTrackByKey(siteId: string, crewId: string, key: string): Promise<AchievementTrack | undefined>;
+  createAchievementTrack(track: InsertAchievementTrack): Promise<AchievementTrack>;
+  updateAchievementTrack(id: number, updates: Partial<InsertAchievementTrack>): Promise<AchievementTrack | undefined>;
+  incrementAchievementProgress(siteId: string, crewId: string, key: string, amount?: number): Promise<AchievementTrack | undefined>;
+  initializeCrewAchievements(siteId: string, crewId: string): Promise<AchievementTrack[]>;
 }
 
 class DBStorage implements IStorage {
@@ -2352,6 +2364,159 @@ class DBStorage implements IStorage {
       ))
       .limit(1);
     return !!approval;
+  }
+  
+  // Achievement Tracks
+  async getAchievementTracks(siteId: string, crewId?: string): Promise<AchievementTrack[]> {
+    if (crewId) {
+      return db
+        .select()
+        .from(achievementTracks)
+        .where(and(
+          eq(achievementTracks.siteId, siteId),
+          eq(achievementTracks.crewId, crewId)
+        ))
+        .orderBy(asc(achievementTracks.key));
+    }
+    return db
+      .select()
+      .from(achievementTracks)
+      .where(eq(achievementTracks.siteId, siteId))
+      .orderBy(asc(achievementTracks.crewId), asc(achievementTracks.key));
+  }
+  
+  async getAchievementTrackByKey(siteId: string, crewId: string, key: string): Promise<AchievementTrack | undefined> {
+    const [track] = await db
+      .select()
+      .from(achievementTracks)
+      .where(and(
+        eq(achievementTracks.siteId, siteId),
+        eq(achievementTracks.crewId, crewId),
+        eq(achievementTracks.key, key)
+      ))
+      .limit(1);
+    return track;
+  }
+  
+  async createAchievementTrack(track: InsertAchievementTrack): Promise<AchievementTrack> {
+    const [created] = await db
+      .insert(achievementTracks)
+      .values(track)
+      .returning();
+    return created;
+  }
+  
+  async updateAchievementTrack(id: number, updates: Partial<InsertAchievementTrack>): Promise<AchievementTrack | undefined> {
+    const [updated] = await db
+      .update(achievementTracks)
+      .set({ ...updates, lastUpdated: new Date() })
+      .where(eq(achievementTracks.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async incrementAchievementProgress(siteId: string, crewId: string, key: string, amount: number = 1): Promise<AchievementTrack | undefined> {
+    const track = await this.getAchievementTrackByKey(siteId, crewId, key);
+    if (!track) return undefined;
+    
+    let newValue = track.currentValue + amount;
+    let newLevel = track.currentLevel;
+    let newThreshold = track.nextThreshold;
+    let newTier = track.currentTier;
+    
+    while (newValue >= newThreshold) {
+      newLevel++;
+      newThreshold = Math.round(track.baseThreshold * Math.pow(track.growthFactor, newLevel - 1));
+      
+      const tierEntries = Object.entries(ACHIEVEMENT_TIERS);
+      for (const [tier, range] of tierEntries) {
+        if (newLevel >= range.minLevel && newLevel <= range.maxLevel) {
+          newTier = tier;
+          break;
+        }
+      }
+    }
+    
+    return this.updateAchievementTrack(track.id, {
+      currentValue: newValue,
+      currentLevel: newLevel,
+      nextThreshold: newThreshold,
+      currentTier: newTier,
+    });
+  }
+  
+  async initializeCrewAchievements(siteId: string, crewId: string): Promise<AchievementTrack[]> {
+    const existing = await this.getAchievementTracks(siteId, crewId);
+    if (existing.length > 0) return existing;
+    
+    const trackDefinitions: Record<string, Array<{ key: string; name: string; description: string; icon: string }>> = {
+      speedster: [
+        { key: "vitals_scans", name: "Vitals Scanner", description: "Core Web Vitals scans completed", icon: "Zap" },
+        { key: "performance_wins", name: "Performance Champion", description: "Performance improvements delivered", icon: "TrendingUp" },
+        { key: "stability_streak", name: "Stability Keeper", description: "Days without performance regression", icon: "Shield" },
+        { key: "benchmarks_beaten", name: "Benchmark Breaker", description: "Industry benchmarks exceeded", icon: "Target" },
+        { key: "autonomous_fixes", name: "Auto-Pilot Master", description: "Autonomous fixes executed successfully", icon: "Bot" },
+      ],
+      natasha: [
+        { key: "content_audits", name: "Content Auditor", description: "Content audits completed", icon: "FileSearch" },
+        { key: "metadata_fixes", name: "Meta Master", description: "Metadata issues fixed", icon: "Tags" },
+        { key: "content_gaps", name: "Gap Finder", description: "Content gaps identified", icon: "Search" },
+        { key: "seo_scores", name: "Score Improver", description: "SEO scores improved", icon: "TrendingUp" },
+        { key: "pages_optimized", name: "Page Optimizer", description: "Pages optimized", icon: "FileText" },
+      ],
+      authority: [
+        { key: "backlinks_found", name: "Link Hunter", description: "Backlinks discovered", icon: "Link" },
+        { key: "domain_rating", name: "Authority Builder", description: "Domain rating improvements", icon: "Award" },
+        { key: "toxic_removed", name: "Toxic Cleaner", description: "Toxic links disavowed", icon: "Trash2" },
+        { key: "outreach_wins", name: "Outreach Pro", description: "Successful outreach campaigns", icon: "Send" },
+        { key: "mentions_tracked", name: "Mention Monitor", description: "Brand mentions tracked", icon: "AtSign" },
+      ],
+      pulse: [
+        { key: "diagnostics_run", name: "Diagnostic Expert", description: "Diagnostic runs completed", icon: "Activity" },
+        { key: "issues_detected", name: "Issue Detector", description: "Issues detected early", icon: "AlertTriangle" },
+        { key: "uptime_days", name: "Uptime Guardian", description: "Days with 100% uptime", icon: "CheckCircle" },
+        { key: "anomalies_caught", name: "Anomaly Catcher", description: "Anomalies caught before impact", icon: "Eye" },
+        { key: "reports_generated", name: "Report Master", description: "Health reports generated", icon: "FileBarChart" },
+      ],
+      serp: [
+        { key: "keywords_tracked", name: "Keyword Tracker", description: "Keywords being tracked", icon: "Search" },
+        { key: "ranking_wins", name: "Ranking Champion", description: "Keyword position improvements", icon: "TrendingUp" },
+        { key: "top_10_entries", name: "Top 10 Achiever", description: "Keywords in top 10", icon: "Trophy" },
+        { key: "serp_features", name: "Feature Snatcher", description: "SERP features captured", icon: "Star" },
+        { key: "competitor_beats", name: "Competitor Crusher", description: "Competitors outranked", icon: "Swords" },
+      ],
+      socrates: [
+        { key: "insights_generated", name: "Insight Generator", description: "Strategic insights generated", icon: "Lightbulb" },
+        { key: "patterns_found", name: "Pattern Finder", description: "Patterns identified in data", icon: "Brain" },
+        { key: "recommendations", name: "Advisor", description: "Recommendations provided", icon: "MessageSquare" },
+        { key: "predictions_made", name: "Predictor", description: "Accurate predictions made", icon: "TrendingUp" },
+        { key: "strategies_formed", name: "Strategist", description: "Strategies formulated", icon: "Map" },
+      ],
+    };
+    
+    const definitions = trackDefinitions[crewId] || [];
+    const createdTracks: AchievementTrack[] = [];
+    
+    for (const def of definitions) {
+      const track = await this.createAchievementTrack({
+        siteId,
+        crewId,
+        key: def.key,
+        name: def.name,
+        description: def.description,
+        icon: def.icon,
+        currentLevel: 1,
+        currentTier: "bronze",
+        currentValue: 0,
+        nextThreshold: 5,
+        baseThreshold: 5,
+        growthFactor: 1.7,
+        lastUpdated: new Date(),
+      });
+      createdTracks.push(track);
+    }
+    
+    return createdTracks;
   }
 }
 
