@@ -484,9 +484,9 @@ function OverviewPanel({ data, onRefresh, isRefreshing }: { data: CompetitiveOve
           <div className="w-16 h-16 rounded-2xl bg-purple-accent/10 flex items-center justify-center mx-auto mb-4">
             <Compass className="w-8 h-8 text-purple-accent" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Competitive Data Yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Data not connected yet</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-            Run an analysis to discover your competitors, track keyword rankings, and identify content opportunities.
+            Configure integration to activate this crew. Run an analysis to discover your competitors, track keyword rankings, and identify content opportunities.
           </p>
           <Button 
             variant="gold" 
@@ -837,20 +837,96 @@ export default function NatashaContent() {
     };
   }, [data, summary, error, isLoading]);
 
-  // Convert competitive missions to MissionItem format
+  // Convert competitive missions to MissionItem format - ALWAYS have at least one mission
   const missions: MissionItem[] = useMemo(() => {
-    return data.missions.map((m) => ({
-      id: m.id,
-      title: m.title,
-      reason: m.description,
-      expectedOutcome: m.expectedImpact === "high" ? "Significant visibility gain" : "Incremental improvement",
-      status: "pending" as const,
-      impact: m.expectedImpact,
-      effort: m.difficulty === "easy" ? "S" : m.difficulty === "medium" ? "M" : "L",
-      agents: [m.executingCrew],
-      category: m.type,
-    }));
-  }, [data.missions]);
+    const items: MissionItem[] = [];
+    
+    // Add real missions from API data
+    if (data.missions.length > 0) {
+      data.missions.forEach((m) => {
+        items.push({
+          id: m.id,
+          title: m.title,
+          reason: m.description,
+          expectedOutcome: m.expectedImpact === "high" ? "Significant visibility gain" : "Incremental improvement",
+          status: "pending" as const,
+          impact: m.expectedImpact,
+          effort: m.difficulty === "easy" ? "S" : m.difficulty === "medium" ? "M" : "L",
+          agents: [m.executingCrew],
+          category: m.type,
+          action: {
+            label: "Fix it",
+            onClick: () => toast.success(`Executing: ${m.title}`),
+            disabled: isRunning,
+          },
+        });
+      });
+    }
+    
+    // Add content gap missions
+    if (data.contentGaps.length > 0) {
+      const highPriorityGaps = data.contentGaps.filter(g => g.opportunity === "high");
+      if (highPriorityGaps.length > 0) {
+        items.push({
+          id: "content-gaps-action",
+          title: `Address ${highPriorityGaps.length} high-priority content gaps`,
+          reason: `Keywords like "${highPriorityGaps[0]?.keyword || 'key topics'}" need coverage`,
+          status: "pending" as const,
+          impact: "high",
+          effort: "M",
+          action: {
+            label: "Fix it",
+            onClick: () => toast.success("Preparing content gap analysis..."),
+            disabled: isRunning,
+          },
+        });
+      }
+    }
+    
+    // Always have at least placeholder missions if no real data
+    if (items.length === 0) {
+      items.push(
+        {
+          id: "identify-content-gaps",
+          title: "Identify competitive content gaps",
+          reason: data.configured ? "Analyzing competitor content strategies" : "Run analysis to discover content opportunities",
+          status: "pending" as const,
+          impact: "high",
+          action: {
+            label: "Fix it",
+            onClick: handleRefresh,
+            disabled: isRunning,
+          },
+        },
+        {
+          id: "analyze-backlinks",
+          title: "Analyze competitor backlink strategies",
+          reason: data.configured ? "Tracking authority gaps" : "Configure to monitor link building opportunities",
+          status: "pending" as const,
+          impact: "medium",
+          action: {
+            label: "Fix it",
+            onClick: handleRefresh,
+            disabled: isRunning,
+          },
+        },
+        {
+          id: "monitor-rankings",
+          title: "Monitor competitor ranking changes",
+          reason: data.configured ? "Watching for rank fluctuations" : "Connect integrations to track SERP positions",
+          status: "pending" as const,
+          impact: "medium",
+          action: {
+            label: "Fix it",
+            onClick: handleRefresh,
+            disabled: isRunning,
+          },
+        }
+      );
+    }
+    
+    return items;
+  }, [data.missions, data.contentGaps, data.configured, isRunning, handleRefresh]);
 
   // KPIs for the strip
   const kpis: KpiDescriptor[] = useMemo(() => {

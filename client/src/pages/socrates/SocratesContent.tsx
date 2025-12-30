@@ -491,39 +491,98 @@ export function SocratesContent() {
       : "needs_attention";
 
   const missionStatus: MissionStatusState = {
-    tier,
-    summaryLine: data?.isRealData 
-      ? `${data.totalLearnings} learnings collected` 
-      : "Waiting for agent data",
-    nextStep: data?.isRealData 
-      ? "Review insights from agents" 
-      : "Run diagnostics to collect learnings",
+    tier: !data?.configured ? "needs_attention" : tier,
+    summaryLine: !data?.configured 
+      ? "Knowledge Base not configured"
+      : data?.isRealData 
+        ? `${data.totalLearnings} learnings collected` 
+        : "Waiting for agent data",
+    nextStep: !data?.configured
+      ? "Set up SEO_KBASE secret to activate this crew"
+      : data?.isRealData 
+        ? "Review insights from agents" 
+        : "Run diagnostics to collect learnings",
     priorityCount: data?.recommendationsCount || 0,
-    blockerCount: 0,
-    autoFixableCount: 0,
+    blockerCount: !data?.configured ? 1 : 0,
+    autoFixableCount: data?.recommendationsCount || 0,
     status: isLoading ? "loading" : "ready",
   };
 
-  const missions: MissionItem[] = [
-    {
-      id: "collect",
-      title: "Collect Agent Insights",
-      status: data?.isRealData ? "done" : "in_progress",
-      impact: "high",
-    },
-    {
-      id: "synthesize",
-      title: "Synthesize Cross-Agent Patterns",
-      status: data?.patternsCount ? "done" : "pending",
-      impact: "medium",
-    },
-    {
-      id: "recommend",
-      title: "Generate Recommendations",
-      status: data?.recommendationsCount ? "done" : "pending",
-      impact: "medium",
-    },
-  ];
+  const missions: MissionItem[] = useMemo(() => {
+    const items: MissionItem[] = [];
+    
+    if (!data?.configured) {
+      items.push({
+        id: "configure",
+        title: "Configure Knowledge Base integration",
+        reason: "Set up SEO_KBASE secret in Settings to enable external worker",
+        status: "pending",
+        impact: "high",
+        action: {
+          label: "Fix it",
+          onClick: () => window.location.href = "/settings",
+          disabled: false,
+        },
+      });
+    }
+    
+    if (!data?.isRealData || (data?.totalLearnings || 0) < 5) {
+      items.push({
+        id: "collect",
+        title: "Add new learnings from diagnostics",
+        reason: "Run diagnostics to collect insights from all agents",
+        status: data?.isRealData ? "in_progress" : "pending",
+        impact: "high",
+        action: {
+          label: "Fix it",
+          onClick: () => runMutation.mutate(),
+          disabled: runMutation.isPending,
+        },
+      });
+    }
+    
+    if (data?.recentLearnings && data.recentLearnings.length > 0 && !data?.patternsCount) {
+      items.push({
+        id: "synthesize",
+        title: "Review and categorize findings",
+        reason: "Categorize learnings to identify cross-agent patterns",
+        status: "pending",
+        impact: "medium",
+        action: {
+          label: "Fix it",
+          onClick: () => runMutation.mutate(),
+          disabled: runMutation.isPending,
+        },
+      });
+    }
+    
+    if (data?.recommendationsCount && data.recommendationsCount > 0) {
+      items.push({
+        id: "export",
+        title: "Export insights to AI prompts",
+        reason: `${data.recommendationsCount} recommendations ready for export`,
+        status: "pending",
+        impact: "medium",
+        action: {
+          label: "Fix it",
+          onClick: () => toast.info("Copy insights using the copy button on each learning card"),
+          disabled: false,
+        },
+      });
+    }
+    
+    if (items.length === 0) {
+      items.push({
+        id: "maintain",
+        title: "Knowledge Base is up to date",
+        reason: "Continue monitoring for new insights",
+        status: "done",
+        impact: "low",
+      });
+    }
+    
+    return items;
+  }, [data, runMutation.isPending]);
 
   const kpis: KpiDescriptor[] = [
     {

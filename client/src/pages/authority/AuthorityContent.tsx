@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Award, 
@@ -549,7 +548,6 @@ function OverallScoreCard({ benchmarks }: { benchmarks: IndustryBenchmark[] }) {
 export default function AuthorityContent() {
   const { currentSite } = useSiteContext();
   const [selectedIndustry, setSelectedIndustry] = useState('healthcare');
-  const [activeTab, setActiveTab] = useState('all');
   const [isAskingAuthority, setIsAskingAuthority] = useState(false);
 
   const handleAskAuthority = async (question: string) => {
@@ -601,19 +599,9 @@ export default function AuthorityContent() {
         a.isPrimary ? -1 : b.isPrimary ? 1 : b.webAuthorityScore - a.webAuthorityScore
       );
     },
-    enabled: activeTab === 'competitors',
   });
 
-  const filteredBenchmarks = benchmarks?.filter(b => 
-    activeTab === 'all' || b.category === activeTab
-  ) || [];
-
-  const categoryIcons = {
-    authority: <Award className="w-4 h-4" />,
-    performance: <BarChart3 className="w-4 h-4" />,
-    content: <FileText className="w-4 h-4" />,
-    technical: <Zap className="w-4 h-4" />,
-  };
+  const filteredBenchmarks = benchmarks || [];
 
   const crewMember = getCrewMember("backlink_authority");
 
@@ -639,37 +627,51 @@ export default function AuthorityContent() {
     const averageCount = benchmarks?.filter(b => getComparisonStatus(b) === 'average').length || 0;
 
     let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
+    let summaryLine = "Authority metrics looking healthy";
+    let nextStep = "Continue monitoring backlink growth";
+
     if (belowCount > 2) {
       tier = "needs_attention";
+      summaryLine = `${belowCount} metrics below industry average`;
+      nextStep = "Focus on improving lowest-performing areas";
     } else if (belowCount > 0 || averageCount > 3) {
       tier = "doing_okay";
+      summaryLine = `${belowCount} below avg, ${averageCount} on par`;
+      nextStep = "Work on gaining high-quality backlinks";
     }
 
     return {
       tier,
-      blockers: belowCount,
-      priorities: averageCount,
-      autoFixable: 0,
+      summaryLine,
+      nextStep,
+      blockerCount: belowCount,
+      priorityCount: averageCount,
+      autoFixableCount: 0,
+      status: isLoading ? "loading" as const : "ready" as const,
     };
-  }, [benchmarks]);
+  }, [benchmarks, isLoading]);
 
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
+      id: "authority",
       label: "Authority",
       value: benchmarks?.find(b => b.metric === 'domain_authority')?.yourValue.toString() || "—",
       tooltip: "Your domain authority score",
     },
     {
+      id: "backlinks",
       label: "Backlinks",
       value: benchmarks?.find(b => b.metric === 'backlinks')?.yourValue.toLocaleString() || "—",
       tooltip: "Total backlinks pointing to your site",
     },
     {
+      id: "ref-domains",
       label: "Ref. Domains",
       value: benchmarks?.find(b => b.metric === 'referring_domains')?.yourValue.toLocaleString() || "—",
       tooltip: "Unique domains linking to you",
     },
     {
+      id: "percentile",
       label: "Percentile",
       value: avgPercentile ? `${avgPercentile.toFixed(0)}th` : "—",
       tooltip: "Your overall industry percentile",
@@ -679,6 +681,7 @@ export default function AuthorityContent() {
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
     const belowBenchmarks = benchmarks?.filter(b => getComparisonStatus(b) === 'below') || [];
+    
     if (belowBenchmarks.length > 0) {
       items.push({
         id: "improve-below-avg",
@@ -686,28 +689,174 @@ export default function AuthorityContent() {
         reason: `Focus on: ${belowBenchmarks.slice(0, 2).map(b => b.label).join(', ')}`,
         status: "pending",
         impact: "high",
+        action: {
+          label: "Fix it",
+          onClick: () => toast.info("Opening improvement recommendations..."),
+        },
       });
     }
+
+    items.push({
+      id: "acquire-backlinks",
+      title: "Acquire high-quality backlinks",
+      reason: "Improve domain authority through link building",
+      status: "pending",
+      impact: "high",
+      action: {
+        label: "Fix it",
+        onClick: () => toast.info("Backlink acquisition strategies coming soon"),
+      },
+    });
+
+    items.push({
+      id: "referring-domain-diversity",
+      title: "Improve referring domain diversity",
+      reason: "Spread link equity across more unique domains",
+      status: "pending",
+      impact: "medium",
+      action: {
+        label: "Fix it",
+        onClick: () => toast.info("Domain diversity analysis coming soon"),
+      },
+    });
+
+    items.push({
+      id: "guest-posts",
+      title: "Build authority through guest posts",
+      reason: "Create content partnerships for quality links",
+      status: "pending",
+      impact: "medium",
+      action: {
+        label: "Fix it",
+        onClick: () => toast.info("Guest posting opportunities coming soon"),
+      },
+    });
+
     return items;
   }, [benchmarks]);
 
   const inspectorTabs: InspectorTab[] = useMemo(() => [
     {
-      id: "benchmarks",
-      label: "Benchmarks",
-      icon: <BarChart3 className="w-4 h-4" />,
+      id: "overview",
+      label: "Overview",
+      icon: <Award className="w-4 h-4" />,
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredBenchmarks.map((benchmark) => (
+        <div className="space-y-4">
+          {benchmarks ? (
+            <OverallScoreCard benchmarks={benchmarks} />
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  Data not connected yet — configure integration to activate this crew.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          <div className="flex items-center gap-2 mb-4">
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+              <SelectTrigger className="w-[200px]" data-testid="select-industry">
+                <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Select Industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDUSTRY_CATEGORIES.map(cat => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBenchmarks.map((benchmark) => (
+              <BenchmarkCard key={benchmark.metric} benchmark={benchmark} />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "authority",
+      label: "Authority",
+      icon: <Award className="w-4 h-4" />,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {benchmarks?.filter(b => b.category === 'authority').map((benchmark) => (
             <BenchmarkCard key={benchmark.metric} benchmark={benchmark} />
           ))}
         </div>
       ),
     },
-  ], [filteredBenchmarks]);
+    {
+      id: "competitors",
+      label: "Competitors",
+      icon: <Users className="w-4 h-4" />,
+      content: (
+        <CompetitorsTable 
+          competitors={competitorData} 
+          isLoading={competitorsLoading} 
+          error={competitorsError as Error | null}
+        />
+      ),
+    },
+    {
+      id: "opportunities",
+      label: "Opportunities",
+      icon: <Target className="w-4 h-4" />,
+      content: (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Improvement Opportunities
+            </CardTitle>
+            <CardDescription>
+              Focus on these metrics to close the gap with top performers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {benchmarks
+                ?.filter(b => getComparisonStatus(b) === 'below')
+                .slice(0, 5)
+                .map(benchmark => {
+                  const gap = benchmark.higherIsBetter 
+                    ? benchmark.industryTop10 - benchmark.yourValue
+                    : benchmark.yourValue - benchmark.industryTop10;
+                  
+                  return (
+                    <div 
+                      key={benchmark.metric}
+                      className="flex items-center justify-between p-3 bg-semantic-danger-soft rounded-lg border border-semantic-danger-border"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{benchmark.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Gap to top 10%: {formatNumber(Math.abs(gap))}{benchmark.unit}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        View Tips
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              {(!benchmarks || benchmarks.filter(b => getComparisonStatus(b) === 'below').length === 0) && (
+                <p className="text-center text-muted-foreground py-4">
+                  Great job! You're performing above or at industry average across all metrics.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ),
+    },
+  ], [filteredBenchmarks, benchmarks, selectedIndustry, competitorData, competitorsLoading, competitorsError]);
 
   const missionPrompt: MissionPromptConfig = {
-    label: "Ask Authority",
+    label: "Ask Beacon",
     placeholder: "e.g., What are my weakest backlink areas? How do I compare to competitors?",
     onSubmit: handleAskAuthority,
     isLoading: isAskingAuthority,
@@ -738,145 +887,6 @@ export default function AuthorityContent() {
       onRefresh={() => refetch()}
       onSettings={() => toast.info("Settings coming soon")}
       isRefreshing={isLoading}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold">Web Authority Score</h2>
-          <p className="text-muted-foreground text-sm">
-            Track your site's authority and compare to industry benchmarks
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-            <SelectTrigger className="w-[200px]" data-testid="select-industry">
-              <Globe className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Select Industry" />
-            </SelectTrigger>
-            <SelectContent>
-              {INDUSTRY_CATEGORIES.map(cat => (
-                <SelectItem key={cat.value} value={cat.value}>
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => refetch()}
-            data-testid="button-refresh-benchmarks"
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </Button>
-        </div>
-      </div>
-
-      {benchmarks && <OverallScoreCard benchmarks={benchmarks} />}
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all" data-testid="tab-all">
-            All Metrics
-          </TabsTrigger>
-          <TabsTrigger value="authority" data-testid="tab-authority">
-            {categoryIcons.authority}
-            <span className="ml-1">Authority</span>
-          </TabsTrigger>
-          <TabsTrigger value="performance" data-testid="tab-performance">
-            {categoryIcons.performance}
-            <span className="ml-1">Performance</span>
-          </TabsTrigger>
-          <TabsTrigger value="content" data-testid="tab-content">
-            {categoryIcons.content}
-            <span className="ml-1">Content</span>
-          </TabsTrigger>
-          <TabsTrigger value="technical" data-testid="tab-technical">
-            {categoryIcons.technical}
-            <span className="ml-1">Technical</span>
-          </TabsTrigger>
-          <TabsTrigger value="competitors" data-testid="tab-competitors">
-            <Users className="w-4 h-4" />
-            <span className="ml-1">Competitors</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {activeTab === 'competitors' ? (
-          <TabsContent value="competitors" className="mt-4">
-            <CompetitorsTable 
-              competitors={competitorData} 
-              isLoading={competitorsLoading} 
-              error={competitorsError as Error | null}
-            />
-          </TabsContent>
-        ) : (
-        <TabsContent value={activeTab} className="mt-4">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-4">
-                    <div className="h-32 bg-muted rounded" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredBenchmarks.map(benchmark => (
-                <BenchmarkCard key={benchmark.metric} benchmark={benchmark} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        )}
-      </Tabs>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Improvement Opportunities
-          </CardTitle>
-          <CardDescription>
-            Focus on these metrics to close the gap with top performers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {benchmarks
-              ?.filter(b => getComparisonStatus(b) === 'below')
-              .slice(0, 3)
-              .map(benchmark => {
-                const gap = benchmark.higherIsBetter 
-                  ? benchmark.industryTop10 - benchmark.yourValue
-                  : benchmark.yourValue - benchmark.industryTop10;
-                
-                return (
-                  <div 
-                    key={benchmark.metric}
-                    className="flex items-center justify-between p-3 bg-semantic-danger-soft rounded-lg border border-semantic-danger-border"
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{benchmark.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Gap to top 10%: {formatNumber(Math.abs(gap))}{benchmark.unit}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      View Tips
-                      <ExternalLink className="w-3 h-3 ml-1" />
-                    </Button>
-                  </div>
-                );
-              })}
-            {(!benchmarks || benchmarks.filter(b => getComparisonStatus(b) === 'below').length === 0) && (
-              <p className="text-center text-muted-foreground py-4">
-                Great job! You're performing above or at industry average across all metrics.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </CrewDashboardShell>
+    />
   );
 }

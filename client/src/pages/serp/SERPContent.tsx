@@ -167,7 +167,6 @@ export default function SERPContent() {
   // Add keywords state
   const [newKeywords, setNewKeywords] = useState('');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
-  const [promptInput, setPromptInput] = useState('');
 
   const runCheck = useMutation({
     mutationFn: async (limit: number) => {
@@ -613,47 +612,243 @@ export default function SERPContent() {
   };
 
   const missions: MissionItem[] = useMemo(() => {
+    const items: MissionItem[] = [];
+    
     if (isFixingEverything && fixStatus) {
-      return [{
+      items.push({
         id: "fixing-everything",
         title: `Executing ${fixStatus.completed + fixStatus.queued + fixStatus.inProgress} improvements`,
         reason: `${fixStatus.completed} completed, ${fixStatus.queued + fixStatus.inProgress} remaining`,
         status: "in_progress" as const,
         impact: "high" as const,
-      }];
+      });
+      return items;
     }
 
     if (missionsData?.missions && missionsData.missions.length > 0) {
-      return missionsData.missions.slice(0, 5).map(m => ({
-        id: `mission-${m.id}`,
-        title: m.title,
-        reason: m.reason || m.targetKeywords?.slice(0, 3).join(", ") || undefined,
-        status: "pending" as const,
-        impact: getImpactLabel(m.impactScore),
-        effort: getEffortLabel(m.effortScore),
-      }));
+      missionsData.missions.slice(0, 5).forEach(m => {
+        items.push({
+          id: `mission-${m.id}`,
+          title: m.title,
+          reason: m.reason || m.targetKeywords?.slice(0, 3).join(", ") || undefined,
+          status: "pending" as const,
+          impact: getImpactLabel(m.impactScore),
+          effort: getEffortLabel(m.effortScore),
+          action: {
+            label: "Fix it",
+            onClick: () => fixEverything.mutate(),
+            disabled: isFixingEverything,
+          },
+        });
+      });
+      return items;
     }
 
     if ((overview?.totalKeywords || 0) === 0) {
-      return [{
+      items.push({
         id: "setup-keywords",
         title: "Set up keyword tracking",
         reason: "Generate target keywords to start monitoring",
         status: "pending" as const,
         impact: "high" as const,
-      }];
+        action: {
+          label: "Generate",
+          onClick: handleGenerate,
+          disabled: generateKeywords.isPending,
+        },
+      });
+      return items;
     }
 
-    return [{
-      id: "monitor-rankings",
-      title: `Tracking ${overview?.totalKeywords || 0} keywords`,
-      reason: `${stats.inTop10} in top 10, ${stats.numberOne} at #1 position`,
-      status: "done" as const,
-      impact: "low" as const,
-    }];
-  }, [stats, overview, missionsData, isFixingEverything, fixStatus]);
+    if (stats.notRanking > 0) {
+      items.push({
+        id: "recover-rankings",
+        title: "Recover non-ranking keywords",
+        reason: `${stats.notRanking} keywords not in search results`,
+        status: "pending" as const,
+        impact: "high" as const,
+        action: {
+          label: "Fix it",
+          onClick: () => fixEverything.mutate(),
+          disabled: isFixingEverything,
+        },
+      });
+    }
 
-  const inspectorTabs: InspectorTab[] = useMemo(() => [], []);
+    if (stats.inTop10 < (overview?.totalKeywords || 0) && stats.inTop10 > 0) {
+      items.push({
+        id: "improve-rankings",
+        title: "Improve rankings for target keywords",
+        reason: `${(overview?.totalKeywords || 0) - stats.inTop10} keywords outside top 10`,
+        status: "pending" as const,
+        impact: "medium" as const,
+        action: {
+          label: "Fix it",
+          onClick: () => fixEverything.mutate(),
+          disabled: isFixingEverything,
+        },
+      });
+    }
+
+    if (stats.losers > 0) {
+      items.push({
+        id: "optimize-losers",
+        title: "Optimize pages losing positions",
+        reason: `${stats.losers} keywords dropped in rankings`,
+        status: "pending" as const,
+        impact: "high" as const,
+        action: {
+          label: "Fix it",
+          onClick: () => fixEverything.mutate(),
+          disabled: isFixingEverything,
+        },
+      });
+    }
+
+    if (items.length === 0) {
+      items.push({
+        id: "monitor-rankings",
+        title: "Continue monitoring rankings",
+        reason: `${stats.inTop10} in top 10, ${stats.numberOne} at #1 position`,
+        status: "done" as const,
+        impact: "low" as const,
+      });
+    }
+
+    return items;
+  }, [stats, overview, missionsData, isFixingEverything, fixStatus, generateKeywords.isPending, handleGenerate]);
+
+  const inspectorTabs: InspectorTab[] = useMemo(() => [
+    {
+      id: "rankings",
+      label: "All Keywords",
+      icon: <Target className="w-4 h-4" />,
+      content: (
+        <TooltipProvider>
+          {sortedKeywords && sortedKeywords.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-background">
+                  <tr className="border-b">
+                    <th className="text-center py-2 font-medium w-12">#</th>
+                    <th className="text-left py-2 font-medium">Keyword</th>
+                    <SortHeader field="priority">Priority</SortHeader>
+                    <SortHeader field="volume">Volume</SortHeader>
+                    <SortHeader field="difficulty">Difficulty</SortHeader>
+                    <SortHeader field="position">Position</SortHeader>
+                    <th className="text-center py-2 font-medium">Trend</th>
+                    <th className="text-center py-2 font-medium">7d Avg</th>
+                    <th className="text-left py-2 font-medium">Ranking URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedKeywords.map((kw, idx) => (
+                    <tr key={kw.id || idx} className="border-b hover:bg-muted/50" data-testid={`row-keyword-${kw.id}`}>
+                      <td className="py-2 text-center text-muted-foreground">
+                        {idx + 1}
+                      </td>
+                      <td className="py-2 font-medium">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>{kw.keyword}</span>
+                          {getIntentBadge(kw.intent, kw.priority, kw.volume)}
+                        </div>
+                      </td>
+                      <td className="py-2 text-center">
+                        {getPriorityBadge(kw.priority, kw.priorityReason)}
+                      </td>
+                      <td className="py-2 text-center">
+                        {formatVolume(kw.volume)}
+                      </td>
+                      <td className="py-2 text-center">
+                        {getDifficultyLabel(kw.difficulty)}
+                      </td>
+                      <td className={`py-2 text-center ${getPositionColor(kw.currentPosition)}`}>
+                        {kw.currentPosition ? (
+                          <span className="flex items-center justify-center gap-1">
+                            {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            {kw.currentPosition >= 2 && kw.currentPosition <= 3 && <Trophy className="h-4 w-4 text-slate-400" />}
+                            {kw.currentPosition >= 4 && kw.currentPosition <= 10 && <Trophy className="h-4 w-4 text-amber-600" />}
+                            #{kw.currentPosition}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="py-2 text-center">
+                        {kw.trend === 'up' && <TrendingUp className="h-4 w-4 text-semantic-success mx-auto" />}
+                        {kw.trend === 'down' && <TrendingDown className="h-4 w-4 text-semantic-danger mx-auto" />}
+                        {kw.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground mx-auto" />}
+                        {kw.trend === 'new' && <Badge variant="outline" className="text-xs">New</Badge>}
+                      </td>
+                      <td className="py-2 text-center text-muted-foreground">
+                        {kw.avg7Day ? `#${kw.avg7Day.toFixed(1)}` : '—'}
+                      </td>
+                      <td className="py-2 text-muted-foreground truncate max-w-[250px]">
+                        {kw.currentUrl || kw.targetUrl || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">No keywords configured</p>
+              <p className="text-sm text-muted-foreground mt-1">Add keywords to start tracking rankings</p>
+            </div>
+          )}
+        </TooltipProvider>
+      ),
+      badge: sortedKeywords?.length || undefined,
+    },
+    {
+      id: "performance",
+      label: "Performance",
+      icon: <TrendingUp className="w-4 h-4" />,
+      content: (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <Card data-testid="card-total-keywords">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold">{overview?.totalKeywords || 0}</div>
+              <p className="text-xs text-muted-foreground">Total Keywords</p>
+            </CardContent>
+          </Card>
+          <Card data-testid="card-ranking">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-semantic-info">{stats.ranking}</div>
+              <p className="text-xs text-muted-foreground">Total Ranking</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30" data-testid="card-top-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1">
+                <Crown className="h-5 w-5" />
+                {stats.numberOne}
+              </div>
+              <p className="text-xs text-muted-foreground">Top 1</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-slate-400/10 to-slate-500/5 border-slate-400/30" data-testid="card-top-3">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-slate-400 flex items-center gap-1">
+                <Trophy className="h-4 w-4" />
+                {stats.inTop3}
+              </div>
+              <p className="text-xs text-muted-foreground">Top 3</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-amber-600/10 to-amber-700/5 border-amber-600/30" data-testid="card-top-10">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-amber-600 flex items-center gap-1">
+                <Trophy className="h-4 w-4" />
+                {stats.inTop10}
+              </div>
+              <p className="text-xs text-muted-foreground">Top 10</p>
+            </CardContent>
+          </Card>
+        </div>
+      ),
+    },
+  ], [sortedKeywords, overview, stats]);
 
   const getIntentBadge = (intent: string | null, priority: number | null, volume: number | null) => {
     if (!intent) {
@@ -855,7 +1050,7 @@ export default function SERPContent() {
     : null;
 
   const missionPrompt: MissionPromptConfig = {
-    label: "Ask Lookout",
+    label: "Ask SERP",
     placeholder: "e.g., What keywords are improving? Which need attention?",
     onSubmit: handleAskSerp,
     isLoading: isAskingSerp,
@@ -900,72 +1095,6 @@ export default function SERPContent() {
       onFixEverything={() => fixEverything.mutate()}
       isRefreshing={runCheck.isPending || isFixingEverything}
     >
-      {/* Prompt Input for Lookout */}
-      <Card className="border-primary/20 mb-4">
-        <CardContent className="pt-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Ask Lookout about your keyword rankings, suggest new keywords to track..."
-              value={promptInput}
-              onChange={(e) => setPromptInput(e.target.value)}
-              className="flex-1"
-              data-testid="input-lookout-prompt"
-            />
-            <Button 
-              onClick={() => {
-                if (promptInput.trim()) {
-                  toast({
-                    title: "Message sent to Lookout",
-                    description: "Feature coming soon - Lookout will analyze your request",
-                  });
-                  setPromptInput('');
-                }
-              }}
-              disabled={!promptInput.trim()}
-              data-testid="button-send-prompt"
-            >
-              <Brain className="h-4 w-4 mr-2" />
-              Ask
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Try: "What keywords should I focus on?" or "Add 'psychiatrist near me' to tracking"
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold">SERP Tracking</h2>
-          <p className="text-muted-foreground text-sm">
-            {overview?.totalKeywords || 0} target keywords • Last check: {overview?.lastCheck || 'Never'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => handleCheck('quick')} 
-            disabled={runCheck.isPending || !overview?.configured}
-            variant="outline"
-            size="sm"
-            data-testid="button-quick-check"
-            title="Check keywords missing recent data (respects 7-day rule)"
-          >
-            {runCheck.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
-            Quick Check
-          </Button>
-          <Button 
-            onClick={() => handleCheck('full')} 
-            disabled={runCheck.isPending || !overview?.configured}
-            size="sm"
-            data-testid="button-full-check"
-            title="Refresh rankings for all keywords (respects 7-day rule)"
-          >
-            {runCheck.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Target className="h-4 w-4 mr-2" />}
-            Full Check
-          </Button>
-        </div>
-      </div>
-
       {!overview?.configured && (
         <Card className="border-semantic-warning-border bg-semantic-warning-soft">
           <CardHeader>
@@ -980,53 +1109,6 @@ export default function SERPContent() {
         </Card>
       )}
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <Card data-testid="card-total-keywords">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{overview?.totalKeywords || 0}</div>
-            <p className="text-xs text-muted-foreground">Total Keywords</p>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-ranking">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-semantic-info">{stats.ranking}</div>
-            <p className="text-xs text-muted-foreground">Total Ranking</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30" data-testid="card-top-1">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1">
-              <Crown className="h-5 w-5" />
-              {stats.numberOne}
-            </div>
-            <p className="text-xs text-muted-foreground">Top 1</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-400/10 to-slate-500/5 border-slate-400/30" data-testid="card-top-3">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-slate-400 flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {stats.inTop3}
-            </div>
-            <p className="text-xs text-muted-foreground">Top 3</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-600/10 to-amber-700/5 border-amber-600/30" data-testid="card-top-10">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-amber-600 flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {stats.inTop10}
-            </div>
-            <p className="text-xs text-muted-foreground">Top 10</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Add Keywords Panel */}
       {showBulkAdd && (
         <Card data-testid="card-add-keywords">
           <CardHeader>
@@ -1066,112 +1148,27 @@ export default function SERPContent() {
         </Card>
       )}
 
-      <Card data-testid="card-all-rankings">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>All Keywords ({rankingsData?.keywords?.length || 0})</CardTitle>
-              <CardDescription>
-                Complete keyword ranking data • Last check: {overview?.lastCheck || 'Never'}
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkAdd(true)}
-                data-testid="button-show-add-keywords"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Keywords
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scorePriority.mutate()}
-                disabled={scorePriority.isPending}
-                data-testid="button-score-priority"
-              >
-                <Brain className="h-4 w-4 mr-1" />
-                {scorePriority.isPending ? 'Scoring...' : 'Score Priority'}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <TooltipProvider>
-            {sortedKeywords && sortedKeywords.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-background">
-                    <tr className="border-b">
-                      <th className="text-center py-2 font-medium w-12">#</th>
-                      <th className="text-left py-2 font-medium">Keyword</th>
-                      <SortHeader field="priority">Priority</SortHeader>
-                      <SortHeader field="volume">Volume</SortHeader>
-                      <SortHeader field="difficulty">Difficulty</SortHeader>
-                      <SortHeader field="position">Position</SortHeader>
-                      <th className="text-center py-2 font-medium">Trend</th>
-                      <th className="text-center py-2 font-medium">7d Avg</th>
-                      <th className="text-left py-2 font-medium">Ranking URL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedKeywords.map((kw, idx) => (
-                      <tr key={kw.id || idx} className="border-b hover:bg-muted/50" data-testid={`row-keyword-${kw.id}`}>
-                        <td className="py-2 text-center text-muted-foreground">
-                          {idx + 1}
-                        </td>
-                        <td className="py-2 font-medium">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span>{kw.keyword}</span>
-                            {getIntentBadge(kw.intent, kw.priority, kw.volume)}
-                          </div>
-                        </td>
-                        <td className="py-2 text-center">
-                          {getPriorityBadge(kw.priority, kw.priorityReason)}
-                        </td>
-                        <td className="py-2 text-center">
-                          {formatVolume(kw.volume)}
-                        </td>
-                        <td className="py-2 text-center">
-                          {getDifficultyLabel(kw.difficulty)}
-                        </td>
-                        <td className={`py-2 text-center ${getPositionColor(kw.currentPosition)}`}>
-                          {kw.currentPosition ? (
-                            <span className="flex items-center justify-center gap-1">
-                              {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
-                              {kw.currentPosition >= 2 && kw.currentPosition <= 3 && <Trophy className="h-4 w-4 text-slate-400" />}
-                              {kw.currentPosition >= 4 && kw.currentPosition <= 10 && <Trophy className="h-4 w-4 text-amber-600" />}
-                              #{kw.currentPosition}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td className="py-2 text-center">
-                          {kw.trend === 'up' && <TrendingUp className="h-4 w-4 text-semantic-success mx-auto" />}
-                          {kw.trend === 'down' && <TrendingDown className="h-4 w-4 text-semantic-danger mx-auto" />}
-                          {kw.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground mx-auto" />}
-                          {kw.trend === 'new' && <Badge variant="outline" className="text-xs">New</Badge>}
-                        </td>
-                        <td className="py-2 text-center text-muted-foreground">
-                          {kw.avg7Day ? `#${kw.avg7Day.toFixed(1)}` : '—'}
-                        </td>
-                        <td className="py-2 text-muted-foreground truncate max-w-[250px]">
-                          {kw.currentUrl || kw.targetUrl || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No keywords tracked. Seed keywords and run a SERP check to start tracking.
-              </p>
-            )}
-          </TooltipProvider>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-end gap-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowBulkAdd(true)}
+          data-testid="button-show-add-keywords"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Keywords
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => scorePriority.mutate()}
+          disabled={scorePriority.isPending}
+          data-testid="button-score-priority"
+        >
+          <Brain className="h-4 w-4 mr-1" />
+          {scorePriority.isPending ? 'Scoring...' : 'Score Priority'}
+        </Button>
+      </div>
     </CrewDashboardShell>
   );
 }
