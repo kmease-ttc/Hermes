@@ -39,8 +39,6 @@ import { getMockCaptainRecommendations } from "@/config/mockCaptainRecommendatio
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
-import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
 import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
@@ -179,7 +177,7 @@ function AreaSparkline({ data, color, fillColor }: { data: number[]; color: stri
   };
   
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="64" preserveAspectRatio="none" className="cursor-crosshair">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="64" preserveAspectRatio="xMidYMid meet" className="cursor-crosshair">
       <defs>
         <linearGradient id={`gradient-${color.replace('#', '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={fillColor} stopOpacity="0.4" />
@@ -753,16 +751,6 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                 </p>
               )}
             </div>
-            <Button 
-              variant="purple" 
-              size="lg" 
-              className="rounded-xl shrink-0"
-              onClick={onFixEverything}
-              data-testid="button-fix-everything"
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Fix Everything
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -803,9 +791,8 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                     <CrewAvatars agents={priority.agents || []} />
                   </div>
                   <Button 
-                    variant="ghost" 
                     size="sm" 
-                    className="text-xs h-7 px-3"
+                    className="text-xs h-7 px-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700"
                     onClick={(e) => {
                       e.stopPropagation();
                       onReview?.({ 
@@ -815,9 +802,9 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
                         sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
                       });
                     }}
-                    data-testid={`button-review-priority-${idx + 1}`}
+                    data-testid={`button-fix-priority-${idx + 1}`}
                   >
-                    Review
+                    Fix it
                   </Button>
                 </div>
               </CardContent>
@@ -838,12 +825,20 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
               return (
                 <div key={idx} className="flex items-start gap-3 text-sm">
                   <AlertCircle className="w-4 h-4 text-semantic-warning flex-shrink-0 mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <Link href={`/agents/${blocker.id}`}>
                       <span className="font-medium cursor-pointer hover:underline" style={{ color: crew.color }}>{blocker.title}</span>
                     </Link>
                     <span className="text-muted-foreground"> — {blocker.fix}</span>
                   </div>
+                  <Link 
+                    href="/integrations" 
+                    className="text-xs h-6 px-2 text-semantic-warning hover:text-semantic-warning/80 flex items-center gap-1 hover:underline"
+                    data-testid={`link-fix-blocker-${idx + 1}`}
+                  >
+                    <LinkIcon className="w-3 h-3" />
+                    Fix
+                  </Link>
                 </div>
               );
             })}
@@ -1020,11 +1015,6 @@ export default function MissionControl() {
           blockers={captainData.blockers || []}
           missingIntegrations={0}
           siteId={currentSite?.siteId || "default"}
-          onGoToNextMission={handleReviewMission}
-          onScrollToBlockers={() => {
-            const blockersEl = document.querySelector('[data-testid="blockers-section"]');
-            blockersEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }}
         />
 
         {showValidationPanel && validationResults && (
@@ -1129,12 +1119,7 @@ export default function MissionControl() {
 
         <AgentSummaryGrid agents={userAgents} totalAgents={USER_FACING_AGENTS.length} />
 
-        <BenchmarkComparison />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SocratesMemoryCard />
-          <KnowledgeBaseCard />
-        </div>
+        <SocratesMemoryCard />
       </div>
 
       <ExportFixPackModal 

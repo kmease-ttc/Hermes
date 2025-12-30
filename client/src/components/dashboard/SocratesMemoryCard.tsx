@@ -81,7 +81,7 @@ export function SocratesMemoryCard() {
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Brain className="w-5 h-5 text-lime-600" />
-          Socrates Memory
+          Socrates
         </CardTitle>
         <div className="flex items-center gap-2">
           <Badge className={cn("text-xs", statusColors[status?.status || "not_configured"])}>
@@ -103,16 +103,16 @@ export function SocratesMemoryCard() {
         {isLoading ? (
           <div className="flex items-center justify-center py-6 text-muted-foreground">
             <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-            Loading KB status...
+            Loading...
           </div>
         ) : !status?.configured ? (
           <div className="text-center py-6">
             <Brain className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-muted-foreground text-sm font-medium">
-              Knowledge Base Not Configured
+              Not Connected
             </p>
             <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
-              {status?.message || "Set up SEO_KBASE secret to enable the learning flywheel."}
+              {status?.message || "Set up SEO_KBASE secret to enable Socrates learning."}
             </p>
             <Link href="/integrations" data-testid="link-configure-kb">
               <Button variant="outline" size="sm" className="mt-4 rounded-xl">

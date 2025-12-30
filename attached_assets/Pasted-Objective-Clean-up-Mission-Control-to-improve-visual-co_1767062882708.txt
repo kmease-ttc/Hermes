@@ -1,0 +1,134 @@
+Objective
+Clean up **Mission Control** to improve visual consistency, reduce noise, and clarify primary actions. This is a **typography + UX consolidation pass**, using the existing “Critical” styling as the baseline.
+
+---
+
+Typography System (Primary Fix)
+
+Use the **“Critical” red label** as the typographic anchor for the entire dashboard.
+
+Rules:
+
+* Font family used by “Critical” becomes the base font for:
+
+  * Section headers
+  * Status labels
+  * KPI titles
+* Font size hierarchy should be normalized relative to that baseline:
+
+  * Status words (Critical / Needs attention / Healthy): largest + bold
+  * Section titles (Mission Status, Missions, Blockers): medium
+  * Card titles: slightly smaller
+  * Descriptions / helper text: smaller, muted
+
+Do NOT mix multiple font sizes for the same semantic role.
+No random size jumps between cards.
+
+---
+
+Mission Actions Cleanup
+
+1. Mission cards
+
+* Replace **“Review”** with **“Fix it”**
+* Clicking “Fix it” should immediately open the confirmation dialog
+* No intermediate “review” step
+
+2. Mission Status
+
+* Remove **“Go to next mission”** entirely
+* Mission Status should only show:
+
+  * Overall status (Critical / Needs attention / Healthy)
+  * Summary text
+  * ONE primary action
+
+3. Fix Everything
+
+* There must be **only one “Fix Everything” button**
+* Color: **yellow** (consistent everywhere)
+* Location: **Mission Status only**
+* Remove any other instances across the page
+
+---
+
+Blockers Improvements
+
+* Keep the Blockers section (it works well)
+* Each blocker must include a **direct link** to where it can be resolved:
+
+  * Example:
+
+    * “Google Ads not connected” → link to **Integrations page**
+* Do not force users to hunt for the fix location
+
+---
+
+Key Metrics (Conversion / Bounce / Sessions)
+
+Issue:
+
+* Chart images are stretched and visually distorted
+
+Fix:
+
+* Constrain chart containers to a fixed aspect ratio
+* Use `object-fit: contain` (or equivalent)
+* Ensure charts never stretch vertically to fill cards
+* Cards should feel balanced, not tall and awkward
+
+---
+
+Homepage Content Cleanup
+
+1. Industry Benchmarks
+
+* Remove Industry Benchmarks from the **homepage**
+* Benchmarks belong on detailed crew pages, not Mission Control
+
+2. Knowledge Base Section
+
+* Rename section header to **“Socrates”**
+* Remove wording like:
+
+  * “Memory”
+  * “Knowledge Base Insights”
+* This section should display:
+
+  * Actual learned insights
+  * Summaries
+  * Patterns detected
+* Content should feel like:
+
+  * “Here’s what the system has learned about your site”
+
+No empty or placeholder language.
+
+---
+
+Final Structural Rules for Mission Control
+
+* Mission Status = single source of truth for:
+
+  * Overall health
+  * Primary action
+* Missions = approve/fix items one by one
+* Blockers = hard stops with clear fix links
+* Metrics = clean, readable, not distorted
+* Typography = consistent, calm, intentional
+
+---
+
+Acceptance Criteria
+
+* Font sizes feel consistent and purposeful
+* “Critical” styling clearly influences the rest of the UI
+* Only one Fix Everything button exists (yellow, in Mission Status)
+* No “Review” or “Go to next mission” text remains
+* Blockers link directly to where they can be fixed
+* Charts are no longer stretched
+* Homepage feels lighter, clearer, and more focused
+
+---
+
+This pass is about **polish, restraint, and hierarchy**, not adding features.

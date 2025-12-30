@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Loader2,
   ArrowRight,
-  Rocket,
   ExternalLink,
   Wrench,
 } from "lucide-react";
@@ -40,8 +39,6 @@ interface MissionStatusWidgetProps {
   }>;
   missingIntegrations?: number;
   siteId: string;
-  onGoToNextMission?: (mission: any) => void;
-  onScrollToBlockers?: () => void;
 }
 
 type StatusTier = "looking_good" | "doing_okay" | "needs_attention";
@@ -56,8 +53,6 @@ export function MissionStatusWidget({
   blockers,
   missingIntegrations = 0,
   siteId,
-  onGoToNextMission,
-  onScrollToBlockers,
 }: MissionStatusWidgetProps) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [lastPrResult, setLastPrResult] = useState<{ url?: string } | null>(null);
@@ -170,14 +165,6 @@ export function MissionStatusWidget({
     },
   });
 
-  const handleGoToNextMission = () => {
-    if (blockers.length > 0) {
-      onScrollToBlockers?.();
-    } else if (priorities.length > 0) {
-      onGoToNextMission?.(priorities[0]);
-    }
-  };
-
   const fixCategories = getFixCategories();
 
   return (
@@ -242,17 +229,6 @@ export function MissionStatusWidget({
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-purple-accent/40 text-purple-accent hover:bg-purple-accent/10 rounded-xl"
-                onClick={handleGoToNextMission}
-                disabled={priorities.length === 0 && blockers.length === 0}
-                data-testid="button-go-to-next"
-              >
-                <Rocket className="w-4 h-4 mr-1.5" />
-                Go to Next Mission
-              </Button>
             </div>
           </div>
 
