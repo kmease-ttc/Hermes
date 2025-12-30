@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy, Zap, Plus, ChevronUp, ChevronDown, Star, Brain, DollarSign, Info, ShoppingCart, HelpCircle, Eye } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -217,31 +217,13 @@ export default function SERPContent() {
       if (!res.ok) throw new Error('Failed to start Fix Everything');
       return res.json();
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       toast({
         title: "Fix Everything Started",
-        description: `Executing ${data.queued} improvement actions...`,
+        description: `Queued ${data.queued} improvement actions for execution...`,
       });
       queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
       queryClient.invalidateQueries({ queryKey: ['serp-fix-status'] });
-      
-      let remaining = data.queued;
-      while (remaining > 0) {
-        try {
-          const res = await fetch('/api/serp/missions/execute-next', { method: 'POST' });
-          const result = await res.json();
-          remaining = result.remaining;
-          queryClient.invalidateQueries({ queryKey: ['serp-fix-status'] });
-        } catch {
-          break;
-        }
-      }
-      
-      toast({
-        title: "Fix Everything Complete",
-        description: `All improvement actions have been executed.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
     },
     onError: (error: Error) => {
       toast({
@@ -251,6 +233,33 @@ export default function SERPContent() {
       });
     },
   });
+
+  const executeNextAction = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/serp/missions/execute-next', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to execute action');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['serp-fix-status'] });
+    },
+  });
+
+  useEffect(() => {
+    const hasWork = (fixStatus?.queued || 0) > 0 || (fixStatus?.inProgress || 0) > 0;
+    const isExecuting = executeNextAction.isPending;
+    
+    if (hasWork && !isExecuting) {
+      executeNextAction.mutate();
+    }
+    
+    if (!hasWork && fixStatus?.completed && fixStatus.completed > 0 && !isExecuting) {
+      const total = fixStatus.completed + (fixStatus.failed || 0);
+      if (total > 0) {
+        queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
+      }
+    }
+  }, [fixStatus, executeNextAction.isPending]);
 
   const isFixingEverything = fixEverything.isPending || (fixStatus?.queued || 0) > 0 || (fixStatus?.inProgress || 0) > 0;
   
@@ -524,6 +533,8 @@ export default function SERPContent() {
       nextStep = "Work on improving positions";
     }
 
+    const status = missionsLoading ? "loading" : isFixingEverything ? "loading" : "ready";
+
     return {
       tier,
       summaryLine,
@@ -531,8 +542,9 @@ export default function SERPContent() {
       priorityCount: missionsData?.totalPending || (totalKeywords - inTop10 - notRanking),
       blockerCount: notRanking,
       autoFixableCount: missionsData?.totalPending || 0,
+      status: status as "loading" | "ready" | "empty" | "unavailable",
     };
-  }, [overview, stats, missionsData]);
+  }, [overview, stats, missionsData, missionsLoading, isFixingEverything]);
 
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
@@ -717,6 +729,7 @@ export default function SERPContent() {
       priorityCount: 1,
       blockerCount: 0,
       autoFixableCount: 0,
+      status: "ready",
     };
 
     const setupMissions: MissionItem[] = [{
@@ -735,8 +748,8 @@ export default function SERPContent() {
         missionStatus={emptyMissionStatus}
         missions={setupMissions}
         kpis={[
-          { label: "Keywords", value: "0", tooltip: "No keywords tracked yet" },
-          { label: "Top 10", value: "—", tooltip: "No rankings yet" },
+          { id: "keywords", label: "Keywords", value: "0", tooltip: "No keywords tracked yet" },
+          { id: "top-10", label: "Top 10", value: "—", tooltip: "No rankings yet" },
         ]}
         inspectorTabs={[]}
         onRefresh={() => {}}
@@ -819,7 +832,7 @@ export default function SERPContent() {
       crew={crew}
       agentScore={agentScore}
       agentScoreTooltip="Percentage of keywords ranking in top 10"
-      missionStatus={{ ...missionStatus, status: missionsLoading ? "loading" : "ready" }}
+      missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
       inspectorTabs={inspectorTabs}
