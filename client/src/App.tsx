@@ -9,7 +9,6 @@ import NotFound from "@/pages/not-found";
 import MissionControl from "@/pages/MissionControl";
 import Tickets from "@/pages/Tickets";
 import Settings from "@/pages/Settings";
-import SERP from "@/pages/SERP";
 import Sites from "@/pages/Sites";
 import SiteDetail from "@/pages/SiteDetail";
 import Integrations from "@/pages/Integrations";
@@ -40,7 +39,6 @@ function Router() {
       <Route path="/sites/new" component={SiteDetail} />
       <Route path="/sites/:siteId" component={SiteDetail} />
       <Route path="/tickets" component={Tickets} />
-      <Route path="/serp" component={SERP} />
       <Route path="/keywords" component={KeywordRankings} />
       <Route path="/authority" component={Authority} />
       <Route path="/integrations" component={Integrations} />
