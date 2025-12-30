@@ -16,7 +16,8 @@ import {
   Link2,
   Lightbulb,
   HelpCircle,
-  Users
+  Users,
+  Trophy
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { USER_FACING_AGENTS, AGENTS } from "@/config/agents";
@@ -96,6 +97,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   
   const navItems = [
     { href: "/dashboard", label: "Mission Control", icon: LayoutDashboard },
+    { href: "/achievements", label: "Achievements", icon: Trophy },
     { href: "/integrations", label: "Integrations", icon: Link2 },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/help", label: "Help", icon: HelpCircle },

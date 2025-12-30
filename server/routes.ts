@@ -12138,12 +12138,40 @@ Current metrics for the site: ${metricsContext}`;
   // Achievement Tracks API
   // ========================================
 
+  const achievementQuerySchema = z.object({
+    siteId: z.string().min(1).default("default"),
+    crewId: z.string().optional(),
+  });
+
+  const achievementInitializeSchema = z.object({
+    siteId: z.string().min(1).default("default"),
+    crewId: z.string().min(1, "crewId is required"),
+  });
+
+  const achievementInitializeAllSchema = z.object({
+    siteId: z.string().min(1).default("default"),
+  });
+
+  const achievementIncrementSchema = z.object({
+    siteId: z.string().min(1).default("default"),
+    crewId: z.string().min(1, "crewId is required"),
+    key: z.string().min(1, "key is required"),
+    amount: z.number().int().positive().default(1),
+  });
+
   // Get all achievement tracks for a site (optionally filtered by crew)
   app.get("/api/achievements", async (req, res) => {
     try {
-      const siteId = (req.query.siteId as string) || "default";
-      const crewId = req.query.crewId as string | undefined;
+      const parsed = achievementQuerySchema.safeParse({
+        siteId: req.query.siteId || "default",
+        crewId: req.query.crewId,
+      });
       
+      if (!parsed.success) {
+        return res.status(400).json({ ok: false, error: parsed.error.message });
+      }
+      
+      const { siteId, crewId } = parsed.data;
       const tracks = await storage.getAchievementTracks(siteId, crewId);
       res.json({ ok: true, data: tracks });
     } catch (error: any) {
@@ -12155,12 +12183,13 @@ Current metrics for the site: ${metricsContext}`;
   // Initialize achievements for a crew (creates default tracks if none exist)
   app.post("/api/achievements/initialize", async (req, res) => {
     try {
-      const { siteId = "default", crewId } = req.body;
+      const parsed = achievementInitializeSchema.safeParse(req.body);
       
-      if (!crewId) {
-        return res.status(400).json({ ok: false, error: "crewId is required" });
+      if (!parsed.success) {
+        return res.status(400).json({ ok: false, error: parsed.error.message });
       }
       
+      const { siteId, crewId } = parsed.data;
       const tracks = await storage.initializeCrewAchievements(siteId, crewId);
       res.json({ ok: true, data: tracks });
     } catch (error: any) {
@@ -12172,7 +12201,13 @@ Current metrics for the site: ${metricsContext}`;
   // Initialize achievements for all crews
   app.post("/api/achievements/initialize-all", async (req, res) => {
     try {
-      const { siteId = "default" } = req.body;
+      const parsed = achievementInitializeAllSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ ok: false, error: parsed.error.message });
+      }
+      
+      const { siteId } = parsed.data;
       const crewIds = ["speedster", "natasha", "authority", "pulse", "serp", "socrates"];
       
       const allTracks = [];
@@ -12191,12 +12226,13 @@ Current metrics for the site: ${metricsContext}`;
   // Increment progress on an achievement track
   app.post("/api/achievements/increment", async (req, res) => {
     try {
-      const { siteId = "default", crewId, key, amount = 1 } = req.body;
+      const parsed = achievementIncrementSchema.safeParse(req.body);
       
-      if (!crewId || !key) {
-        return res.status(400).json({ ok: false, error: "crewId and key are required" });
+      if (!parsed.success) {
+        return res.status(400).json({ ok: false, error: parsed.error.message });
       }
       
+      const { siteId, crewId, key, amount } = parsed.data;
       const track = await storage.incrementAchievementProgress(siteId, crewId, key, amount);
       
       if (!track) {

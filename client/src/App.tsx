@@ -27,6 +27,7 @@ import CrewPalette from "@/pages/CrewPalette";
 import DevLineage from "@/pages/DevLineage";
 import Speedster from "@/pages/Speedster";
 import Socrates from "@/pages/Socrates";
+import Achievements from "@/pages/Achievements";
 
 function Router() {
   return (
@@ -61,6 +62,7 @@ function Router() {
       </Route>
       <Route path="/dev/palette" component={CrewPalette} />
       <Route path="/dev/lineage" component={DevLineage} />
+      <Route path="/achievements" component={Achievements} />
       <Route path="/settings" component={Settings} />
       <Route path="/">
         <Redirect to="/dashboard" />
