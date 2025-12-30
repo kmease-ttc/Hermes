@@ -65,6 +65,7 @@ import {
   type MissionItem,
   type KpiDescriptor,
   type InspectorTab,
+  type MissionPromptConfig,
 } from "@/components/crew-dashboard";
 
 interface VitalMetric {
@@ -251,6 +252,29 @@ export default function SpeedsterContent() {
     consultedSocrates?: boolean;
     priorLearningsUsed?: number;
   } | null>(null);
+  const [isAskingSpeedster, setIsAskingSpeedster] = useState(false);
+  
+  // Handle "Ask Speedster" prompt submission
+  const handleAskSpeedster = async (question: string) => {
+    setIsAskingSpeedster(true);
+    try {
+      const res = await fetch('/api/crew/speedster/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId, question, metrics }),
+      });
+      const data = await res.json();
+      if (data.ok && data.answer) {
+        toast.success(data.answer, { duration: 10000 });
+      } else {
+        toast.error(data.error || 'Failed to get answer from Speedster');
+      }
+    } catch (error) {
+      toast.error('Failed to ask Speedster');
+    } finally {
+      setIsAskingSpeedster(false);
+    }
+  };
   
   // Fix Plan query - fetches latest pending plan
   const { data: fixPlanResponse, isLoading: isPlanLoading, refetch: refetchPlan } = useQuery({
@@ -612,6 +636,13 @@ export default function SpeedsterContent() {
     );
   }
   
+  const missionPrompt: MissionPromptConfig = {
+    label: "Ask Speedster",
+    placeholder: "e.g., Why is LCP slow? What should I fix first?",
+    onSubmit: handleAskSpeedster,
+    isLoading: isAskingSpeedster,
+  };
+
   return (
     <CrewDashboardShell
       crew={crew}
@@ -621,6 +652,7 @@ export default function SpeedsterContent() {
       missions={missions}
       kpis={kpis}
       inspectorTabs={inspectorTabs}
+      missionPrompt={missionPrompt}
       onRefresh={() => refetch()}
       onSettings={() => toast.info("Settings coming soon")}
       isRefreshing={isRefetching}
@@ -629,8 +661,8 @@ export default function SpeedsterContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Zap className="w-6 h-6 text-amber-500" />
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Zap className="w-6 h-6 text-emerald-500" />
               </div>
               <div>
                 <CardTitle>Core Web Vitals Overview</CardTitle>
@@ -687,12 +719,12 @@ export default function SpeedsterContent() {
       </Card>
       
       {/* Fix Plan Section */}
-      <Card className="border-l-4 border-l-amber-500">
+      <Card className="border-l-4 border-l-emerald-500">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Sparkles className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
                 <CardTitle className="text-base">Fix Plan</CardTitle>
@@ -727,7 +759,7 @@ export default function SpeedsterContent() {
           {isPlanLoading || generatePlanMutation.isPending ? (
             <div className="flex items-center justify-center py-6">
               <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
                 <span className="text-sm text-muted-foreground">Generating plan...</span>
               </div>
             </div>
@@ -1090,7 +1122,7 @@ export default function SpeedsterContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-amber-500" />
+              <Lightbulb className="w-5 h-5 text-emerald-500" />
               <CardTitle className="text-base">Optimization Opportunities</CardTitle>
             </div>
             <CardDescription>Suggestions to improve performance</CardDescription>

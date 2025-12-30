@@ -10654,6 +10654,48 @@ When answering:
     }
   });
   
+  // Ask Speedster - AI-powered performance analysis questions
+  app.post("/api/crew/speedster/ask", async (req, res) => {
+    try {
+      const { siteId, question, metrics } = req.body;
+      
+      if (!question || typeof question !== 'string') {
+        return res.status(400).json({ ok: false, error: 'Question is required' });
+      }
+      
+      // Build context from metrics
+      const metricsContext = metrics ? Object.entries(metrics)
+        .filter(([_, v]) => v !== null)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ') : 'No metrics available';
+      
+      // Use OpenAI to generate performance advice
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI();
+      
+      const systemPrompt = `You are Speedster, a friendly performance monitoring expert for websites. 
+You help website owners understand and improve their Core Web Vitals (LCP, CLS, INP).
+Keep answers concise (2-3 sentences max) and actionable.
+Current metrics for the site: ${metricsContext}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: question }
+        ],
+        max_tokens: 200,
+      });
+      
+      const answer = completion.choices[0]?.message?.content || 'I could not generate an answer. Please try again.';
+      
+      res.json({ ok: true, answer });
+    } catch (error: any) {
+      logger.error("API", "Failed to ask Speedster", { error: error.message });
+      res.status(500).json({ ok: false, error: 'Failed to generate answer' });
+    }
+  });
+  
   // ═══════════════════════════════════════════════════════════════════════════
   // FIX AUTOMATION ENDPOINTS
   // Orchestrates Knowledge Base → Change Worker → GitHub PR workflow

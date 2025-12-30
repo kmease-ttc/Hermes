@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RefreshCw, Settings, HelpCircle, AlertCircle } from "lucide-react";
+import { RefreshCw, Settings, HelpCircle, AlertCircle, MessageSquare, Send, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CrewMissionStatusWidget } from "./widgets/CrewMissionStatusWidget";
 import { MissionsWidget } from "./widgets/MissionsWidget";
@@ -108,6 +110,58 @@ function InspectorTabContent({
   return <>{content}</>;
 }
 
+function MissionPrompt({
+  config,
+  accentColor,
+}: {
+  config: { label: string; placeholder: string; onSubmit: (q: string) => void; isLoading?: boolean };
+  accentColor: string;
+}) {
+  const [question, setQuestion] = useState("");
+
+  const handleSubmit = () => {
+    if (question.trim() && !config.isLoading) {
+      config.onSubmit(question.trim());
+      setQuestion("");
+    }
+  };
+
+  return (
+    <Card className="bg-card/60 backdrop-blur-sm border-border mt-3">
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <MessageSquare className="w-4 h-4" style={{ color: accentColor }} />
+          <span className="text-sm font-medium">{config.label}</span>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder={config.placeholder}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            disabled={config.isLoading}
+            className="flex-1"
+            data-testid="input-mission-prompt"
+          />
+          <Button
+            size="icon"
+            onClick={handleSubmit}
+            disabled={!question.trim() || config.isLoading}
+            style={{ backgroundColor: question.trim() ? accentColor : undefined }}
+            data-testid="button-submit-mission-prompt"
+          >
+            {config.isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function CrewDashboardShell({
   crew,
   agentScore,
@@ -116,6 +170,7 @@ export function CrewDashboardShell({
   missions,
   kpis,
   inspectorTabs,
+  missionPrompt,
   onRefresh,
   onSettings,
   onFixEverything,
@@ -241,6 +296,11 @@ export function CrewDashboardShell({
         state={missionsState}
         onRetry={onRefresh}
       />
+
+      {/* 3.5 Mission Prompt - crew-specific question interface */}
+      {missionPrompt && (
+        <MissionPrompt config={missionPrompt} accentColor={crew.accentColor} />
+      )}
 
       {/* 4. KPIs Strip - only show when there are KPIs */}
       {kpis.length > 0 && (

@@ -66,6 +66,13 @@ export interface CrewIdentity {
   monitors: string[];
 }
 
+export interface MissionPromptConfig {
+  label: string;
+  placeholder: string;
+  onSubmit: (question: string) => void;
+  isLoading?: boolean;
+}
+
 export interface CrewDashboardShellProps {
   crew: CrewIdentity;
   agentScore?: number | null;
@@ -74,6 +81,7 @@ export interface CrewDashboardShellProps {
   missions: MissionItem[];
   kpis: KpiDescriptor[];
   inspectorTabs: InspectorTab[];
+  missionPrompt?: MissionPromptConfig;
   onRefresh?: () => void;
   onSettings?: () => void;
   onFixEverything?: () => void;
