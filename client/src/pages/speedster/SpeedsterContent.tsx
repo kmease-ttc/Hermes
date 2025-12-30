@@ -460,6 +460,16 @@ export default function SpeedsterContent() {
       icon: Server,
     },
     {
+      key: 'vitals.tbt',
+      name: 'Total Blocking Time',
+      value: metrics['vitals.tbt'] ?? null,
+      unit: 'ms',
+      status: getVitalStatus(metrics['vitals.tbt'], { good: 200, needsImprovement: 600 }),
+      thresholds: { good: 200, needsImprovement: 600 },
+      description: 'Total time the main thread was blocked. Should be under 200ms.',
+      icon: Clock,
+    },
+    {
       key: 'vitals.speed_index',
       name: 'Speed Index',
       value: metrics['vitals.speed_index'] ?? null,
@@ -470,6 +480,13 @@ export default function SpeedsterContent() {
       icon: Gauge,
     },
   ];
+  
+  // Check which additional metrics are missing from API
+  const missingAdditionalMetrics = additionalMetrics
+    .filter(m => m.value === null)
+    .map(m => m.key);
+  const hasAnyAdditionalMetrics = additionalMetrics.some(m => m.value !== null);
+  const allAdditionalMetricsMissing = additionalMetrics.every(m => m.value === null);
   
   const performanceScore = metrics['vitals.performance_score'];
   
@@ -625,15 +642,50 @@ export default function SpeedsterContent() {
       id: "additional",
       label: "Additional Metrics",
       icon: <BarChart3 className="w-4 h-4" />,
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {additionalMetrics.map((vital) => (
-            <VitalCard key={vital.key} vital={vital} />
-          ))}
+      badge: allAdditionalMetricsMissing ? "Missing" : undefined,
+      content: allAdditionalMetricsMissing ? (
+        <div className="p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/20">
+          <div className="flex flex-col items-center text-center gap-3">
+            <AlertTriangle className="w-8 h-8 text-yellow-500" />
+            <div>
+              <h4 className="font-medium text-foreground">Additional Metrics Unavailable</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                These metrics are not being returned by the Core Web Vitals worker.
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md font-mono">
+              Missing fields: {missingAdditionalMetrics.join(', ')}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="mt-2"
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", isRefetching && "animate-spin")} />
+              Run Vitals Scan
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {additionalMetrics.map((vital) => (
+              <VitalCard key={vital.key} vital={vital} />
+            ))}
+          </div>
+          {missingAdditionalMetrics.length > 0 && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Some metrics unavailable: {missingAdditionalMetrics.join(', ')}
+            </p>
+          )}
         </div>
       ),
     },
-  ], [coreVitals, additionalMetrics]);
+  ], [coreVitals, additionalMetrics, allAdditionalMetricsMissing, missingAdditionalMetrics, isRefetching, refetch]);
   
   if (isLoading) {
     return (
@@ -681,46 +733,6 @@ export default function SpeedsterContent() {
       onSettings={() => toast.info("Settings coming soon")}
       isRefreshing={isRefetching}
     >
-      {additionalMetrics.some(m => m.value !== null) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Additional Performance Metrics</CardTitle>
-            <CardDescription>More details about your page loading experience</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {additionalMetrics.map((metric) => {
-                if (metric.value === null) return null;
-                const Icon = metric.icon;
-                const statusConfig = {
-                  'good': { text: 'text-green-600', bg: 'bg-green-500/10' },
-                  'needs-improvement': { text: 'text-yellow-600', bg: 'bg-yellow-500/10' },
-                  'poor': { text: 'text-red-600', bg: 'bg-red-500/10' },
-                  'unknown': { text: 'text-muted-foreground', bg: 'bg-muted' },
-                };
-                const config = statusConfig[metric.status];
-                
-                return (
-                  <div key={metric.key} className="flex items-center gap-3 p-3 rounded-lg border">
-                    <div className={cn("p-2 rounded-lg", config.bg)}>
-                      <Icon className={cn("w-5 h-5", config.text)} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{metric.name}</div>
-                      <div className={cn("text-lg font-bold", config.text)}>
-                        {metric.unit === 's' ? `${metric.value.toFixed(2)}s` : 
-                         metric.unit === 'ms' ? `${Math.round(metric.value)}ms` : 
-                         metric.value}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
       {speedsterData?.benchmarks && Object.keys(speedsterData.benchmarks).length > 0 && (
         <Card>
           <CardHeader>
