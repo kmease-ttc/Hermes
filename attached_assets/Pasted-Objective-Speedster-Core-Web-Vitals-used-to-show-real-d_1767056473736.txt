@@ -1,0 +1,123 @@
+Objective
+Speedster (Core Web Vitals) used to show real data earlier today. Now the UI shows “No Data” even though the API still has access and should return metrics. Diagnose why the data is no longer rendering and fix it so Speedster reliably loads live data (or last snapshot), without regressions.
+
+Non-Negotiables
+
+* Do not change external worker/API contracts unless absolutely required.
+* The page must render data if it exists anywhere (API response or stored snapshot).
+* If live fetch fails, show last-known snapshot + a warning banner (never empty “No Data” cards without explanation).
+
+Step 1 — Reproduce + Confirm the Failure Mode
+
+1. Open /agents/core_web_vitals (Speedster).
+2. Note which sections say “No Data” (Mission Status, LCP/CLS/INP cards, Core Web Vitals Overview, benchmarks).
+3. Check browser console for errors:
+
+   * network errors
+   * JSON parse errors
+   * undefined field access
+   * CORS / 401 / 403
+4. Capture the failing request(s) in DevTools Network tab:
+
+   * endpoint URL
+   * status code
+   * response body (or error)
+
+Step 2 — Verify the API Is Actually Returning Data
+Identify the exact endpoint Speedster uses (search code):
+
+* ripgrep for “core_web_vitals”, “vitals”, “SEO_CORE_WEB_VITALS”, “vital-monitor”, “Speedster”
+* locate the fetch call in the client hook or data loader
+
+Then validate the server route:
+
+* Find the server handler that proxies to the worker (or calls the worker directly).
+* Add temporary server-side logging (dev only) to print:
+
+  * the resolved base URL (SEO_CORE_WEB_VITALS_BASE_URL)
+  * the domain being requested
+  * request path + query params
+  * status code
+  * whether the response contains the expected fields
+
+If server returns empty results:
+
+* call the worker directly from server (same env variables) to verify it’s not a proxy bug
+* confirm the API key is being attached correctly (Authorization header or query param) and matches the worker requirements
+
+Step 3 — Diagnose Root Cause (Common Regression Causes)
+Check and fix whichever applies:
+
+A) Wrong environment/config in deployed vs dev
+
+* Confirm DOMAIN is still set to empathyhealthclinic.com (or current domain).
+* Confirm SEO_CORE_WEB_VITALS_BASE_URL is correct and reachable.
+* Confirm SEO_CORE_WEB_VITALS_API_KEY is correct and being used.
+* Confirm no accidental override from local config or client-side env.
+
+B) Wrong endpoint path or crew key after refactor
+
+* Verify the UI is calling the correct server endpoint for Speedster (not SERP/Lookout).
+* Verify the route is /agents/core_web_vitals and crewKey is “speedster” (or whatever your registry says).
+* Ensure the fetch isn’t pointing to a removed/renamed route.
+
+C) Data shape mismatch (most likely)
+
+* If the worker response changed shape or the UI expects different fields:
+
+  * create/restore a normalization layer that maps raw worker response → SpeedsterDashboardData shape
+  * ensure LCP/CLS/INP values map to the fields the UI renders
+  * ensure “status” + “summaryLine” + “nextStep” map correctly
+
+D) Snapshot persistence issue
+
+* If live fetch works but the UI still shows “No Data,” the client may be reading from the wrong DB table or wrong query.
+* Verify the “latest snapshot” query is:
+
+  * keyed by correct crew_key and domain
+  * ordering by created_at desc
+* Ensure saving happens after refresh and the UI re-queries or updates state.
+
+E) Caching / stale fetch
+
+* Confirm the client isn’t stuck on stale cached empty data.
+* Add cache-busting to the request or disable caching for these endpoints.
+
+Step 4 — Implement the Fix (Restore Reliable Data Rendering)
+Required final behavior:
+
+1. On page load:
+
+   * Load last snapshot immediately (fast render).
+   * In background, attempt live fetch and update UI + snapshot if successful.
+2. On Refresh:
+
+   * Trigger live fetch → normalize → save snapshot → update UI.
+3. If live fetch fails:
+
+   * Keep last snapshot displayed.
+   * Show a non-blocking banner: “Worker offline — showing last saved snapshot.”
+
+Implementation requirements:
+
+* Add explicit logging around the Speedster fetch pipeline (temporary; remove or guard behind dev flag).
+* Ensure the UI never crashes on missing fields—use safe defaults and show a meaningful empty state only if both live and snapshot are absent.
+
+Step 5 — Verification Checklist (Must Pass Before Done)
+
+* Speedster shows real values for:
+
+  * LCP, CLS, INP (and any benchmark values you have)
+  * Mission Status summary based on those values
+  * Core Web Vitals Overview populated
+* Refresh updates “Last updated” timestamp and values.
+* Turning off the worker (simulate failure) still shows last snapshot + banner.
+* No navigation away from Speedster after refresh/run.
+
+Deliverable
+A PR that:
+
+* Fixes Speedster data fetch/render regression
+* Restores correct endpoint usage + normalization mapping
+* Adds resilient snapshot fallback behavior
+* Includes brief notes in code comments about what caused the regression to prevent recurrence
