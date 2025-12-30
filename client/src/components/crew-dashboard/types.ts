@@ -80,6 +80,15 @@ export interface MissionPromptConfig {
   isLoading?: boolean;
 }
 
+export interface HeaderAction {
+  id: string;
+  icon: ReactNode;
+  tooltip: string;
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
 export interface CrewDashboardShellProps {
   crew: CrewIdentity;
   agentScore?: number | null;
@@ -89,6 +98,7 @@ export interface CrewDashboardShellProps {
   kpis?: KpiDescriptor[];
   inspectorTabs: InspectorTab[];
   missionPrompt?: MissionPromptConfig;
+  headerActions?: HeaderAction[];
   onRefresh?: () => void;
   onSettings?: () => void;
   onFixEverything?: () => void;

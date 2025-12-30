@@ -57,8 +57,7 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   CrewDashboardShell,
-  CrewTopActionsBar,
-  type TopAction,
+  type HeaderAction,
   type CrewIdentity,
   type MissionStatusState,
   type MissionItem,
@@ -650,6 +649,23 @@ export default function SpeedsterContent() {
     isLoading: isAskingSpeedster,
   };
 
+  const headerActions: HeaderAction[] = [
+    {
+      id: "run-vitals-scan",
+      icon: <RefreshCw className={cn("w-4 h-4", isRefetching && "animate-spin")} />,
+      tooltip: "Run Vitals Scan",
+      onClick: () => refetch(),
+      disabled: isRefetching,
+      loading: isRefetching,
+    },
+    {
+      id: "export-fix-pack",
+      icon: <ExternalLink className="w-4 h-4" />,
+      tooltip: "Export Fix Pack",
+      onClick: () => toast.info("Export coming soon"),
+    },
+  ];
+
   return (
     <CrewDashboardShell
       crew={crew}
@@ -659,33 +675,11 @@ export default function SpeedsterContent() {
       missions={missions}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
+      headerActions={headerActions}
       onRefresh={() => refetch()}
       onSettings={() => toast.info("Settings coming soon")}
       isRefreshing={isRefetching}
     >
-      <CrewTopActionsBar
-        status={overallStatus}
-        lastUpdated={speedsterData?.capturedAt}
-        source={speedsterData?.source}
-        sampleCount={speedsterData?.sampleCount}
-        primaryActions={[
-          {
-            id: "run-vitals-scan",
-            label: "Run Vitals Scan",
-            icon: <RefreshCw className={cn("w-3.5 h-3.5", isRefetching && "animate-spin")} />,
-            onClick: () => refetch(),
-            disabled: isRefetching,
-            loading: isRefetching,
-          },
-          {
-            id: "export-fix-pack",
-            label: "Export Fix Pack",
-            icon: <ExternalLink className="w-3.5 h-3.5" />,
-            onClick: () => toast.info("Export coming soon"),
-          },
-        ]}
-      />
-      
       {additionalMetrics.some(m => m.value !== null) && (
         <Card>
           <CardHeader>

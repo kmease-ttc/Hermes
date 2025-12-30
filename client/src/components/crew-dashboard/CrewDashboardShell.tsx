@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { CrewMissionStatusWidget } from "./widgets/CrewMissionStatusWidget";
 import { MissionsWidget } from "./widgets/MissionsWidget";
 import { KpiStripWidget } from "./widgets/KpiStripWidget";
-import type { CrewDashboardShellProps, WidgetState } from "./types";
+import type { CrewDashboardShellProps, WidgetState, HeaderAction } from "./types";
 
 function AgentScoreDisplay({
   score,
@@ -180,6 +180,7 @@ export function CrewDashboardShell({
   kpis = [],
   inspectorTabs,
   missionPrompt,
+  headerActions = [],
   onRefresh,
   onSettings,
   onFixEverything,
@@ -259,24 +260,55 @@ export function CrewDashboardShell({
             </div>
           </div>
 
-          {/* Right cluster: Agent Score + Refresh + Settings */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Right cluster: Agent Score + Header Actions + Settings */}
+          <div className="flex items-center gap-2 shrink-0">
             <AgentScoreDisplay
               score={agentScore}
               tooltip={agentScoreTooltip}
               isLoading={missionStatusState === "loading"}
             />
 
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              data-testid="button-refresh"
-            >
-              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-            </Button>
+            {headerActions.map((action) => (
+              <TooltipProvider key={action.id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        action.onClick();
+                      }}
+                      disabled={action.disabled || action.loading}
+                      data-testid={`button-${action.id}`}
+                    >
+                      {action.loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        action.icon
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">{action.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+
+            {onRefresh && headerActions.length === 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                data-testid="button-refresh"
+              >
+                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+              </Button>
+            )}
 
             {onSettings && (
               <Button
@@ -293,6 +325,11 @@ export function CrewDashboardShell({
         </div>
       </div>
 
+      {/* Mission Prompt - directly under header, before Mission Status */}
+      {missionPrompt && (
+        <MissionPrompt config={missionPrompt} accentColor={crew.accentColor} />
+      )}
+
       {/* Mission Status Widget */}
       <CrewMissionStatusWidget
         status={missionStatus}
@@ -307,11 +344,6 @@ export function CrewDashboardShell({
         state={missionsState}
         onRetry={onRefresh}
       />
-
-      {/* 3.5 Mission Prompt - crew-specific question interface */}
-      {missionPrompt && (
-        <MissionPrompt config={missionPrompt} accentColor={crew.accentColor} />
-      )}
 
       {/* 4. KPIs Strip - only show when there are KPIs */}
       {kpis && kpis.length > 0 && (
