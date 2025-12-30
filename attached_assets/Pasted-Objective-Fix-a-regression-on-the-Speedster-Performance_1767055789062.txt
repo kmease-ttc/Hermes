@@ -1,0 +1,148 @@
+Objective
+Fix a regression on the **Speedster (Performance Monitoring / Core Web Vitals)** dashboard where data that previously rendered correctly is no longer appearing in the UI, despite still being available via the API. Restore full functionality, correct component placement, and reinforce visual identity for Speedster.
+
+Regression Summary (What’s Broken)
+
+* The dashboard previously showed real data; now many sections render “No Data” or empty.
+* API endpoints still return valid data (this is a UI/state regression, not a backend failure).
+* `FixPlanWidget` is rendering as a standalone widget when it should be represented as a Mission.
+* Key Metrics (KPIs) are empty when they should be populated.
+* Core Web Vitals detail cards (LCP, CLS, INP) are empty.
+* Industry Benchmark data is missing.
+* Mission labeling and structure is inconsistent.
+* Speedster’s visual identity (green performance theme) is not consistently applied.
+
+Required End State (Authoritative)
+
+1. Restore Data Binding (Critical)
+
+* Reconnect the Speedster dashboard UI to the existing Core Web Vitals API responses.
+* Do NOT change API contracts.
+* Identify and fix any of the following regressions:
+
+  * broken hooks
+  * incorrect crew key
+  * incorrect domain/context passed to the worker
+  * stale cache or snapshot mismatch
+  * component no longer consuming normalized data shape
+
+All of the following must render from live or last-saved data:
+
+* Key Metrics (LCP, CLS, INP, Score)
+* Largest Contentful Paint detail card
+* Cumulative Layout Shift detail card
+* Interaction to Next Paint detail card
+* Industry Benchmark comparison
+
+If data exists in the API response or DB snapshot, it must appear in the UI.
+
+2. Fix Mission Structure
+
+* Remove `FixPlanWidget` as a standalone widget entirely.
+* Convert “Fix Plan” into a Mission item inside the Missions section.
+
+Missions section rules:
+
+* Section header must read: “Missions”
+* Add a sub-label under header: “Mission Status”
+* Mission Status should clearly indicate current state:
+
+  * Healthy / Needs Attention / Action Required
+  * Last updated timestamp
+* “Fix Core Web Vitals” (or similar) should appear as a mission with:
+
+  * Short description
+  * Impact level
+  * Start / Execute button
+
+No FixPlan widget should exist outside Missions.
+
+3. Mission Prompt for Speedster (New)
+   Under the Missions section, add a small prompt interface specific to Speedster:
+
+* Label: “Ask Speedster”
+* Allows free-text questions such as:
+
+  * “Why is LCP slow?”
+  * “What should I fix first?”
+  * “How do I improve CLS?”
+* Prompt routes to Speedster’s performance analysis logic (or ChatGPT-backed analysis if needed).
+* Responses should be contextual to the current site’s metrics.
+
+This prompt should live ONLY under Missions for Speedster.
+
+4. Restore Key Metrics (KPIs)
+
+* Ensure the KPI cards render values for:
+
+  * LCP
+  * CLS
+  * INP
+  * Overall Performance Score
+* KPIs must:
+
+  * Use the latest snapshot if live data isn’t available
+  * Never show empty unless there truly is no data (and then show a clear empty-state message)
+
+5. Restore Core Web Vitals Detail Sections
+   Each of the following must be populated if data exists:
+
+* Largest Contentful Paint
+* Cumulative Layout Shift
+* Interaction to Next Paint
+* Industry Benchmark comparison
+
+Do not hide these sections. If data is missing:
+
+* Show last known values
+* Show “Last updated” timestamp
+* Show warning banner instead of empty cards
+
+6. Visual Identity: Speedster = Green
+   Reinforce that this is the Speedster dashboard via visual cues:
+
+* Apply a subtle green tint/accent to:
+
+  * Header gradient
+  * Section dividers
+  * KPI highlights
+* Use green consistently (do not introduce new colors).
+* This should visually differentiate Speedster from other crews (e.g., Natasha = purple).
+
+No redesign—just reapply the intended theme.
+
+7. Label Fix
+
+* The section currently broken under Speedster must be renamed:
+
+  * From anything ambiguous → “Mission Status”
+* Mission Status must summarize:
+
+  * Overall performance health
+  * Whether fixes are recommended
+  * Whether Fix Plan is available
+
+Implementation Notes
+
+* Treat this as a regression fix:
+
+  * Prefer restoring previous working logic over refactoring
+  * Check recent commits related to:
+
+    * dashboard removal
+    * shared CrewDashboardShell
+    * normalization layers
+* Verify correct crew key is used (Speedster vs generic or SERP keys).
+* Ensure Speedster dashboard is attached to the Speedster crew only (no standalone routes).
+
+Acceptance Criteria
+
+* Speedster dashboard shows real data again without manual refresh hacks.
+* KPIs, Core Web Vitals cards, and benchmarks are populated.
+* Fix Plan appears only as a Mission.
+* Mission Status is clearly visible and accurate.
+* “Ask Speedster” prompt is available under Missions.
+* Green visual identity is restored.
+* Page loads successfully even if live API fails (uses last snapshot).
+
+This prompt should be executed as a **regression recovery + cleanup**, not a redesign.

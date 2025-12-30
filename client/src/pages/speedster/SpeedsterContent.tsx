@@ -486,41 +486,59 @@ export default function SpeedsterContent() {
   const missionStatus: MissionStatusState = useMemo(() => {
     const poorCount = vitals.filter(v => v.status === 'poor').length;
     const needsWorkCount = vitals.filter(v => v.status === 'needs-improvement').length;
+    const unknownCount = vitals.filter(v => v.status === 'unknown').length;
     const autoFixable = fixPlan?.items?.length || 0;
 
     let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    if (poorCount > 0) {
+    let summaryLine = "All Core Web Vitals passing";
+    let nextStep = "Continue monitoring performance";
+
+    if (unknownCount === vitals.length) {
       tier = "needs_attention";
+      summaryLine = "No Core Web Vitals data available";
+      nextStep = "Run the Core Web Vitals worker to collect metrics";
+    } else if (poorCount > 0) {
+      tier = "needs_attention";
+      summaryLine = `${poorCount} vital${poorCount > 1 ? 's' : ''} in poor range`;
+      nextStep = "Focus on fixing poor metrics first";
     } else if (needsWorkCount > 0) {
       tier = "doing_okay";
+      summaryLine = `${needsWorkCount} vital${needsWorkCount > 1 ? 's' : ''} need improvement`;
+      nextStep = "Work on improving these metrics";
     }
 
     return {
       tier,
-      blockers: poorCount,
-      priorities: needsWorkCount,
-      autoFixable,
+      summaryLine,
+      nextStep,
+      blockerCount: poorCount,
+      priorityCount: needsWorkCount,
+      autoFixableCount: autoFixable,
+      status: isLoading ? "loading" as const : "ready" as const,
     };
-  }, [vitals, fixPlan]);
+  }, [vitals, fixPlan, isLoading]);
 
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
+      id: "lcp",
       label: "LCP",
       value: metrics['vitals.lcp'] != null ? `${metrics['vitals.lcp'].toFixed(2)}s` : "—",
       tooltip: "Largest Contentful Paint - should be ≤2.5s",
-      trend: metrics['vitals.lcp.trend'] ? { direction: metrics['vitals.lcp.trend'] < 0 ? 'up' as const : 'down' as const, delta: `${Math.abs(metrics['vitals.lcp.trend']).toFixed(1)}%` } : undefined,
     },
     {
+      id: "cls",
       label: "CLS",
       value: metrics['vitals.cls'] != null ? metrics['vitals.cls'].toFixed(3) : "—",
       tooltip: "Cumulative Layout Shift - should be ≤0.1",
     },
     {
+      id: "inp",
       label: "INP",
       value: metrics['vitals.inp'] != null ? `${Math.round(metrics['vitals.inp'])}ms` : "—",
       tooltip: "Interaction to Next Paint - should be ≤200ms",
     },
     {
+      id: "score",
       label: "Score",
       value: performanceScore != null ? `${performanceScore}` : "—",
       tooltip: "Overall performance score out of 100",
