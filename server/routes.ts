@@ -12134,5 +12134,81 @@ Current metrics for the site: ${metricsContext}`;
     }
   });
 
+  // ========================================
+  // Achievement Tracks API
+  // ========================================
+
+  // Get all achievement tracks for a site (optionally filtered by crew)
+  app.get("/api/achievements", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      const crewId = req.query.crewId as string | undefined;
+      
+      const tracks = await storage.getAchievementTracks(siteId, crewId);
+      res.json({ ok: true, data: tracks });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to get achievements", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Initialize achievements for a crew (creates default tracks if none exist)
+  app.post("/api/achievements/initialize", async (req, res) => {
+    try {
+      const { siteId = "default", crewId } = req.body;
+      
+      if (!crewId) {
+        return res.status(400).json({ ok: false, error: "crewId is required" });
+      }
+      
+      const tracks = await storage.initializeCrewAchievements(siteId, crewId);
+      res.json({ ok: true, data: tracks });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to initialize achievements", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Initialize achievements for all crews
+  app.post("/api/achievements/initialize-all", async (req, res) => {
+    try {
+      const { siteId = "default" } = req.body;
+      const crewIds = ["speedster", "natasha", "authority", "pulse", "serp", "socrates"];
+      
+      const allTracks = [];
+      for (const crewId of crewIds) {
+        const tracks = await storage.initializeCrewAchievements(siteId, crewId);
+        allTracks.push(...tracks);
+      }
+      
+      res.json({ ok: true, data: allTracks, count: allTracks.length });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to initialize all achievements", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Increment progress on an achievement track
+  app.post("/api/achievements/increment", async (req, res) => {
+    try {
+      const { siteId = "default", crewId, key, amount = 1 } = req.body;
+      
+      if (!crewId || !key) {
+        return res.status(400).json({ ok: false, error: "crewId and key are required" });
+      }
+      
+      const track = await storage.incrementAchievementProgress(siteId, crewId, key, amount);
+      
+      if (!track) {
+        return res.status(404).json({ ok: false, error: "Achievement track not found" });
+      }
+      
+      res.json({ ok: true, data: track });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to increment achievement", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   return httpServer;
 }
