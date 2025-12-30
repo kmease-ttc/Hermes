@@ -190,28 +190,35 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <Collapsible open={crewExpanded} onOpenChange={setCrewExpanded}>
-            <div className="flex items-center">
-              <Link href="/dashboard" className="flex-1">
+            <div 
+              className={cn(
+                "flex items-center justify-between rounded-md transition-colors group",
+                location === "/dashboard" || location === "/mission-control" || location.startsWith("/agents/") || crewExpanded
+                  ? "bg-primary/10" 
+                  : "hover:bg-muted"
+              )}
+            >
+              <Link href="/dashboard" className="flex-1 min-w-0">
                 <div 
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-l-md text-sm font-medium transition-colors cursor-pointer",
+                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer",
                     location === "/dashboard" || location === "/mission-control"
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "text-primary" 
+                      : "text-muted-foreground group-hover:text-foreground"
                   )}
                   data-testid="link-nav-mission-control"
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Mission Control
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Mission Control</span>
                 </div>
               </Link>
               <CollapsibleTrigger asChild>
                 <button
                   className={cn(
-                    "px-2 py-2.5 rounded-r-md transition-colors",
+                    "px-3 py-2.5 transition-colors shrink-0",
                     location.startsWith("/agents/") || crewExpanded
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "text-primary" 
+                      : "text-muted-foreground/60 group-hover:text-foreground"
                   )}
                   data-testid="button-expand-crew"
                 >
