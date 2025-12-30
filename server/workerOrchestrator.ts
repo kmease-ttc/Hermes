@@ -228,15 +228,27 @@ function extractMetrics(workerKey: string, data: any): Record<string, any> {
       
     case "core_web_vitals":
       if (data.data?.vitals) {
-        metrics.lcp = data.data.vitals.lcp;
-        metrics.fid = data.data.vitals.fid;
-        metrics.cls = data.data.vitals.cls;
-        metrics.inp = data.data.vitals.inp;
-        metrics.score = data.data.vitals.score;
-        metrics.ttfb = data.data.vitals.ttfb;
+        const v = data.data.vitals;
+        metrics.lcp = v.lcp ?? (v.lcp_ms ? v.lcp_ms / 1000 : null);
+        metrics.fid = v.fid ?? v.fid_ms ?? null;
+        metrics.cls = v.cls ?? null;
+        metrics.inp = v.inp ?? v.inp_ms ?? null;
+        metrics.score = v.score ?? v.performance_score ?? null;
+        metrics.ttfb = v.ttfb ?? v.ttfb_ms ?? null;
+        metrics.fcp = v.fcp ?? (v.fcp_ms ? v.fcp_ms / 1000 : null);
+        metrics.tbt = v.tbt ?? v.tbt_ms ?? null;
+        metrics.speed_index = v.speed_index ?? v.speed_index_ms ?? v.speedIndex ?? null;
         
-        // Thresholds
-        metrics.lcpStatus = metrics.lcp ? (metrics.lcp <= 2500 ? "good" : metrics.lcp <= 4000 ? "needs_improvement" : "poor") : null;
+        // Store raw _ms values for downstream consumers
+        metrics.fcp_ms = v.fcp_ms ?? (v.fcp ? v.fcp * 1000 : null);
+        metrics.ttfb_ms = v.ttfb_ms ?? v.ttfb ?? null;
+        metrics.tbt_ms = v.tbt_ms ?? v.tbt ?? null;
+        metrics.speed_index_ms = v.speed_index_ms ?? v.speed_index ?? v.speedIndex ?? null;
+        metrics.inp_ms = v.inp_ms ?? v.inp ?? null;
+        metrics.performance_score = v.performance_score ?? v.score ?? null;
+        
+        // Thresholds (lcp is in seconds)
+        metrics.lcpStatus = metrics.lcp ? (metrics.lcp <= 2.5 ? "good" : metrics.lcp <= 4.0 ? "needs_improvement" : "poor") : null;
         metrics.clsStatus = metrics.cls ? (metrics.cls <= 0.1 ? "good" : metrics.cls <= 0.25 ? "needs_improvement" : "poor") : null;
         metrics.inpStatus = metrics.inp ? (metrics.inp <= 200 ? "good" : metrics.inp <= 500 ? "needs_improvement" : "poor") : null;
       }
