@@ -628,25 +628,7 @@ export default function SERPContent() {
     }];
   }, [stats, overview, missionsData, isFixingEverything, fixStatus]);
 
-  const inspectorTabs: InspectorTab[] = useMemo(() => [
-    {
-      id: "top-keywords",
-      label: "Top Keywords",
-      icon: <Crown className="w-4 h-4" />,
-      content: (
-        <div className="space-y-2">
-          {overview?.topKeywords?.slice(0, 10).map((kw, i) => (
-            <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-              <span className="font-medium text-sm">{kw.keyword}</span>
-              <Badge className={kw.position === 1 ? "bg-yellow-500" : kw.position && kw.position <= 3 ? "bg-slate-400" : "bg-amber-600"}>
-                #{kw.position}
-              </Badge>
-            </div>
-          )) || <p className="text-muted-foreground text-sm">No keywords tracked yet</p>}
-        </div>
-      ),
-    },
-  ], [overview]);
+  const inspectorTabs: InspectorTab[] = useMemo(() => [], []);
 
   const getIntentBadge = (intent: string | null, priority: number | null, volume: number | null) => {
     if (!intent) {
