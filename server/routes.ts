@@ -4878,6 +4878,94 @@ Keep responses concise and actionable.`;
     }
   });
 
+  // SERP Missions - Generate and get top improvement actions
+  app.get("/api/serp/missions", async (req, res) => {
+    try {
+      const { generateMissionsForKeywords, getTopMissions, getPendingActionsCount } = await import("./analysis/missionGenerator");
+      
+      // Check if we need to regenerate missions
+      const existingCount = await getPendingActionsCount();
+      
+      if (existingCount === 0) {
+        // Generate fresh missions
+        const result = await generateMissionsForKeywords();
+        res.json({
+          missions: result.topMissions,
+          totalPending: result.totalPending,
+          generated: result.generated,
+        });
+      } else {
+        // Return existing missions
+        const missions = await getTopMissions(5);
+        res.json({
+          missions,
+          totalPending: existingCount,
+          generated: 0,
+        });
+      }
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch SERP missions", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Regenerate missions from scratch
+  app.post("/api/serp/missions/regenerate", async (req, res) => {
+    try {
+      const { generateMissionsForKeywords } = await import("./analysis/missionGenerator");
+      const result = await generateMissionsForKeywords();
+      res.json({
+        missions: result.topMissions,
+        totalPending: result.totalPending,
+        generated: result.generated,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to regenerate SERP missions", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Fix Everything - Queue all pending actions for execution
+  app.post("/api/serp/missions/fix-everything", async (req, res) => {
+    try {
+      const { queueAllPendingActions, getFixEverythingStatus } = await import("./analysis/missionGenerator");
+      const queued = await queueAllPendingActions();
+      const status = await getFixEverythingStatus();
+      res.json({
+        message: `Queued ${queued} actions for execution`,
+        queued,
+        status,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to queue fix everything", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Execute next queued action (for SSE streaming or polling)
+  app.post("/api/serp/missions/execute-next", async (req, res) => {
+    try {
+      const { executeNextQueuedAction } = await import("./analysis/missionGenerator");
+      const result = await executeNextQueuedAction();
+      res.json(result);
+    } catch (error: any) {
+      logger.error("API", "Failed to execute next action", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get current fix-everything execution status
+  app.get("/api/serp/missions/status", async (req, res) => {
+    try {
+      const { getFixEverythingStatus } = await import("./analysis/missionGenerator");
+      const status = await getFixEverythingStatus();
+      res.json(status);
+    } catch (error: any) {
+      logger.error("API", "Failed to get mission status", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Enhanced keyword rankings with position history (7/30/90 days)
   app.get("/api/serp/rankings/full", async (req, res) => {
     try {
