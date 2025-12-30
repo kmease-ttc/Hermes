@@ -1941,3 +1941,40 @@ export const insertActionApprovalSchema = createInsertSchema(actionApprovals).om
 });
 export type InsertActionApproval = z.infer<typeof insertActionApprovalSchema>;
 export type ActionApproval = typeof actionApprovals.$inferSelect;
+
+// Achievement Tracks - Exponential progression system for crew achievements
+export const achievementTracks = pgTable("achievement_tracks", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  crewId: text("crew_id").notNull(), // speedster, natasha, authority, pulse, serp, socrates
+  key: text("key").notNull(), // e.g., "vitals_scans", "performance_improvements"
+  name: text("name").notNull(), // Display name
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // Lucide icon name
+  currentLevel: integer("current_level").notNull().default(1),
+  currentTier: text("current_tier").notNull().default("bronze"), // bronze, silver, gold, platinum, mythic
+  currentValue: integer("current_value").notNull().default(0),
+  nextThreshold: integer("next_threshold").notNull().default(5),
+  baseThreshold: integer("base_threshold").notNull().default(5),
+  growthFactor: real("growth_factor").notNull().default(1.7),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAchievementTrackSchema = createInsertSchema(achievementTracks).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAchievementTrack = z.infer<typeof insertAchievementTrackSchema>;
+export type AchievementTrack = typeof achievementTracks.$inferSelect;
+
+// Achievement tier thresholds
+export const ACHIEVEMENT_TIERS = {
+  bronze: { minLevel: 1, maxLevel: 5 },
+  silver: { minLevel: 6, maxLevel: 15 },
+  gold: { minLevel: 16, maxLevel: 30 },
+  platinum: { minLevel: 31, maxLevel: 50 },
+  mythic: { minLevel: 51, maxLevel: Infinity },
+} as const;
+
+export type AchievementTier = keyof typeof ACHIEVEMENT_TIERS;
