@@ -26,6 +26,12 @@ export interface MissionItem {
   agents?: string[];
   category?: string;
   actions?: MissionAction[];
+  action?: {
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+  };
+  meta?: Record<string, unknown>;
 }
 
 export interface MissionAction {
@@ -79,7 +85,7 @@ export interface CrewDashboardShellProps {
   agentScoreTooltip?: string;
   missionStatus: MissionStatusState;
   missions: MissionItem[];
-  kpis: KpiDescriptor[];
+  kpis?: KpiDescriptor[];
   inspectorTabs: InspectorTab[];
   missionPrompt?: MissionPromptConfig;
   onRefresh?: () => void;

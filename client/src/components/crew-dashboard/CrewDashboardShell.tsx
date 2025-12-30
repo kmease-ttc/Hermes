@@ -177,7 +177,7 @@ export function CrewDashboardShell({
   agentScoreTooltip,
   missionStatus,
   missions,
-  kpis,
+  kpis = [],
   inspectorTabs,
   missionPrompt,
   onRefresh,
@@ -314,7 +314,7 @@ export function CrewDashboardShell({
       )}
 
       {/* 4. KPIs Strip - only show when there are KPIs */}
-      {kpis.length > 0 && (
+      {kpis && kpis.length > 0 && (
         <Card className="bg-card/60 backdrop-blur-sm border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Key Metrics</CardTitle>

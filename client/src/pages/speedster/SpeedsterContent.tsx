@@ -27,9 +27,6 @@ import {
   Loader2,
   Shield,
   FileCode,
-  Sparkles,
-  ChevronRight,
-  BookOpen,
   Settings2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,7 +60,6 @@ import {
   type CrewIdentity,
   type MissionStatusState,
   type MissionItem,
-  type KpiDescriptor,
   type InspectorTab,
   type MissionPromptConfig,
 } from "@/components/crew-dashboard";
@@ -542,35 +538,52 @@ export default function SpeedsterContent() {
     };
   }, [vitals, fixPlan, isLoading]);
 
-  const kpis: KpiDescriptor[] = useMemo(() => [
-    {
-      id: "lcp",
-      label: "LCP",
-      value: metrics['vitals.lcp'] != null ? `${metrics['vitals.lcp'].toFixed(2)}s` : "—",
-      tooltip: "Largest Contentful Paint - should be ≤2.5s",
-    },
-    {
-      id: "cls",
-      label: "CLS",
-      value: metrics['vitals.cls'] != null ? metrics['vitals.cls'].toFixed(3) : "—",
-      tooltip: "Cumulative Layout Shift - should be ≤0.1",
-    },
-    {
-      id: "inp",
-      label: "INP",
-      value: metrics['vitals.inp'] != null ? `${Math.round(metrics['vitals.inp'])}ms` : "—",
-      tooltip: "Interaction to Next Paint - should be ≤200ms",
-    },
-    {
-      id: "score",
-      label: "Score",
-      value: performanceScore != null ? `${performanceScore}` : "—",
-      tooltip: "Overall performance score out of 100",
-    },
-  ], [metrics, performanceScore]);
-
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
+    
+    // Fix Plan as the top mission
+    if (fixPlan?.items && fixPlan.items.length > 0) {
+      items.push({
+        id: "execute-fix-plan",
+        title: `Fix Plan: ${fixPlan.items.length} recommended changes`,
+        reason: fixPlan.items.map(item => item.title).slice(0, 2).join(", ") + 
+          (fixPlan.items.length > 2 ? `, +${fixPlan.items.length - 2} more` : ""),
+        status: "pending",
+        impact: "high",
+        action: {
+          label: fixPlan.cooldown.allowed ? "Fix It" : "Override & Fix",
+          onClick: () => {
+            setFixResult(null);
+            if (!fixPlan.cooldown.allowed) {
+              setShowCooldownOverride(true);
+            } else {
+              setShowFixModal(true);
+            }
+          },
+          disabled: executePlanMutation.isPending,
+        },
+        meta: {
+          consultedSocrates: fixPlan.consultedSocrates,
+          priorLearningsCount: fixPlan.priorLearningsCount,
+          cooldownActive: !fixPlan.cooldown.allowed,
+          maxChanges: fixPlan.maxChangesRecommended,
+        },
+      });
+    } else if (!isPlanLoading) {
+      items.push({
+        id: "generate-fix-plan",
+        title: "Generate Fix Plan",
+        reason: "Analyze current vitals and propose optimizations",
+        status: "pending",
+        impact: "medium",
+        action: {
+          label: generatePlanMutation.isPending ? "Generating..." : "Generate Plan",
+          onClick: () => generatePlanMutation.mutate(),
+          disabled: generatePlanMutation.isPending,
+        },
+      });
+    }
+    
     if (vitals.some(v => v.status === 'poor')) {
       items.push({
         id: "fix-poor-vitals",
@@ -589,17 +602,8 @@ export default function SpeedsterContent() {
         impact: "medium",
       });
     }
-    if (fixPlan?.items && fixPlan.items.length > 0) {
-      items.push({
-        id: "execute-fix-plan",
-        title: `Execute ${fixPlan.items.length} fix items`,
-        reason: "Proposed fixes based on current vitals analysis",
-        status: "pending",
-        impact: "high",
-      });
-    }
     return items;
-  }, [vitals, fixPlan]);
+  }, [vitals, fixPlan, isPlanLoading, generatePlanMutation.isPending, executePlanMutation.isPending]);
 
   const inspectorTabs: InspectorTab[] = useMemo(() => [
     {
@@ -650,7 +654,6 @@ export default function SpeedsterContent() {
       agentScoreTooltip="Performance score from Core Web Vitals analysis"
       missionStatus={missionStatus}
       missions={missions}
-      kpis={kpis}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       onRefresh={() => refetch()}
@@ -715,211 +718,6 @@ export default function SpeedsterContent() {
               Export Fix Pack
             </Button>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Fix Plan Section */}
-      <Card className="border-l-4 border-l-emerald-500">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <Sparkles className="w-5 h-5 text-emerald-500" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Fix Plan</CardTitle>
-                <CardDescription>
-                  Proposed changes based on current vitals + past learnings
-                </CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {fixPlan?.consultedSocrates && (
-                <Badge variant="outline" className="text-lime-600 border-lime-500/30 bg-lime-500/10">
-                  <BookOpen className="w-3 h-3 mr-1" />
-                  Socrates
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => generatePlanMutation.mutate()}
-                disabled={generatePlanMutation.isPending}
-              >
-                {generatePlanMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isPlanLoading || generatePlanMutation.isPending ? (
-            <div className="flex items-center justify-center py-6">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
-                <span className="text-sm text-muted-foreground">Generating plan...</span>
-              </div>
-            </div>
-          ) : !fixPlan || fixPlan.items.length === 0 ? (
-            <div className="py-6 text-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="p-3 rounded-full bg-muted">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium">No recommended fixes right now</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your Core Web Vitals are within acceptable thresholds
-                  </p>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => generatePlanMutation.mutate()}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Check Again
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Plan Items */}
-              <div className="space-y-3">
-                {fixPlan.items.map((item, index) => (
-                  <div 
-                    key={item.id} 
-                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground font-mono">#{index + 1}</span>
-                          <h4 className="font-medium">{item.title}</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{item.why}</p>
-                        
-                        {/* Proposed Changes */}
-                        <div className="space-y-1 pt-2">
-                          {item.proposedChanges.map((change, ci) => (
-                            <div key={ci} className="flex items-center gap-2 text-sm">
-                              <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">{change.description}</span>
-                              {change.fileHint && (
-                                <Badge variant="outline" className="text-xs">
-                                  {change.fileHint}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="flex items-center gap-4 pt-2 text-xs">
-                          <span className="text-green-600">{item.expectedOutcome}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className={cn(
-                            "text-xs",
-                            item.risk === 'low' && "text-green-600 border-green-500/30",
-                            item.risk === 'medium' && "text-yellow-600 border-yellow-500/30",
-                            item.risk === 'high' && "text-red-600 border-red-500/30"
-                          )}
-                        >
-                          {item.risk} risk
-                        </Badge>
-                        <div className="flex gap-1">
-                          {item.sources.map(src => (
-                            <Badge key={src} variant="secondary" className="text-xs">
-                              {src}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Safety Strip */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                <div className="flex items-center gap-4 text-sm">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-blue-500" />
-                          <span>Max changes: <strong>{fixPlan.maxChangesRecommended}</strong></span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Recommended to limit changes per cycle to reduce ranking volatility</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <div className="w-px h-4 bg-border" />
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span>
-                            {fixPlan.cooldown.lastPrAt 
-                              ? `Last PR: ${Math.round((Date.now() - new Date(fixPlan.cooldown.lastPrAt).getTime()) / (24*60*60*1000))} days ago`
-                              : 'No prior PRs'}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {fixPlan.cooldown.allowed 
-                          ? "Cooldown period has passed, you can create a new PR"
-                          : fixPlan.cooldown.reason || "Wait before creating another PR"}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  {!fixPlan.cooldown.allowed && (
-                    <>
-                      <div className="w-px h-4 bg-border" />
-                      <Badge variant="outline" className="text-yellow-600 border-yellow-500/30">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Cooldown Active
-                      </Badge>
-                    </>
-                  )}
-                </div>
-                
-                <Button
-                  onClick={() => {
-                    setFixResult(null);
-                    if (!fixPlan.cooldown.allowed) {
-                      setShowCooldownOverride(true);
-                    } else {
-                      setShowFixModal(true);
-                    }
-                  }}
-                  className="bg-green-600 hover:bg-green-700"
-                  disabled={!fixPlan.items.length || executePlanMutation.isPending}
-                  data-testid="button-fix-it"
-                >
-                  {executePlanMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Zap className="w-4 h-4 mr-2" />
-                  )}
-                  Fix It
-                </Button>
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
       

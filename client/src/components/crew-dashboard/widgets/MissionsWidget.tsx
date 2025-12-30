@@ -116,12 +116,33 @@ function MissionRow({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {mission.actions?.map((action) => (
+        {/* Primary action shorthand */}
+        {mission.action && (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              mission.action?.onClick();
+            }}
+            disabled={mission.action.disabled}
+            className="bg-emerald-600 hover:bg-emerald-700"
+            data-testid={`button-mission-${mission.id}-action`}
+          >
+            {mission.action.label}
+          </Button>
+        )}
+
+        {/* Multiple actions */}
+        {!mission.action && mission.actions?.map((action) => (
           <Button
             key={action.id}
+            type="button"
             variant={action.variant || "outline"}
             size="sm"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               action.onClick?.();
               onAction?.(action.id);
             }}
@@ -131,11 +152,16 @@ function MissionRow({
           </Button>
         ))}
 
-        {!mission.actions?.length && mission.status === "pending" && (
+        {/* Default Start button for pending missions without any action */}
+        {!mission.action && !mission.actions?.length && mission.status === "pending" && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            onClick={() => onAction?.("approve")}
+            onClick={(e) => {
+              e.preventDefault();
+              onAction?.("approve");
+            }}
             data-testid={`button-mission-${mission.id}-approve`}
           >
             <Play className="w-4 h-4 mr-1" />
@@ -143,11 +169,16 @@ function MissionRow({
           </Button>
         )}
 
-        {!mission.actions?.length && mission.status !== "pending" && (
+        {/* View button for non-pending missions without any action */}
+        {!mission.action && !mission.actions?.length && mission.status !== "pending" && (
           <Button
+            type="button"
             variant="ghost"
             size="sm"
-            onClick={() => onAction?.("view")}
+            onClick={(e) => {
+              e.preventDefault();
+              onAction?.("view");
+            }}
             data-testid={`button-mission-${mission.id}-view`}
           >
             <Eye className="w-4 h-4" />
