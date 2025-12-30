@@ -10556,17 +10556,41 @@ When answering:
         fcpValue = metricsJson.fcp_ms / 1000;
       }
       
+      // TTFB: keep in ms (UI expects ms)
+      let ttfbValue = getMetric('ttfb', 'vitals.ttfb');
+      if (ttfbValue === null && metricsJson?.ttfb_ms) {
+        ttfbValue = metricsJson.ttfb_ms;
+      }
+      
+      // TBT: keep in ms (UI expects ms)
+      let tbtValue = getMetric('tbt', 'vitals.tbt') ?? getMetric('total_blocking_time', 'vitals.tbt');
+      if (tbtValue === null && metricsJson?.tbt_ms) {
+        tbtValue = metricsJson.tbt_ms;
+      }
+      
+      // Speed Index: keep in ms (UI expects ms)
+      let speedIndexValue = getMetric('speed_index', 'vitals.speed_index') ?? getMetric('speedIndex', 'vitals.speed_index');
+      if (speedIndexValue === null && metricsJson?.speed_index_ms) {
+        speedIndexValue = metricsJson.speed_index_ms;
+      }
+      
+      // INP: handle _ms suffix
+      let inpValue = getMetric('inp', 'vitals.inp');
+      if (inpValue === null && metricsJson?.inp_ms) {
+        inpValue = metricsJson.inp_ms;
+      }
+      
       // Get raw data early for use in metrics and distributions
       const rawData = cwvResult?.rawData as Record<string, any> | null;
       
       const metrics = {
         'vitals.lcp': lcpValue,
         'vitals.cls': getMetric('cls', 'vitals.cls'),
-        'vitals.inp': getMetric('inp', 'vitals.inp'),
+        'vitals.inp': inpValue,
         'vitals.fcp': fcpValue,
-        'vitals.ttfb': getMetric('ttfb', 'vitals.ttfb'),
-        'vitals.tbt': getMetric('tbt', 'vitals.tbt') ?? getMetric('total_blocking_time', 'vitals.tbt'),
-        'vitals.speed_index': getMetric('speed_index', 'vitals.speed_index') ?? getMetric('speedIndex', 'vitals.speed_index'),
+        'vitals.ttfb': ttfbValue,
+        'vitals.tbt': tbtValue,
+        'vitals.speed_index': speedIndexValue,
         'vitals.performance_score': getMetric('score', 'vitals.performance_score') ?? getMetric('performance_score', 'vitals.performance_score'),
         'vitals.lcp.trend': metricsJson?.lcpTrend ?? null,
         'vitals.cls.trend': metricsJson?.clsTrend ?? null,
