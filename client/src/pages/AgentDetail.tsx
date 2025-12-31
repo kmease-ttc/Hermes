@@ -10,6 +10,7 @@ import PulseContent from "./pulse/PulseContent";
 import SpeedsterContent from "./speedster/SpeedsterContent";
 import NatashaContent from "./natasha/NatashaContent";
 import SocratesContent from "./socrates/SocratesContent";
+import HemingwayContent from "./hemingway/HemingwayContent";
 import GenericAgentContent from "./agents/GenericAgentContent";
 
 export default function AgentDetail() {
@@ -47,6 +48,8 @@ export default function AgentDetail() {
         return <NatashaContent />;
       case "seo_kbase":
         return <SocratesContent />;
+      case "content_generator":
+        return <HemingwayContent />;
       default:
         return <GenericAgentContent agentId={agentId} />;
     }
