@@ -1027,6 +1027,12 @@ export function SocratesContent() {
     },
   ];
 
+  const stubRecentlyCompleted = {
+    id: "stub-completed-1",
+    title: "Review and categorize findings",
+    completedAt: new Date().toISOString(),
+  };
+
   return (
     <CrewDashboardShell
       crew={crew}
@@ -1034,6 +1040,7 @@ export function SocratesContent() {
       agentScoreTooltip="Based on learnings collected from all agents"
       missionStatus={missionStatus}
       missions={missions}
+      recentlyCompleted={stubRecentlyCompleted}
       customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}

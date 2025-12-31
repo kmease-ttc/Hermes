@@ -79,11 +79,49 @@ function EffortIndicator({ effort }: { effort: string }) {
 
 interface MissionsWidgetProps {
   missions: MissionItem[];
+  recentlyCompleted?: {
+    id: string;
+    title: string;
+    completedAt: string;
+  } | null;
   state?: WidgetState;
   onMissionAction?: (missionId: string, actionId: string) => void;
   onRetry?: () => void;
   maxVisible?: number;
   className?: string;
+}
+
+function CompletedMissionRow({ 
+  title, 
+  completedAt 
+}: { 
+  title: string; 
+  completedAt: string; 
+}) {
+  return (
+    <div
+      className="flex items-start gap-4 p-4 rounded-xl bg-card/40 border border-border opacity-80"
+      data-testid="completed-mission-row"
+    >
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-semantic-success-soft">
+        <CheckCircle2 className="w-5 h-5 text-semantic-success" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <h4 className="font-medium text-foreground">{title}</h4>
+        <p className="text-sm text-muted-foreground mt-1">
+          {completedAt}
+        </p>
+      </div>
+
+      <div className="flex items-center shrink-0">
+        <Badge variant="secondary" className="bg-semantic-success-soft text-semantic-success border-semantic-success/20">
+          <CheckCircle2 className="w-3 h-3 mr-1" />
+          Completed
+        </Badge>
+      </div>
+    </div>
+  );
 }
 
 function MissionRow({
@@ -279,6 +317,7 @@ function MissionsUnavailable({ onRetry }: { onRetry?: () => void }) {
 
 export function MissionsWidget({
   missions,
+  recentlyCompleted,
   state = "ready",
   onMissionAction,
   onRetry,
@@ -314,21 +353,42 @@ export function MissionsWidget({
         {state === "ready" && missions.length === 0 && <MissionsEmpty />}
 
         {state === "ready" && missions.length > 0 && (
-          <div className="space-y-3">
-            {visibleMissions.map((mission) => (
-              <MissionRow
-                key={mission.id}
-                mission={mission}
-                onAction={(actionId) => onMissionAction?.(mission.id, actionId)}
-              />
-            ))}
+          <>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Next Actions
+            </h3>
 
-            {hasMore && (
-              <Button variant="ghost" className="w-full text-muted-foreground">
-                View {missions.length - maxVisible} more missions
-              </Button>
+            <div className="space-y-3 mb-6">
+              {visibleMissions.map((mission) => (
+                <MissionRow
+                  key={mission.id}
+                  mission={mission}
+                  onAction={(actionId) => onMissionAction?.(mission.id, actionId)}
+                />
+              ))}
+
+              {hasMore && (
+                <Button variant="ghost" className="w-full text-muted-foreground">
+                  View {missions.length - maxVisible} more missions
+                </Button>
+              )}
+            </div>
+
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-6 pt-4 border-t border-border">
+              Recently Completed
+            </h3>
+
+            {recentlyCompleted ? (
+              <CompletedMissionRow 
+                title={recentlyCompleted.title} 
+                completedAt={recentlyCompleted.completedAt} 
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground/60 italic">
+                No completed actions yet
+              </p>
             )}
-          </div>
+          </>
         )}
       </CardContent>
     </Card>
