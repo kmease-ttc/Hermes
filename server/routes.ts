@@ -3615,6 +3615,106 @@ When answering:
         },
       });
       
+      // After successful write verification, trigger synthesis
+      let synthesisTriggered = false;
+      let insightsAdded = 0;
+      let recommendationsAdded = 0;
+      
+      if (writtenCount > 0 && writeVerified) {
+        try {
+          logger.info("KBASE", "Triggering synthesis after learnings save", { siteId, writtenCount });
+          
+          // Get recent learnings for synthesis
+          const learnings = await storage.getFindings(siteId, 50);
+          
+          if (learnings.length >= 5) {
+            const OpenAI = (await import("openai")).default;
+            const openai = new OpenAI();
+            const synthesisRunId = `synthesis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            
+            // Call OpenAI for synthesis (same logic as /api/kb/synthesize)
+            const learningsSummary = learnings.slice(0, 30).map(l => ({
+              id: l.findingId,
+              title: l.title,
+              description: l.description?.slice(0, 200),
+              category: l.category,
+              severity: l.severity,
+              source: l.sourceIntegration || 'unknown'
+            }));
+            
+            const systemPrompt = `You are an SEO analyst synthesizing learnings into actionable insights and recommendations.
+Given a list of SEO learnings/findings, identify:
+1. 3-7 key INSIGHTS (patterns, themes, cross-cutting observations)
+2. 3-10 RECOMMENDATIONS (actionable fixes prioritized by impact)
+
+Return JSON:
+{
+  "insights": [{ "title": "...", "summary": "...", "tags": ["tag1"], "sourceIds": ["id1"] }],
+  "recommendations": [{ "title": "...", "rationale": "...", "priority": "high|medium|low", "effort": "small|medium|large", "actionType": "content_update|tech_fix|seo_fix", "sourceIds": ["id1"] }]
+}`;
+
+            const response = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Synthesize these SEO learnings:\n\n${JSON.stringify(learningsSummary, null, 2)}` }
+              ],
+              response_format: { type: "json_object" },
+              temperature: 0.3,
+            });
+            
+            const content = response.choices[0]?.message?.content;
+            if (content) {
+              const synthesis = JSON.parse(content);
+              
+              // Save insights
+              const insightsToSave = (synthesis.insights || []).map((i: any, idx: number) => ({
+                insightId: `insight_${synthesisRunId}_${idx}`,
+                siteId,
+                title: i.title,
+                summary: i.summary,
+                tags: i.tags || [],
+                sources: (i.sourceIds || []).map((id: string) => ({ crewId: 'seo_kbase', learningId: id })),
+                synthesisRunId,
+              }));
+              
+              if (insightsToSave.length > 0) {
+                await storage.saveInsights(insightsToSave);
+                insightsAdded = insightsToSave.length;
+              }
+              
+              // Save recommendations
+              const recsToSave = (synthesis.recommendations || []).map((r: any, idx: number) => ({
+                recommendationId: `rec_${synthesisRunId}_${idx}`,
+                siteId,
+                title: r.title,
+                rationale: r.rationale,
+                priority: r.priority || 'medium',
+                effort: r.effort,
+                actionType: r.actionType,
+                sources: (r.sourceIds || []).map((id: string) => ({ crewId: 'seo_kbase', learningId: id })),
+                status: 'pending',
+                synthesisRunId,
+              }));
+              
+              if (recsToSave.length > 0) {
+                await storage.saveRecommendations(recsToSave);
+                recommendationsAdded = recsToSave.length;
+              }
+              
+              synthesisTriggered = true;
+              logger.info("KBASE", "Synthesis completed", { 
+                insightsAdded, 
+                recommendationsAdded 
+              });
+            }
+          }
+        } catch (synthError: any) {
+          // Log but don't fail the whole request
+          logger.warn("KBASE", "Synthesis failed (non-blocking)", { error: synthError.message });
+        }
+      }
+      
       logger.info("KBASE", "KBASE run completed", { writtenCount, writeVerified, runId });
       
       res.json({
@@ -3625,6 +3725,9 @@ When answering:
         writtenCount,
         totalProcessed: writtenCount,
         writeVerified,
+        synthesisTriggered,
+        insightsAdded,
+        recommendationsAdded,
         kbTotals: {
           totalLearnings: kbTotals,
         },
