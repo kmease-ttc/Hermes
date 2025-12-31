@@ -104,6 +104,7 @@ export interface CrewDashboardShellProps {
   missions: MissionItem[];
   recentlyCompleted?: CompletedAction | null;
   kpis?: KpiDescriptor[];
+  customMetrics?: ReactNode;
   inspectorTabs: InspectorTab[];
   missionPrompt?: MissionPromptConfig;
   headerActions?: HeaderAction[];

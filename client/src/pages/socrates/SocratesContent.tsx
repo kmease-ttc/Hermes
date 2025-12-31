@@ -1034,13 +1034,13 @@ export function SocratesContent() {
       agentScoreTooltip="Based on learnings collected from all agents"
       missionStatus={missionStatus}
       missions={missions}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
       onRefresh={() => runMutation.mutate()}
       isRefreshing={runMutation.isPending}
     >
-      <KeyMetricsGrid metrics={keyMetrics} className="mb-5" />
       
       {!data?.configured && <ConfigurationWarning error={data?.configError} />}
       

@@ -177,6 +177,7 @@ export function CrewDashboardShell({
   missions,
   recentlyCompleted,
   kpis = [],
+  customMetrics,
   inspectorTabs,
   missionPrompt,
   headerActions = [],
@@ -338,8 +339,11 @@ export function CrewDashboardShell({
         onRetry={onRefresh}
       />
 
-      {/* 4. KPIs Strip - only show when there are KPIs */}
-      {kpis && kpis.length > 0 && (
+      {/* 4. Custom Metrics - render custom metrics component if provided */}
+      {customMetrics}
+
+      {/* 5. KPIs Strip - only show when there are KPIs and no custom metrics */}
+      {!customMetrics && kpis && kpis.length > 0 && (
         <Card className="bg-card/60 backdrop-blur-sm border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Key Metrics</CardTitle>
