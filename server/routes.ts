@@ -3324,6 +3324,7 @@ When answering:
       
       const baseUrl = kbaseConfig.base_url.replace(/\/+$/, '');
       const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
+      const siteId = (req.body?.siteId as string) || 'site_empathy_health_clinic';
       const runId = `kbase_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       
       // Call the KBASE worker run endpoint
@@ -3369,7 +3370,8 @@ When answering:
       
       // Normalize worker outputs into findings
       const { v4: uuidv4 } = await import("uuid");
-      const dataPayload = responseData.data || responseData;
+      // Worker may return { ok, outputs: {...} } or { data: {...} } or direct payload
+      const dataPayload = responseData.outputs || responseData.data || responseData;
       const findingsToSave: any[] = [];
       
       // Map SEO recommendations to findings
@@ -3378,7 +3380,7 @@ When answering:
         for (const rec of recommendations) {
           findingsToSave.push({
             findingId: `kbase_${uuidv4().slice(0, 8)}`,
-            siteId: null,
+            siteId,
             sourceIntegration: 'seo_kbase',
             runId,
             category: 'kbase',
@@ -3402,7 +3404,7 @@ When answering:
         for (const bp of bestPractices) {
           findingsToSave.push({
             findingId: `kbase_bp_${uuidv4().slice(0, 8)}`,
-            siteId: null,
+            siteId,
             sourceIntegration: 'seo_kbase',
             runId,
             category: 'kbase',
@@ -3423,7 +3425,7 @@ When answering:
         for (const tip of tips) {
           findingsToSave.push({
             findingId: `kbase_tip_${uuidv4().slice(0, 8)}`,
-            siteId: null,
+            siteId,
             sourceIntegration: 'seo_kbase',
             runId,
             category: 'kbase',
@@ -3443,7 +3445,7 @@ When answering:
         for (const finding of responseData.findings) {
           findingsToSave.push({
             findingId: finding.finding_id || finding.id || `kbase_${uuidv4().slice(0, 8)}`,
-            siteId: null,
+            siteId,
             runId,
             sourceIntegration: 'seo_kbase',
             category: finding.category || 'recommendation',
