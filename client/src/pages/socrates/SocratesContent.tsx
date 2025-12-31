@@ -25,7 +25,6 @@ import {
 import { 
   BookOpen, 
   Lightbulb, 
-  Target, 
   TrendingUp,
   RefreshCw,
   Clock,
@@ -96,39 +95,62 @@ interface KBOverviewData {
 }
 
 interface Insight {
-  id: number;
-  insightId: string;
+  id: string;
   title: string;
-  summary: string | null;
-  tags: string[] | null;
-  sources: Array<{ crewId: string; learningId: string }> | null;
+  summary: string;
+  signals: string[];
+  impact: 'low' | 'medium' | 'high';
+  confidence?: 'low' | 'medium' | 'high';
   createdAt: string;
 }
 
-interface Recommendation {
-  id: number;
-  recommendationId: string;
-  title: string;
-  rationale: string | null;
-  priority: string;
-  effort: string | null;
-  actionType: string | null;
-  sources: Array<{ crewId: string; learningId: string }> | null;
-  status: string;
-  createdAt: string;
-}
-
-interface InsightsResponse {
-  ok: boolean;
-  insights: Insight[];
-  total: number;
-}
-
-interface RecommendationsResponse {
-  ok: boolean;
-  recommendations: Recommendation[];
-  total: number;
-}
+const exampleInsights: Insight[] = [
+  {
+    id: "insight-1",
+    title: "Performance issues are concentrated on content-heavy pages",
+    summary: "Pages with long-form content and large hero images consistently show poor LCP scores. These pages also correlate with higher bounce rates, suggesting performance issues are affecting user engagement on key content.",
+    signals: ["Speedster", "Hemingway"],
+    impact: "high",
+    confidence: "high",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "insight-2",
+    title: "EEAT gaps are clustered around older blog content",
+    summary: "Older blog posts are more likely to lack author bios, citations, and first-hand experience indicators. These same posts show early signs of traffic decay.",
+    signals: ["Hemingway", "Sentinel"],
+    impact: "medium",
+    confidence: "medium",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "insight-3",
+    title: "Technical issues delay the impact of content improvements",
+    summary: "Several recently updated articles have unresolved crawl or rendering issues, preventing changes from being fully indexed. Content quality improvements are not reaching search results promptly.",
+    signals: ["Scotty", "Hemingway"],
+    impact: "high",
+    confidence: "high",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "insight-4",
+    title: "Monitoring coverage is uneven across the site",
+    summary: "Only a subset of pages are actively monitored for performance and decay. Issues on unmonitored pages may go undetected until traffic loss occurs.",
+    signals: ["Speedster", "Sentinel"],
+    impact: "medium",
+    confidence: "medium",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "insight-5",
+    title: "Repeated issues point to missing automation",
+    summary: "Similar fixes (image optimization, metadata updates, EEAT additions) recur across multiple missions, suggesting these changes could be automated or templated.",
+    signals: ["Speedster", "Scotty", "Hemingway"],
+    impact: "medium",
+    confidence: "low",
+    createdAt: new Date().toISOString(),
+  },
+];
 
 const categoryColors: Record<string, string> = {
   insight: "bg-semantic-info-soft text-semantic-info",
@@ -285,71 +307,36 @@ function AgentActivityCard({ activity }: { activity: AgentActivity }) {
 }
 
 function InsightCard({ insight }: { insight: Insight }) {
-  const timeAgo = insight.createdAt 
-    ? formatDistanceToNow(new Date(insight.createdAt), { addSuffix: true })
-    : null;
-
-  return (
-    <div className="p-4 rounded-xl bg-card/60 border border-border" data-testid={`insight-${insight.insightId}`}>
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-semantic-info-soft flex items-center justify-center flex-shrink-0">
-          <Lightbulb className="w-4 h-4 text-semantic-info" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-foreground">{insight.title}</h4>
-          {insight.summary && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{insight.summary}</p>
-          )}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {insight.tags?.map((tag, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">{tag}</Badge>
-            ))}
-            {timeAgo && (
-              <span className="text-xs text-muted-foreground">{timeAgo}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RecommendationCard({ recommendation }: { recommendation: Recommendation }) {
-  const timeAgo = recommendation.createdAt 
-    ? formatDistanceToNow(new Date(recommendation.createdAt), { addSuffix: true })
-    : null;
-
-  const priorityColors: Record<string, string> = {
+  const impactColors: Record<string, string> = {
     high: "bg-semantic-danger-soft text-semantic-danger",
     medium: "bg-semantic-warning-soft text-semantic-warning",
     low: "bg-muted text-muted-foreground",
   };
 
   return (
-    <div className="p-4 rounded-xl bg-card/60 border border-border" data-testid={`rec-${recommendation.recommendationId}`}>
+    <div className="p-4 rounded-xl bg-card/60 border border-border" data-testid={`insight-${insight.id}`}>
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-semantic-warning-soft flex items-center justify-center flex-shrink-0">
-          <Target className="w-4 h-4 text-semantic-warning" />
+        <div className="w-8 h-8 rounded-full bg-semantic-info-soft flex items-center justify-center flex-shrink-0">
+          <Lightbulb className="w-4 h-4 text-semantic-info" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-medium text-sm text-foreground">{recommendation.title}</h4>
-            <Badge className={cn("text-xs", priorityColors[recommendation.priority] || priorityColors.medium)}>
-              {recommendation.priority}
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h4 className="font-medium text-sm text-foreground">{insight.title}</h4>
+            <Badge className={cn("text-xs capitalize", impactColors[insight.impact])}>
+              {insight.impact}
             </Badge>
           </div>
-          {recommendation.rationale && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{recommendation.rationale}</p>
-          )}
-          <div className="flex items-center gap-2 mt-2">
-            {recommendation.actionType && (
-              <Badge variant="outline" className="text-xs">{recommendation.actionType.replace(/_/g, ' ')}</Badge>
-            )}
-            {recommendation.effort && (
-              <span className="text-xs text-muted-foreground">Effort: {recommendation.effort}</span>
-            )}
-            {timeAgo && (
-              <span className="text-xs text-muted-foreground">{timeAgo}</span>
+          <p className="text-xs text-muted-foreground mt-1">{insight.summary}</p>
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {insight.signals.map((signal, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {signal}
+              </Badge>
+            ))}
+            {insight.confidence && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                Confidence: {insight.confidence}
+              </span>
             )}
           </div>
         </div>
@@ -598,25 +585,6 @@ export function SocratesContent() {
     staleTime: 30000,
   });
 
-  const { data: insightsData } = useQuery<InsightsResponse>({
-    queryKey: ["kb-insights", siteId],
-    queryFn: async () => {
-      const res = await fetch(`/api/kb/insights?siteId=${siteId}`);
-      if (!res.ok) return { ok: false, insights: [], total: 0 };
-      return res.json();
-    },
-    staleTime: 30000,
-  });
-
-  const { data: recommendationsData } = useQuery<RecommendationsResponse>({
-    queryKey: ["kb-recommendations", siteId],
-    queryFn: async () => {
-      const res = await fetch(`/api/kb/recommendations?siteId=${siteId}`);
-      if (!res.ok) return { ok: false, recommendations: [], total: 0 };
-      return res.json();
-    },
-    staleTime: 30000,
-  });
 
   const runMutation = useMutation({
     mutationFn: async () => {
@@ -650,8 +618,6 @@ export function SocratesContent() {
       queryClient.invalidateQueries({ queryKey: ["kbase-overview"] });
       queryClient.invalidateQueries({ queryKey: ["crew-last-execution", "seo_kbase", siteId] });
       queryClient.invalidateQueries({ queryKey: ["mission-state", "seo_kbase", siteId] });
-      queryClient.invalidateQueries({ queryKey: ["kb-insights", siteId] });
-      queryClient.invalidateQueries({ queryKey: ["kb-recommendations", siteId] });
     },
     onError: (error: Error) => {
       if (error.message.includes('Already completed recently')) {
@@ -842,16 +808,9 @@ export function SocratesContent() {
     {
       id: "insights",
       label: "Insights",
-      value: insightsData?.total || 0,
+      value: exampleInsights.length,
       icon: Lightbulb,
-      status: (insightsData?.total || 0) > 0 ? "good" : "neutral" as const,
-    },
-    {
-      id: "recommendations",
-      label: "Recommendations",
-      value: recommendationsData?.total || 0,
-      icon: Target,
-      status: (recommendationsData?.total || 0) > 0 ? "warning" : "neutral" as const,
+      status: exampleInsights.length > 0 ? "good" : "neutral" as const,
     },
   ];
 
@@ -944,41 +903,13 @@ export function SocratesContent() {
       id: "insights",
       label: "Insights",
       icon: <Lightbulb className="w-4 h-4" />,
-      badge: insightsData?.total || 0,
-      state: insightsData?.insights?.length ? "ready" : "empty",
+      badge: exampleInsights.length,
+      state: exampleInsights.length > 0 ? "ready" : "empty",
       content: (
         <div className="space-y-3">
-          {insightsData?.insights?.length ? (
-            insightsData.insights.map(insight => (
-              <InsightCard key={insight.insightId} insight={insight} />
-            ))
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Lightbulb className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No insights yet — run "Collect Learnings" to generate insights.</p>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "recommendations",
-      label: "Recommendations",
-      icon: <Target className="w-4 h-4" />,
-      badge: recommendationsData?.total || 0,
-      state: recommendationsData?.recommendations?.length ? "ready" : "empty",
-      content: (
-        <div className="space-y-3">
-          {recommendationsData?.recommendations?.length ? (
-            recommendationsData.recommendations.map(rec => (
-              <RecommendationCard key={rec.recommendationId} recommendation={rec} />
-            ))
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No recommendations yet — generate insights first.</p>
-            </div>
-          )}
+          {exampleInsights.map(insight => (
+            <InsightCard key={insight.id} insight={insight} />
+          ))}
         </div>
       ),
     },
