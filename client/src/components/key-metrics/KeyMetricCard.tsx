@@ -53,28 +53,41 @@ export function KeyMetricCard({
   value, 
   icon: Icon, 
   status = "primary",
+  accentColor,
   className 
 }: KeyMetricCardProps) {
   const isZero = value === 0 || value === "0";
   const effectiveStatus = isZero ? "inactive" : status;
   const effectiveStyles = statusStyles[effectiveStatus];
 
+  const dynamicStyles = accentColor && !isZero ? {
+    border: { borderColor: `${accentColor}30` },
+    glow: { boxShadow: `0 0 20px -5px ${accentColor}30` },
+    accent: { backgroundColor: accentColor },
+    iconBg: { backgroundColor: `${accentColor}15` },
+    iconColor: { color: accentColor },
+  } : null;
+
   return (
     <div
       className={cn(
         "relative rounded-2xl bg-card/80 backdrop-blur-sm p-5",
         "border",
-        effectiveStyles.border,
-        effectiveStyles.glow,
+        !dynamicStyles && effectiveStyles.border,
+        !dynamicStyles && effectiveStyles.glow,
         "transition-all duration-300 hover:scale-[1.02]",
         className
       )}
+      style={dynamicStyles ? { ...dynamicStyles.border, ...dynamicStyles.glow } : undefined}
       data-testid={`metric-${label.toLowerCase().replace(/\s+/g, '-')}`}
     >
-      <div className={cn(
-        "absolute top-0 left-4 right-4 h-0.5 rounded-full",
-        effectiveStyles.accent
-      )} />
+      <div 
+        className={cn(
+          "absolute top-0 left-4 right-4 h-0.5 rounded-full",
+          !dynamicStyles && effectiveStyles.accent
+        )}
+        style={dynamicStyles?.accent}
+      />
       
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -90,11 +103,17 @@ export function KeyMetricCard({
         </div>
         
         {Icon && (
-          <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-            effectiveStyles.iconBg
-          )}>
-            <Icon className={cn("w-5 h-5", effectiveStyles.text)} />
+          <div 
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+              !dynamicStyles && effectiveStyles.iconBg
+            )}
+            style={dynamicStyles?.iconBg}
+          >
+            <Icon 
+              className={cn("w-5 h-5", !dynamicStyles && effectiveStyles.text)} 
+              style={dynamicStyles?.iconColor}
+            />
           </div>
         )}
       </div>

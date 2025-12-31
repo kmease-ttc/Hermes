@@ -12,10 +12,11 @@ interface MetricConfig {
 
 interface KeyMetricsGridProps {
   metrics: MetricConfig[];
+  accentColor?: string;
   className?: string;
 }
 
-export function KeyMetricsGrid({ metrics, className }: KeyMetricsGridProps) {
+export function KeyMetricsGrid({ metrics, accentColor, className }: KeyMetricsGridProps) {
   return (
     <div className={cn(
       "grid gap-4",
@@ -29,6 +30,7 @@ export function KeyMetricsGrid({ metrics, className }: KeyMetricsGridProps) {
           value={metric.value}
           icon={metric.icon}
           status={metric.status}
+          accentColor={accentColor}
         />
       ))}
     </div>
