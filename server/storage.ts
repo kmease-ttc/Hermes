@@ -146,6 +146,12 @@ import {
   type AchievementTrack,
   type InsertAchievementTrack,
   ACHIEVEMENT_TIERS,
+  kbInsights,
+  type KbInsight,
+  type InsertKbInsight,
+  kbRecommendations,
+  type KbRecommendation,
+  type InsertKbRecommendation,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -433,6 +439,22 @@ export interface IStorage {
   updateAchievementTrack(id: number, updates: Partial<InsertAchievementTrack>): Promise<AchievementTrack | undefined>;
   incrementAchievementProgress(siteId: string, crewId: string, key: string, amount?: number): Promise<AchievementTrack | undefined>;
   initializeCrewAchievements(siteId: string, crewId: string): Promise<AchievementTrack[]>;
+  
+  // KB Insights
+  getInsights(siteId: string, limit?: number): Promise<KbInsight[]>;
+  getInsightById(insightId: string): Promise<KbInsight | null>;
+  saveInsight(insight: InsertKbInsight): Promise<KbInsight>;
+  saveInsights(insights: InsertKbInsight[]): Promise<void>;
+  getInsightsCount(siteId: string): Promise<number>;
+  deleteInsightsBySynthesisRun(synthesisRunId: string): Promise<void>;
+
+  // KB Recommendations
+  getRecommendations(siteId: string, limit?: number): Promise<KbRecommendation[]>;
+  getRecommendationById(recommendationId: string): Promise<KbRecommendation | null>;
+  saveRecommendation(rec: InsertKbRecommendation): Promise<KbRecommendation>;
+  saveRecommendations(recs: InsertKbRecommendation[]): Promise<void>;
+  getRecommendationsCount(siteId: string): Promise<number>;
+  updateRecommendationStatus(recommendationId: string, status: string): Promise<void>;
 }
 
 class DBStorage implements IStorage {
@@ -2534,6 +2556,101 @@ class DBStorage implements IStorage {
     }
     
     return createdTracks;
+  }
+
+  // KB Insights
+  async getInsights(siteId: string, limit?: number): Promise<KbInsight[]> {
+    const query = db
+      .select()
+      .from(kbInsights)
+      .where(eq(kbInsights.siteId, siteId))
+      .orderBy(desc(kbInsights.createdAt));
+    
+    if (limit) {
+      return query.limit(limit);
+    }
+    return query;
+  }
+
+  async getInsightById(insightId: string): Promise<KbInsight | null> {
+    const [insight] = await db
+      .select()
+      .from(kbInsights)
+      .where(eq(kbInsights.insightId, insightId))
+      .limit(1);
+    return insight || null;
+  }
+
+  async saveInsight(insight: InsertKbInsight): Promise<KbInsight> {
+    const [result] = await db.insert(kbInsights).values(insight).returning();
+    return result;
+  }
+
+  async saveInsights(insights: InsertKbInsight[]): Promise<void> {
+    if (insights.length === 0) return;
+    await db.insert(kbInsights).values(insights).onConflictDoNothing();
+  }
+
+  async getInsightsCount(siteId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(kbInsights)
+      .where(eq(kbInsights.siteId, siteId));
+    return result?.count || 0;
+  }
+
+  async deleteInsightsBySynthesisRun(synthesisRunId: string): Promise<void> {
+    await db
+      .delete(kbInsights)
+      .where(eq(kbInsights.synthesisRunId, synthesisRunId));
+  }
+
+  // KB Recommendations
+  async getRecommendations(siteId: string, limit?: number): Promise<KbRecommendation[]> {
+    const query = db
+      .select()
+      .from(kbRecommendations)
+      .where(eq(kbRecommendations.siteId, siteId))
+      .orderBy(desc(kbRecommendations.createdAt));
+    
+    if (limit) {
+      return query.limit(limit);
+    }
+    return query;
+  }
+
+  async getRecommendationById(recommendationId: string): Promise<KbRecommendation | null> {
+    const [rec] = await db
+      .select()
+      .from(kbRecommendations)
+      .where(eq(kbRecommendations.recommendationId, recommendationId))
+      .limit(1);
+    return rec || null;
+  }
+
+  async saveRecommendation(rec: InsertKbRecommendation): Promise<KbRecommendation> {
+    const [result] = await db.insert(kbRecommendations).values(rec).returning();
+    return result;
+  }
+
+  async saveRecommendations(recs: InsertKbRecommendation[]): Promise<void> {
+    if (recs.length === 0) return;
+    await db.insert(kbRecommendations).values(recs).onConflictDoNothing();
+  }
+
+  async getRecommendationsCount(siteId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(kbRecommendations)
+      .where(eq(kbRecommendations.siteId, siteId));
+    return result?.count || 0;
+  }
+
+  async updateRecommendationStatus(recommendationId: string, status: string): Promise<void> {
+    await db
+      .update(kbRecommendations)
+      .set({ status })
+      .where(eq(kbRecommendations.recommendationId, recommendationId));
   }
 }
 
