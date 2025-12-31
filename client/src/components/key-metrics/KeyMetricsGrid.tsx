@@ -1,0 +1,36 @@
+import { cn } from "@/lib/utils";
+import { KeyMetricCard } from "./KeyMetricCard";
+import { LucideIcon } from "lucide-react";
+
+interface MetricConfig {
+  id: string;
+  label: string;
+  value: number | string;
+  icon?: LucideIcon;
+  status?: "good" | "warning" | "neutral" | "inactive";
+}
+
+interface KeyMetricsGridProps {
+  metrics: MetricConfig[];
+  className?: string;
+}
+
+export function KeyMetricsGrid({ metrics, className }: KeyMetricsGridProps) {
+  return (
+    <div className={cn(
+      "grid gap-4",
+      "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4",
+      className
+    )}>
+      {metrics.map((metric) => (
+        <KeyMetricCard
+          key={metric.id}
+          label={metric.label}
+          value={metric.value}
+          icon={metric.icon}
+          status={metric.status}
+        />
+      ))}
+    </div>
+  );
+}

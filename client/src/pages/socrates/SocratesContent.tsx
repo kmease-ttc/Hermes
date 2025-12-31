@@ -53,11 +53,11 @@ import {
   type CrewIdentity,
   type MissionStatusState,
   type MissionItem,
-  type KpiDescriptor,
   type InspectorTab,
   type MissionPromptConfig,
   type HeaderAction,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 
 interface Learning {
   id: string;
@@ -823,26 +823,34 @@ export function SocratesContent() {
     return items;
   }, [data, runMutation.isPending, missionState]);
 
-  const kpis: KpiDescriptor[] = [
+  const keyMetrics = [
     {
       id: "total-learnings",
       label: "Total Learnings",
       value: data?.totalLearnings || 0,
+      icon: BookOpen,
+      status: (data?.totalLearnings || 0) > 0 ? "good" : "neutral" as const,
     },
     {
       id: "active-agents",
       label: "Active Agents",
       value: data?.activeAgents || 0,
+      icon: Users,
+      status: (data?.activeAgents || 0) > 0 ? "good" : "neutral" as const,
     },
     {
       id: "insights",
       label: "Insights",
-      value: data?.insightsCount || 0,
+      value: insightsData?.total || 0,
+      icon: Lightbulb,
+      status: (insightsData?.total || 0) > 0 ? "good" : "neutral" as const,
     },
     {
       id: "recommendations",
       label: "Recommendations",
-      value: data?.recommendationsCount || 0,
+      value: recommendationsData?.total || 0,
+      icon: Target,
+      status: (recommendationsData?.total || 0) > 0 ? "warning" : "neutral" as const,
     },
   ];
 
@@ -1026,13 +1034,14 @@ export function SocratesContent() {
       agentScoreTooltip="Based on learnings collected from all agents"
       missionStatus={missionStatus}
       missions={missions}
-      kpis={kpis}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
       onRefresh={() => runMutation.mutate()}
       isRefreshing={runMutation.isPending}
     >
+      <KeyMetricsGrid metrics={keyMetrics} className="mb-5" />
+      
       {!data?.configured && <ConfigurationWarning error={data?.configError} />}
       
       {data?.patterns && data.patterns.length > 0 && (
