@@ -12489,6 +12489,145 @@ Current metrics for the site: ${metricsContext}`;
     }
   });
 
+  /**
+   * POST /api/kb/synthesize
+   * Use OpenAI to generate insights and recommendations from learnings
+   */
+  app.post("/api/kb/synthesize", async (req, res) => {
+    try {
+      const { siteId } = req.body;
+      if (!siteId) return res.status(400).json({ error: "siteId required" });
+      
+      const synthesisRunId = `synthesis_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      
+      // 1. Get recent learnings (last 50)
+      const learnings = await storage.getLatestFindings(siteId, 50);
+      if (learnings.length === 0) {
+        return res.json({ ok: true, insightsAdded: 0, recommendationsAdded: 0, message: "No learnings to synthesize" });
+      }
+      
+      // 2. Prepare learnings for OpenAI
+      const learningsSummary = learnings.slice(0, 30).map(l => ({
+        id: l.findingId,
+        title: l.title,
+        description: l.description?.slice(0, 200),
+        category: l.category,
+        severity: l.severity,
+        source: l.sourceIntegration || 'unknown'
+      }));
+      
+      // 3. Call OpenAI to generate insights and recommendations
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI();
+      
+      const systemPrompt = `You are an SEO analyst synthesizing learnings into actionable insights and recommendations.
+    
+Given a list of SEO learnings/findings, you must:
+1. Identify 3-7 key INSIGHTS (patterns, themes, cross-cutting observations)
+2. Create 3-10 RECOMMENDATIONS (actionable fixes prioritized by impact)
+
+Return JSON in this exact format:
+{
+  "insights": [
+    { "title": "...", "summary": "...", "tags": ["tag1", "tag2"], "sourceIds": ["learning_id1", "learning_id2"] }
+  ],
+  "recommendations": [
+    { "title": "...", "rationale": "...", "priority": "high|medium|low", "effort": "small|medium|large", "actionType": "content_update|tech_fix|ads_change|seo_fix", "sourceIds": ["learning_id1"] }
+  ]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Synthesize these SEO learnings:\n\n${JSON.stringify(learningsSummary, null, 2)}` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+      
+      const content = response.choices[0]?.message?.content;
+      if (!content) throw new Error("No response from OpenAI");
+      
+      const synthesis = JSON.parse(content);
+      
+      // 4. Save insights
+      const insightsToSave = (synthesis.insights || []).map((i: any, idx: number) => ({
+        insightId: `insight_${synthesisRunId}_${idx}`,
+        siteId,
+        title: i.title,
+        summary: i.summary,
+        tags: i.tags || [],
+        sources: (i.sourceIds || []).map((id: string) => ({ crewId: 'seo_kbase', learningId: id })),
+        synthesisRunId,
+      }));
+      
+      if (insightsToSave.length > 0) {
+        await storage.saveInsights(insightsToSave);
+      }
+      
+      // 5. Save recommendations
+      const recsToSave = (synthesis.recommendations || []).map((r: any, idx: number) => ({
+        recommendationId: `rec_${synthesisRunId}_${idx}`,
+        siteId,
+        title: r.title,
+        rationale: r.rationale,
+        priority: r.priority || 'medium',
+        effort: r.effort,
+        actionType: r.actionType,
+        sources: (r.sourceIds || []).map((id: string) => ({ crewId: 'seo_kbase', learningId: id })),
+        status: 'pending',
+        synthesisRunId,
+      }));
+      
+      if (recsToSave.length > 0) {
+        await storage.saveRecommendations(recsToSave);
+      }
+      
+      res.json({
+        ok: true,
+        synthesisRunId,
+        insightsAdded: insightsToSave.length,
+        recommendationsAdded: recsToSave.length,
+        totals: {
+          insights: await storage.getInsightsCount(siteId),
+          recommendations: await storage.getRecommendationsCount(siteId),
+        }
+      });
+    } catch (error: any) {
+      logger.error("KB", "Synthesis error", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/kb/insights
+   * Get insights for a site
+   */
+  app.get("/api/kb/insights", async (req, res) => {
+    const siteId = (req.query.siteId as string) || "default";
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const insights = await storage.getInsights(siteId, limit);
+    const total = await storage.getInsightsCount(siteId);
+    
+    res.json({ ok: true, insights, total });
+  });
+
+  /**
+   * GET /api/kb/recommendations
+   * Get recommendations for a site
+   */
+  app.get("/api/kb/recommendations", async (req, res) => {
+    const siteId = (req.query.siteId as string) || "default";
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const recommendations = await storage.getRecommendations(siteId, limit);
+    const total = await storage.getRecommendationsCount(siteId);
+    
+    res.json({ ok: true, recommendations, total });
+  });
+
   // ========================================
   // Achievement Tracks API
   // ========================================
