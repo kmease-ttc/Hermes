@@ -27,7 +27,8 @@ import {
   ShieldX,
   Settings,
   Link as LinkIcon,
-  Zap
+  Zap,
+  Users
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -969,6 +970,17 @@ export default function MissionControl() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/crew">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-dashed border-primary/50 text-primary hover:bg-primary/5 hover:border-primary rounded-xl"
+                data-testid="button-add-crew"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Add Crew
+              </Button>
+            </Link>
             <Button 
               variant="outline" 
               size="sm"
