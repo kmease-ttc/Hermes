@@ -30,7 +30,20 @@ Preferred communication style: Simple, everyday language.
 - **Performance Score blocks**: Left-anchored 96px panels with gold ring styling for score displays
 - **InlinePrompt**: Embedded mission prompts in header containers with border-top separators
 - **CrewDashboardShell**: Standard shell for all crew dashboards with consistent header actions and mission/KPI structures
+- **MissionOverviewWidget**: Consolidated mission widget with top-aligned gold score ring (aligned to header, not vertically centered)
 - **Missing data states**: Explicit messages showing which API fields are unavailable, with "Run Scan" CTAs
+
+### Liquid Glass Analytics Components (NEW)
+Reusable analytics visualization package in `client/src/components/analytics/`:
+- **GlassChartContainer**: Shared glass-styled container for all charts (subtle translucency, no heavy shadows)
+- **GlassBarChart**: Flat rectangular bars with rounded corners, hover brightness (no 3D effects)
+- **GlassLineChart**: Thin smooth lines with circular dots, primary=blue, secondary=purple
+- **GlassAreaChart**: Flat filled areas with low opacity (10-20%), crisp top lines
+- **GlassDonutChart**: Completely flat top-down 2D only (no bevel, no thickness, no shadows)
+- **GlassSparkline**: Minimal sparklines for metric cards (thin line, optional soft fill)
+- **GlassMetricCard**: KPI cards with label, value, delta indicator, optional sparkline
+
+Color system: Uses ARCLO semantic colors only (success=green, warning=yellow, danger=red, info=blue, purple=secondary)
 
 ## System Architecture
 
