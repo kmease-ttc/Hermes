@@ -3599,19 +3599,18 @@ When answering:
       });
       
       // Create audit log entry for action completion (only on success)
-      await storage.saveAuditLog({
+      await storage.saveMissionExecution({
         siteId,
-        action: 'kbase_run_completed',
-        actor: 'system',
-        details: {
-          crewId: 'seo_kbase',
-          missionId: 'collect_learnings',
+        crewId: 'socrates',
+        missionId: 'collect_learnings',
+        runId,
+        status: 'success',
+        summary,
+        metadata: {
           actionId: 'collect_learnings',
-          runId,
           writtenCount,
           writeVerified,
           kbTotals,
-          summary,
         },
       });
       
@@ -5667,13 +5666,13 @@ Keep responses concise and actionable.`;
       const { crewId } = req.params;
       const siteId = (req.query.siteId as string) || 'site_empathy_health_clinic';
       
-      // Map crew IDs to their action patterns
+      // Map crew IDs to their action patterns (mission_completed is the generic action, legacy patterns kept for backward compat)
       const crewActionPatterns: Record<string, string[]> = {
-        'seo_kbase': ['kbase_run_completed'],
-        'socrates': ['kbase_run_completed'],
-        'speedster': ['speedster_run_completed', 'cwv_fix_completed'],
-        'indexer': ['indexer_run_completed'],
-        'serp_intel': ['serp_analysis_completed'],
+        'seo_kbase': ['mission_completed', 'kbase_run_completed'],
+        'socrates': ['mission_completed', 'kbase_run_completed'],
+        'speedster': ['mission_completed', 'speedster_run_completed', 'cwv_fix_completed'],
+        'indexer': ['mission_completed', 'indexer_run_completed'],
+        'serp_intel': ['mission_completed', 'serp_analysis_completed'],
       };
       
       const actionPatterns = crewActionPatterns[crewId] || [`${crewId}_run_completed`];

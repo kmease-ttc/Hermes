@@ -265,6 +265,15 @@ export interface IStorage {
   getAuditLogsBySite(siteId: string, limit?: number): Promise<AuditLog[]>;
   getAllAuditLogs(limit?: number): Promise<AuditLog[]>;
   getRecentMissionCompletions(siteId: string, crewId: string, hours: number): Promise<AuditLog[]>;
+  saveMissionExecution(params: {
+    siteId: string;
+    crewId: string;
+    missionId: string;
+    runId: string;
+    status: 'success' | 'failed';
+    summary: string;
+    metadata?: Record<string, any>;
+  }): Promise<AuditLog>;
   
   // Site Integrations
   getSiteIntegrations(siteId: string): Promise<SiteIntegration[]>;
@@ -1081,12 +1090,36 @@ class DBStorage implements IStorage {
       .where(
         and(
           eq(auditLogs.siteId, siteId),
-          eq(auditLogs.action, 'kbase_run_completed'),
+          eq(auditLogs.action, 'mission_completed'),
           gte(auditLogs.createdAt, cutoffTime),
           sql`${auditLogs.details}->>'crewId' = ${crewId}`
         )
       )
       .orderBy(desc(auditLogs.createdAt));
+  }
+
+  async saveMissionExecution(params: {
+    siteId: string;
+    crewId: string;
+    missionId: string;
+    runId: string;
+    status: 'success' | 'failed';
+    summary: string;
+    metadata?: Record<string, any>;
+  }): Promise<AuditLog> {
+    return this.saveAuditLog({
+      siteId: params.siteId,
+      action: 'mission_completed',
+      actor: 'system',
+      details: {
+        crewId: params.crewId,
+        missionId: params.missionId,
+        runId: params.runId,
+        status: params.status,
+        summary: params.summary,
+        ...(params.metadata || {}),
+      },
+    });
   }
 
   // Site Integrations
