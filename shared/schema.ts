@@ -475,6 +475,49 @@ export const insertFindingSchema = createInsertSchema(findings).omit({
 export type InsertFinding = z.infer<typeof insertFindingSchema>;
 export type Finding = typeof findings.$inferSelect;
 
+// Knowledge Base Insights
+export const kbInsights = pgTable("kb_insights", {
+  id: serial("id").primaryKey(),
+  insightId: text("insight_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary"),
+  tags: text("tags").array(),
+  sources: jsonb("sources"), // [{ crewId: string, learningId: string }]
+  synthesisRunId: text("synthesis_run_id"), // Links to the run that created this
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertKbInsightSchema = createInsertSchema(kbInsights).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertKbInsight = z.infer<typeof insertKbInsightSchema>;
+export type KbInsight = typeof kbInsights.$inferSelect;
+
+// Knowledge Base Recommendations
+export const kbRecommendations = pgTable("kb_recommendations", {
+  id: serial("id").primaryKey(),
+  recommendationId: text("recommendation_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  title: text("title").notNull(),
+  rationale: text("rationale"),
+  priority: text("priority").default("medium"), // high, medium, low
+  effort: text("effort"), // small, medium, large
+  actionType: text("action_type"), // content_update, tech_fix, ads_change
+  sources: jsonb("sources"), // [{ crewId: string, learningId: string }]
+  status: text("status").default("pending"), // pending, in_progress, done, dismissed
+  synthesisRunId: text("synthesis_run_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertKbRecommendationSchema = createInsertSchema(kbRecommendations).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertKbRecommendation = z.infer<typeof insertKbRecommendationSchema>;
+export type KbRecommendation = typeof kbRecommendations.$inferSelect;
+
 // Fix Plans
 export const plans = pgTable("plans", {
   id: serial("id").primaryKey(),
