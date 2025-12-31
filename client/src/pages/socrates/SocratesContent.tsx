@@ -745,7 +745,8 @@ export function SocratesContent() {
       });
     }
     
-    const collectCompleted = completedIds.includes("collect_learnings") || completedIds.includes("collect");
+    const lastCompletedMissionId = lastCompleted?.missionId;
+    const collectCompleted = completedIds.includes("collect_learnings") || completedIds.includes("collect") || lastCompletedMissionId === "collect" || lastCompletedMissionId === "collect_learnings";
     if (!collectCompleted && (!data?.isRealData || (data?.totalLearnings || 0) < 5)) {
       const cooldownMsg = getCooldownMessage();
       items.push({
@@ -762,7 +763,7 @@ export function SocratesContent() {
       });
     }
     
-    const synthesizeCompleted = completedIds.includes("synthesize");
+    const synthesizeCompleted = completedIds.includes("synthesize") || lastCompletedMissionId === "synthesize";
     if (!synthesizeCompleted && data?.recentLearnings && data.recentLearnings.length > 0 && !data?.patternsCount) {
       items.push({
         id: "synthesize",
@@ -778,7 +779,7 @@ export function SocratesContent() {
       });
     }
     
-    const exportCompleted = completedIds.includes("export");
+    const exportCompleted = completedIds.includes("export") || lastCompletedMissionId === "export";
     if (!exportCompleted && data?.recommendationsCount && data.recommendationsCount > 0) {
       items.push({
         id: "export",
@@ -1027,11 +1028,11 @@ export function SocratesContent() {
     },
   ];
 
-  const stubRecentlyCompleted = {
-    id: "stub-completed-1",
-    title: "Review and categorize findings",
-    completedAt: new Date().toISOString(),
-  };
+  const recentlyCompleted = missionState?.lastCompleted ? {
+    id: missionState.lastCompleted.runId || missionState.lastCompleted.missionId || 'last-completed',
+    title: missionState.lastCompleted.summary || 'Mission completed',
+    completedAt: missionState.lastCompleted.completedAt,
+  } : null;
 
   return (
     <CrewDashboardShell
@@ -1040,7 +1041,7 @@ export function SocratesContent() {
       agentScoreTooltip="Based on learnings collected from all agents"
       missionStatus={missionStatus}
       missions={missions}
-      recentlyCompleted={stubRecentlyCompleted}
+      recentlyCompleted={recentlyCompleted}
       customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
