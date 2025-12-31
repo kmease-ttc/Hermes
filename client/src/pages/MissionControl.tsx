@@ -43,7 +43,8 @@ import { toast } from "sonner";
 import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
-import { MissionStatusWidget } from "@/components/mission-control/MissionStatusWidget";
+import { MissionOverviewWidget } from "@/components/crew-dashboard/widgets/MissionOverviewWidget";
+import type { MissionItem, MissionStatusState } from "@/components/crew-dashboard/types";
 
 const verdictColors = {
   good: { bg: "bg-semantic-success-soft", border: "border-semantic-success-border", text: "text-semantic-success", badge: "bg-semantic-success-soft text-semantic-success" },
@@ -705,136 +706,24 @@ function VerificationBadge({ status }: { status?: string }) {
   );
 }
 
-function MissionScoreRing({ score }: { score: number }) {
-  const circumference = 2 * Math.PI * 40;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
-  const scoreColor = score >= 70 ? 'var(--semantic-success)' : score >= 40 ? 'var(--semantic-warning)' : 'var(--semantic-danger)';
-  
-  return (
-    <div className="relative w-24 h-24 shrink-0">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle
-          cx="50" cy="50" r="40"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          className="text-muted/30"
-        />
-        <circle
-          cx="50" cy="50" r="40"
-          fill="none"
-          stroke={scoreColor}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-foreground">{score}</span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Score</span>
-      </div>
-    </div>
-  );
-}
-
-function ImpactIndicator({ impact }: { impact: string }) {
-  const config = {
-    High: { color: 'bg-red-500', bars: 3 },
-    Medium: { color: 'bg-yellow-500', bars: 2 },
-    Low: { color: 'bg-green-500', bars: 1 },
-  }[impact] || { color: 'bg-muted', bars: 1 };
-  
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-end gap-0.5 h-4">
-            {[1, 2, 3].map((bar) => (
-              <div
-                key={bar}
-                className={cn(
-                  "w-1 rounded-sm transition-colors",
-                  bar <= config.bars ? config.color : "bg-muted/40"
-                )}
-                style={{ height: `${bar * 4 + 4}px` }}
-              />
-            ))}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent><p>{impact} Impact</p></TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
-function EffortIndicator({ effort }: { effort: string }) {
-  const effortMap: Record<string, { label: string; icon: string }> = {
-    'XS': { label: 'Quick', icon: '⚡' },
-    'S': { label: 'Quick', icon: '⚡' },
-    'M': { label: 'Medium', icon: '⏱' },
-    'L': { label: 'Long', icon: '📅' },
-    'XL': { label: 'Long', icon: '📅' },
-  };
-  const config = effortMap[effort] || effortMap['M'];
-  
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="text-xs text-muted-foreground">{config.icon}</span>
-        </TooltipTrigger>
-        <TooltipContent><p>{config.label} effort</p></TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
-function CrewAvatars({ agents }: { agents: any[] }) {
-  if (!agents?.length) return null;
-  
-  return (
-    <div className="flex -space-x-1.5">
-      {agents.slice(0, 3).map((agent: any) => {
-        const crew = getCrewMember(agent.id || agent.agentId);
-        return (
-          <TooltipProvider key={agent.id || agent.agentId}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href={`/agents/${agent.id || agent.agentId}`}>
-                  <div 
-                    className="w-6 h-6 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white cursor-pointer hover:scale-110 transition-transform"
-                    style={{ backgroundColor: crew.color }}
-                  >
-                    {crew.nickname?.slice(0, 1) || '?'}
-                  </div>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent><p>{crew.nickname}</p></TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      })}
-      {agents.length > 3 && (
-        <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-          +{agents.length - 3}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CaptainsRecommendationsSection({ priorities, blockers, confidence, coverage, updatedAt, onReview, isRealData, placeholderReason, onFixEverything }: {
+function ConsolidatedMissionWidget({
+  priorities,
+  blockers,
+  confidence,
+  isRealData,
+  placeholderReason,
+  onReview,
+  onRunDiagnostics,
+  isRunning,
+}: {
   priorities: any[];
   blockers: any[];
   confidence: string;
-  coverage: { active: number; total: number };
-  updatedAt?: string;
-  onReview?: (mission: any) => void;
-  onFixEverything?: () => void;
   isRealData?: boolean;
   placeholderReason?: string;
+  onReview?: (mission: any) => void;
+  onRunDiagnostics?: () => void;
+  isRunning?: boolean;
 }) {
   const terminalStatuses = ['completed', 'done', 'approved', 'verified', 'resolved'];
   const completedCount = priorities.filter(p => terminalStatuses.includes(p.status)).length;
@@ -844,123 +733,84 @@ function CaptainsRecommendationsSection({ priorities, blockers, confidence, cove
   const missionScore = Math.max(0, Math.min(100, Math.round(
     (totalMissions > 0 ? (completedCount / totalMissions) * 100 : 100) - blockerPenalty - highImpactPenalty
   )));
-  
-  const healthStatus = missionScore >= 70 ? 'Healthy' : missionScore >= 40 ? 'Needs Attention' : 'Critical';
-  const healthColor = missionScore >= 70 ? 'text-semantic-success' : missionScore >= 40 ? 'text-semantic-warning' : 'text-semantic-danger';
+
+  const statusTier: MissionStatusState["tier"] = blockers.length > 0
+    ? "needs_attention"
+    : priorities.length > 0
+    ? "doing_okay"
+    : "looking_good";
+
+  const getNextStep = (): string => {
+    if (blockers.length > 0) {
+      return `Resolve blocker: ${blockers[0].title}`;
+    }
+    if (priorities.length > 0) {
+      return `Complete: ${priorities[0].title}`;
+    }
+    return "Run diagnostics to discover new opportunities";
+  };
+
+  const autoFixableItems = priorities.filter(p => p.impact !== "High" || p.effort === "S");
+
+  const status: MissionStatusState = {
+    tier: statusTier,
+    summaryLine: isRealData === false
+      ? (placeholderReason || "Run diagnostics for real data")
+      : `${completedCount} of ${totalMissions} missions complete${blockers.length > 0 ? ` • ${blockers.length} blocker${blockers.length > 1 ? 's' : ''}` : ''}`,
+    nextStep: getNextStep(),
+    performanceScore: missionScore,
+    autoFixableCount: autoFixableItems.length,
+    priorityCount: priorities.length,
+  };
+
+  const missions: MissionItem[] = priorities.map((p, idx) => ({
+    id: p.id || `priority-${idx}`,
+    title: p.title,
+    reason: p.why,
+    impact: p.impact || "Medium",
+    effort: p.effort || "M",
+    status: terminalStatuses.includes(p.status) ? "complete" : "pending",
+    action: {
+      label: "Fix it",
+      onClick: () => onReview?.({
+        ...p,
+        id: p.id || `priority-${idx}`,
+        status: p.status || 'open',
+        sourceAgents: p.agents?.map((a: any) => a.agentId || a.id) || []
+      }),
+      disabled: false,
+    },
+  }));
+
+  const blockerItems = blockers.map((b, idx) => ({
+    id: b.id || `blocker-${idx}`,
+    title: b.title,
+    fix: b.fix,
+  }));
 
   return (
-    <div className="space-y-6" data-testid="captains-recommendations">
-      <Card className="glass-panel border-purple shadow-purple">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-6">
-            <MissionScoreRing score={missionScore} />
-            <div className="flex-1 min-w-0">
-              <h3 className={cn("text-xl font-semibold", healthColor)}>{healthStatus}</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {completedCount} of {totalMissions} missions complete
-                {blockers.length > 0 && ` • ${blockers.length} blocker${blockers.length > 1 ? 's' : ''}`}
-              </p>
-              {isRealData === false && (
-                <p className="text-xs text-muted-foreground mt-2 italic">
-                  {placeholderReason || "Run diagnostics for real data"}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div>
-        <h4 className="text-sm font-semibold text-gold flex items-center gap-2 mb-3 tracking-wide">
-          <Target className="w-4 h-4" />
-          MISSIONS
-        </h4>
-        <div className="space-y-3">
-          {priorities.map((priority, idx) => (
-            <Card 
-              key={idx} 
-              className="bg-card/80 backdrop-blur-sm border border-border rounded-xl overflow-hidden hover:border-primary/30 transition-colors cursor-pointer"
-              onClick={() => onReview?.({ 
-                ...priority,
-                id: priority.id || `priority-${idx}`,
-                status: priority.status || 'open',
-                sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
-              })}
-              data-testid={`priority-${idx + 1}`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-foreground leading-tight">{priority.title}</h4>
-                    <p className="text-muted-foreground text-xs mt-1.5 line-clamp-1">{priority.why}</p>
-                  </div>
-                  {priority.metric && (
-                    <span className="text-xs font-medium text-semantic-danger shrink-0">{priority.metric}</span>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                  <div className="flex items-center gap-3">
-                    <ImpactIndicator impact={priority.impact || "Medium"} />
-                    <EffortIndicator effort={priority.effort || "M"} />
-                    <CrewAvatars agents={priority.agents || []} />
-                  </div>
-                  <Button 
-                    size="sm" 
-                    className="text-xs h-7 px-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onReview?.({ 
-                        ...priority,
-                        id: priority.id || `priority-${idx}`,
-                        status: priority.status || 'open',
-                        sourceAgents: priority.agents?.map((a: any) => a.agentId || a.id) || []
-                      });
-                    }}
-                    data-testid={`button-fix-priority-${idx + 1}`}
-                  >
-                    Fix it
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {blockers.length > 0 && (
-        <div className="rounded-xl border border-semantic-warning-border bg-semantic-warning-soft/30 p-4" data-testid="blockers-section">
-          <h4 className="text-sm font-semibold text-semantic-warning flex items-center gap-2 mb-3 tracking-wide">
-            <AlertTriangle className="w-4 h-4" />
-            BLOCKERS
-          </h4>
-          <div className="space-y-2">
-            {blockers.map((blocker, idx) => {
-              const crew = getCrewMember(blocker.id);
-              return (
-                <div key={idx} className="flex items-start gap-3 text-sm">
-                  <AlertCircle className="w-4 h-4 text-semantic-warning flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <Link href={`/agents/${blocker.id}`}>
-                      <span className="font-medium cursor-pointer hover:underline" style={{ color: crew.color }}>{blocker.title}</span>
-                    </Link>
-                    <span className="text-muted-foreground"> — {blocker.fix}</span>
-                  </div>
-                  <Link 
-                    href="/integrations" 
-                    className="text-xs h-6 px-2 text-semantic-warning hover:text-semantic-warning/80 flex items-center gap-1 hover:underline"
-                    data-testid={`link-fix-blocker-${idx + 1}`}
-                  >
-                    <LinkIcon className="w-3 h-3" />
-                    Fix
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+    <MissionOverviewWidget
+      status={status}
+      missions={missions}
+      blockers={blockerItems}
+      onRunDiagnostics={onRunDiagnostics}
+      isRunning={isRunning}
+      onMissionAction={(missionId) => {
+        const mission = priorities.find((p, idx) => (p.id || `priority-${idx}`) === missionId);
+        if (mission) {
+          onReview?.({
+            ...mission,
+            id: missionId,
+            status: mission.status || 'open',
+            sourceAgents: mission.agents?.map((a: any) => a.agentId || a.id) || []
+          });
+        }
+      }}
+      onBlockerFix={(blockerId) => {
+        console.log("Fix blocker:", blockerId);
+      }}
+      maxActions={3}
+    />
   );
 }
 
@@ -1136,11 +986,15 @@ export default function MissionControl() {
           </div>
         </div>
 
-        <MissionStatusWidget
+        <ConsolidatedMissionWidget
           priorities={captainData.priorities || []}
           blockers={captainData.blockers || []}
-          missingIntegrations={0}
-          siteId={currentSite?.siteId || "default"}
+          confidence={captainData.confidence || "Low"}
+          isRealData={captainData.isRealData}
+          placeholderReason={captainData.placeholderReason}
+          onReview={handleReviewMission}
+          onRunDiagnostics={() => runDiagnostics.mutate()}
+          isRunning={runDiagnostics.isPending}
         />
 
         {showValidationPanel && validationResults && (
@@ -1227,19 +1081,6 @@ export default function MissionControl() {
           </Card>
         )}
 
-        <CaptainsRecommendationsSection 
-          priorities={captainData.priorities || []}
-          blockers={captainData.blockers || []}
-          confidence={captainData.confidence || "Low"}
-          coverage={captainData.coverage || { active: 0, total: 0 }}
-          updatedAt={captainData.generated_at ? new Date(captainData.generated_at).toLocaleDateString() : undefined}
-          onReview={handleReviewMission}
-          onFixEverything={() => {
-            console.log("Fix Everything clicked - queuing all missions");
-          }}
-          isRealData={captainData.isRealData}
-          placeholderReason={captainData.placeholderReason}
-        />
 
         <MetricCardsRow />
 
