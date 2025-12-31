@@ -77,11 +77,18 @@ export function useMissionsDashboard(options?: UseMissionsDashboardOptions) {
       (action) => action.autoFixable
     );
 
+    const targetSiteId = siteId || 'site_empathy_health_clinic';
+
     for (const mission of autoFixableMissions) {
-      await apiRequest("POST", "/api/missions/execute", {
-        crewId: mission.crewId,
-        missionId: mission.missionId,
-      });
+      try {
+        await apiRequest("POST", "/api/missions/execute", {
+          siteId: targetSiteId,
+          crewId: mission.crewId,
+          missionId: mission.missionId,
+        });
+      } catch (error) {
+        console.error(`Failed to execute mission ${mission.missionId}:`, error);
+      }
     }
 
     queryClient.invalidateQueries({ queryKey });
