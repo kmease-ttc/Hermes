@@ -12084,10 +12084,10 @@ Current metrics for the site: ${metricsContext}`;
       const serviceRuns = await storage.getServiceRunsByService('seo_kbase', 1);
       const lastRun = serviceRuns[0];
 
-      // Check KB service configuration
-      const { getServiceSecrets } = await import("./vault");
-      const kbaseConfig = await getServiceSecrets('seo_kbase');
-      const isConfigured = Boolean(kbaseConfig?.base_url && kbaseConfig?.api_key);
+      // Check KB service configuration using resolveWorkerConfig (checks Bitwarden, aliases, integrations DB, env fallbacks)
+      const kbaseConfig = await resolveWorkerConfig('seo_kbase');
+      const isConfigured = kbaseConfig.valid;
+      const configError = kbaseConfig.error || null;
 
       // Categorize findings by type
       const insights = kbaseFindings.filter(f => f.category === 'insight' || f.category === 'learning');
@@ -12105,9 +12105,12 @@ Current metrics for the site: ${metricsContext}`;
         };
       });
 
+      logger.info("KB", `KBase status: configured=${isConfigured}, findings=${kbaseFindings.length}`);
+      
       res.json({
         ok: true,
         configured: isConfigured,
+        configError: configError,
         isRealData: kbaseFindings.length > 0,
         dataSource: kbaseFindings.length > 0 ? "database" : "placeholder",
         lastRunAt: lastRun?.finishedAt || lastRun?.startedAt || null,
@@ -12167,79 +12170,112 @@ Current metrics for the site: ${metricsContext}`;
 
   /**
    * GET /api/kb/status
-   * Get Knowledge Base health and recent activity
+   * Canonical Knowledge Base status endpoint with canRead/canWrite checks
+   * Returns stable shape for UI configuration decisions (preserves data envelope for backwards compatibility)
    */
   app.get("/api/kb/status", async (req, res) => {
     try {
       const siteId = (req.query.siteId as string) || "site_empathy_health_clinic";
       const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+      const timestamp = new Date().toISOString();
 
       // Get KB service configuration using resolveWorkerConfig (checks Bitwarden, aliases, integrations DB)
       const kbaseConfig = await resolveWorkerConfig('seo_kbase');
+      const healthPath = kbaseConfig.health_path || "/health";
 
       if (!kbaseConfig.valid) {
+        const errorMsg = kbaseConfig.error || "Knowledge Base worker not configured. Set up SEO_KBASE secret in Bitwarden (or SEO_KBASE_API_KEY + SEO_KBASE_BASE_URL env vars).";
+        logger.info("KB", `KBase status: configured=false, canRead=false, canWrite=false`);
         return res.json({
           ok: true,
           service: "socrates",
           request_id: requestId,
           data: {
             configured: false,
+            canRead: false,
+            canWrite: false,
             status: "not_configured",
-            message: kbaseConfig.error || "Knowledge Base worker not configured. Set up SEO_KBASE secret.",
+            baseUrl: null,
+            error: errorMsg,
+            lastError: errorMsg,
+            message: kbaseConfig.error || "Knowledge Base worker not configured.",
             lastWriteAt: null,
             lastQueryAt: null,
             recentLearnings: [],
+            timestamp,
           },
         });
       }
 
-      // Check KB worker health
+      // Canonical status response shape
+      let canRead = false;
+      let canWrite = false;
+      let lastError: string | null = null;
+      let workerVersion: string | null = null;
+      let healthData: any = {};
+
+      // Check KB worker health (lightweight read check)
       try {
-        const headers: Record<string, string> = {};
+        const headers: Record<string, string> = { "X-Request-Id": requestId };
         if (kbaseConfig.api_key) {
           headers['x-api-key'] = kbaseConfig.api_key;
+          headers['Authorization'] = `Bearer ${kbaseConfig.api_key}`;
         }
 
-        const healthResponse = await fetch(`${kbaseConfig.base_url}${kbaseConfig.health_path}`, {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+
+        const healthResponse = await fetch(`${kbaseConfig.base_url}${healthPath}`, {
           method: 'GET',
           headers,
+          signal: controller.signal,
         });
 
-        if (!healthResponse.ok) {
-          throw new Error(`Health check failed: ${healthResponse.status}`);
+        clearTimeout(timeout);
+
+        if (healthResponse.ok) {
+          healthData = await healthResponse.json().catch(() => ({}));
+          canRead = true;
+          canWrite = !!kbaseConfig.api_key;
+          workerVersion = healthData.version || null;
+        } else {
+          // Attempt to parse error body for richer context
+          let errorBody: any = {};
+          try {
+            errorBody = await healthResponse.json();
+          } catch (_) {}
+          lastError = errorBody.error || errorBody.message || `Health check failed: HTTP ${healthResponse.status}`;
         }
-
-        const healthData = await healthResponse.json();
-
-        res.json({
-          ok: true,
-          service: "socrates",
-          request_id: requestId,
-          data: {
-            configured: true,
-            status: "healthy",
-            workerVersion: healthData.version,
-            lastWriteAt: healthData.lastWriteAt || null,
-            lastQueryAt: healthData.lastQueryAt || null,
-            entriesCount: healthData.entriesCount || 0,
-            recentLearnings: healthData.recentEntries || [],
-          },
-        });
       } catch (healthErr: any) {
-        res.json({
-          ok: true,
-          service: "socrates",
-          request_id: requestId,
-          data: {
-            configured: true,
-            status: "unreachable",
-            error: healthErr.message,
-            lastWriteAt: null,
-            lastQueryAt: null,
-            recentLearnings: [],
-          },
-        });
+        if (healthErr.name === "AbortError") {
+          lastError = "Health check timed out after 5s";
+        } else {
+          lastError = healthErr.message;
+        }
       }
+
+      logger.info("KB", `KBase status: configured=true, canRead=${canRead}, canWrite=${canWrite}`);
+
+      res.json({
+        ok: true,
+        service: "socrates",
+        request_id: requestId,
+        data: {
+          configured: true,
+          canRead,
+          canWrite,
+          status: canRead ? "healthy" : "unreachable",
+          baseUrl: kbaseConfig.base_url ? kbaseConfig.base_url.replace(/\/api$/, '') : null,
+          error: lastError,
+          lastError,
+          workerVersion,
+          lastWriteAt: healthData.lastWriteAt || null,
+          lastQueryAt: healthData.lastQueryAt || null,
+          entriesCount: healthData.entriesCount || 0,
+          recentLearnings: healthData.recentEntries || [],
+          timestamp,
+        },
+      });
     } catch (error: any) {
       logger.error("KB", "Failed to get KB status", { error: error.message });
       res.status(500).json({ ok: false, error: error.message });

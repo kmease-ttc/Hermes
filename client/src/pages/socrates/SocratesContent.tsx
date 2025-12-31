@@ -78,6 +78,7 @@ interface AgentActivity {
 
 interface KBOverviewData {
   configured: boolean;
+  configError?: string | null;
   isRealData: boolean;
   dataSource: string;
   lastRunAt: string | null;
@@ -366,7 +367,7 @@ function WriteLearningDialog({
   );
 }
 
-function ConfigurationWarning() {
+function ConfigurationWarning({ error }: { error?: string | null }) {
   return (
     <Card className="bg-semantic-warning-soft/30 border-semantic-warning-border rounded-2xl">
       <CardContent className="py-4">
@@ -375,14 +376,22 @@ function ConfigurationWarning() {
           <div className="flex-1">
             <h4 className="font-medium text-foreground">Knowledge Base Worker Not Configured</h4>
             <p className="text-sm text-muted-foreground mt-1">
-              The SEO_KBASE secret is not set up in Bitwarden. Add the secret to enable full Knowledge Base functionality including external worker integration.
+              {error || "The SEO_KBASE secret is not configured. Add the secret to Bitwarden (or set SEO_KBASE_API_KEY and SEO_KBASE_BASE_URL env vars) to enable full Knowledge Base functionality."}
             </p>
-            <Link href="/settings" data-testid="link-settings">
-              <Button variant="outline" size="sm" className="mt-3 gap-2" data-testid="btn-go-to-settings">
-                <Settings className="w-4 h-4" />
-                Go to Settings
-              </Button>
-            </Link>
+            <div className="flex gap-2 mt-3">
+              <Link href="/admin/integrations" data-testid="link-integrations">
+                <Button variant="outline" size="sm" className="gap-2" data-testid="btn-go-to-integrations">
+                  <Settings className="w-4 h-4" />
+                  Integrations
+                </Button>
+              </Link>
+              <a href="https://vault.bitwarden.com" target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" size="sm" className="gap-2" data-testid="btn-open-bitwarden">
+                  <ExternalLink className="w-4 h-4" />
+                  Bitwarden
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -800,7 +809,7 @@ export function SocratesContent() {
       onRefresh={() => runMutation.mutate()}
       isRefreshing={runMutation.isPending}
     >
-      {!data?.configured && <ConfigurationWarning />}
+      {!data?.configured && <ConfigurationWarning error={data?.configError} />}
       
       {data?.patterns && data.patterns.length > 0 && (
         <Card className="bg-card/80 backdrop-blur-sm border-border rounded-2xl">
