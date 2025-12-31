@@ -3309,6 +3309,43 @@ When answering:
     }
   });
 
+  // Get mission state with cooldown info for crew dashboards
+  app.get("/api/missions/state", async (req, res) => {
+    try {
+      const { siteId, crewId } = req.query;
+      const targetSiteId = (siteId as string) || 'default';
+      const targetCrewId = (crewId as string) || 'socrates';
+      
+      const cooldownHours = parseInt(process.env.MISSION_COOLDOWN_HOURS || '24', 10);
+      
+      const recentCompletions = await storage.getRecentMissionCompletions(
+        targetSiteId,
+        targetCrewId,
+        cooldownHours
+      );
+      
+      const lastCompleted = recentCompletions.length > 0 ? recentCompletions[0] : null;
+      const completedMissionIds = recentCompletions
+        .map(log => (log.details as any)?.missionId || (log.details as any)?.actionId)
+        .filter(Boolean);
+      
+      res.json({
+        ok: true,
+        lastCompleted: lastCompleted ? {
+          completedAt: lastCompleted.createdAt,
+          missionId: (lastCompleted.details as any)?.missionId || (lastCompleted.details as any)?.actionId,
+          runId: (lastCompleted.details as any)?.runId,
+          summary: (lastCompleted.details as any)?.summary,
+        } : null,
+        completedMissionIds: [...new Set(completedMissionIds)],
+        cooldownHours,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get missions state", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Run KBASE worker to generate fresh insights
   app.post("/api/kbase/run", async (req, res) => {
     try {
@@ -3322,9 +3359,39 @@ When answering:
         });
       }
       
+      // Check for cooldown bypass
+      const forceRun = req.query.force === 'true';
+      const siteId = (req.body?.siteId as string) || 'site_empathy_health_clinic';
+      const crewId = 'seo_kbase';
+      const cooldownHours = parseInt(process.env.MISSION_COOLDOWN_HOURS || '24', 10);
+      
+      // Check cooldown unless force=true
+      if (!forceRun) {
+        const recentCompletions = await storage.getRecentMissionCompletions(siteId, crewId, cooldownHours);
+        if (recentCompletions.length > 0) {
+          const lastCompletion = recentCompletions[0];
+          const completedAt = new Date(lastCompletion.createdAt);
+          const cooldownEndsAt = new Date(completedAt.getTime() + cooldownHours * 60 * 60 * 1000);
+          const hoursRemaining = Math.ceil((cooldownEndsAt.getTime() - Date.now()) / (60 * 60 * 1000));
+          
+          logger.info("KBASE", "Mission on cooldown", { 
+            lastCompletedAt: completedAt.toISOString(),
+            cooldownEndsAt: cooldownEndsAt.toISOString(),
+            hoursRemaining,
+          });
+          
+          return res.status(409).json({
+            error: `Already completed recently — try again after ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''}`,
+            completedAt: completedAt.toISOString(),
+            cooldownEndsAt: cooldownEndsAt.toISOString(),
+            hoursRemaining,
+            cooldownHours,
+          });
+        }
+      }
+      
       const baseUrl = kbaseConfig.base_url.replace(/\/+$/, '');
       const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
-      const siteId = (req.body?.siteId as string) || 'site_empathy_health_clinic';
       const runId = `kbase_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       
       // Call the KBASE worker run endpoint
@@ -3538,6 +3605,7 @@ When answering:
         actor: 'system',
         details: {
           crewId: 'seo_kbase',
+          missionId: 'collect_learnings',
           actionId: 'collect_learnings',
           runId,
           writtenCount,

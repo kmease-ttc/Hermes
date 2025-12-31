@@ -258,6 +258,7 @@ export interface IStorage {
   saveAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogsBySite(siteId: string, limit?: number): Promise<AuditLog[]>;
   getAllAuditLogs(limit?: number): Promise<AuditLog[]>;
+  getRecentMissionCompletions(siteId: string, crewId: string, hours: number): Promise<AuditLog[]>;
   
   // Site Integrations
   getSiteIntegrations(siteId: string): Promise<SiteIntegration[]>;
@@ -1048,6 +1049,22 @@ class DBStorage implements IStorage {
 
   async getAllAuditLogs(limit = 100): Promise<AuditLog[]> {
     return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  async getRecentMissionCompletions(siteId: string, crewId: string, hours: number): Promise<AuditLog[]> {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+    return db
+      .select()
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.siteId, siteId),
+          eq(auditLogs.action, 'kbase_run_completed'),
+          gte(auditLogs.createdAt, cutoffTime),
+          sql`${auditLogs.details}->>'crewId' = ${crewId}`
+        )
+      )
+      .orderBy(desc(auditLogs.createdAt));
   }
 
   // Site Integrations
