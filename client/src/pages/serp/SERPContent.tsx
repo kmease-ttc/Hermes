@@ -518,6 +518,69 @@ export default function SERPContent() {
     return <TrendingDown className="h-4 w-4 text-semantic-danger" />;
   };
 
+  const getIntentBadge = (intent: string | null, priority: number | null, volume: number | null) => {
+    if (!intent) {
+      if (priority && priority >= 4) {
+        return (
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge className="bg-green-600 text-white text-xs gap-1">
+                <DollarSign className="h-3 w-3" />
+                High Value
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent><p>High priority keyword based on business value</p></TooltipContent>
+          </Tooltip>
+        );
+      }
+      return null;
+    }
+
+    const intentLower = intent.toLowerCase();
+    if (intentLower === 'commercial' || intentLower === 'transactional') {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge className="bg-green-600 text-white text-xs gap-1">
+              <ShoppingCart className="h-3 w-3" />
+              Commercial
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent><p>High-intent keyword likely to convert</p></TooltipContent>
+        </Tooltip>
+      );
+    }
+    if (intentLower === 'navigational') {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge className="bg-blue-500 text-white text-xs gap-1">
+              <Target className="h-3 w-3" />
+              Navigate
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent><p>User looking for a specific site/brand</p></TooltipContent>
+        </Tooltip>
+      );
+    }
+    if (intentLower === 'informational') {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge variant="outline" className="text-xs gap-1">
+              <HelpCircle className="h-3 w-3" />
+              Info
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent><p>Research/informational keyword</p></TooltipContent>
+        </Tooltip>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-xs">{intent}</Badge>
+    );
+  };
+
   const stats = overview?.stats || { ranking: 0, notRanking: 0, numberOne: 0, inTop3: 0, inTop5: 0, inTop10: 0, inTop20: 0, avgPosition: null, winners: 0, losers: 0 };
   const hasKeywords = (overview?.totalKeywords || 0) > 0;
 
@@ -849,69 +912,6 @@ export default function SERPContent() {
       ),
     },
   ], [sortedKeywords, overview, stats]);
-
-  const getIntentBadge = (intent: string | null, priority: number | null, volume: number | null) => {
-    if (!intent) {
-      if (priority && priority >= 4) {
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="bg-green-600 text-white text-xs gap-1">
-                <DollarSign className="h-3 w-3" />
-                High Value
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent><p>High priority keyword based on business value</p></TooltipContent>
-          </Tooltip>
-        );
-      }
-      return null;
-    }
-
-    const intentLower = intent.toLowerCase();
-    if (intentLower === 'commercial' || intentLower === 'transactional') {
-      return (
-        <Tooltip>
-          <TooltipTrigger>
-            <Badge className="bg-green-600 text-white text-xs gap-1">
-              <ShoppingCart className="h-3 w-3" />
-              Commercial
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent><p>High-intent keyword likely to convert</p></TooltipContent>
-        </Tooltip>
-      );
-    }
-    if (intentLower === 'navigational') {
-      return (
-        <Tooltip>
-          <TooltipTrigger>
-            <Badge className="bg-blue-500 text-white text-xs gap-1">
-              <Target className="h-3 w-3" />
-              Navigate
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent><p>User looking for a specific site/brand</p></TooltipContent>
-        </Tooltip>
-      );
-    }
-    if (intentLower === 'informational') {
-      return (
-        <Tooltip>
-          <TooltipTrigger>
-            <Badge variant="outline" className="text-xs gap-1">
-              <HelpCircle className="h-3 w-3" />
-              Info
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent><p>Research/informational keyword</p></TooltipContent>
-        </Tooltip>
-      );
-    }
-    return (
-      <Badge variant="outline" className="text-xs">{intent}</Badge>
-    );
-  };
 
   // Loading state - after all hooks
   if (isLoading) {
