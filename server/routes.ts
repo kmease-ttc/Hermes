@@ -3314,13 +3314,19 @@ When answering:
     try {
       const { siteId, crewId } = req.query;
       const targetSiteId = (siteId as string) || 'default';
-      const targetCrewId = (crewId as string) || 'socrates';
+      const targetCrewId = (crewId as string) || null;
       
       const cooldownHours = parseInt(process.env.MISSION_COOLDOWN_HOURS || '24', 10);
       
+      const { getMissionsForCrew, getAllMissions } = await import('../shared/missions/missionRegistry');
+      
+      const availableMissions = targetCrewId 
+        ? getMissionsForCrew(targetCrewId)
+        : getAllMissions();
+      
       const recentCompletions = await storage.getRecentMissionCompletions(
         targetSiteId,
-        targetCrewId,
+        targetCrewId || 'all',
         cooldownHours
       );
       
@@ -3328,21 +3334,274 @@ When answering:
       const completedMissionIds = recentCompletions
         .map(log => (log.details as any)?.missionId || (log.details as any)?.actionId)
         .filter(Boolean);
+      const uniqueCompletedIds = [...new Set(completedMissionIds)] as string[];
+      
+      const pendingMissions = availableMissions.filter(
+        mission => !uniqueCompletedIds.includes(mission.missionId)
+      );
+      
+      const nextActions = pendingMissions.map(mission => ({
+        missionId: mission.missionId,
+        title: mission.title,
+        description: mission.description,
+        impact: mission.impact,
+        effort: mission.effort,
+        autoFixable: mission.autoFixable,
+      }));
+      
+      const highImpactPending = pendingMissions.filter(m => m.impact === 'high');
+      const autoFixableCount = pendingMissions.filter(m => m.autoFixable).length;
+      
+      let tier: 'looking_good' | 'doing_okay' | 'needs_attention';
+      if (highImpactPending.length > 0) {
+        tier = 'needs_attention';
+      } else if (pendingMissions.length > 0) {
+        tier = 'doing_okay';
+      } else {
+        tier = 'looking_good';
+      }
+      
+      const nextStep = pendingMissions.length > 0 
+        ? `Next: ${pendingMissions[0].title}`
+        : 'All missions complete!';
       
       res.json({
         ok: true,
+        nextActions,
         lastCompleted: lastCompleted ? {
           completedAt: lastCompleted.createdAt,
           missionId: (lastCompleted.details as any)?.missionId || (lastCompleted.details as any)?.actionId,
           runId: (lastCompleted.details as any)?.runId,
           summary: (lastCompleted.details as any)?.summary,
         } : null,
-        completedMissionIds: [...new Set(completedMissionIds)],
+        completedMissionIds: uniqueCompletedIds,
         cooldownHours,
+        status: {
+          tier,
+          nextStep,
+          priorityCount: highImpactPending.length,
+          autoFixableCount,
+        },
       });
     } catch (error: any) {
       logger.error("API", "Failed to get missions state", { error: error.message });
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Aggregated mission dashboard for Mission Control view
+  app.get("/api/missions/dashboard", async (req, res) => {
+    try {
+      const { siteId } = req.query;
+      const targetSiteId = (siteId as string) || 'site_empathy_health_clinic';
+      
+      const cooldownHours = parseInt(process.env.MISSION_COOLDOWN_HOURS || '24', 10);
+      
+      const { CREW } = await import('../shared/registry');
+      const { getMissionsForCrew, getAllMissions, MISSION_REGISTRY } = await import('../shared/missions/missionRegistry');
+      
+      const allMissions = getAllMissions();
+      const crewIds = Object.keys(CREW);
+      
+      const allRecentCompletions = await storage.getRecentMissionCompletions(
+        targetSiteId,
+        'all',
+        cooldownHours * 3
+      );
+      
+      const completedMissionIds = new Set<string>();
+      const completionsByMissionId: Record<string, any> = {};
+      
+      for (const log of allRecentCompletions) {
+        const missionId = (log.details as any)?.missionId || (log.details as any)?.actionId;
+        if (missionId) {
+          completedMissionIds.add(missionId);
+          if (!completionsByMissionId[missionId]) {
+            completionsByMissionId[missionId] = log;
+          }
+        }
+      }
+      
+      const pendingMissions = allMissions.filter(
+        mission => !completedMissionIds.has(mission.missionId)
+      );
+      
+      const impactOrder = { high: 0, medium: 1, low: 2 };
+      const sortedPending = [...pendingMissions].sort((a, b) => {
+        const impactDiff = impactOrder[a.impact] - impactOrder[b.impact];
+        if (impactDiff !== 0) return impactDiff;
+        const effortOrder = { S: 0, M: 1, L: 2 };
+        return effortOrder[a.effort] - effortOrder[b.effort];
+      });
+      
+      const nextActions = sortedPending.slice(0, 5).map(mission => ({
+        crewId: mission.crewId,
+        missionId: mission.missionId,
+        title: mission.title,
+        description: mission.description,
+        impact: mission.impact,
+        effort: mission.effort,
+        autoFixable: mission.autoFixable,
+      }));
+      
+      const recentlyCompleted = allRecentCompletions.slice(0, 3).map(log => {
+        const missionId = (log.details as any)?.missionId || (log.details as any)?.actionId;
+        const mission = missionId ? MISSION_REGISTRY[missionId] : null;
+        return {
+          crewId: (log.details as any)?.crewId || mission?.crewId || 'unknown',
+          missionId: missionId || 'unknown',
+          title: mission?.title || (log.details as any)?.title || 'Unknown Mission',
+          completedAt: log.createdAt,
+          summary: (log.details as any)?.summary || null,
+        };
+      });
+      
+      const crewSummaries = crewIds.map(crewId => {
+        const crew = CREW[crewId];
+        const crewMissions = getMissionsForCrew(crewId);
+        const pendingForCrew = crewMissions.filter(
+          m => !completedMissionIds.has(m.missionId)
+        );
+        
+        const crewCompletions = allRecentCompletions.filter(log => {
+          const missionId = (log.details as any)?.missionId || (log.details as any)?.actionId;
+          const mission = missionId ? MISSION_REGISTRY[missionId] : null;
+          return mission?.crewId === crewId || (log.details as any)?.crewId === crewId;
+        });
+        
+        const lastCompleted = crewCompletions[0];
+        
+        let status: 'looking_good' | 'doing_okay' | 'needs_attention';
+        const hasHighPriority = pendingForCrew.some(m => m.impact === 'high');
+        if (hasHighPriority) {
+          status = 'needs_attention';
+        } else if (pendingForCrew.length > 0) {
+          status = 'doing_okay';
+        } else {
+          status = 'looking_good';
+        }
+        
+        return {
+          crewId,
+          nickname: crew.nickname,
+          pendingCount: pendingForCrew.length,
+          lastCompletedAt: lastCompleted?.createdAt || null,
+          status,
+        };
+      });
+      
+      const highPriorityCount = pendingMissions.filter(m => m.impact === 'high').length;
+      const autoFixableCount = pendingMissions.filter(m => m.autoFixable).length;
+      
+      let tier: 'looking_good' | 'doing_okay' | 'needs_attention';
+      if (highPriorityCount > 0) {
+        tier = 'needs_attention';
+      } else if (pendingMissions.length > 0) {
+        tier = 'doing_okay';
+      } else {
+        tier = 'looking_good';
+      }
+      
+      const nextStep = sortedPending.length > 0
+        ? `Next: ${sortedPending[0].title}`
+        : 'All missions complete!';
+      
+      res.json({
+        ok: true,
+        siteId: targetSiteId,
+        aggregatedStatus: {
+          tier,
+          totalMissions: allMissions.length,
+          completedCount: completedMissionIds.size,
+          pendingCount: pendingMissions.length,
+          highPriorityCount,
+          autoFixableCount,
+          nextStep,
+        },
+        nextActions,
+        recentlyCompleted,
+        crewSummaries,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get missions dashboard", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Generic mission execution endpoint for all crews
+  app.post("/api/missions/execute", async (req, res) => {
+    try {
+      const { siteId, crewId, missionId, force = false } = req.body;
+      
+      if (!siteId || !crewId || !missionId) {
+        return res.status(400).json({ 
+          ok: false, 
+          error: "Missing required fields: siteId, crewId, missionId" 
+        });
+      }
+      
+      const { getMission } = await import('../shared/missions/missionRegistry');
+      const mission = getMission(missionId);
+      
+      if (!mission) {
+        return res.status(404).json({ ok: false, error: `Mission not found: ${missionId}` });
+      }
+      
+      if (mission.crewId !== crewId) {
+        return res.status(400).json({ 
+          ok: false, 
+          error: `Mission ${missionId} belongs to crew ${mission.crewId}, not ${crewId}` 
+        });
+      }
+      
+      const cooldownHours = mission.cooldownHours || 24;
+      if (!force) {
+        const recentCompletions = await storage.getRecentMissionCompletions(siteId, crewId, cooldownHours);
+        const recentForMission = recentCompletions.find(
+          log => (log.details as any)?.missionId === missionId
+        );
+        
+        if (recentForMission) {
+          const completedAt = new Date(recentForMission.createdAt);
+          const cooldownEndsAt = new Date(completedAt.getTime() + cooldownHours * 60 * 60 * 1000);
+          const hoursRemaining = Math.ceil((cooldownEndsAt.getTime() - Date.now()) / (60 * 60 * 1000));
+          
+          return res.status(409).json({
+            ok: false,
+            error: `Mission on cooldown. Try again in ${hoursRemaining} hour(s)`,
+            completedAt: completedAt.toISOString(),
+            cooldownEndsAt: cooldownEndsAt.toISOString(),
+            hoursRemaining,
+          });
+        }
+      }
+      
+      const runId = `mission_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      const summary = `${mission.title} completed`;
+      
+      await storage.saveMissionExecution({
+        siteId,
+        crewId,
+        missionId,
+        runId,
+        status: 'success',
+        summary,
+        metadata: { handlerKey: mission.handlerKey },
+      });
+      
+      logger.info("MISSIONS", "Mission executed", { siteId, crewId, missionId, runId });
+      
+      res.json({
+        ok: true,
+        runId,
+        missionId,
+        crewId,
+        summary,
+        completedAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("MISSIONS", "Failed to execute mission", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
     }
   });
 
