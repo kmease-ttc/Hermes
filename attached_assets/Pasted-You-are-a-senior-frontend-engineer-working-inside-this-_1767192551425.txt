@@ -1,0 +1,125 @@
+You are a senior frontend engineer working inside this Replit project.
+
+Goal
+Make EVERY crew member page use the exact same “Speedster-style” top header + ask bar pattern (name, category pill, one-line description, capability tags, score, refresh/export/settings icons, and the “Ask <CrewName> …” input). Right now it’s inconsistent: some crews have it, but others (example: Scotty) do not. Fix this permanently so new crews can’t drift.
+
+Non-negotiables
+
+* Do not hand-edit each crew page to “copy/paste” a header. Create/normalize a single shared component and use it everywhere.
+* After the change, Scotty (and all others) must show the same header shell as Speedster at the top of the page.
+* The header must render even if the crew has no data (“No findings yet” etc. is fine). No missing header due to empty state.
+
+Steps (do these in order)
+
+1. Inventory all crew pages
+
+* Search the repo for crew pages and routes. Look for:
+
+  * routes with “/crew/”, “/agents/”, “/serp/”, “/content/”, “/technical/”, etc.
+  * pages under client/src/pages/** that correspond to each crew member (Speedster, Sentinel, Hemingway, Beacon, Natasha, Pulse, Socrates, SERP, Scotty, etc.)
+* Output a list of every crew page file you found and the route it maps to.
+
+2. Identify the gold-standard implementation
+
+* Locate the Speedster page and the component(s) responsible for its header.
+* Identify the shared shell component if it exists (e.g., CrewDashboardShell / CrewHeader).
+* Confirm where the crew metadata comes from (name, subtitle/category, description, capabilities/tags, score, header actions, ask placeholder).
+
+3. Create a single canonical component if one doesn’t already exist
+
+* If there is NOT already a single canonical reusable header/shell used by every crew, create:
+
+  * client/src/components/crew/CrewDashboardShell.tsx (or keep existing if already present)
+  * client/src/components/crew/CrewHeader.tsx (if separate makes sense)
+* This canonical component must implement the full Speedster header pattern:
+
+  * Avatar/icon
+  * H1 name
+  * Category pill
+  * One-line description
+  * Capability tags (3–6)
+  * Agent score display
+  * Icon buttons: Refresh, Export, Settings (export can be disabled if no data)
+  * “Ask <CrewName>” prompt bar with crew-scoped placeholder
+* It must accept props like:
+
+  * crewId / crewKey
+  * metadata (name, category, description, tags)
+  * score
+  * actions (onRefresh, onExport, onSettings)
+  * ask prompt config (placeholder, onSubmit)
+  * enabled/not-hired state (if already supported)
+* It must render even if data is empty.
+
+4. Centralize crew metadata in ONE place
+
+* Create or update a single registry file:
+
+  * client/src/crew/crewRegistry.ts (or similar)
+* It should define, for every crew:
+
+  * id
+  * name
+  * category/subtitle
+  * description
+  * capabilityTags
+  * askPlaceholder
+  * default routes
+* Ensure Scotty is included in this registry.
+
+5. Refactor every crew page to use the canonical shell
+   For EACH crew page file from Step 1:
+
+* Replace any bespoke header/title markup with:
+
+  * <CrewDashboardShell crewId="..." ... />
+* The page should only supply:
+
+  * crewId
+  * the inner content widgets (findings, next steps, etc.)
+  * any action handlers unique to that crew (refresh/export/settings)
+* No page should render its own header once this is done.
+
+6. Fix Scotty specifically
+
+* Ensure Scotty’s page imports and uses the canonical shell.
+* Ensure Scotty’s metadata exists in the registry (name “Scotty”, category “Technical SEO”, description, tags).
+* Verify it renders the same header and ask bar as Speedster.
+
+7. Prevent future drift
+
+* Add a lintable or structural rule:
+
+  * If a page is a “crew page”, it must use CrewDashboardShell.
+* Practical approach:
+
+  * Keep all crew pages under a single folder (e.g., client/src/pages/crew/*)
+  * Ensure routing points all crew routes to a single CrewPage component that reads crewId from params and loads the correct inner widgets, if feasible.
+* If a full route unification is too big, at least ensure all existing crew pages use the shell now.
+
+8. Verification checklist (must do before finishing)
+
+* Run the app and visually check at minimum:
+
+  * Speedster
+  * Sentinel
+  * Hemingway
+  * Beacon
+  * Natasha
+  * Pulse
+  * Socrates
+  * SERP
+  * Scotty
+* Confirm each has:
+
+  * Name, category pill, description, tags
+  * Score + refresh/export/settings icons
+  * Ask bar
+* Confirm header appears even with “no data yet”.
+
+Deliverables
+
+* List of all crew pages found + which were modified
+* The new/updated canonical shell/header component(s)
+* The central crew registry file including Scotty
+* Confirmation that Scotty now matches Speedster’s header pattern
