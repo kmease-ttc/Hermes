@@ -581,6 +581,7 @@ export default function PulseContent() {
       priorityCount: moderateDrops,
       autoFixableCount: 0,
       status: isLoading ? "loading" as const : "ready" as const,
+      performanceScore: null,
     };
   }, [parsed, report, isLoading]);
 

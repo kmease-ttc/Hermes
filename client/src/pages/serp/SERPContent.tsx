@@ -630,6 +630,7 @@ export default function SERPContent() {
       blockerCount: notRanking,
       autoFixableCount: missionsData?.totalPending || 0,
       status: status as "loading" | "ready" | "empty" | "unavailable",
+      performanceScore: totalKeywords > 0 ? Math.round((stats.inTop10 / totalKeywords) * 100) : null,
     };
   }, [overview, stats, missionsData, missionsLoading, isFixingEverything]);
 

@@ -681,6 +681,7 @@ export function SocratesContent() {
     blockerCount: !data?.configured ? 1 : 0,
     autoFixableCount: data?.recommendationsCount || 0,
     status: isLoading ? "loading" : "ready",
+    performanceScore: data?.totalLearnings ? Math.min(100, data.totalLearnings * 5) : null,
   };
 
   const missions: MissionItem[] = useMemo(() => {

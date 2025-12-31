@@ -835,6 +835,7 @@ export default function NatashaContent() {
       blockerCount: blockers,
       autoFixableCount: autoFixable,
       status: error ? "unavailable" : isLoading ? "loading" : "ready",
+      performanceScore: data.agentScore ?? null,
     };
   }, [data, summary, error, isLoading]);
 

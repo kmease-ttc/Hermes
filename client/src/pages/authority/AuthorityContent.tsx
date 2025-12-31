@@ -648,6 +648,7 @@ export default function AuthorityContent() {
       priorityCount: averageCount,
       autoFixableCount: 0,
       status: isLoading ? "loading" as const : "ready" as const,
+      performanceScore: avgPercentile ? Math.round(avgPercentile) : null,
     };
   }, [benchmarks, isLoading]);
 

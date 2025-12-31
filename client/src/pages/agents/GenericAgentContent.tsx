@@ -97,6 +97,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     blockerCount: 0,
     autoFixableCount: missionState.status.autoFixableCount,
     status: missionsLoading ? "loading" : "ready",
+    performanceScore: missionState?.score ?? null,
   } : {
     tier: "doing_okay",
     summaryLine: "Loading missions...",
@@ -105,6 +106,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     blockerCount: 0,
     autoFixableCount: 0,
     status: missionsLoading ? "loading" : "ready",
+    performanceScore: null,
   };
 
   const missions: MissionItem[] = (missionState?.nextActions || []).map((action) => ({
