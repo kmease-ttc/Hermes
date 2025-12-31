@@ -62,6 +62,7 @@ import {
   type MissionPromptConfig,
   type HeaderAction,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -984,6 +985,44 @@ export default function NatashaContent() {
     ];
   }, [data, summary, error, isLoading]);
 
+  const keyMetrics = useMemo(() => [
+    {
+      id: "opportunities-found",
+      label: "Opportunities Found",
+      value: summary.totalGaps || 0,
+      icon: Target,
+      status: summary.totalGaps > 0 ? "good" as const : "neutral" as const,
+    },
+    {
+      id: "competitors-tracked",
+      label: "Competitors Tracked",
+      value: summary.totalCompetitors || 0,
+      icon: Users,
+      status: summary.totalCompetitors > 0 ? "good" as const : "neutral" as const,
+    },
+    {
+      id: "keywords-with-gaps",
+      label: "Keywords with Gaps",
+      value: data.contentGaps?.length || 0,
+      icon: Search,
+      status: data.contentGaps?.length > 0 ? "warning" as const : "neutral" as const,
+    },
+    {
+      id: "avg-rank",
+      label: "Avg Rank",
+      value: data.avgRank ? `#${data.avgRank.toFixed(1)}` : "—",
+      icon: BarChart3,
+      status: data.avgRank && data.avgRank < 10 ? "good" as const : data.avgRank ? "warning" as const : "neutral" as const,
+    },
+    {
+      id: "share-of-voice",
+      label: "Share of Voice",
+      value: data.shareOfVoice ? `${data.shareOfVoice}%` : "—",
+      icon: TrendingUp,
+      status: data.shareOfVoice && data.shareOfVoice > 20 ? "good" as const : data.shareOfVoice ? "warning" as const : "neutral" as const,
+    },
+  ], [data, summary]);
+
   // Inspector tabs
   const inspectorTabs: InspectorTab[] = useMemo(() => {
     const tabState: WidgetState = error ? "unavailable" : isLoading ? "loading" : "ready";
@@ -1054,6 +1093,7 @@ export default function NatashaContent() {
       missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
