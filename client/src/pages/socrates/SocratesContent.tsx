@@ -973,7 +973,7 @@ export function SocratesContent() {
       missionStatus={missionStatus}
       missions={missions}
       recentlyCompleted={recentlyCompleted}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}

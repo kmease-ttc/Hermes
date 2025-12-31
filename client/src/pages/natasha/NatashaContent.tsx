@@ -1093,7 +1093,7 @@ export default function NatashaContent() {
       missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} />}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
