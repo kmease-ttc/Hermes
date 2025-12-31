@@ -44,6 +44,7 @@ import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
 import { MissionOverviewWidget } from "@/components/crew-dashboard/widgets/MissionOverviewWidget";
+import { useMissionsDashboard } from "@/hooks/useMissionsDashboard";
 import type { MissionItem, MissionStatusState } from "@/components/crew-dashboard/types";
 
 const verdictColors = {
@@ -820,6 +821,11 @@ export default function MissionControl() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [missionModalOpen, setMissionModalOpen] = useState(false);
   const [selectedMission, setSelectedMission] = useState<any>(null);
+  const [isExecutingAll, setIsExecutingAll] = useState(false);
+
+  const { dashboard, isLoading: dashboardLoading, executeAll, refetch } = useMissionsDashboard({
+    siteId: currentSite?.siteId,
+  });
 
   const handleReviewMission = (mission: any) => {
     setSelectedMission(mission);
@@ -829,6 +835,19 @@ export default function MissionControl() {
   const handleMarkMissionDone = (missionId: string | number) => {
     toast.success("Mission marked as done");
     setMissionModalOpen(false);
+  };
+
+  const handleFixEverything = async () => {
+    try {
+      setIsExecutingAll(true);
+      await executeAll();
+      toast.success("All auto-fixable missions executed!");
+      refetch();
+    } catch (error) {
+      toast.error("Failed to execute missions");
+    } finally {
+      setIsExecutingAll(false);
+    }
   };
 
   const { data: dashboardStats } = useQuery({
@@ -909,9 +928,31 @@ export default function MissionControl() {
     },
   });
 
-  // Use real data if available, otherwise fall back to mock
+  // Use dashboard hook data if available, otherwise fall back to recommendations/mock
   const mockData = getMockCaptainRecommendations();
-  const captainData = recommendationsData?.isRealData ? recommendationsData : {
+  
+  // Convert dashboard data to the format expected by ConsolidatedMissionWidget
+  const dashboardPriorities = dashboard?.nextActions?.map((action, idx) => ({
+    id: action.missionId || `action-${idx}`,
+    title: action.title,
+    why: action.description,
+    impact: action.impact === 'high' ? 'High' : action.impact === 'medium' ? 'Medium' : 'Low',
+    effort: action.effort,
+    status: 'open',
+    autoFixable: action.autoFixable,
+    agents: [{ agentId: action.crewId }],
+  })) || [];
+
+  const hasDashboardData = dashboard && dashboard.nextActions && dashboard.nextActions.length > 0;
+  
+  const captainData = hasDashboardData ? {
+    priorities: dashboardPriorities,
+    blockers: [],
+    confidence: dashboard.aggregatedStatus?.tier === 'looking_good' ? 'High' : 
+                dashboard.aggregatedStatus?.tier === 'doing_okay' ? 'Medium' : 'Low',
+    isRealData: true,
+    placeholderReason: undefined,
+  } : recommendationsData?.isRealData ? recommendationsData : {
     ...mockData,
     isRealData: false,
     placeholderReason: recommendationsData?.placeholderReason || "Using mock data - run diagnostics to generate real recommendations"
@@ -945,6 +986,22 @@ export default function MissionControl() {
                 Hire Crew
               </Button>
             </Link>
+            {dashboard?.aggregatedStatus?.autoFixableCount && dashboard.aggregatedStatus.autoFixableCount > 0 && (
+              <Button 
+                size="sm"
+                onClick={handleFixEverything}
+                disabled={isExecutingAll}
+                className="bg-semantic-success text-white hover:bg-semantic-success/90 rounded-xl"
+                data-testid="button-fix-everything"
+              >
+                {isExecutingAll ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Fix Everything ({dashboard.aggregatedStatus.autoFixableCount})
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm"

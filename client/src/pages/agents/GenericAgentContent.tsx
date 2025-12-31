@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { PlayCircle, AlertCircle, CheckCircle2, Clock, Wrench, Loader2, Download, FileText, Settings2, RefreshCw } from "lucide-react";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { CrewDashboardShell } from "@/components/crew-dashboard/CrewDashboardShell";
+import { useCrewMissions } from "@/hooks/useCrewMissions";
+import { SERVICE_TO_CREW } from "@shared/registry";
 import type { 
   CrewIdentity, 
   MissionStatusState, 
@@ -44,6 +46,13 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
   const siteId = activeSite?.id || "default";
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const crewId = SERVICE_TO_CREW[agentId] || agentId;
+
+  const { missionState, executeMission, isLoading: missionsLoading } = useCrewMissions({
+    siteId,
+    crewId,
+  });
+
   const { data, isLoading, refetch } = useQuery<AgentData>({
     queryKey: ['agent-data', agentId, siteId],
     queryFn: async () => {
@@ -80,47 +89,43 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     monitors: crew.watchDescription ? [crew.watchDescription] : [],
   };
 
-  const missionStatus: MissionStatusState = {
-    tier: hasRealData 
-      ? (findings.length > 0 ? "needs_attention" : "looking_good")
-      : "doing_okay",
-    summaryLine: hasRealData
-      ? (findings.length > 0 
-          ? `${findings.length} finding${findings.length === 1 ? '' : 's'} detected`
-          : "All clear - no issues found")
-      : "Waiting for data",
-    nextStep: hasRealData
-      ? (nextSteps.length > 0 ? nextSteps[0]?.action : "No immediate actions needed")
-      : "Run this agent to start collecting data",
-    priorityCount: findings.filter(f => f.severity === 'critical' || f.severity === 'high').length,
+  const missionStatus: MissionStatusState = missionState?.status ? {
+    tier: missionState.status.tier,
+    summaryLine: missionState.status.nextStep,
+    nextStep: missionState.status.nextStep,
+    priorityCount: missionState.status.priorityCount,
+    blockerCount: 0,
+    autoFixableCount: missionState.status.autoFixableCount,
+    status: missionsLoading ? "loading" : "ready",
+  } : {
+    tier: "doing_okay",
+    summaryLine: "Loading missions...",
+    nextStep: "Loading...",
+    priorityCount: 0,
     blockerCount: 0,
     autoFixableCount: 0,
-    status: isLoading ? "loading" : "ready",
+    status: missionsLoading ? "loading" : "ready",
   };
 
-  const missions: MissionItem[] = hasRealData && findings.length > 0
-    ? findings.slice(0, 5).map((finding, i) => ({
-        id: `finding-${i}`,
-        title: finding.label,
-        reason: `Severity: ${finding.severity}`,
-        status: "pending" as const,
-        impact: finding.severity === 'critical' ? 'high' as const : finding.severity === 'high' ? 'medium' as const : 'low' as const,
-        action: {
-          label: "Fix it",
-          onClick: () => console.log("Fix:", finding.label),
-        },
-      }))
-    : [{
-        id: "setup",
-        title: hasRealData ? "All systems operational" : "Configure and run this agent",
-        reason: hasRealData ? "No issues detected" : "Set up integrations to activate monitoring",
-        status: hasRealData ? "done" as const : "pending" as const,
-        impact: "medium" as const,
-        action: hasRealData ? undefined : {
-          label: "Run Now",
-          onClick: () => console.log("Run agent:", agentId),
-        },
-      }];
+  const missions: MissionItem[] = (missionState?.nextActions || []).map((action) => ({
+    id: action.missionId,
+    title: action.title,
+    reason: action.description,
+    status: "pending" as const,
+    impact: action.impact as 'high' | 'medium' | 'low',
+    effort: action.effort,
+    action: {
+      label: "Fix it",
+      onClick: () => executeMission(action.missionId),
+      disabled: false,
+    },
+  }));
+
+  const recentlyCompleted = missionState?.lastCompleted ? {
+    id: missionState.lastCompleted.runId || missionState.lastCompleted.missionId,
+    title: missionState.lastCompleted.summary || 'Mission completed',
+    completedAt: missionState.lastCompleted.completedAt,
+  } : null;
 
   const kpis: KpiDescriptor[] = [
     {
@@ -316,6 +321,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
       agentScoreTooltip={`${crew.nickname}'s current performance score based on site health`}
       missionStatus={missionStatus}
       missions={missions}
+      recentlyCompleted={recentlyCompleted}
       kpis={kpis}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
