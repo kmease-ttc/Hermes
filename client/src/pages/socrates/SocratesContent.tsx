@@ -415,6 +415,21 @@ interface LastExecutionResponse {
   lastExecution?: LastExecution;
 }
 
+interface MissionStateResponse {
+  ok: boolean;
+  lastCompleted: {
+    missionId: string;
+    completedAt: string;
+    cooldownEndsAt: string;
+    runId?: string;
+    summary?: string;
+    writeVerified?: boolean;
+  } | null;
+  completedMissionIds: string[];
+  cooldownHours: number;
+  isInCooldown: boolean;
+}
+
 export function SocratesContent() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
@@ -422,7 +437,6 @@ export function SocratesContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isAskingSocrates, setIsAskingSocrates] = useState(false);
-  const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
 
   const handleAskSocrates = async (question: string) => {
     setIsAskingSocrates(true);
@@ -465,6 +479,16 @@ export function SocratesContent() {
     staleTime: 30000,
   });
 
+  const { data: missionState } = useQuery<MissionStateResponse>({
+    queryKey: ["mission-state", "seo_kbase", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/missions/state?siteId=${siteId}&crewId=seo_kbase`);
+      if (!res.ok) return { ok: false, lastCompleted: null, completedMissionIds: [], cooldownHours: 24, isInCooldown: false };
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
   const runMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/kbase/run", {
@@ -487,7 +511,6 @@ export function SocratesContent() {
         toast.success(result.summary || "Knowledge Base updated", {
           description: result.writtenCount ? `${result.writtenCount} new learnings added` : undefined,
         });
-        setCompletedMissionIds(prev => new Set([...prev, "collect"]));
       } else if (result.writeVerified === false) {
         toast.error("Failed to verify Knowledge Base update", {
           description: "Changes may not have been saved correctly",
@@ -497,9 +520,14 @@ export function SocratesContent() {
       }
       queryClient.invalidateQueries({ queryKey: ["kbase-overview"] });
       queryClient.invalidateQueries({ queryKey: ["crew-last-execution", "seo_kbase", siteId] });
+      queryClient.invalidateQueries({ queryKey: ["mission-state", "seo_kbase", siteId] });
     },
     onError: (error: Error) => {
-      toast.error(`Analysis failed: ${error.message}`);
+      if (error.message.includes('Already completed recently')) {
+        toast.info(error.message);
+      } else {
+        toast.error(`Analysis failed: ${error.message}`);
+      }
     },
   });
 
@@ -560,14 +588,23 @@ export function SocratesContent() {
 
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
-    const lastExec = lastExecutionData?.found ? lastExecutionData.lastExecution : null;
+    const completedIds = missionState?.completedMissionIds || [];
+    const isInCooldown = missionState?.isInCooldown || false;
+    const lastCompleted = missionState?.lastCompleted;
+    
+    const getCooldownMessage = () => {
+      if (!lastCompleted?.cooldownEndsAt) return "";
+      const cooldownEnds = new Date(lastCompleted.cooldownEndsAt);
+      const hoursRemaining = Math.max(0, Math.ceil((cooldownEnds.getTime() - Date.now()) / (1000 * 60 * 60)));
+      return hoursRemaining > 0 ? `Try again in ${hoursRemaining}h` : "";
+    };
     
     if (!data?.configured) {
       items.push({
         id: "configure",
         title: "Configure Knowledge Base integration",
         reason: "Set up SEO_KBASE secret in Settings to enable external worker",
-        status: completedMissionIds.has("configure") ? "done" : "pending",
+        status: completedIds.includes("configure") ? "done" : "pending",
         impact: "high",
         action: {
           label: "Fix it",
@@ -577,23 +614,24 @@ export function SocratesContent() {
       });
     }
     
-    const collectCompleted = completedMissionIds.has("collect") || lastExec?.actionId === "collect";
+    const collectCompleted = completedIds.includes("collect_learnings") || completedIds.includes("collect");
     if (!collectCompleted && (!data?.isRealData || (data?.totalLearnings || 0) < 5)) {
+      const cooldownMsg = getCooldownMessage();
       items.push({
         id: "collect",
         title: "Add new learnings from diagnostics",
-        reason: "Run diagnostics to collect insights from all agents",
+        reason: isInCooldown && cooldownMsg ? cooldownMsg : "Run diagnostics to collect insights from all agents",
         status: data?.isRealData ? "in_progress" : "pending",
         impact: "high",
         action: {
-          label: "Fix it",
+          label: isInCooldown ? "In Cooldown" : "Fix it",
           onClick: () => runMutation.mutate(),
-          disabled: runMutation.isPending,
+          disabled: runMutation.isPending || isInCooldown,
         },
       });
     }
     
-    const synthesizeCompleted = completedMissionIds.has("synthesize") || lastExec?.actionId === "synthesize";
+    const synthesizeCompleted = completedIds.includes("synthesize");
     if (!synthesizeCompleted && data?.recentLearnings && data.recentLearnings.length > 0 && !data?.patternsCount) {
       items.push({
         id: "synthesize",
@@ -602,14 +640,14 @@ export function SocratesContent() {
         status: "pending",
         impact: "medium",
         action: {
-          label: "Fix it",
+          label: isInCooldown ? "In Cooldown" : "Fix it",
           onClick: () => runMutation.mutate(),
-          disabled: runMutation.isPending,
+          disabled: runMutation.isPending || isInCooldown,
         },
       });
     }
     
-    const exportCompleted = completedMissionIds.has("export") || lastExec?.actionId === "export";
+    const exportCompleted = completedIds.includes("export");
     if (!exportCompleted && data?.recommendationsCount && data.recommendationsCount > 0) {
       items.push({
         id: "export",
@@ -625,14 +663,17 @@ export function SocratesContent() {
       });
     }
     
-    if (lastExec && lastExec.status === "completed") {
-      const completedTimeAgo = lastExec.completedAt 
-        ? formatDistanceToNow(new Date(lastExec.completedAt), { addSuffix: true })
+    if (lastCompleted) {
+      const completedTimeAgo = lastCompleted.completedAt 
+        ? formatDistanceToNow(new Date(lastCompleted.completedAt), { addSuffix: true })
         : null;
+      const cooldownMsg = getCooldownMessage();
       items.push({
-        id: `completed-${lastExec.id}`,
-        title: lastExec.summary || "Recently completed action",
-        reason: completedTimeAgo ? `Completed ${completedTimeAgo}` : "Recently completed",
+        id: `completed-${lastCompleted.runId || lastCompleted.missionId}`,
+        title: lastCompleted.summary || "Recently completed action",
+        reason: isInCooldown && cooldownMsg 
+          ? `Completed ${completedTimeAgo}. ${cooldownMsg}` 
+          : completedTimeAgo ? `Completed ${completedTimeAgo}` : "Recently completed",
         status: "done",
         impact: "low",
       });
@@ -649,7 +690,7 @@ export function SocratesContent() {
     }
     
     return items;
-  }, [data, runMutation.isPending, lastExecutionData, completedMissionIds]);
+  }, [data, runMutation.isPending, missionState]);
 
   const kpis: KpiDescriptor[] = [
     {
