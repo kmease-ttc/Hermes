@@ -796,21 +796,21 @@ export function SocratesContent() {
       label: "Total Learnings",
       value: data?.totalLearnings || 0,
       icon: BookOpen,
-      status: (data?.totalLearnings || 0) > 0 ? "good" : "neutral" as const,
+      status: (data?.totalLearnings || 0) > 0 ? "primary" : "neutral" as const,
     },
     {
       id: "active-agents",
       label: "Active Agents",
       value: data?.activeAgents || 0,
       icon: Users,
-      status: (data?.activeAgents || 0) > 0 ? "good" : "neutral" as const,
+      status: (data?.activeAgents || 0) > 0 ? "primary" : "neutral" as const,
     },
     {
       id: "insights",
       label: "Insights",
       value: exampleInsights.length,
       icon: Lightbulb,
-      status: exampleInsights.length > 0 ? "good" : "neutral" as const,
+      status: exampleInsights.length > 0 ? "primary" : "neutral" as const,
     },
   ];
 

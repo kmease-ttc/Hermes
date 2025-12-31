@@ -991,14 +991,14 @@ export default function NatashaContent() {
       label: "Opportunities Found",
       value: summary.totalGaps || 0,
       icon: Target,
-      status: summary.totalGaps > 0 ? "good" as const : "neutral" as const,
+      status: summary.totalGaps > 0 ? "primary" as const : "neutral" as const,
     },
     {
       id: "competitors-tracked",
       label: "Competitors Tracked",
       value: summary.totalCompetitors || 0,
       icon: Users,
-      status: summary.totalCompetitors > 0 ? "good" as const : "neutral" as const,
+      status: summary.totalCompetitors > 0 ? "primary" as const : "neutral" as const,
     },
     {
       id: "keywords-with-gaps",
@@ -1012,14 +1012,14 @@ export default function NatashaContent() {
       label: "Avg Rank",
       value: data.avgRank ? `#${data.avgRank.toFixed(1)}` : "—",
       icon: BarChart3,
-      status: data.avgRank && data.avgRank < 10 ? "good" as const : data.avgRank ? "warning" as const : "neutral" as const,
+      status: data.avgRank && data.avgRank < 10 ? "primary" as const : data.avgRank ? "warning" as const : "neutral" as const,
     },
     {
       id: "share-of-voice",
       label: "Share of Voice",
       value: data.shareOfVoice ? `${data.shareOfVoice}%` : "—",
       icon: TrendingUp,
-      status: data.shareOfVoice && data.shareOfVoice > 20 ? "good" as const : data.shareOfVoice ? "warning" as const : "neutral" as const,
+      status: data.shareOfVoice && data.shareOfVoice > 20 ? "primary" as const : data.shareOfVoice ? "warning" as const : "neutral" as const,
     },
   ], [data, summary]);
 

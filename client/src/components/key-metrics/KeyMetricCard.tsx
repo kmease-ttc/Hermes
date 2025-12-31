@@ -5,12 +5,19 @@ interface KeyMetricCardProps {
   label: string;
   value: number | string;
   icon?: LucideIcon;
-  status?: "good" | "warning" | "neutral" | "inactive";
+  status?: "primary" | "good" | "warning" | "neutral" | "inactive";
   accentColor?: string;
   className?: string;
 }
 
 const statusStyles = {
+  primary: {
+    border: "border-[var(--color-purple)]/30",
+    glow: "shadow-[0_0_20px_-5px_rgba(147,51,234,0.3)]",
+    accent: "bg-purple-accent",
+    text: "text-purple-accent",
+    iconBg: "bg-[var(--color-purple)]/10",
+  },
   good: {
     border: "border-semantic-success/30",
     glow: "shadow-[0_0_20px_-5px_rgba(34,197,94,0.3)]",
@@ -45,7 +52,7 @@ export function KeyMetricCard({
   label, 
   value, 
   icon: Icon, 
-  status = "good",
+  status = "primary",
   className 
 }: KeyMetricCardProps) {
   const isZero = value === 0 || value === "0";
