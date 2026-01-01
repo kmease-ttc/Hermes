@@ -28,7 +28,7 @@ import DevLineage from "@/pages/DevLineage";
 import Speedster from "@/pages/Speedster";
 import Socrates from "@/pages/Socrates";
 import Achievements from "@/pages/Achievements";
-import { ROUTES, buildRoute } from "@shared/routes";
+import { ROUTES, buildRoute, resolveAgentSlug } from "@shared/routes";
 import { useRoute } from "wouter";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
@@ -39,12 +39,10 @@ function CrewRedirect() {
   
   useEffect(() => {
     if (params?.agentId) {
-      const agentId = params.agentId;
-      if (agentId === "speedster") navigate(ROUTES.SPEEDSTER, { replace: true });
-      else if (agentId === "socrates") navigate(ROUTES.SOCRATES, { replace: true });
-      else if (agentId === "lookout") navigate(ROUTES.KEYWORDS, { replace: true });
-      else if (agentId === "authority") navigate(ROUTES.AUTHORITY, { replace: true });
-      else navigate(buildRoute.agent(agentId), { replace: true });
+      const slug = params.agentId;
+      // Resolve slug to service ID and redirect to canonical agent route
+      const serviceId = resolveAgentSlug(slug);
+      navigate(buildRoute.agent(serviceId), { replace: true });
     }
   }, [params, navigate]);
   
@@ -85,49 +83,9 @@ function Router() {
       <Route path={ROUTES.DEV_LINEAGE} component={DevLineage} />
       
       {/* ============================================ */}
-      {/* LEGACY REDIRECTS - Old routes to canonical */}
+      {/* LEGACY REDIRECTS - Old /crew/* routes to canonical /agents/* */}
+      {/* Uses CrewRedirect to resolve slugs to service IDs */}
       {/* ============================================ */}
-      <Route path="/crew/speedster">
-        <Redirect to={ROUTES.SPEEDSTER} />
-      </Route>
-      <Route path="/crew/socrates">
-        <Redirect to={ROUTES.SOCRATES} />
-      </Route>
-      <Route path="/crew/lookout">
-        <Redirect to={ROUTES.KEYWORDS} />
-      </Route>
-      <Route path="/crew/authority">
-        <Redirect to={ROUTES.AUTHORITY} />
-      </Route>
-      <Route path="/crew/natasha">
-        <Redirect to={buildRoute.agent("natasha")} />
-      </Route>
-      <Route path="/crew/hemingway">
-        <Redirect to={buildRoute.agent("hemingway")} />
-      </Route>
-      <Route path="/crew/marcus">
-        <Redirect to={buildRoute.agent("marcus")} />
-      </Route>
-      <Route path="/crew/pulse">
-        <Redirect to={buildRoute.agent("pulse")} />
-      </Route>
-      <Route path="/crew/scotty">
-        <Redirect to={buildRoute.agent("scotty")} />
-      </Route>
-      <Route path="/crew/popular">
-        <Redirect to={buildRoute.agent("popular")} />
-      </Route>
-      <Route path="/crew/link_builder">
-        <Redirect to={buildRoute.agent("link_builder")} />
-      </Route>
-      <Route path="/crew/authority_builder">
-        <Redirect to={buildRoute.agent("authority_builder")} />
-      </Route>
-      <Route path="/crew/google_data_connector">
-        <Redirect to={buildRoute.agent("google_data_connector")} />
-      </Route>
-      
-      {/* Catch-all for any other /crew/:agentId routes */}
       <Route path="/crew/:agentId" component={CrewRedirect} />
       
       {/* Home redirect */}

@@ -3,7 +3,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { isUserFacingAgent } from "@/config/agents";
-import { ROUTES } from "@shared/routes";
+import { ROUTES, resolveAgentSlug, buildRoute } from "@shared/routes";
+import { useEffect } from "react";
 
 import AuthorityContent from "./authority/AuthorityContent";
 import SERPContent from "./serp/SERPContent";
@@ -18,7 +19,15 @@ export default function AgentDetail() {
   const [match, params] = useRoute("/agents/:agentId");
   const [, navigate] = useLocation();
   
-  const agentId = params?.agentId || "";
+  const rawSlug = params?.agentId || "";
+  const agentId = resolveAgentSlug(rawSlug);
+  
+  // If the URL slug differs from the resolved service ID, redirect to canonical URL
+  useEffect(() => {
+    if (match && rawSlug !== agentId && isUserFacingAgent(agentId)) {
+      navigate(buildRoute.agent(agentId), { replace: true });
+    }
+  }, [match, rawSlug, agentId, navigate]);
 
   if (!match || !isUserFacingAgent(agentId)) {
     return (

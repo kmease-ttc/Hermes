@@ -228,25 +228,54 @@ export function getPostActionRoute(
 
 // ============================================
 // KNOWN AGENT IDS (for validation)
+// Service IDs as defined in client/src/config/agents.ts
 // ============================================
 
 export const KNOWN_AGENT_IDS = [
-  "pulse",
-  "popular",
-  "scotty",
-  "lookout",
-  "speedster",
-  "natasha",
-  "hemingway",
-  "marcus",
-  "authority_builder",
-  "socrates",
-  "link_builder",
-  "google_data_connector",
+  "competitive_snapshot",   // Natasha - Competitive Intelligence
+  "serp_intel",             // Lookout - SERP Tracking
+  "google_data_connector",  // Popular - Analytics & Signals
+  "crawl_render",           // Scotty - Technical SEO
+  "core_web_vitals",        // Speedster - Performance Monitoring
+  "content_decay",          // Sentinel - Content Decay
+  "content_generator",      // Hemingway - Content Strategy
+  "backlink_authority",     // Beacon - Domain Authority
+  "seo_kbase",              // Socrates - Knowledge Base
 ] as const;
 
 export type AgentId = typeof KNOWN_AGENT_IDS[number];
 
 export function isKnownAgent(agentId: string): agentId is AgentId {
   return KNOWN_AGENT_IDS.includes(agentId as AgentId);
+}
+
+// ============================================
+// SLUG TO SERVICE_ID MAPPING
+// Maps friendly URL slugs to service IDs
+// ============================================
+
+export const SLUG_TO_SERVICE_ID: Record<string, string> = {
+  "natasha": "competitive_snapshot",
+  "lookout": "serp_intel",
+  "popular": "google_data_connector",
+  "scotty": "crawl_render",
+  "speedster": "core_web_vitals",
+  "sentinel": "content_decay",
+  "hemingway": "content_generator",
+  "beacon": "backlink_authority",
+  "socrates": "seo_kbase",
+  // Direct service_id mappings (identity)
+  "competitive_snapshot": "competitive_snapshot",
+  "serp_intel": "serp_intel",
+  "google_data_connector": "google_data_connector",
+  "crawl_render": "crawl_render",
+  "core_web_vitals": "core_web_vitals",
+  "content_decay": "content_decay",
+  "content_generator": "content_generator",
+  "backlink_authority": "backlink_authority",
+  "seo_kbase": "seo_kbase",
+};
+
+export function resolveAgentSlug(slug: string): string {
+  return SLUG_TO_SERVICE_ID[slug] || slug;
 }
