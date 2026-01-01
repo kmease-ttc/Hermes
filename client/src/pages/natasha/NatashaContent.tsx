@@ -1078,11 +1078,13 @@ export default function NatashaContent() {
   const headerActions: HeaderAction[] = [
     {
       id: "run-analysis",
+      label: "Run Analysis",
       icon: <RefreshCw className={cn("w-4 h-4", isRunning && "animate-spin")} />,
-      tooltip: "Run Competitive Analysis",
+      tooltip: "Run competitive analysis to populate Average Rank and Share of Voice metrics",
       onClick: handleRefresh,
       disabled: isRunning,
       loading: isRunning,
+      variant: "primary" as const,
     },
   ];
 
