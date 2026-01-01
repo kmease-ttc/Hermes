@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,10 @@ import {
   Loader2,
   Settings,
   ListChecks,
-  Search
+  Search,
+  Upload,
+  User,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -49,6 +52,9 @@ interface ContentMetrics {
   contentAtRisk: number | null;
   totalBlogs: number | null;
   totalPages: number | null;
+  thinContent?: number | null;
+  staleContent?: number | null;
+  missingAuthor?: number | null;
   trends?: {
     qualityTrend?: number;
     readabilityTrend?: number;
@@ -57,27 +63,54 @@ interface ContentMetrics {
   };
 }
 
-interface ContentMetricsResponse {
+interface HemingwayDashboardResponse {
   ok: boolean;
-  metrics: ContentMetrics;
-  isRealData: boolean;
-  lastRunAt: string | null;
-  findings?: Array<{
-    id: string;
-    label: string;
-    value: string;
-    severity: 'critical' | 'high' | 'medium' | 'low';
-    category: string;
-  }>;
-  contentAudit?: Array<{
-    id: string;
-    url: string;
-    title: string;
-    qualityScore: number;
-    readability: number;
-    status: 'healthy' | 'needs-update' | 'at-risk';
-    lastUpdated: string;
-  }>;
+  configured?: boolean;
+  error?: string;
+  contentQualityScore?: number | null;
+  readabilityGrade?: number | null;
+  eeatCoverage?: number | null;
+  contentAtRisk?: number | null;
+  totalBlogs?: number | null;
+  totalPages?: number | null;
+  thinContent?: number | null;
+  staleContent?: number | null;
+  missingAuthor?: number | null;
+  lastRunAt?: string | null;
+}
+
+interface HemingwayFinding {
+  id: string;
+  label: string;
+  value: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  category: string;
+}
+
+interface HemingwayFindingsResponse {
+  ok: boolean;
+  configured?: boolean;
+  error?: string;
+  findings?: HemingwayFinding[];
+}
+
+interface ContentItem {
+  id: string;
+  url: string;
+  title: string;
+  qualityScore: number;
+  readability: number;
+  status: 'healthy' | 'needs-update' | 'at-risk';
+  lastUpdated: string;
+  hasAuthor?: boolean;
+  wordCount?: number;
+}
+
+interface HemingwayContentResponse {
+  ok: boolean;
+  configured?: boolean;
+  error?: string;
+  content?: ContentItem[];
 }
 
 interface MetricCardProps {
@@ -106,9 +139,6 @@ function MetricCard({
   const displayValue = isLoading ? null : value;
   const hasValue = displayValue !== null && displayValue !== undefined;
   const showWarning = isWarning && hasValue && displayValue > 0;
-  
-  const borderColor = showWarning ? 'border-amber-500/50' : `border-[${accentColor}]/30`;
-  const glowColor = showWarning ? 'shadow-amber-500/10' : '';
   
   return (
     <Card 
@@ -218,10 +248,26 @@ function EmptyStateCard() {
   );
 }
 
+function NotConfiguredCard() {
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center py-12 px-6 text-center bg-amber-500/5 rounded-xl border border-dashed border-amber-500/30">
+      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+        <Settings className="w-8 h-8 text-amber-600" />
+      </div>
+      <h3 className="text-lg font-semibold text-foreground mb-2">Hemingway Worker Not Configured</h3>
+      <p className="text-sm text-muted-foreground max-w-md">
+        The Hemingway content quality worker needs to be configured. Please add the worker configuration 
+        in the Integrations page to enable content analysis features.
+      </p>
+    </div>
+  );
+}
+
 export default function HemingwayContent() {
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || 'default';
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const crewId = SERVICE_TO_CREW['content_generator'] || 'hemingway';
   
@@ -230,51 +276,106 @@ export default function HemingwayContent() {
     crewId,
   });
 
-  const { data: metricsData, isLoading, refetch } = useQuery<ContentMetricsResponse>({
-    queryKey: ['hemingway-metrics', siteId],
+  // Query: Dashboard metrics from Hemingway worker
+  const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useQuery<HemingwayDashboardResponse>({
+    queryKey: ['hemingway-dashboard', siteId],
     queryFn: async () => {
-      const res = await fetch(`/api/agents/content_generator/metrics?site_id=${siteId}`);
+      const res = await fetch(`/api/hemingway/dashboard`);
       if (!res.ok) {
-        return {
-          ok: false,
-          metrics: {
-            contentQualityScore: null,
-            readabilityGrade: null,
-            eeatCoverage: null,
-            contentAtRisk: null,
-            totalBlogs: null,
-            totalPages: null,
-          },
-          isRealData: false,
-          lastRunAt: null,
-        };
+        return { ok: false, error: 'Failed to fetch dashboard' };
       }
       return res.json();
     },
     staleTime: 60000,
   });
 
-  const metrics = metricsData?.metrics || {
-    contentQualityScore: null,
-    readabilityGrade: null,
-    eeatCoverage: null,
-    contentAtRisk: null,
-    totalBlogs: null,
-    totalPages: null,
+  // Query: Findings from Hemingway worker
+  const { data: findingsData, isLoading: findingsLoading, refetch: refetchFindings } = useQuery<HemingwayFindingsResponse>({
+    queryKey: ['hemingway-findings', siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/hemingway/findings`);
+      if (!res.ok) {
+        return { ok: false, findings: [] };
+      }
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  // Query: Content inventory from Hemingway worker
+  const { data: contentData, isLoading: contentLoading, refetch: refetchContent } = useQuery<HemingwayContentResponse>({
+    queryKey: ['hemingway-content', siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/hemingway/content`);
+      if (!res.ok) {
+        return { ok: false, content: [] };
+      }
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  // Mutation: Import content
+  const importContentMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/hemingway/content/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId })
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.ok) {
+        toast.success('Content import started');
+        refetchContent();
+        refetchDashboard();
+      } else {
+        toast.error(data.error || 'Import failed');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Import failed');
+    }
+  });
+
+  const isWorkerConfigured = dashboardData?.configured !== false;
+  const isLoading = dashboardLoading || findingsLoading || contentLoading;
+
+  const metrics: ContentMetrics = {
+    contentQualityScore: dashboardData?.contentQualityScore ?? null,
+    readabilityGrade: dashboardData?.readabilityGrade ?? null,
+    eeatCoverage: dashboardData?.eeatCoverage ?? null,
+    contentAtRisk: dashboardData?.contentAtRisk ?? null,
+    totalBlogs: dashboardData?.totalBlogs ?? null,
+    totalPages: dashboardData?.totalPages ?? null,
+    thinContent: dashboardData?.thinContent ?? null,
+    staleContent: dashboardData?.staleContent ?? null,
+    missingAuthor: dashboardData?.missingAuthor ?? null,
   };
-  const hasRealData = metricsData?.isRealData ?? false;
-  const findings = metricsData?.findings || [];
-  const contentAudit = metricsData?.contentAudit || [];
+
+  const hasRealData = dashboardData?.ok && isWorkerConfigured;
+  const findings = findingsData?.findings || [];
+  const contentAudit = contentData?.content || [];
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([refetchDashboard(), refetchFindings(), refetchContent()]);
       toast.success('Content metrics refreshed');
     } catch (error) {
       toast.error('Failed to refresh metrics');
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleImportContent = async () => {
+    setIsImporting(true);
+    try {
+      await importContentMutation.mutateAsync();
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -305,10 +406,14 @@ export default function HemingwayContent() {
     let summaryLine = "Content health is strong";
     let nextStep = "Continue monitoring content quality";
 
-    if (!hasRealData) {
+    if (!isWorkerConfigured) {
+      tier = "needs_attention";
+      summaryLine = "Worker not configured";
+      nextStep = "Configure Hemingway worker in Integrations";
+    } else if (!hasRealData) {
       tier = "needs_attention";
       summaryLine = "No content data available";
-      nextStep = "Run a crawl to detect content";
+      nextStep = "Import content to start analysis";
     } else if (atRiskCount > 5) {
       tier = "needs_attention";
       summaryLine = `${atRiskCount} pieces of content at risk`;
@@ -333,7 +438,7 @@ export default function HemingwayContent() {
       status: isLoading || missionsLoading ? "loading" as const : "ready" as const,
       performanceScore: metrics.contentQualityScore ?? null,
     };
-  }, [metrics, hasRealData, isLoading, missionsLoading, missionState]);
+  }, [metrics, hasRealData, isWorkerConfigured, isLoading, missionsLoading, missionState]);
 
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
@@ -366,6 +471,24 @@ export default function HemingwayContent() {
           impact: "high",
         });
       }
+      if (metrics.thinContent && metrics.thinContent > 0) {
+        items.push({
+          id: "fix-thin-content",
+          title: `Expand ${metrics.thinContent} thin content pages`,
+          reason: "Pages with insufficient word count",
+          status: "pending",
+          impact: "medium",
+        });
+      }
+      if (metrics.missingAuthor && metrics.missingAuthor > 0) {
+        items.push({
+          id: "add-authors",
+          title: `Add authors to ${metrics.missingAuthor} pages`,
+          reason: "Improves E-E-A-T signals",
+          status: "pending",
+          impact: "medium",
+        });
+      }
       if (metrics.contentQualityScore !== null && metrics.contentQualityScore < 80) {
         items.push({
           id: "improve-quality",
@@ -392,42 +515,42 @@ export default function HemingwayContent() {
       label: "Quality Score",
       value: metrics.contentQualityScore,
       tooltip: "Overall content quality score based on readability, E-E-A-T, and optimization",
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
     {
       id: "readability",
       label: "Readability",
       value: metrics.readabilityGrade,
       tooltip: "Average readability grade level",
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
     {
       id: "eeat",
       label: "E-E-A-T Coverage",
       value: metrics.eeatCoverage !== null ? `${metrics.eeatCoverage}%` : null,
       tooltip: "Experience, Expertise, Authoritativeness, Trust coverage",
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
     {
       id: "at-risk",
       label: "At Risk",
       value: metrics.contentAtRisk,
       tooltip: "Content pieces showing decay signals",
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
     {
       id: "blogs",
       label: "Total Blogs",
       value: metrics.totalBlogs,
       icon: <FileText className="w-4 h-4" />,
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
     {
       id: "pages",
       label: "Total Pages",
       value: metrics.totalPages,
       icon: <File className="w-4 h-4" />,
-      status: isLoading ? "loading" : "ready",
+      status: dashboardLoading ? "loading" : "ready",
     },
   ];
 
@@ -444,10 +567,15 @@ export default function HemingwayContent() {
     label: "Findings",
     icon: <AlertTriangle className="w-4 h-4" />,
     badge: findings.length || undefined,
-    state: isLoading ? "loading" : findings.length > 0 ? "ready" : "empty",
+    state: findingsLoading ? "loading" : findings.length > 0 ? "ready" : "empty",
     content: (
       <div className="space-y-3 p-4">
-        {findings.length > 0 ? (
+        {!isWorkerConfigured ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Settings className="w-12 h-12 text-amber-500/30 mb-3" />
+            <p className="text-muted-foreground">Worker not configured</p>
+          </div>
+        ) : findings.length > 0 ? (
           findings.map((finding) => (
             <div 
               key={finding.id} 
@@ -485,10 +613,15 @@ export default function HemingwayContent() {
     label: "Content Audit",
     icon: <BookOpen className="w-4 h-4" />,
     badge: contentAudit.length || undefined,
-    state: isLoading ? "loading" : contentAudit.length > 0 ? "ready" : "empty",
+    state: contentLoading ? "loading" : contentAudit.length > 0 ? "ready" : "empty",
     content: (
       <div className="space-y-3 p-4">
-        {contentAudit.length > 0 ? (
+        {!isWorkerConfigured ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Settings className="w-12 h-12 text-amber-500/30 mb-3" />
+            <p className="text-muted-foreground">Worker not configured</p>
+          </div>
+        ) : contentAudit.length > 0 ? (
           contentAudit.map((item) => (
             <div 
               key={item.id} 
@@ -516,6 +649,13 @@ export default function HemingwayContent() {
               <div className="flex gap-4 text-xs text-muted-foreground">
                 <span>Quality: {item.qualityScore}</span>
                 <span>Readability: {item.readability}</span>
+                {item.wordCount && <span>Words: {item.wordCount}</span>}
+                {item.hasAuthor !== undefined && (
+                  <span className="flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {item.hasAuthor ? 'Has author' : 'No author'}
+                  </span>
+                )}
               </div>
             </div>
           ))
@@ -524,7 +664,7 @@ export default function HemingwayContent() {
             <BookOpen className="w-12 h-12 text-muted-foreground/30 mb-3" />
             <p className="text-muted-foreground">No content audited yet</p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Run a crawl to analyze your content
+              Import content to start analysis
             </p>
           </div>
         )}
@@ -540,11 +680,31 @@ export default function HemingwayContent() {
     content: (
       <div className="space-y-4 p-4">
         <div className="p-4 bg-muted/50 rounded-lg">
+          <h4 className="text-sm font-medium mb-2">Import Content</h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Import pages from your sitemap or crawl results into Hemingway for analysis.
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleImportContent}
+            disabled={isImporting || !isWorkerConfigured}
+            data-testid="button-import-content"
+          >
+            {isImporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 mr-2" />
+            )}
+            Import Content
+          </Button>
+        </div>
+        <div className="p-4 bg-muted/50 rounded-lg">
           <h4 className="text-sm font-medium mb-2">Content Analysis Settings</h4>
           <p className="text-xs text-muted-foreground mb-3">
             Configure how Hemingway analyzes and scores your content.
           </p>
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled={!isWorkerConfigured}>
             <Settings className="w-4 h-4 mr-2" />
             Configure
           </Button>
@@ -558,7 +718,8 @@ export default function HemingwayContent() {
             variant="outline" 
             size="sm"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isRefreshing || !isWorkerConfigured}
+            data-testid="button-run-audit"
           >
             {isRefreshing ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -582,7 +743,9 @@ export default function HemingwayContent() {
 
   const customMetrics = (
     <div className="space-y-4">
-      {!hasAnyMetrics && !isLoading ? (
+      {!isWorkerConfigured ? (
+        <NotConfiguredCard />
+      ) : !hasAnyMetrics && !dashboardLoading ? (
         <EmptyStateCard />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -593,8 +756,8 @@ export default function HemingwayContent() {
             icon={Shield}
             accentColor="#F59E0B"
             tooltip="Overall content quality based on readability, structure, and optimization"
-            trend={metricsData?.metrics?.trends?.qualityTrend}
-            isLoading={isLoading}
+            trend={metrics.trends?.qualityTrend}
+            isLoading={dashboardLoading}
           />
           <MetricCard
             label="Readability Grade"
@@ -602,8 +765,8 @@ export default function HemingwayContent() {
             icon={BookOpen}
             accentColor="#3B82F6"
             tooltip="Average grade level required to understand your content (lower is more accessible)"
-            trend={metricsData?.metrics?.trends?.readabilityTrend}
-            isLoading={isLoading}
+            trend={metrics.trends?.readabilityTrend}
+            isLoading={dashboardLoading}
           />
           <MetricCard
             label="E-E-A-T Coverage"
@@ -612,8 +775,8 @@ export default function HemingwayContent() {
             icon={CheckCircle}
             accentColor="#10B981"
             tooltip="Experience, Expertise, Authoritativeness, and Trust signals in your content"
-            trend={metricsData?.metrics?.trends?.eeatTrend}
-            isLoading={isLoading}
+            trend={metrics.trends?.eeatTrend}
+            isLoading={dashboardLoading}
           />
           <MetricCard
             label="Content at Risk"
@@ -621,9 +784,36 @@ export default function HemingwayContent() {
             icon={AlertTriangle}
             accentColor="#EF4444"
             tooltip="Content pieces showing decay signals or quality issues"
-            trend={metricsData?.metrics?.trends?.riskTrend}
+            trend={metrics.trends?.riskTrend}
             isWarning={true}
-            isLoading={isLoading}
+            isLoading={dashboardLoading}
+          />
+          <MetricCard
+            label="Thin Content"
+            value={metrics.thinContent ?? null}
+            icon={FileText}
+            accentColor="#F97316"
+            tooltip="Pages with insufficient word count that may need expansion"
+            isWarning={true}
+            isLoading={dashboardLoading}
+          />
+          <MetricCard
+            label="Stale Content"
+            value={metrics.staleContent ?? null}
+            icon={Clock}
+            accentColor="#8B5CF6"
+            tooltip="Content that hasn't been updated recently"
+            isWarning={true}
+            isLoading={dashboardLoading}
+          />
+          <MetricCard
+            label="Missing Author"
+            value={metrics.missingAuthor ?? null}
+            icon={User}
+            accentColor="#EC4899"
+            tooltip="Pages missing author attribution (affects E-E-A-T)"
+            isWarning={true}
+            isLoading={dashboardLoading}
           />
           <MetricCard
             label="Total Blogs"
@@ -631,7 +821,7 @@ export default function HemingwayContent() {
             icon={FileText}
             accentColor="#10B981"
             tooltip="Total blog posts indexed on your site"
-            isLoading={isLoading}
+            isLoading={dashboardLoading}
           />
           <MetricCard
             label="Total Pages"
@@ -639,7 +829,7 @@ export default function HemingwayContent() {
             icon={File}
             accentColor="#10B981"
             tooltip="Total pages indexed on your site"
-            isLoading={isLoading}
+            isLoading={dashboardLoading}
           />
         </div>
       )}

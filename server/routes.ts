@@ -1587,6 +1587,137 @@ Format your response as JSON with these keys:
     }
   });
 
+  // =============================================================================
+  // Hemingway Content Quality Provider Proxy Routes
+  // Proxy to external Hemingway worker for content analysis
+  // =============================================================================
+
+  app.get("/api/hemingway/dashboard", async (req, res) => {
+    try {
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/dashboard`, {
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway dashboard proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.get("/api/hemingway/findings", async (req, res) => {
+    try {
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/findings`, {
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway findings proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.get("/api/hemingway/content", async (req, res) => {
+    try {
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/content`, {
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway content proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/hemingway/content/import", async (req, res) => {
+    try {
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/content/import`, {
+        method: "POST",
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway content import proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.get("/api/hemingway/content/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/content/${id}`, {
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway content detail proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/hemingway/content/:id/analyze", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const config = await resolveWorkerConfig("content_generator");
+      if (!config.valid || !config.base_url) {
+        return res.json({ ok: false, error: "Hemingway worker not configured", configured: false });
+      }
+      const response = await fetch(`${config.base_url}/content/${id}/analyze`, {
+        method: "POST",
+        headers: { 
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Hemingway content analyze proxy failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // Agent Status API - Quick health check for agent
   app.get("/api/agents/:agentId/status", async (req, res) => {
     const { agentId } = req.params;
