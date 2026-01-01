@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect } from "react";
-import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy, Zap, Plus, ChevronUp, ChevronDown, Star, Brain, DollarSign, Info, ShoppingCart, HelpCircle, Eye } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, RefreshCw, Sparkles, ArrowUp, ArrowDown, Target, AlertTriangle, Crown, Trophy, Zap, Plus, ChevronUp, ChevronDown, Star, Brain, DollarSign, Info, ShoppingCart, HelpCircle, Eye, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -287,6 +287,31 @@ export default function SERPContent() {
   }, [fixStatus, executeNextAction.isPending]);
 
   const isFixingEverything = fixEverything.isPending || (fixStatus?.queued || 0) > 0 || (fixStatus?.inProgress || 0) > 0;
+
+  const optimizeKeyword = useMutation({
+    mutationFn: async (keywordId: number) => {
+      const res = await fetch(`/api/serp/keyword/${keywordId}/optimize`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to optimize keyword');
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.action ? "Action Queued" : "No Action",
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to optimize keyword",
+        variant: "destructive",
+      });
+    },
+  });
   
   // Add keywords mutation
   const addKeywords = useMutation({
@@ -864,6 +889,7 @@ export default function SERPContent() {
                     <th className="text-center py-2 font-medium">Trend</th>
                     <th className="text-center py-2 font-medium">7d Avg</th>
                     <th className="text-left py-2 font-medium">Ranking URL</th>
+                    <th className="text-center py-2 font-medium w-16">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -909,6 +935,25 @@ export default function SERPContent() {
                       <td className="py-2 text-muted-foreground truncate max-w-[250px]">
                         {kw.currentUrl || kw.targetUrl || '—'}
                       </td>
+                      <td className="py-2 text-center">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => optimizeKeyword.mutate(kw.id)}
+                              disabled={optimizeKeyword.isPending}
+                              data-testid={`button-optimize-${kw.id}`}
+                            >
+                              <Wrench className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Optimize this keyword</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -925,7 +970,7 @@ export default function SERPContent() {
       ),
       badge: sortedKeywords?.length || undefined,
     },
-  ], [sortedKeywords]);
+  ], [sortedKeywords, optimizeKeyword]);
 
   // Loading state - after all hooks
   if (isLoading) {

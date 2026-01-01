@@ -5767,6 +5767,46 @@ Keep responses concise and actionable.`;
     }
   });
 
+  // Optimize a single keyword - queue its pending action for execution
+  app.post("/api/serp/keyword/:id/optimize", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const keywordId = parseInt(id, 10);
+      
+      const { keywordActions } = await import("@shared/schema");
+      const { and, eq } = await import("drizzle-orm");
+      const [existingAction] = await db
+        .select()
+        .from(keywordActions)
+        .where(and(
+          eq(keywordActions.keywordId, keywordId),
+          eq(keywordActions.status, "pending")
+        ))
+        .limit(1);
+      
+      if (existingAction) {
+        await db.update(keywordActions)
+          .set({ status: "queued" })
+          .where(eq(keywordActions.id, existingAction.id));
+        
+        return res.json({
+          ok: true,
+          action: { ...existingAction, status: "queued" },
+          message: `Queued action: ${existingAction.title}`,
+        });
+      }
+      
+      res.json({
+        ok: true,
+        action: null,
+        message: "No pending optimization found for this keyword",
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to optimize keyword", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // Enhanced keyword rankings with position history (7/30/90 days)
   app.get("/api/serp/rankings/full", async (req, res) => {
     try {
