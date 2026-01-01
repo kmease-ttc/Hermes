@@ -4675,6 +4675,58 @@ Return JSON:
         }
       }
       
+      // Calculate Share of Voice and Average Rank from local keyword rankings
+      const allRankings = await storage.getAllRankingsWithHistory(7);
+      const latestByKeyword = new Map<number, { position: number | null; keywordId: number; date: string }>();
+
+      for (const r of allRankings) {
+        const existing = latestByKeyword.get(r.keywordId);
+        if (!existing || r.date > existing.date) {
+          latestByKeyword.set(r.keywordId, { position: r.position, keywordId: r.keywordId, date: r.date });
+        }
+      }
+
+      const totalKeywords = serpKeywords.length;
+      const rankingPositions: number[] = [];
+      let keywordsRanking = 0;
+      let keywordsInTop10 = 0;
+      let keywordsInTop3 = 0;
+
+      for (const kw of serpKeywords) {
+        const ranking = latestByKeyword.get(kw.id);
+        if (ranking?.position && ranking.position <= 100) {
+          keywordsRanking++;
+          rankingPositions.push(ranking.position);
+          if (ranking.position <= 10) keywordsInTop10++;
+          if (ranking.position <= 3) keywordsInTop3++;
+        }
+      }
+
+      const avgRank = rankingPositions.length > 0 
+        ? Math.round((rankingPositions.reduce((a, b) => a + b, 0) / rankingPositions.length) * 10) / 10
+        : 0;
+
+      let sovScore = 0;
+      const maxPossibleScore = totalKeywords * 100;
+
+      for (const pos of rankingPositions) {
+        if (pos <= 3) sovScore += 100;
+        else if (pos <= 10) sovScore += 70;
+        else if (pos <= 20) sovScore += 30;
+        else sovScore += 10;
+      }
+
+      const shareOfVoice = maxPossibleScore > 0 
+        ? Math.round((sovScore / maxPossibleScore) * 100)
+        : 0;
+
+      logger.info("Competitive", "Calculated local SOV metrics", { 
+        totalKeywords, 
+        keywordsRanking, 
+        avgRank, 
+        shareOfVoice 
+      });
+
       // Return mock competitive intelligence data with metadata
       const overview = {
         configured: workerConfigured,
@@ -4683,8 +4735,8 @@ Return JSON:
         lastRunAt: new Date(Date.now() - 86400000).toISOString(),
         competitivePosition: "behind" as const,
         positionExplanation: "You trail top competitors in 12 high-value keywords and 3 content clusters.",
-        shareOfVoice: 18,
-        avgRank: 14.2,
+        shareOfVoice: shareOfVoice || 18,
+        avgRank: avgRank || 14.2,
         agentScore: null,
         competitors: [
           { id: "1", name: "Competitor A", domain: "competitora.com", type: "direct", visibility: 78, visibilityChange: 5, marketOverlap: 72, keywords: 234, topKeywords: ["mental health", "therapy", "counseling"], lastUpdated: new Date().toISOString(), deltaScore: -15 },
@@ -4724,9 +4776,9 @@ Return JSON:
           totalGaps: 23,
           highPriorityGaps: 8,
           avgVisibilityGap: 15,
-          keywordsTracked: 48,
-          keywordsWinning: 12,
-          keywordsLosing: 18,
+          keywordsTracked: totalKeywords || 48,
+          keywordsWinning: keywordsInTop10 || 12,
+          keywordsLosing: Math.max(0, totalKeywords - keywordsRanking) || 18,
           referringDomains: 45,
           competitorAvgDomains: 78,
         },
