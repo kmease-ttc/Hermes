@@ -15,6 +15,7 @@ import {
   Search
 } from "lucide-react";
 import { Link } from "wouter";
+import { ROUTES } from "@shared/routes";
 import { formatDistanceToNow } from "date-fns";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { cn } from "@/lib/utils";
@@ -114,7 +115,7 @@ export function SocratesMemoryCard() {
             <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
               {status?.message || "Set up SEO_KBASE secret to enable Socrates learning."}
             </p>
-            <Link href="/integrations" data-testid="link-configure-kb">
+            <Link href={ROUTES.INTEGRATIONS} data-testid="link-configure-kb">
               <Button variant="outline" size="sm" className="mt-4 rounded-xl">
                 Configure Integrations
                 <ArrowRight className="w-3 h-3 ml-1" />
@@ -195,7 +196,7 @@ export function SocratesMemoryCard() {
             )}
 
             <div className="flex justify-between items-center pt-2 border-t">
-              <Link href="/crew/socrates" data-testid="link-view-socrates">
+              <Link href={ROUTES.SOCRATES} data-testid="link-view-socrates">
                 <Button variant="ghost" size="sm" className="gap-1">
                   View Socrates
                   <ArrowRight className="w-3 h-3" />

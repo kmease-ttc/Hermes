@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { buildRoute } from "@shared/routes";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { AgentCard } from "@/components/crew/AgentCard";
@@ -88,7 +89,7 @@ export default function CrewPage() {
                 lastCheckIn={agent.lastCheckIn}
                 findings={agent.findings}
                 nextSteps={agent.nextSteps}
-                onClick={() => navigate(`/agents/${agent.serviceId}`)}
+                onClick={() => navigate(buildRoute.agent(agent.serviceId))}
               />
             </div>
           ))}

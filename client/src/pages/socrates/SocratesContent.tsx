@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { getCrewMember } from "@/config/agents";
 import { Link } from "wouter";
+import { buildRoute } from "@shared/routes";
 import {
   CrewDashboardShell,
   type CrewIdentity,
@@ -276,7 +277,7 @@ function AgentActivityCard({ activity }: { activity: AgentActivity }) {
     : null;
 
   return (
-    <Link href={`/agents/${activity.agentId}`} data-testid={`link-agent-${activity.agentId}`}>
+    <Link href={buildRoute.agent(activity.agentId)} data-testid={`link-agent-${activity.agentId}`}>
       <div 
         className="flex items-center gap-3 p-3 rounded-lg bg-card/40 border border-border/50 hover:bg-card/60 transition-colors cursor-pointer"
         data-testid={`agent-activity-${activity.agentId}`}

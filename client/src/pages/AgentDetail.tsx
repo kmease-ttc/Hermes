@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { isUserFacingAgent } from "@/config/agents";
+import { ROUTES } from "@shared/routes";
 
 import AuthorityContent from "./authority/AuthorityContent";
 import SERPContent from "./serp/SERPContent";
@@ -25,7 +26,7 @@ export default function AgentDetail() {
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <h1 className="text-2xl font-bold">Agent Not Found</h1>
           <p className="text-muted-foreground">The agent you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate("/crew")} data-testid="button-back-to-agents">
+          <Button onClick={() => navigate(ROUTES.CREW)} data-testid="button-back-to-agents">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Agents
           </Button>
@@ -61,7 +62,7 @@ export default function AgentDetail() {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate("/crew")}
+          onClick={() => navigate(ROUTES.CREW)}
           data-testid="button-back"
           className="gap-2"
         >

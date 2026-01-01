@@ -40,6 +40,7 @@ import { getMockCaptainRecommendations } from "@/config/mockCaptainRecommendatio
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { ROUTES, buildRoute } from "@shared/routes";
 import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { ExportFixPackModal } from "@/components/export/ExportFixPackModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
@@ -287,7 +288,7 @@ function MetricCard({ metric, highlighted = false }: { metric: MetricCardData; h
           <AreaSparkline data={metric.sparkline} color={styles.lineColor} fillColor={styles.fillColor} />
         </div>
         <div className="space-y-2">
-          <Link href="/benchmarks">
+          <Link href={ROUTES.BENCHMARKS}>
             <span className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer">
               Compare industry benchmark <ArrowRight className="w-3 h-3" />
             </span>
@@ -375,7 +376,7 @@ function MetricCardsRow() {
       deltaPct: conversionData?.deltaPct || 0,
       verdict: conversionData ? getVerdict(conversionData.status) : 'neutral',
       sparkline: [3.8, 3.6, 3.4, 3.5, 3.3, 3.1, conversionData?.actualValue || 3.2],
-      nextAction: { text: 'Review Pulse', link: '/agents/google_data_connector' },
+      nextAction: { text: 'Review Pulse', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
     },
     {
@@ -386,7 +387,7 @@ function MetricCardsRow() {
       deltaPct: bounceData?.deltaPct || 0,
       verdict: bounceData ? getVerdict(bounceData.status) : 'neutral',
       sparkline: [38, 39, 40, 41, 43, 44, bounceData?.actualValue || 42],
-      nextAction: { text: 'Review Popular', link: '/agents/google_data_connector' },
+      nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
     },
     {
@@ -397,7 +398,7 @@ function MetricCardsRow() {
       deltaPct: sessionsData?.deltaPct || 0,
       verdict: sessionsData ? getVerdict(sessionsData.status) : 'neutral',
       sparkline: [80000, 85000, 88000, 90000, 92000, 94000, sessionsData?.actualValue || 96000],
-      nextAction: { text: 'Review Popular', link: '/agents/google_data_connector' },
+      nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
     },
   ];
@@ -423,7 +424,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
   const crewBadgeStyles = getCrewBadgeStyles(crew.color);
 
   const handleHireCrew = () => {
-    window.location.href = '/crew';
+    window.location.href = ROUTES.CREW;
   };
   
   if (!enabled) {
@@ -537,7 +538,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <Link href={`/agents/${agent.serviceId}`}>
+                <Link href={buildRoute.agent(agent.serviceId)}>
                   <h4 className="font-semibold text-base cursor-pointer hover:underline" style={{ color: crew.color }}>{crew.nickname}</h4>
                 </Link>
                 {crew.tooltipInfo && (
@@ -614,7 +615,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
           >
             {agent.status === 'good' ? 'Good' : agent.status === 'watch' ? 'Watch' : 'Alert'}
           </Badge>
-          <Link href={`/agents/${agent.serviceId}`}>
+          <Link href={buildRoute.agent(agent.serviceId)}>
             <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-foreground hover:text-foreground/80 whitespace-nowrap">
               Review {crew.nickname} <ArrowRight className="w-3 h-3 ml-1" />
             </Button>
@@ -666,7 +667,7 @@ function AgentSummaryGrid({ agents, totalAgents }: { agents: Array<{ serviceId: 
           <h2 className="text-lg font-semibold text-foreground">Crew Summary</h2>
           <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">{enabledCount} of {totalAgents} hired</Badge>
         </div>
-        <Link href="/crew">
+        <Link href={ROUTES.CREW}>
           <Button variant="outline" size="sm" className="text-xs border-dashed border-primary/50 text-primary hover:bg-primary/5">
             <Users className="w-3 h-3 mr-1.5" />
             Hire Crew
@@ -975,7 +976,7 @@ export default function MissionControl() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/crew">
+            <Link href={ROUTES.CREW}>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -1114,7 +1115,7 @@ export default function MissionControl() {
                               {fix.type === 'ACTION' && <Play className="w-3 h-3" />}
                               <span>{fix.hint}</span>
                               {fix.where === 'Secrets' && (
-                                <Link href="/settings">
+                                <Link href={ROUTES.SETTINGS}>
                                   <Button variant="link" size="sm" className="text-xs h-auto p-0 text-primary">
                                     Open Settings
                                   </Button>

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Lightbulb, Clock, ArrowRight, RefreshCw, ExternalLink, AlertCircle, FileDown } from "lucide-react";
 import { Link } from "wouter";
+import { buildRoute } from "@shared/routes";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { getCrewMember } from "@/config/agents";
@@ -213,7 +214,7 @@ export function KnowledgeBaseCard() {
             )}
 
             <div className="flex justify-between items-center pt-2 border-t">
-              <Link href="/agents/google_data_connector" data-testid="link-view-all-insights">
+              <Link href={buildRoute.agent('google_data_connector')} data-testid="link-view-all-insights">
                 <Button variant="ghost" size="sm" className="gap-1">
                   View All Insights
                   <ArrowRight className="w-3 h-3" />

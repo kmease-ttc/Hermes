@@ -19,6 +19,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { getServiceBySlug } from "@shared/servicesCatalog";
 import { resolveWorkerConfig } from "./workerConfigResolver";
+import { ROUTES, buildRoute, resolveDeprecatedRoute } from "@shared/routes";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -193,6 +194,29 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   app.use(apiKeyAuth);
+
+  // Server-side route redirects for legacy URLs
+  // This middleware handles deprecated routes before they hit the SPA
+  app.use((req, res, next) => {
+    // Only handle GET requests for page navigation (not API calls)
+    if (req.method !== "GET" || req.path.startsWith("/api/")) {
+      return next();
+    }
+
+    const redirectTarget = resolveDeprecatedRoute(req.path);
+    if (redirectTarget) {
+      // Preserve query string and hash
+      const queryString = req.originalUrl.includes("?") 
+        ? req.originalUrl.substring(req.originalUrl.indexOf("?")) 
+        : "";
+      const fullRedirect = redirectTarget + queryString;
+      
+      logger.info("Routes", `Redirecting deprecated route: ${req.path} -> ${fullRedirect}`);
+      return res.redirect(302, fullRedirect);
+    }
+
+    next();
+  });
 
   app.get("/briefing", async (req, res) => {
     try {

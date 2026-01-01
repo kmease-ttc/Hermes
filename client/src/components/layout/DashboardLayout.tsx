@@ -43,6 +43,7 @@ import { useSiteContext } from "@/hooks/useSiteContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import logoImage from "@assets/image_1766866825580.png";
+import { ROUTES, buildRoute } from "@shared/routes";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -96,11 +97,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [crewExpanded, setCrewExpanded] = useState(true);
   
   const navItems = [
-    { href: "/dashboard", label: "Mission Control", icon: LayoutDashboard },
-    { href: "/achievements", label: "Achievements", icon: Trophy },
-    { href: "/integrations", label: "Integrations", icon: Link2 },
-    { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/help", label: "Help", icon: HelpCircle },
+    { href: ROUTES.DASHBOARD, label: "Mission Control", icon: LayoutDashboard },
+    { href: ROUTES.ACHIEVEMENTS, label: "Achievements", icon: Trophy },
+    { href: ROUTES.INTEGRATIONS, label: "Integrations", icon: Link2 },
+    { href: ROUTES.SETTINGS, label: "Settings", icon: Settings },
+    { href: ROUTES.HELP, label: "Help", icon: HelpCircle },
   ];
   
   const crewMembers = USER_FACING_AGENTS.map(id => AGENTS[id]).filter(Boolean);
@@ -126,7 +127,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       >
         <div className="p-6 flex items-center gap-3 border-b border-border/50">
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity" data-testid="link-home">
+          <Link href={ROUTES.DASHBOARD} className="flex items-center gap-3 hover:opacity-80 transition-opacity" data-testid="link-home">
             <img src={logoImage} alt="Logo" className="w-8 h-8 rounded-md" />
             <h1 className="font-bold text-lg tracking-tight text-foreground">Arclo</h1>
           </Link>
@@ -192,11 +193,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {/* Mission Control - standalone */}
-          <Link href="/dashboard">
+          <Link href={ROUTES.DASHBOARD}>
             <div 
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                location === "/dashboard" || location === "/mission-control"
+                location === ROUTES.DASHBOARD || location === ROUTES.MISSION_CONTROL
                   ? "bg-primary/10 text-primary" 
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
@@ -213,7 +214,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div 
                 className={cn(
                   "flex items-center justify-between rounded-md transition-colors group cursor-pointer",
-                  location.startsWith("/agents/") || crewExpanded
+                  location.startsWith(ROUTES.AGENTS) || crewExpanded
                     ? "bg-primary/10" 
                     : "hover:bg-muted"
                 )}
@@ -222,7 +223,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div 
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors",
-                    location.startsWith("/agents/") || crewExpanded
+                    location.startsWith(ROUTES.AGENTS) || crewExpanded
                       ? "text-primary" 
                       : "text-muted-foreground group-hover:text-foreground"
                   )}
@@ -233,7 +234,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div
                   className={cn(
                     "px-3 py-2.5 transition-colors shrink-0",
-                    location.startsWith("/agents/") || crewExpanded
+                    location.startsWith(ROUTES.AGENTS) || crewExpanded
                       ? "text-primary" 
                       : "text-muted-foreground/60 group-hover:text-foreground"
                   )}
@@ -244,9 +245,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </CollapsibleTrigger>
             <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
               {crewMembers.map((member) => {
-                const isActive = location === `/agents/${member.service_id}`;
+                const agentRoute = buildRoute.agent(member.service_id);
+                const isActive = location === agentRoute;
                 return (
-                  <Link key={member.service_id} href={`/agents/${member.service_id}`}>
+                  <Link key={member.service_id} href={agentRoute}>
                     <div 
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer",
@@ -273,11 +275,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               })}
               
               {/* Add more crew link */}
-              <Link href="/crew">
+              <Link href={ROUTES.CREW}>
                 <div 
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-dashed border-primary/30 hover:border-primary hover:bg-primary/5",
-                    location === "/crew"
+                    location === ROUTES.CREW
                       ? "bg-primary/10 text-primary border-primary" 
                       : "text-primary/70 hover:text-primary"
                   )}
@@ -292,7 +294,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           
           {navItems.slice(1).map((item) => {
             const Icon = item.icon;
-            const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+            const isActive = location === item.href || (item.href !== ROUTES.DASHBOARD && location.startsWith(item.href));
             
             return (
               <Link key={item.href} href={item.href}>

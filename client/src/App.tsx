@@ -28,45 +28,90 @@ import DevLineage from "@/pages/DevLineage";
 import Speedster from "@/pages/Speedster";
 import Socrates from "@/pages/Socrates";
 import Achievements from "@/pages/Achievements";
+import { ROUTES, buildRoute } from "@shared/routes";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/dashboard" component={MissionControl} />
-      <Route path="/mission-control" component={MissionControl} />
-      <Route path="/sites">
+      {/* ============================================ */}
+      {/* CANONICAL ROUTES - Primary pages */}
+      {/* ============================================ */}
+      <Route path={ROUTES.DASHBOARD} component={MissionControl} />
+      <Route path={ROUTES.MISSION_CONTROL} component={MissionControl} />
+      <Route path={ROUTES.CREW} component={MyCrew} />
+      <Route path={ROUTES.AGENTS} component={Crew} />
+      <Route path={ROUTES.AGENT_DETAIL} component={AgentDetail} />
+      <Route path={ROUTES.KEYWORDS} component={KeywordRankings} />
+      <Route path={ROUTES.AUTHORITY} component={Authority} />
+      <Route path={ROUTES.SPEEDSTER} component={Speedster} />
+      <Route path={ROUTES.SOCRATES} component={Socrates} />
+      <Route path={ROUTES.TICKETS} component={Tickets} />
+      <Route path={ROUTES.CHANGES} component={SuggestedChanges} />
+      <Route path={ROUTES.RUNS} component={Runs} />
+      <Route path={ROUTES.RUN_DETAIL} component={RunDetail} />
+      <Route path={ROUTES.AUDIT} component={Audit} />
+      <Route path={ROUTES.BENCHMARKS} component={Benchmarks} />
+      <Route path={ROUTES.ACHIEVEMENTS} component={Achievements} />
+      <Route path={ROUTES.INTEGRATIONS} component={Integrations} />
+      <Route path={ROUTES.SETTINGS} component={Settings} />
+      <Route path={ROUTES.SITES}>
         <Redirect to="/settings?tab=sites" />
       </Route>
-      <Route path="/sites/new" component={SiteDetail} />
-      <Route path="/sites/:siteId" component={SiteDetail} />
-      <Route path="/tickets" component={Tickets} />
-      <Route path="/keywords" component={KeywordRankings} />
-      <Route path="/authority" component={Authority} />
-      <Route path="/integrations" component={Integrations} />
-      <Route path="/crew" component={MyCrew} />
-      <Route path="/agents" component={Crew} />
-      <Route path="/agents/:agentId" component={AgentDetail} />
-      <Route path="/changes" component={SuggestedChanges} />
-      <Route path="/runs" component={Runs} />
-      <Route path="/runs/:runId" component={RunDetail} />
-      <Route path="/audit" component={Audit} />
-      <Route path="/help" component={Help} />
-      <Route path="/benchmarks" component={Benchmarks} />
-      <Route path="/speedster" component={Speedster} />
+      <Route path={ROUTES.SITE_NEW} component={SiteDetail} />
+      <Route path={ROUTES.SITE_DETAIL} component={SiteDetail} />
+      <Route path={ROUTES.HELP} component={Help} />
+      <Route path={ROUTES.DEV_PALETTE} component={CrewPalette} />
+      <Route path={ROUTES.DEV_LINEAGE} component={DevLineage} />
+      
+      {/* ============================================ */}
+      {/* LEGACY REDIRECTS - Old routes to canonical */}
+      {/* ============================================ */}
       <Route path="/crew/speedster">
-        <Redirect to="/speedster" />
+        <Redirect to={ROUTES.SPEEDSTER} />
       </Route>
-      <Route path="/socrates" component={Socrates} />
       <Route path="/crew/socrates">
-        <Redirect to="/socrates" />
+        <Redirect to={ROUTES.SOCRATES} />
       </Route>
-      <Route path="/dev/palette" component={CrewPalette} />
-      <Route path="/dev/lineage" component={DevLineage} />
-      <Route path="/achievements" component={Achievements} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/">
-        <Redirect to="/dashboard" />
+      <Route path="/crew/lookout">
+        <Redirect to={ROUTES.KEYWORDS} />
       </Route>
+      <Route path="/crew/authority">
+        <Redirect to={ROUTES.AUTHORITY} />
+      </Route>
+      <Route path="/crew/natasha">
+        <Redirect to={buildRoute.agent("natasha")} />
+      </Route>
+      <Route path="/crew/hemingway">
+        <Redirect to={buildRoute.agent("hemingway")} />
+      </Route>
+      <Route path="/crew/marcus">
+        <Redirect to={buildRoute.agent("marcus")} />
+      </Route>
+      <Route path="/crew/pulse">
+        <Redirect to={buildRoute.agent("pulse")} />
+      </Route>
+      <Route path="/crew/scotty">
+        <Redirect to={buildRoute.agent("scotty")} />
+      </Route>
+      <Route path="/crew/popular">
+        <Redirect to={buildRoute.agent("popular")} />
+      </Route>
+      <Route path="/crew/link_builder">
+        <Redirect to={buildRoute.agent("link_builder")} />
+      </Route>
+      <Route path="/crew/authority_builder">
+        <Redirect to={buildRoute.agent("authority_builder")} />
+      </Route>
+      <Route path="/crew/google_data_connector">
+        <Redirect to={buildRoute.agent("google_data_connector")} />
+      </Route>
+      
+      {/* Home redirect */}
+      <Route path={ROUTES.HOME}>
+        <Redirect to={ROUTES.DASHBOARD} />
+      </Route>
+      
+      {/* 404 catch-all */}
       <Route component={NotFound} />
     </Switch>
   );
