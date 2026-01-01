@@ -22,6 +22,7 @@ import {
   type MissionPromptConfig,
   type HeaderAction,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 
 interface RankingData {
   id: number;
@@ -636,16 +637,10 @@ export default function SERPContent() {
 
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
-      id: "top-1",
-      label: "Top 1",
-      value: `${stats.numberOne}`,
-      tooltip: "Keywords ranking #1",
-    },
-    {
-      id: "top-3",
-      label: "Top 3",
-      value: `${stats.inTop3}`,
-      tooltip: "Keywords ranking in top 3 positions",
+      id: "total-keywords",
+      label: "Keywords",
+      value: `${overview?.totalKeywords || 0}`,
+      tooltip: "Total keywords being tracked",
     },
     {
       id: "top-10",
@@ -659,7 +654,73 @@ export default function SERPContent() {
       value: stats.avgPosition != null ? `#${stats.avgPosition}` : "—",
       tooltip: "Average ranking position across all keywords",
     },
-  ], [stats]);
+  ], [stats, overview]);
+
+  const keyMetrics = useMemo(() => [
+    {
+      id: "total-keywords",
+      label: "Total Keywords",
+      value: overview?.totalKeywords || 0,
+      icon: Search,
+      status: "neutral" as const,
+    },
+    {
+      id: "ranking",
+      label: "Ranking",
+      value: stats.ranking,
+      icon: TrendingUp,
+      status: "good" as const,
+    },
+    {
+      id: "not-ranking",
+      label: "Not Ranking",
+      value: stats.notRanking,
+      icon: AlertTriangle,
+      status: stats.notRanking > 0 ? "warning" as const : "neutral" as const,
+    },
+    {
+      id: "top-1",
+      label: "Top 1",
+      value: stats.numberOne,
+      icon: Crown,
+      status: "good" as const,
+    },
+    {
+      id: "top-3",
+      label: "Top 3",
+      value: stats.inTop3,
+      icon: Trophy,
+      status: "good" as const,
+    },
+    {
+      id: "top-10",
+      label: "Top 10",
+      value: stats.inTop10,
+      icon: Trophy,
+      status: "good" as const,
+    },
+    {
+      id: "avg-position",
+      label: "Avg Position",
+      value: stats.avgPosition != null ? `#${stats.avgPosition}` : "—",
+      icon: Target,
+      status: "neutral" as const,
+    },
+    {
+      id: "winners",
+      label: "Winners",
+      value: stats.winners,
+      icon: TrendingUp,
+      status: stats.winners > 0 ? "good" as const : "neutral" as const,
+    },
+    {
+      id: "losers",
+      label: "Losers",
+      value: stats.losers,
+      icon: TrendingDown,
+      status: stats.losers > 0 ? "warning" as const : "neutral" as const,
+    },
+  ], [overview, stats]);
 
   const getImpactLabel = (score: number | undefined): "high" | "medium" | "low" => {
     if (score === undefined) return "medium";
@@ -864,55 +925,7 @@ export default function SERPContent() {
       ),
       badge: sortedKeywords?.length || undefined,
     },
-    {
-      id: "performance",
-      label: "Performance",
-      icon: <TrendingUp className="w-4 h-4" />,
-      content: (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          <Card data-testid="card-total-keywords">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">{overview?.totalKeywords || 0}</div>
-              <p className="text-xs text-muted-foreground">Total Keywords</p>
-            </CardContent>
-          </Card>
-          <Card data-testid="card-ranking">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-semantic-info">{stats.ranking}</div>
-              <p className="text-xs text-muted-foreground">Total Ranking</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30" data-testid="card-top-1">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1">
-                <Crown className="h-5 w-5" />
-                {stats.numberOne}
-              </div>
-              <p className="text-xs text-muted-foreground">Top 1</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-slate-400/10 to-slate-500/5 border-slate-400/30" data-testid="card-top-3">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-slate-400 flex items-center gap-1">
-                <Trophy className="h-4 w-4" />
-                {stats.inTop3}
-              </div>
-              <p className="text-xs text-muted-foreground">Top 3</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-amber-600/10 to-amber-700/5 border-amber-600/30" data-testid="card-top-10">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-amber-600 flex items-center gap-1">
-                <Trophy className="h-4 w-4" />
-                {stats.inTop10}
-              </div>
-              <p className="text-xs text-muted-foreground">Top 10</p>
-            </CardContent>
-          </Card>
-        </div>
-      ),
-    },
-  ], [sortedKeywords, overview, stats]);
+  ], [sortedKeywords]);
 
   // Loading state - after all hooks
   if (isLoading) {
@@ -1085,6 +1098,7 @@ export default function SERPContent() {
       missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewMember.color} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
