@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { Link } from "wouter";
+import { ROUTES } from "@shared/routes";
 
 interface TrafficInsight {
   status: PillarStatus;
@@ -389,7 +390,7 @@ export default function Dashboard() {
           <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Sites Configured</h2>
           <p className="text-muted-foreground mb-4">Add your first website to start monitoring.</p>
-          <Link href="/sites/new">
+          <Link href={ROUTES.SITE_NEW}>
             <Button data-testid="button-add-first-site">Add Your First Site</Button>
           </Link>
         </div>

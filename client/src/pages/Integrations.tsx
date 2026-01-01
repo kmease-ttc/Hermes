@@ -40,6 +40,7 @@ import { CrewBadge } from "@/components/crew/CrewBadge";
 import { getCrewMember } from "@/config/agents";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ROUTES } from "@shared/routes";
 import {
   Dialog,
   DialogContent,
@@ -2512,7 +2513,7 @@ export default function Integrations() {
                           size="sm"
                           onClick={() => {
                             setSelectedCatalogService(null);
-                            navigate('/settings');
+                            navigate(ROUTES.SETTINGS);
                           }}
                         >
                           <Settings className="w-3 h-3 mr-1" />

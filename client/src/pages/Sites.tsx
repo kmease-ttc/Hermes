@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Globe, Plus, Settings, Trash2, ExternalLink, Activity, RefreshCw, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { Link } from "wouter";
+import { ROUTES } from "@shared/routes";
 
 interface Site {
   id: number;
@@ -93,7 +94,7 @@ export default function Sites() {
             <h1 className="text-2xl font-bold tracking-tight" data-testid="page-title">Sites Registry</h1>
             <p className="text-muted-foreground">Manage your monitored websites and their configurations</p>
           </div>
-          <Link href="/sites/new">
+          <Link href={ROUTES.SITE_NEW}>
             <Button data-testid="button-add-site">
               <Plus className="w-4 h-4 mr-2" />
               Add Site
@@ -217,7 +218,7 @@ export default function Sites() {
                 <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="font-medium mb-2">No sites configured yet</h3>
                 <p className="text-muted-foreground mb-4">Add your first site to start monitoring</p>
-                <Link href="/sites/new">
+                <Link href={ROUTES.SITE_NEW}>
                   <Button data-testid="button-add-first-site">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Your First Site

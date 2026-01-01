@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useSearch, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { buildRoute, ROUTES } from "@shared/routes";
 
 interface SystemHealth {
   serverTime: string;
@@ -181,7 +182,7 @@ function SitesSection() {
           <h2 className="text-lg font-semibold">Sites Registry</h2>
           <p className="text-sm text-muted-foreground">Manage your monitored websites and their configurations</p>
         </div>
-        <Link href="/sites/new">
+        <Link href={ROUTES.SITE_NEW}>
           <Button data-testid="button-add-site">
             <Plus className="w-4 h-4 mr-2" />
             Add Site
@@ -288,7 +289,7 @@ function SitesSection() {
             <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-medium mb-2">No sites configured yet</h3>
             <p className="text-muted-foreground mb-4">Add your first site to start monitoring</p>
-            <Link href="/sites/new">
+            <Link href={ROUTES.SITE_NEW}>
               <Button data-testid="button-add-first-site">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Site
@@ -319,7 +320,7 @@ export default function Settings() {
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    navigate(`/settings?tab=${value}`);
+    navigate(buildRoute.settingsTab(value));
   };
 
   const { data: systemHealth, isLoading: healthLoading, refetch: refetchHealth } = useQuery<SystemHealth>({

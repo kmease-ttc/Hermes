@@ -10,6 +10,7 @@ import {
 import { ChevronDown, Globe, Check, Plus, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { buildRoute } from "@shared/routes";
 
 interface SiteSelectorProps {
   variant?: "default" | "compact" | "header";
@@ -34,7 +35,7 @@ export function SiteSelector({ variant = "default", showManageLink = true, class
     return (
       <Button 
         variant="outline" 
-        onClick={() => navigate("/settings?tab=sites")}
+        onClick={() => navigate(buildRoute.settingsTab("sites"))}
         className={cn("min-w-[180px]", className)}
         data-testid="button-add-first-site"
       >
@@ -99,7 +100,7 @@ export function SiteSelector({ variant = "default", showManageLink = true, class
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
-              onClick={() => navigate("/settings?tab=sites")}
+              onClick={() => navigate(buildRoute.settingsTab("sites"))}
               className="cursor-pointer"
               data-testid="menu-item-manage-sites"
             >

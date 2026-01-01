@@ -29,6 +29,27 @@ import Speedster from "@/pages/Speedster";
 import Socrates from "@/pages/Socrates";
 import Achievements from "@/pages/Achievements";
 import { ROUTES, buildRoute } from "@shared/routes";
+import { useRoute } from "wouter";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+
+function CrewRedirect() {
+  const [, params] = useRoute("/crew/:agentId");
+  const [, navigate] = useLocation();
+  
+  useEffect(() => {
+    if (params?.agentId) {
+      const agentId = params.agentId;
+      if (agentId === "speedster") navigate(ROUTES.SPEEDSTER, { replace: true });
+      else if (agentId === "socrates") navigate(ROUTES.SOCRATES, { replace: true });
+      else if (agentId === "lookout") navigate(ROUTES.KEYWORDS, { replace: true });
+      else if (agentId === "authority") navigate(ROUTES.AUTHORITY, { replace: true });
+      else navigate(buildRoute.agent(agentId), { replace: true });
+    }
+  }, [params, navigate]);
+  
+  return null;
+}
 
 function Router() {
   return (
@@ -55,7 +76,7 @@ function Router() {
       <Route path={ROUTES.INTEGRATIONS} component={Integrations} />
       <Route path={ROUTES.SETTINGS} component={Settings} />
       <Route path={ROUTES.SITES}>
-        <Redirect to="/settings?tab=sites" />
+        <Redirect to={buildRoute.settingsTab("sites")} />
       </Route>
       <Route path={ROUTES.SITE_NEW} component={SiteDetail} />
       <Route path={ROUTES.SITE_DETAIL} component={SiteDetail} />
@@ -105,6 +126,9 @@ function Router() {
       <Route path="/crew/google_data_connector">
         <Redirect to={buildRoute.agent("google_data_connector")} />
       </Route>
+      
+      {/* Catch-all for any other /crew/:agentId routes */}
+      <Route path="/crew/:agentId" component={CrewRedirect} />
       
       {/* Home redirect */}
       <Route path={ROUTES.HOME}>
