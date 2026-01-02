@@ -922,24 +922,24 @@ export default function NatashaContent() {
       });
     }
     
-    // Add content gap missions
+    // Add individual content gap missions (each gap = one mission)
     if (data.contentGaps.length > 0) {
       const highPriorityGaps = data.contentGaps.filter(g => g.opportunity === "high");
-      if (highPriorityGaps.length > 0) {
+      highPriorityGaps.forEach((gap, idx) => {
         items.push({
-          id: "content-gaps-action",
-          title: `Address ${highPriorityGaps.length} high-priority content gaps`,
-          reason: `Keywords like "${highPriorityGaps[0]?.keyword || 'key topics'}" need coverage`,
+          id: `content-gap-${gap.id || idx}`,
+          title: `Create content for "${gap.keyword}"`,
+          reason: gap.suggestedAction || `${gap.competitorsCovering} competitor${gap.competitorsCovering !== 1 ? 's' : ''} covering this topic`,
           status: "pending" as const,
           impact: "high",
-          effort: "M",
+          effort: gap.difficulty && gap.difficulty > 60 ? "L" : gap.difficulty && gap.difficulty > 30 ? "M" : "S",
           action: {
             label: "Fix it",
-            onClick: () => toast.success("Preparing content gap analysis..."),
+            onClick: () => toast.success(`Preparing content for: ${gap.keyword}`),
             disabled: isRunning,
           },
         });
-      }
+      });
     }
     
     // Always have at least placeholder missions if no real data
