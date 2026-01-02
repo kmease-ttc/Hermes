@@ -5060,6 +5060,136 @@ Return JSON:
     }
   });
 
+  // Discover competitors automatically from SERP data
+  app.post("/api/competitive/discover", async (req, res) => {
+    try {
+      const { siteId: inputSiteId = "default", limit = 10 } = req.body;
+      
+      // Normalize siteId upfront - get the canonical site ID
+      const sites = await storage.getSites();
+      const site = sites.find(s => s.siteId === inputSiteId || (inputSiteId === "default" && s.status === "active"));
+      const canonicalSiteId = site?.siteId || inputSiteId;
+      
+      let targetDomain = "";
+      if (site?.baseUrl) {
+        try {
+          const url = new URL(site.baseUrl);
+          targetDomain = url.hostname;
+        } catch {
+          targetDomain = site.baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        }
+      }
+      
+      // Get existing user-added competitors to avoid duplicates (use canonical siteId)
+      const existingCompetitors = await storage.getCompetitors(canonicalSiteId, "natasha");
+      const existingDomains = new Set(existingCompetitors.map(c => c.domain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '')));
+      
+      // Also exclude target domain
+      if (targetDomain) {
+        existingDomains.add(targetDomain.toLowerCase().replace(/^www\./, ''));
+      }
+      
+      // Try to get competitors from the latest competitive analysis results
+      const savedResults = await storage.getLatestSeoWorkerResult(canonicalSiteId, "competitive_snapshot");
+      
+      let discoveredCompetitors: { domain: string; name?: string; type: string }[] = [];
+      
+      if (savedResults?.payloadJson && typeof savedResults.payloadJson === 'object') {
+        const payload = savedResults.payloadJson as any;
+        if (Array.isArray(payload.competitors)) {
+          for (const comp of payload.competitors) {
+            if (comp.domain) {
+              const cleanDomain = comp.domain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+              if (!existingDomains.has(cleanDomain)) {
+                discoveredCompetitors.push({
+                  domain: comp.domain,
+                  name: comp.name || comp.domain,
+                  type: "serp-only",
+                });
+                existingDomains.add(cleanDomain);
+              }
+            }
+          }
+        }
+      }
+      
+      // If no saved results or not enough competitors, try to get from SERP rankings
+      if (discoveredCompetitors.length < limit) {
+        const allRankings = await storage.getAllRankingsWithHistory(7);
+        
+        // Extract competitor domains from SERP results
+        const competitorDomainCounts = new Map<string, number>();
+        
+        for (const ranking of allRankings) {
+          if (ranking.serpResultsJson && Array.isArray(ranking.serpResultsJson)) {
+            for (const result of ranking.serpResultsJson as any[]) {
+              if (result.link || result.domain) {
+                try {
+                  const domain = result.domain || new URL(result.link).hostname;
+                  const cleanDomain = domain.toLowerCase().replace(/^www\./, '');
+                  
+                  // Skip if it's the target domain or already exists
+                  if (!existingDomains.has(cleanDomain)) {
+                    competitorDomainCounts.set(cleanDomain, (competitorDomainCounts.get(cleanDomain) || 0) + 1);
+                  }
+                } catch {
+                  // Invalid URL, skip
+                }
+              }
+            }
+          }
+        }
+        
+        // Sort by frequency and add to discovered list
+        const sortedDomains = Array.from(competitorDomainCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit - discoveredCompetitors.length);
+        
+        for (const [domain, count] of sortedDomains) {
+          discoveredCompetitors.push({
+            domain,
+            name: domain,
+            type: count >= 3 ? "direct" : "indirect",
+          });
+        }
+      }
+      
+      // Limit to requested number
+      discoveredCompetitors = discoveredCompetitors.slice(0, limit);
+      
+      // Save discovered competitors to database
+      let addedCount = 0;
+      for (const comp of discoveredCompetitors) {
+        try {
+          await storage.addCompetitor({
+            siteId: canonicalSiteId,
+            agentSlug: "natasha",
+            domain: comp.domain,
+            name: comp.name || null,
+            type: comp.type,
+            notes: "Auto-discovered",
+          });
+          addedCount++;
+        } catch (err: any) {
+          // Skip if duplicate
+          logger.warn("Competitive", "Skipped duplicate competitor", { domain: comp.domain });
+        }
+      }
+      
+      logger.info("Competitive", "Discovered competitors", { siteId: canonicalSiteId, count: addedCount, total: discoveredCompetitors.length });
+      
+      res.json({ 
+        ok: true, 
+        siteId: canonicalSiteId,
+        count: addedCount,
+        competitors: discoveredCompetitors.slice(0, addedCount),
+      });
+    } catch (error: any) {
+      logger.error("Competitive", "Failed to discover competitors", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // SERP Tracking Endpoints
   
   // Generate target keywords using AI

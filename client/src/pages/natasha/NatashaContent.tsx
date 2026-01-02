@@ -849,31 +849,45 @@ function AddCompetitorDialog({ open, onOpenChange, siteId, onSuccess }: AddCompe
 function CompetitorsPanel({ 
   competitors, 
   onRemove, 
-  onAdd 
+  onAdd,
+  onFindCompetitors,
+  isFinding
 }: { 
   competitors: Competitor[]; 
   onRemove: (id: string) => void;
   onAdd: () => void;
+  onFindCompetitors: () => void;
+  isFinding: boolean;
 }) {
   if (competitors.length === 0) {
     return (
       <div className="p-6 text-center">
         <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
         <p className="text-muted-foreground mb-4">No competitors detected yet</p>
-        <Button variant="outline" onClick={onAdd} data-testid="button-add-competitor-empty">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Competitor
-        </Button>
+        <div className="flex gap-2 justify-center">
+          <Button variant="default" onClick={onFindCompetitors} disabled={isFinding} data-testid="button-find-competitors-empty">
+            {isFinding ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+            Find Competitors
+          </Button>
+          <Button variant="outline" onClick={onAdd} data-testid="button-add-competitor-empty">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Manually
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="default" size="sm" onClick={onFindCompetitors} disabled={isFinding} data-testid="button-find-competitors">
+          {isFinding ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <Search className="w-4 h-4 mr-1" />}
+          Find Competitors
+        </Button>
         <Button variant="outline" size="sm" onClick={onAdd} data-testid="button-add-competitor">
           <Plus className="w-4 h-4 mr-1" />
-          Add Competitor
+          Add Manually
         </Button>
       </div>
       <div className="space-y-3">
@@ -1146,9 +1160,10 @@ export default function NatashaContent() {
 
   const siteId = currentSite?.siteId || "default";
 
-  const handleCompetitorAdded = () => {
+  const handleCompetitorAdded = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
+    await refetchUserCompetitors();
     queryClient.invalidateQueries({ queryKey: ["competitive-overview", siteId] });
-    queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
   };
   
   const handleAskNatasha = async (question: string) => {
@@ -1197,14 +1212,39 @@ export default function NatashaContent() {
   const marketSov = marketSovData?.marketSov || 0;
 
   // Fetch user-added competitors from database
-  const { data: userAddedCompetitors = [] } = useQuery<Array<{ id: number; siteId: string; agentSlug: string; domain: string; name: string | null; type: string; notes: string | null; createdAt: string }>>({
+  const { data: userAddedCompetitors = [], refetch: refetchUserCompetitors } = useQuery<Array<{ id: number; siteId: string; agentSlug: string; domain: string; name: string | null; type: string; notes: string | null; createdAt: string }>>({
     queryKey: ["user-competitors", siteId],
     queryFn: async () => {
       const res = await fetch(`/api/competitive/competitors?siteId=${siteId}&agentSlug=natasha`);
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 60000,
+    staleTime: 5000,
+  });
+
+  const findCompetitors = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/competitive/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteId, limit: 10 }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to find competitors");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const canonicalSiteId = data.siteId || siteId;
+      toast.success(`Found ${data.count || 0} competitors`);
+      queryClient.invalidateQueries({ queryKey: ["user-competitors", canonicalSiteId] });
+      queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
+      queryClient.invalidateQueries({ queryKey: ["competitive-overview", siteId] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to find competitors: ${error.message}`);
+    },
   });
 
   const runAnalysis = useMutation({
@@ -1617,6 +1657,8 @@ export default function NatashaContent() {
               competitors={mergedCompetitors} 
               onRemove={handleRemoveCompetitor}
               onAdd={() => setAddCompetitorOpen(true)}
+              onFindCompetitors={() => findCompetitors.mutate()}
+              isFinding={findCompetitors.isPending}
             />
             <AddCompetitorDialog
               open={addCompetitorOpen}
@@ -1646,7 +1688,7 @@ export default function NatashaContent() {
         state: tabState,
       },
     ];
-  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis, siteId, mergedCompetitors, addCompetitorOpen]);
+  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis, siteId, mergedCompetitors, addCompetitorOpen, findCompetitors]);
 
   const missionPrompt: MissionPromptConfig = {
     label: "Ask Natasha",
