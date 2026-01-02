@@ -5755,6 +5755,88 @@ Keep responses concise and actionable.`;
     }
   });
 
+  // Near Wins - Keywords ranking #2 or #3 where we're close to #1
+  app.get("/api/serp/near-wins", async (req, res) => {
+    try {
+      const rankings = await storage.getLatestRankings();
+      const keywords = await storage.getSerpKeywords(true);
+      
+      // Filter to position 2-3 only (almost #1)
+      const nearWins = rankings
+        .filter(r => r.position && r.position >= 2 && r.position <= 3)
+        .map(r => {
+          const kw = keywords.find(k => k.id === r.keywordId);
+          return {
+            id: r.keywordId,
+            keyword: kw?.keyword || r.keyword || 'Unknown',
+            position: r.position,
+            url: r.url,
+            targetUrl: kw?.targetUrl,
+            volume: kw?.volume || r.volume,
+            difficulty: kw?.difficulty,
+            change: r.change,
+            intent: kw?.intent,
+            priority: kw?.priority,
+            priorityReason: kw?.priorityReason,
+            spotsToNumber1: (r.position || 2) - 1,
+          };
+        })
+        .sort((a, b) => (a.position || 10) - (b.position || 10));
+      
+      res.json({
+        count: nearWins.length,
+        nearWins,
+        message: nearWins.length > 0 
+          ? `${nearWins.length} keywords within striking distance of #1`
+          : "No keywords in position 2-3. Run a scan to check rankings.",
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch near wins", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get competitor at #1 for a specific keyword
+  app.get("/api/serp/keyword/:id/competitor", async (req, res) => {
+    try {
+      const keywordId = parseInt(req.params.id);
+      const keywords = await storage.getSerpKeywords(true);
+      const kw = keywords.find(k => k.id === keywordId);
+      
+      if (!kw) {
+        return res.status(404).json({ error: "Keyword not found" });
+      }
+      
+      if (!serpConnector.isConfigured()) {
+        return res.status(400).json({ 
+          error: "SERP API not configured",
+          hint: "Add SERP_API_KEY to check competitors"
+        });
+      }
+      
+      const domain = process.env.DOMAIN || 'empathyhealthclinic.com';
+      const analysis = await serpConnector.getCompetitorAnalysis(kw.keyword, domain);
+      
+      // Find who's at #1
+      const numberOne = analysis.competitors.find(c => c.position === 1);
+      
+      res.json({
+        keyword: kw.keyword,
+        keywordId: kw.id,
+        ourPosition: analysis.ourPosition,
+        numberOneCompetitor: numberOne ? {
+          domain: numberOne.domain,
+          position: numberOne.position,
+          title: numberOne.title,
+        } : null,
+        topCompetitors: analysis.competitors.slice(0, 5),
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch competitor for keyword", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // SERP Missions - Generate and get top improvement actions
   app.get("/api/serp/missions", async (req, res) => {
     try {

@@ -847,7 +847,180 @@ export default function SERPContent() {
     return items;
   }, [stats, overview, missionsData, isFixingEverything, fixStatus, generateKeywords.isPending, handleGenerate]);
 
+  // Fetch near wins data
+  const { data: nearWinsData } = useQuery<{
+    count: number;
+    nearWins: Array<{
+      id: number;
+      keyword: string;
+      position: number;
+      url: string | null;
+      volume: number | null;
+      difficulty: number | null;
+      spotsToNumber1: number;
+      intent: string | null;
+      priority: number | null;
+    }>;
+    message: string;
+  }>({
+    queryKey: ['serp-near-wins'],
+    queryFn: async () => {
+      const res = await fetch('/api/serp/near-wins');
+      if (!res.ok) throw new Error('Failed to fetch near wins');
+      return res.json();
+    },
+  });
+
+  // Track which keywords have competitor data fetched
+  const [competitorData, setCompetitorData] = useState<Record<number, {
+    numberOneCompetitor: { domain: string; position: number; title: string } | null;
+    topCompetitors: Array<{ domain: string; position: number; title: string }>;
+    loading?: boolean;
+    error?: string;
+  }>>({});
+
+  const fetchCompetitor = async (keywordId: number) => {
+    setCompetitorData(prev => ({
+      ...prev,
+      [keywordId]: { ...prev[keywordId], loading: true, error: undefined, numberOneCompetitor: null, topCompetitors: [] },
+    }));
+    try {
+      const res = await fetch(`/api/serp/keyword/${keywordId}/competitor`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch competitor');
+      setCompetitorData(prev => ({
+        ...prev,
+        [keywordId]: {
+          numberOneCompetitor: data.numberOneCompetitor,
+          topCompetitors: data.topCompetitors || [],
+          loading: false,
+        },
+      }));
+    } catch (err: any) {
+      setCompetitorData(prev => ({
+        ...prev,
+        [keywordId]: { ...prev[keywordId], loading: false, error: err.message },
+      }));
+    }
+  };
+
   const inspectorTabs: InspectorTab[] = useMemo(() => [
+    {
+      id: "near-wins",
+      label: "Near Wins",
+      icon: <Trophy className="w-4 h-4 text-amber-500" />,
+      content: (
+        <TooltipProvider>
+          {nearWinsData?.nearWins && nearWinsData.nearWins.length > 0 ? (
+            <div className="space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-amber-200 flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  <span><strong>{nearWinsData.count}</strong> keywords are 1-2 spots away from #1!</span>
+                </p>
+              </div>
+              <div className="space-y-3">
+                {nearWinsData.nearWins.map((nw) => {
+                  const comp = competitorData[nw.id];
+                  return (
+                    <div 
+                      key={nw.id} 
+                      className="p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
+                      data-testid={`near-win-${nw.id}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/40">
+                              #{nw.position}
+                            </Badge>
+                            <span className="font-medium">{nw.keyword}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            {nw.volume && <span>{nw.volume.toLocaleString()} searches/mo</span>}
+                            <span className="text-amber-400">
+                              {nw.spotsToNumber1} spot{nw.spotsToNumber1 > 1 ? 's' : ''} to #1
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => fetchCompetitor(nw.id)}
+                                disabled={comp?.loading}
+                                data-testid={`button-check-competitor-${nw.id}`}
+                              >
+                                {comp?.loading ? (
+                                  <RefreshCw className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    Who's #1?
+                                  </>
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Check who's ranking at #1 for this keyword</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                      
+                      {comp && !comp.loading && (
+                        <div className="mt-3 pt-3 border-t border-border/50">
+                          {comp.error ? (
+                            <p className="text-xs text-destructive">{comp.error}</p>
+                          ) : comp.numberOneCompetitor ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Crown className="h-4 w-4 text-yellow-500" />
+                                <span className="text-sm font-medium text-yellow-400">
+                                  #{comp.numberOneCompetitor.position}: {comp.numberOneCompetitor.domain}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {comp.numberOneCompetitor.title}
+                              </p>
+                              {comp.topCompetitors.length > 1 && (
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                  <p className="font-medium mb-1">Top 5 in SERP:</p>
+                                  {comp.topCompetitors.slice(0, 5).map((c, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 py-0.5">
+                                      <span className="w-5 text-right">#{c.position}</span>
+                                      <span className="truncate">{c.domain}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No competitor data available</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Trophy className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">No keywords in position 2-3</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {nearWinsData?.message || "Run a scan to find keywords close to #1"}
+              </p>
+            </div>
+          )}
+        </TooltipProvider>
+      ),
+      badge: nearWinsData?.count || undefined,
+    },
     {
       id: "rankings",
       label: "All Keywords",
@@ -952,7 +1125,7 @@ export default function SERPContent() {
       ),
       badge: sortedKeywords?.length || undefined,
     },
-  ], [sortedKeywords, optimizeKeyword]);
+  ], [sortedKeywords, optimizeKeyword, nearWinsData, competitorData]);
 
   // Loading state - after all hooks
   if (isLoading) {
