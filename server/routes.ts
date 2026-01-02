@@ -1751,6 +1751,289 @@ Format your response as JSON with these keys:
     }
   });
 
+  // ============================================
+  // SCOTTY (Technical SEO) Endpoints
+  // ============================================
+  
+  app.get("/api/scotty/data", async (req, res) => {
+    const siteId = (req.query.site_id as string) || "default";
+    
+    try {
+      const crawlConfig = await resolveWorkerConfig("crawl_render");
+      const cwvConfig = await resolveWorkerConfig("core_web_vitals");
+      
+      // Get latest crawl results
+      const crawlResults = await storage.getSeoWorkerResultsBySite(siteId, 10);
+      const crawlResult = crawlResults.find(r => r.workerKey === 'crawl_render');
+      const cwvResult = crawlResults.find(r => r.workerKey === 'core_web_vitals');
+      
+      // Extract metrics from crawl data
+      const crawlMetrics = crawlResult?.metricsJson as any || {};
+      const cwvMetrics = cwvResult?.metricsJson as any || {};
+      
+      const crawledUrls = crawlMetrics.pages_crawled || crawlMetrics.total_urls || 0;
+      const healthyUrls = crawlMetrics.status_200 || crawlMetrics.healthy_urls || 0;
+      const indexedUrls = crawlMetrics.indexed_urls || crawlMetrics.indexable_pages || 0;
+      const eligibleUrls = crawlMetrics.eligible_urls || crawledUrls;
+      const criticalIssues = (crawlMetrics.status_5xx || 0) + (crawlMetrics.noindex_issues || 0) + (crawlMetrics.blocked_by_robots || 0);
+      
+      const cwvPassingUrls = cwvMetrics.passing_urls || 0;
+      const cwvTotalUrls = cwvMetrics.total_urls || crawledUrls;
+      
+      // Calculate percentages
+      const crawlHealthPercent = crawledUrls > 0 ? Math.round((healthyUrls / crawledUrls) * 100) : 0;
+      const indexCoveragePercent = eligibleUrls > 0 ? Math.round((indexedUrls / eligibleUrls) * 100) : 0;
+      const cwvPassPercent = cwvTotalUrls > 0 ? Math.round((cwvPassingUrls / cwvTotalUrls) * 100) : 0;
+      
+      // Build findings from crawl data
+      const findings: any[] = [];
+      
+      // Add findings from crawl errors
+      if (crawlMetrics.errors && Array.isArray(crawlMetrics.errors)) {
+        crawlMetrics.errors.forEach((error: any, idx: number) => {
+          findings.push({
+            id: `crawl-${idx}`,
+            url: error.url || "/unknown",
+            issueType: error.type || "Crawl Error",
+            severity: error.severity || "warning",
+            category: error.category || "Crawl Issues",
+            description: error.message || "Issue detected during crawl",
+            fixable: error.fixable || false,
+            fixAction: error.fix_action,
+            whyItMatters: error.why_it_matters || "This issue may affect how search engines crawl your site.",
+          });
+        });
+      }
+      
+      // Add 5xx errors as critical
+      if (crawlMetrics.status_5xx && crawlMetrics.status_5xx > 0) {
+        findings.push({
+          id: "5xx-errors",
+          url: crawlMetrics.sample_5xx_url || "/server-error",
+          issueType: "5xx Server Errors",
+          severity: "critical",
+          category: "Server Errors",
+          description: `${crawlMetrics.status_5xx} pages returning server errors`,
+          fixable: false,
+          whyItMatters: "Search engines cannot crawl or index pages that return server errors.",
+        });
+      }
+      
+      // Add noindex issues as critical
+      if (crawlMetrics.noindex_issues && crawlMetrics.noindex_issues > 0) {
+        findings.push({
+          id: "noindex-issues",
+          url: crawlMetrics.sample_noindex_url || "/blocked-page",
+          issueType: "Noindex on Indexable",
+          severity: "critical",
+          category: "Index Blockers",
+          description: `${crawlMetrics.noindex_issues} important pages have noindex`,
+          fixable: true,
+          fixAction: "remove_noindex",
+          whyItMatters: "These pages should be indexed but the noindex tag prevents them from appearing in search results.",
+        });
+      }
+      
+      // Add redirect chain warnings
+      if (crawlMetrics.redirect_chains && crawlMetrics.redirect_chains > 0) {
+        findings.push({
+          id: "redirect-chains",
+          url: crawlMetrics.sample_redirect_chain_url || "/redirect-chain",
+          issueType: "Redirect Chains",
+          severity: "warning",
+          category: "Redirects",
+          description: `${crawlMetrics.redirect_chains} redirect chains detected`,
+          fixable: true,
+          fixAction: "fix_redirect",
+          whyItMatters: "Redirect chains slow crawling and dilute link equity.",
+        });
+      }
+      
+      // Get trend data from snapshots
+      const snapshots = await storage.getSnapshotsForSite(siteId, 7);
+      const trends = snapshots.map(s => {
+        const payload = s.payload as any || {};
+        return {
+          date: s.snapshotDate.toISOString().split('T')[0],
+          crawlHealth: payload.crawl_health_percent || crawlHealthPercent,
+          indexedUrls: payload.indexed_urls || indexedUrls,
+          cwvPass: payload.cwv_pass_percent || cwvPassPercent,
+          criticalIssues: payload.critical_issues || criticalIssues,
+        };
+      }).reverse();
+      
+      res.json({
+        health: {
+          crawledUrls,
+          healthyUrls,
+          crawlHealthPercent,
+          indexedUrls,
+          eligibleUrls,
+          indexCoveragePercent,
+          cwvPassingUrls,
+          cwvTotalUrls,
+          cwvPassPercent,
+          criticalIssues,
+          lastCrawlAt: crawlResult?.createdAt?.toISOString() || null,
+          isConfigured: crawlConfig.valid || crawlResult !== undefined,
+        },
+        findings,
+        trends,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get Scotty data", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/scotty/crawl", async (req, res) => {
+    const { site_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("crawl_render");
+      
+      if (!config.valid || !config.base_url) {
+        // Return mock success for demo
+        logger.info("Scotty", "Crawl worker not configured, returning mock response");
+        return res.json({
+          ok: true,
+          message: "Site crawl started (demo mode)",
+          jobId: `crawl-${Date.now()}`,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/crawl`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to start crawl", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/scotty/check-indexing", async (req, res) => {
+    const { site_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("crawl_render");
+      
+      if (!config.valid || !config.base_url) {
+        // Return mock success for demo
+        logger.info("Scotty", "Crawl worker not configured, returning mock indexing check");
+        return res.json({
+          ok: true,
+          message: "Indexing check complete (demo mode)",
+          indexed: 128,
+          excluded: 17,
+          blocked: 2,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/check-indexing`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to check indexing", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/scotty/audit-cwv", async (req, res) => {
+    const { site_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("core_web_vitals");
+      
+      if (!config.valid || !config.base_url) {
+        // Return mock success for demo
+        logger.info("Scotty", "CWV worker not configured, returning mock audit");
+        return res.json({
+          ok: true,
+          message: "Core Web Vitals audit complete (demo mode)",
+          passing: 112,
+          failing: 44,
+          lcp: { good: 95, needsImprovement: 40, poor: 21 },
+          cls: { good: 120, needsImprovement: 25, poor: 11 },
+          inp: { good: 105, needsImprovement: 35, poor: 16 },
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/audit`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to audit CWV", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/scotty/fix-issue", async (req, res) => {
+    const { site_id, finding_id, fix_action, url } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const deployerConfig = await resolveWorkerConfig("seo_deployer");
+      
+      if (!deployerConfig.valid || !deployerConfig.base_url) {
+        // Return mock success for demo
+        logger.info("Scotty", "SEO Deployer not configured, returning mock fix");
+        return res.json({
+          ok: true,
+          message: `Fix applied: ${fix_action} on ${url} (demo mode)`,
+          finding_id,
+          status: "completed",
+        });
+      }
+      
+      const response = await fetch(`${deployerConfig.base_url}/deploy`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": deployerConfig.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          site_id: siteId,
+          action: fix_action,
+          url,
+          finding_id,
+        }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to fix issue", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // Agent Status API - Quick health check for agent
   app.get("/api/agents/:agentId/status", async (req, res) => {
     const { agentId } = req.params;

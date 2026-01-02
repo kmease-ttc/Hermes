@@ -13,6 +13,7 @@ import SpeedsterContent from "./speedster/SpeedsterContent";
 import NatashaContent from "./natasha/NatashaContent";
 import SocratesContent from "./socrates/SocratesContent";
 import HemingwayContent from "./hemingway/HemingwayContent";
+import ScottyContent from "./scotty/ScottyContent";
 import GenericAgentContent from "./agents/GenericAgentContent";
 
 export default function AgentDetail() {
@@ -60,6 +61,8 @@ export default function AgentDetail() {
         return <SocratesContent />;
       case "content_generator":
         return <HemingwayContent />;
+      case "crawl_render":
+        return <ScottyContent />;
       default:
         return <GenericAgentContent agentId={agentId} />;
     }
