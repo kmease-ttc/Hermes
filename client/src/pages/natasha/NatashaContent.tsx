@@ -813,14 +813,17 @@ interface AgentSnapshot {
   id: number;
   agentSlug: string;
   siteId: string;
-  scoreValue: number;
-  scoreType: string;
-  metrics: { 
-    totalKeywords?: number; 
-    rankingKeywords?: number; 
-    breakdown?: { top1: number; top3: number; top10: number; top20: number; top50: number; notRanking: number } 
-  };
-  triggerType: string;
+  marketSovPct: number;
+  trackedSovPct: number | null;
+  totalKeywords: number;
+  rankingKeywords: number;
+  notRankingKeywords: number;
+  top1Count: number;
+  top3Count: number;
+  top10Count: number;
+  top20Count: number;
+  top50Count: number;
+  positionDistribution: any;
   timestamp: string;
 }
 
@@ -842,10 +845,10 @@ function TrendsPanel({ alerts, siteId }: { alerts: TrendAlert[]; siteId: string 
       .map((s) => ({
         date: new Date(s.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         timestamp: s.timestamp,
-        marketSov: s.scoreValue,
-        rankingKeywords: s.metrics?.rankingKeywords || 0,
-        totalKeywords: s.metrics?.totalKeywords || 0,
-        top10: (s.metrics?.breakdown?.top1 || 0) + (s.metrics?.breakdown?.top3 || 0) + (s.metrics?.breakdown?.top10 || 0),
+        marketSov: s.marketSovPct,
+        rankingKeywords: s.rankingKeywords || 0,
+        totalKeywords: s.totalKeywords || 0,
+        top10: (s.top1Count || 0) + (s.top3Count || 0) + (s.top10Count || 0),
       }));
   }, [snapshots]);
 
@@ -1080,16 +1083,13 @@ export default function NatashaContent() {
               body: JSON.stringify({
                 agentSlug: "natasha",
                 siteId,
-                scoreValue: sovData.marketSov,
-                scoreType: "market_sov",
-                metrics: {
-                  totalKeywords: sovData.totalKeywords,
-                  rankingKeywords: sovData.rankingKeywords,
-                  breakdown: sovData.breakdown,
-                },
-                triggerType: "run_analysis",
+                marketSovPct: sovData.marketSov,
+                totalKeywords: sovData.totalKeywords,
+                rankingKeywords: sovData.rankingKeywords,
+                breakdown: sovData.breakdown,
               }),
             });
+            queryClient.invalidateQueries({ queryKey: ["natasha-snapshots"] });
           }
         } catch (e) {
           console.error("Failed to save snapshot:", e);

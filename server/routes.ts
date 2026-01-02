@@ -5844,19 +5844,28 @@ Keep responses concise and actionable.`;
   // SEO Agent Snapshots - Save and retrieve historical metrics
   app.post("/api/snapshots", async (req, res) => {
     try {
-      const { agentSlug, siteId, scoreValue, scoreType, metrics, triggerType } = req.body;
+      const { agentSlug, siteId, marketSovPct, trackedSovPct, totalKeywords, rankingKeywords, breakdown } = req.body;
       
-      if (!agentSlug || scoreValue === undefined) {
-        return res.status(400).json({ error: "agentSlug and scoreValue are required" });
+      if (!agentSlug || marketSovPct === undefined) {
+        return res.status(400).json({ error: "agentSlug and marketSovPct are required" });
       }
+      
+      const notRankingKeywords = breakdown?.notRanking || (totalKeywords - rankingKeywords) || 0;
       
       const snapshot = await storage.saveAgentSnapshot({
         agentSlug,
         siteId: siteId || "default",
-        scoreValue,
-        scoreType: scoreType || "sov",
-        metrics: metrics || {},
-        triggerType: triggerType || "manual",
+        marketSovPct,
+        trackedSovPct: trackedSovPct || null,
+        totalKeywords: totalKeywords || 0,
+        rankingKeywords: rankingKeywords || 0,
+        notRankingKeywords,
+        top1Count: breakdown?.top1 || 0,
+        top3Count: breakdown?.top3 || 0,
+        top10Count: breakdown?.top10 || 0,
+        top20Count: breakdown?.top20 || 0,
+        top50Count: breakdown?.top50 || 0,
+        positionDistribution: breakdown || null,
       });
       
       res.json(snapshot);
