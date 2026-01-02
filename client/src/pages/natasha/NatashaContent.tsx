@@ -1148,6 +1148,7 @@ export default function NatashaContent() {
 
   const handleCompetitorAdded = () => {
     queryClient.invalidateQueries({ queryKey: ["competitive-overview", siteId] });
+    queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
   };
   
   const handleAskNatasha = async (question: string) => {
@@ -1194,6 +1195,17 @@ export default function NatashaContent() {
     retry: 1,
   });
   const marketSov = marketSovData?.marketSov || 0;
+
+  // Fetch user-added competitors from database
+  const { data: userAddedCompetitors = [] } = useQuery<Array<{ id: number; siteId: string; agentSlug: string; domain: string; name: string | null; type: string; notes: string | null; createdAt: string }>>({
+    queryKey: ["user-competitors", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/competitive/competitors?siteId=${siteId}&agentSlug=natasha`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60000,
+  });
 
   const runAnalysis = useMutation({
     mutationFn: async () => {
@@ -1554,6 +1566,27 @@ export default function NatashaContent() {
     },
   ], [data, summary, normalizedKpis, uniqueKeywordGaps, marketSov]);
 
+  // Merge user-added competitors with SERP-discovered competitors
+  const mergedCompetitors = useMemo(() => {
+    const existingDomains = new Set(data.competitors.map(c => c.domain.toLowerCase()));
+    const userCompetitorsTransformed: Competitor[] = userAddedCompetitors
+      .filter(uc => !existingDomains.has(uc.domain.toLowerCase()))
+      .map(uc => ({
+        id: `user-${uc.id}`,
+        name: uc.name || uc.domain,
+        domain: uc.domain,
+        type: (uc.type || "direct") as "direct" | "indirect" | "serp-only",
+        visibility: 0,
+        visibilityChange: 0,
+        marketOverlap: 0,
+        keywords: 0,
+        topKeywords: [],
+        lastUpdated: uc.createdAt,
+        deltaScore: undefined,
+      }));
+    return [...data.competitors, ...userCompetitorsTransformed];
+  }, [data.competitors, userAddedCompetitors]);
+
   // Inspector tabs
   const inspectorTabs: InspectorTab[] = useMemo(() => {
     const tabState: WidgetState = error ? "unavailable" : isLoading ? "loading" : "ready";
@@ -1581,7 +1614,7 @@ export default function NatashaContent() {
         content: (
           <>
             <CompetitorsPanel 
-              competitors={data.competitors} 
+              competitors={mergedCompetitors} 
               onRemove={handleRemoveCompetitor}
               onAdd={() => setAddCompetitorOpen(true)}
             />
@@ -1593,7 +1626,7 @@ export default function NatashaContent() {
             />
           </>
         ),
-        badge: data.competitors.length,
+        badge: mergedCompetitors.length,
         state: tabState,
       },
       {
@@ -1613,7 +1646,7 @@ export default function NatashaContent() {
         state: tabState,
       },
     ];
-  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis, siteId]);
+  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis, siteId, mergedCompetitors, addCompetitorOpen]);
 
   const missionPrompt: MissionPromptConfig = {
     label: "Ask Natasha",
