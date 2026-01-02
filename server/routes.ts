@@ -2034,6 +2034,279 @@ Format your response as JSON with these keys:
     }
   });
 
+  // ============================================
+  // Sentinel (Content Decay Monitor) Endpoints
+  // ============================================
+  
+  app.get("/api/sentinel/data", async (req, res) => {
+    const siteId = (req.query.siteId as string) || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("content_decay");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Sentinel", "Content Decay worker not configured, returning mock data");
+        return res.json({
+          metrics: {
+            decayingPages: 5,
+            keywordsAtRisk: 12,
+            trafficLossRisk: 2400,
+            avgDecaySeverity: 62,
+            lastScanAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            isConfigured: false,
+          },
+          decayingContent: [
+            {
+              id: "1",
+              url: "/blog/anxiety-treatment-guide",
+              title: "Complete Guide to Anxiety Treatment",
+              primaryKeywords: ["anxiety treatment", "anxiety therapy"],
+              previousRank: 4,
+              currentRank: 11,
+              rankChange: -7,
+              estimatedTrafficLoss: 850,
+              decaySeverity: "critical",
+              severityScore: 85,
+              recommendedAction: "Update content with recent statistics and add FAQ section",
+              fixable: true,
+              fixAction: "queue_refresh",
+              lastUpdated: "2025-08-15",
+            },
+            {
+              id: "2",
+              url: "/services/couples-therapy",
+              title: "Couples Therapy Services",
+              primaryKeywords: ["couples therapy", "marriage counseling"],
+              previousRank: 6,
+              currentRank: 15,
+              rankChange: -9,
+              estimatedTrafficLoss: 620,
+              decaySeverity: "critical",
+              severityScore: 78,
+              recommendedAction: "Refresh case studies and add testimonials section",
+              fixable: true,
+              fixAction: "queue_refresh",
+              lastUpdated: "2025-06-20",
+            },
+            {
+              id: "3",
+              url: "/blog/depression-symptoms",
+              title: "Recognizing Depression Symptoms",
+              primaryKeywords: ["depression symptoms", "signs of depression"],
+              previousRank: 8,
+              currentRank: 14,
+              rankChange: -6,
+              estimatedTrafficLoss: 480,
+              decaySeverity: "warning",
+              severityScore: 58,
+              recommendedAction: "Add expert quotes and update statistics",
+              fixable: true,
+              fixAction: "queue_refresh",
+              lastUpdated: "2025-09-10",
+            },
+            {
+              id: "4",
+              url: "/resources/mental-health-tips",
+              title: "Daily Mental Health Tips",
+              primaryKeywords: ["mental health tips"],
+              previousRank: 12,
+              currentRank: 18,
+              rankChange: -6,
+              estimatedTrafficLoss: 280,
+              decaySeverity: "warning",
+              severityScore: 45,
+              recommendedAction: "Expand content and add actionable steps",
+              fixable: true,
+              fixAction: "queue_refresh",
+              lastUpdated: "2025-07-05",
+            },
+            {
+              id: "5",
+              url: "/blog/stress-management",
+              title: "Stress Management Techniques",
+              primaryKeywords: ["stress management", "stress relief"],
+              previousRank: 15,
+              currentRank: 19,
+              rankChange: -4,
+              estimatedTrafficLoss: 170,
+              decaySeverity: "mild",
+              severityScore: 28,
+              recommendedAction: "Minor refresh with updated links",
+              fixable: true,
+              fixAction: "queue_refresh",
+              lastUpdated: "2025-10-01",
+            },
+          ],
+          trends: [
+            { date: "2025-12-27", decayingPages: 3, keywordsLost: 8, keywordsRecovered: 2, trafficAtRisk: 1800, pagesRefreshed: 1, pagesRecovered: 0 },
+            { date: "2025-12-28", decayingPages: 4, keywordsLost: 10, keywordsRecovered: 3, trafficAtRisk: 2100, pagesRefreshed: 0, pagesRecovered: 1 },
+            { date: "2025-12-29", decayingPages: 4, keywordsLost: 11, keywordsRecovered: 2, trafficAtRisk: 2200, pagesRefreshed: 2, pagesRecovered: 1 },
+            { date: "2025-12-30", decayingPages: 5, keywordsLost: 12, keywordsRecovered: 1, trafficAtRisk: 2400, pagesRefreshed: 1, pagesRecovered: 0 },
+            { date: "2025-12-31", decayingPages: 5, keywordsLost: 12, keywordsRecovered: 2, trafficAtRisk: 2400, pagesRefreshed: 0, pagesRecovered: 2 },
+            { date: "2026-01-01", decayingPages: 5, keywordsLost: 11, keywordsRecovered: 3, trafficAtRisk: 2300, pagesRefreshed: 1, pagesRecovered: 1 },
+            { date: "2026-01-02", decayingPages: 5, keywordsLost: 12, keywordsRecovered: 2, trafficAtRisk: 2400, pagesRefreshed: 0, pagesRecovered: 0 },
+          ],
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/data?site_id=${siteId}`, {
+        headers: {
+          "X-Api-Key": config.api_key || "",
+        },
+      });
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      logger.error("API", "Failed to fetch Sentinel data", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+  
+  app.post("/api/sentinel/detect", async (req, res) => {
+    const { siteId } = req.body;
+    
+    try {
+      const config = await resolveWorkerConfig("content_decay");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Sentinel", "Content Decay worker not configured, returning mock detection");
+        return res.json({
+          ok: true,
+          message: "Decay detection complete (demo mode)",
+          pagesAnalyzed: 156,
+          decayingPages: 5,
+          keywordsAtRisk: 12,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/detect`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to run decay detection", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+  
+  app.post("/api/sentinel/prioritize", async (req, res) => {
+    const { siteId } = req.body;
+    
+    try {
+      const config = await resolveWorkerConfig("content_decay");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Sentinel", "Content Decay worker not configured, returning mock prioritization");
+        return res.json({
+          ok: true,
+          message: "Content prioritized by impact (demo mode)",
+          prioritizedCount: 5,
+          criticalCount: 2,
+          warningCount: 2,
+          mildCount: 1,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/prioritize`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to prioritize content", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+  
+  app.post("/api/sentinel/refresh", async (req, res) => {
+    const { siteId, contentId, url } = req.body;
+    
+    try {
+      const deployerConfig = await resolveWorkerConfig("seo_deployer");
+      
+      if (!deployerConfig.valid || !deployerConfig.base_url) {
+        logger.info("Sentinel", "SEO Deployer not configured, returning mock refresh");
+        return res.json({
+          ok: true,
+          message: `Refresh queued for ${url} (demo mode)`,
+          contentId,
+          status: "queued",
+        });
+      }
+      
+      const response = await fetch(`${deployerConfig.base_url}/queue-refresh`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": deployerConfig.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          site_id: siteId,
+          content_id: contentId,
+          url,
+          action: "refresh",
+        }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to queue content refresh", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+  
+  app.post("/api/sentinel/bulk-refresh", async (req, res) => {
+    const { siteId, contentIds } = req.body;
+    
+    try {
+      const deployerConfig = await resolveWorkerConfig("seo_deployer");
+      
+      if (!deployerConfig.valid || !deployerConfig.base_url) {
+        logger.info("Sentinel", "SEO Deployer not configured, returning mock bulk refresh");
+        return res.json({
+          ok: true,
+          message: `Bulk refresh queued for ${contentIds.length} pages (demo mode)`,
+          queuedCount: contentIds.length,
+          status: "queued",
+        });
+      }
+      
+      const response = await fetch(`${deployerConfig.base_url}/bulk-queue`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": deployerConfig.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          site_id: siteId,
+          content_ids: contentIds,
+          action: "refresh",
+        }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data });
+    } catch (error: any) {
+      logger.error("API", "Failed to queue bulk refresh", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // Agent Status API - Quick health check for agent
   app.get("/api/agents/:agentId/status", async (req, res) => {
     const { agentId } = req.params;

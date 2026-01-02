@@ -14,6 +14,7 @@ import NatashaContent from "./natasha/NatashaContent";
 import SocratesContent from "./socrates/SocratesContent";
 import HemingwayContent from "./hemingway/HemingwayContent";
 import ScottyContent from "./scotty/ScottyContent";
+import SentinelContent from "./sentinel/SentinelContent";
 import GenericAgentContent from "./agents/GenericAgentContent";
 
 export default function AgentDetail() {
@@ -63,6 +64,8 @@ export default function AgentDetail() {
         return <HemingwayContent />;
       case "crawl_render":
         return <ScottyContent />;
+      case "content_decay":
+        return <SentinelContent />;
       default:
         return <GenericAgentContent agentId={agentId} />;
     }
