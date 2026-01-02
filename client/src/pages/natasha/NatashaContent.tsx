@@ -1147,6 +1147,147 @@ function TrendsPanel({ alerts, siteId }: { alerts: TrendAlert[]; siteId: string 
   );
 }
 
+// Achievement type from database
+interface Achievement {
+  id: number;
+  siteId: string;
+  agentSlug: string;
+  type: string;
+  title: string;
+  description: string | null;
+  value: any;
+  achievedAt: string;
+  createdAt: string;
+}
+
+function AchievementsPanel({ siteId }: { siteId: string }) {
+  const queryClient = useQueryClient();
+  
+  const { data: achievements = [], isLoading, refetch } = useQuery<Achievement[]>({
+    queryKey: ["achievements", siteId, "natasha"],
+    queryFn: async () => {
+      const res = await fetch(`/api/achievements?siteId=${siteId}&agentSlug=natasha&limit=20`);
+      if (!res.ok) throw new Error("Failed to fetch achievements");
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
+  const computeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/achievements/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteId, agentSlug: "natasha" }),
+      });
+      if (!res.ok) throw new Error("Failed to compute achievements");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.count > 0) {
+        toast.success(`Found ${data.count} new achievement${data.count > 1 ? 's' : ''}!`);
+      } else {
+        toast.info("No new achievements to add");
+      }
+      refetch();
+    },
+    onError: () => {
+      toast.error("Failed to compute achievements");
+    },
+  });
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "ranking": return <ArrowUp className="w-4 h-4" />;
+      case "sov": return <TrendingUp className="w-4 h-4" />;
+      case "milestone": return <Trophy className="w-4 h-4" />;
+      case "competitor": return <Swords className="w-4 h-4" />;
+      default: return <Sparkles className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "ranking": return "bg-semantic-success/20 text-semantic-success";
+      case "sov": return "bg-semantic-info/20 text-semantic-info";
+      case "milestone": return "bg-accent-gold/20 text-accent-gold";
+      case "competitor": return "bg-semantic-warning/20 text-semantic-warning";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 text-center">
+        <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading achievements...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-foreground">Agent Wins & Milestones</h4>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => computeMutation.mutate()}
+          disabled={computeMutation.isPending}
+          data-testid="button-compute-achievements"
+        >
+          {computeMutation.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Check for Wins
+        </Button>
+      </div>
+
+      {achievements.length === 0 ? (
+        <div className="p-6 text-center border border-dashed border-border rounded-lg">
+          <Trophy className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No achievements yet</p>
+          <p className="text-sm text-muted-foreground mt-1">Run analysis and check for wins to track your progress.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {achievements.map((achievement) => (
+            <div 
+              key={achievement.id} 
+              className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg border border-border/50"
+              data-testid={`achievement-card-${achievement.id}`}
+            >
+              <div className={cn("p-2 rounded-lg", getTypeColor(achievement.type))}>
+                {getTypeIcon(achievement.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h5 className="font-medium text-sm text-foreground truncate">{achievement.title}</h5>
+                  <Badge variant="outline" className="text-xs shrink-0">
+                    {achievement.type}
+                  </Badge>
+                </div>
+                {achievement.description && (
+                  <p className="text-xs text-muted-foreground mt-1">{achievement.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {new Date(achievement.achievedAt).toLocaleDateString("en-US", { 
+                    month: "short", 
+                    day: "numeric", 
+                    year: "numeric" 
+                  })}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1685,6 +1826,13 @@ export default function NatashaContent() {
         icon: <TrendingUp className="w-4 h-4" />,
         content: <TrendsPanel alerts={data.alerts} siteId={siteId} />,
         badge: data.alerts.length > 0 ? data.alerts.length : undefined,
+        state: tabState,
+      },
+      {
+        id: "achievements",
+        label: "Wins",
+        icon: <Trophy className="w-4 h-4" />,
+        content: <AchievementsPanel siteId={siteId} />,
         state: tabState,
       },
     ];

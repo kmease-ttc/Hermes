@@ -5190,6 +5190,200 @@ Return JSON:
     }
   });
 
+  // Agent Achievements Endpoints
+  app.get("/api/achievements", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      const agentSlug = req.query.agentSlug as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      if (agentSlug) {
+        const achievements = await storage.getAchievements(agentSlug, siteId, limit);
+        res.json(achievements);
+      } else {
+        const achievements = await storage.getRecentAchievements(siteId, limit);
+        res.json(achievements);
+      }
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to fetch achievements", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/achievements", async (req, res) => {
+    try {
+      const { siteId = "default", agentSlug, type, title, description, value, achievedAt } = req.body;
+      
+      if (!agentSlug || !type || !title) {
+        return res.status(400).json({ error: "agentSlug, type, and title are required" });
+      }
+      
+      // Check for duplicate
+      const exists = await storage.hasAchievement(agentSlug, siteId, type, title);
+      if (exists) {
+        return res.status(409).json({ error: "Achievement already exists" });
+      }
+      
+      const achievement = await storage.saveAchievement({
+        siteId,
+        agentSlug,
+        type,
+        title,
+        description: description || null,
+        value: value || null,
+        achievedAt: achievedAt ? new Date(achievedAt) : undefined,
+      });
+      
+      logger.info("Achievements", "Added achievement", { siteId, agentSlug, type, title });
+      res.json(achievement);
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to add achievement", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/achievements/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid achievement ID" });
+      }
+      
+      await storage.deleteAchievement(id);
+      logger.info("Achievements", "Deleted achievement", { id });
+      res.json({ ok: true });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to delete achievement", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Compute achievements from snapshots and rankings
+  app.post("/api/achievements/compute", async (req, res) => {
+    try {
+      const { siteId = "default", agentSlug = "natasha" } = req.body;
+      
+      const newAchievements: Array<{ type: string; title: string; description: string; value: any }> = [];
+      
+      // Get snapshots for this agent
+      const snapshots = await storage.getAgentSnapshots(agentSlug, siteId, 30);
+      
+      if (snapshots.length >= 2) {
+        const latest = snapshots[0];
+        const previous = snapshots[1];
+        
+        // Check for SOV increase achievement
+        if (latest.marketSovPct > previous.marketSovPct) {
+          const increase = (latest.marketSovPct - previous.marketSovPct).toFixed(1);
+          const title = `SOV Increased by ${increase}%`;
+          const exists = await storage.hasAchievement(agentSlug, siteId, "sov", title);
+          if (!exists) {
+            newAchievements.push({
+              type: "sov",
+              title,
+              description: `Market Share of Voice grew from ${previous.marketSovPct.toFixed(1)}% to ${latest.marketSovPct.toFixed(1)}%`,
+              value: { from: previous.marketSovPct, to: latest.marketSovPct, increase: parseFloat(increase) },
+            });
+          }
+        }
+        
+        // Check for ranking improvements
+        if (latest.top3Count > previous.top3Count) {
+          const gained = latest.top3Count - previous.top3Count;
+          const title = `Gained ${gained} Top 3 Position${gained > 1 ? 's' : ''}`;
+          const exists = await storage.hasAchievement(agentSlug, siteId, "ranking", title);
+          if (!exists) {
+            newAchievements.push({
+              type: "ranking",
+              title,
+              description: `Moved from ${previous.top3Count} to ${latest.top3Count} keywords in top 3`,
+              value: { from: previous.top3Count, to: latest.top3Count, gained },
+            });
+          }
+        }
+        
+        // Check for new #1 positions
+        if (latest.top1Count > previous.top1Count) {
+          const gained = latest.top1Count - previous.top1Count;
+          const title = `Claimed ${gained} #1 Position${gained > 1 ? 's' : ''}`;
+          const exists = await storage.hasAchievement(agentSlug, siteId, "ranking", title);
+          if (!exists) {
+            newAchievements.push({
+              type: "ranking",
+              title,
+              description: `Now ranking #1 for ${latest.top1Count} keyword${latest.top1Count > 1 ? 's' : ''}`,
+              value: { from: previous.top1Count, to: latest.top1Count, gained },
+            });
+          }
+        }
+      }
+      
+      // Check for milestone achievements
+      if (snapshots.length > 0) {
+        const latest = snapshots[0];
+        
+        // SOV milestones: 10%, 25%, 50%, 75%
+        const sovMilestones = [10, 25, 50, 75];
+        for (const milestone of sovMilestones) {
+          if (latest.marketSovPct >= milestone) {
+            const title = `Reached ${milestone}% Market SOV`;
+            const exists = await storage.hasAchievement(agentSlug, siteId, "milestone", title);
+            if (!exists) {
+              newAchievements.push({
+                type: "milestone",
+                title,
+                description: `Market Share of Voice reached ${milestone}% milestone`,
+                value: { milestone, currentSov: latest.marketSovPct },
+              });
+            }
+          }
+        }
+        
+        // Top 10 keyword count milestones
+        const keywordMilestones = [5, 10, 25, 50, 100];
+        for (const milestone of keywordMilestones) {
+          if (latest.top10Count >= milestone) {
+            const title = `${milestone} Keywords in Top 10`;
+            const exists = await storage.hasAchievement(agentSlug, siteId, "milestone", title);
+            if (!exists) {
+              newAchievements.push({
+                type: "milestone",
+                title,
+                description: `Now ranking in top 10 for ${milestone}+ keywords`,
+                value: { milestone, currentCount: latest.top10Count },
+              });
+            }
+          }
+        }
+      }
+      
+      // Save new achievements
+      for (const ach of newAchievements) {
+        await storage.saveAchievement({
+          siteId,
+          agentSlug,
+          type: ach.type,
+          title: ach.title,
+          description: ach.description,
+          value: ach.value,
+        });
+      }
+      
+      logger.info("Achievements", "Computed achievements", { siteId, agentSlug, newCount: newAchievements.length });
+      
+      res.json({
+        ok: true,
+        siteId,
+        agentSlug,
+        newAchievements,
+        count: newAchievements.length,
+      });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to compute achievements", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // SERP Tracking Endpoints
   
   // Generate target keywords using AI
