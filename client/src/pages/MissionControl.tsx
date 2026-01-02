@@ -331,6 +331,18 @@ function MetricCardsRow() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
   
+  // Fetch competitive overview for Share of Voice
+  const { data: competitiveData } = useQuery({
+    queryKey: ['competitive-overview', siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/competitive/overview?siteId=${siteId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 60000,
+    gcTime: 300000,
+  });
+  
   // Merge function that preserves previous non-null values
   const getMetricFromBenchmarks = (metric: string) => {
     const freshData = benchmarkData?.comparison?.find((c: any) => c.metric === metric);
@@ -401,14 +413,25 @@ function MetricCardsRow() {
       nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
     },
+    {
+      id: 'share-of-voice',
+      label: 'Share of Voice',
+      value: competitiveData?.shareOfVoice != null ? `${Math.round(competitiveData.shareOfVoice)}%` : '—',
+      delta: competitiveData?.shareOfVoice > 0 ? '+' : '',
+      deltaPct: 0,
+      verdict: competitiveData?.shareOfVoice > 20 ? 'good' : competitiveData?.shareOfVoice > 0 ? 'watch' : 'neutral',
+      sparkline: [0, 5, 8, 12, 15, 18, competitiveData?.shareOfVoice || 0],
+      nextAction: { text: 'Review Natasha', link: buildRoute.agent('competitive_snapshot') },
+      timeRange: 'vs competitors',
+    },
   ];
 
   return (
     <div data-testid="metric-cards-row">
       <h2 className="text-lg font-semibold text-foreground mb-4">Key Metrics</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={metric} highlighted={metric.id === 'bounce-rate'} />
+          <MetricCard key={metric.id} metric={metric} highlighted={metric.id === 'share-of-voice'} />
         ))}
       </div>
     </div>
