@@ -620,29 +620,64 @@ export default function SentinelContent() {
     return "warning";
   };
 
+  const Icon = crew?.icon || FileText;
+
   const crewIdentity: CrewIdentity = {
-    serviceId: crew?.service_id || "content_decay",
-    nickname: crew?.nickname || "Sentinel",
-    role: crew?.role || "Content Decay Monitor",
-    avatar: crew?.avatar,
-    icon: crew?.icon,
-    color: crew?.color || "#6366F1",
-    blurb: crew?.blurb || "Detect, prioritize, and reverse content decay before rankings are lost.",
-  };
-
-  const missionStatus: MissionStatusState = {
-    lastRunAt: metrics.lastScanAt,
-    nextRunAt: null,
-    isRunning: detectDecayMutation.isPending || prioritizeMutation.isPending,
-    lastError: null,
-  };
-
-  const missionPrompt: MissionPromptConfig = {
-    inlinePrompt: "Detect, prioritize, and reverse content decay before rankings and traffic are lost.",
+    crewId: "content_decay",
+    crewName: crew?.nickname || "Sentinel",
+    subtitle: crew?.role || "Content Decay Monitor",
+    description: "Detect, prioritize, and reverse content decay before rankings and traffic are lost.",
+    avatar: <Icon className="w-6 h-6" style={{ color: crew?.color || "#6366F1" }} />,
+    accentColor: crew?.color || "#6366F1",
+    capabilities: ["Content Analysis", "Trend Detection", "Refresh Prioritization"],
+    monitors: ["Keyword Positions", "Traffic Trends", "Content Freshness"],
   };
 
   const criticalCount = decayingContent.filter(c => c.decaySeverity === "critical").length;
   const warningCount = decayingContent.filter(c => c.decaySeverity === "warning").length;
+  const mildCount = decayingContent.filter(c => c.decaySeverity === "mild").length;
+  const fixableCount = decayingContent.filter(c => c.fixable).length;
+
+  const missionStatus: MissionStatusState = useMemo(() => {
+    if (criticalCount > 0) {
+      return {
+        tier: "needs_attention" as const,
+        summaryLine: `${criticalCount} critical page${criticalCount > 1 ? "s" : ""} need refresh`,
+        nextStep: "Refresh critical content to recover lost rankings",
+        priorityCount: criticalCount + warningCount,
+        blockerCount: criticalCount,
+        autoFixableCount: fixableCount,
+        status: isLoading ? ("loading" as const) : ("ready" as const),
+        performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+      };
+    }
+    if (warningCount > 0) {
+      return {
+        tier: "doing_okay" as const,
+        summaryLine: `${warningCount} page${warningCount > 1 ? "s" : ""} showing early decay`,
+        nextStep: "Monitor closely or consider a proactive refresh",
+        priorityCount: warningCount + mildCount,
+        blockerCount: 0,
+        autoFixableCount: fixableCount,
+        status: isLoading ? ("loading" as const) : ("ready" as const),
+        performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+      };
+    }
+    return {
+      tier: "looking_good" as const,
+      summaryLine: "All content is healthy",
+      nextStep: "Continue monitoring for decay signals",
+      priorityCount: mildCount,
+      blockerCount: 0,
+      autoFixableCount: 0,
+      status: isLoading ? ("loading" as const) : ("ready" as const),
+      performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+    };
+  }, [criticalCount, warningCount, mildCount, fixableCount, metrics.avgDecaySeverity, isLoading]);
+
+  const missionPrompt: MissionPromptConfig = {
+    inlinePrompt: "Detect, prioritize, and reverse content decay before rankings and traffic are lost.",
+  };
 
   const missions: MissionItem[] = [
     {
@@ -679,10 +714,19 @@ export default function SentinelContent() {
 
   const headerActions: HeaderAction[] = [
     {
+      id: "run-scan",
       label: "Run Scan",
       icon: <Play className="w-4 h-4" />,
+      tooltip: "Scan for content decay",
       onClick: () => detectDecayMutation.mutate(),
       loading: detectDecayMutation.isPending,
+    },
+    {
+      id: "refresh",
+      icon: <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />,
+      tooltip: "Refresh data",
+      onClick: () => detectDecayMutation.mutate(),
+      loading: isLoading,
     },
   ];
 
@@ -721,43 +765,52 @@ export default function SentinelContent() {
     },
   ];
 
+  const keyMetrics = useMemo(() => [
+    {
+      id: "decaying-pages",
+      label: "Decaying Pages",
+      value: metrics.decayingPages ?? 0,
+      icon: FileText,
+      status: getDecayingPagesStatus(metrics.decayingPages ?? 0),
+    },
+    {
+      id: "keywords-at-risk",
+      label: "Keywords at Risk",
+      value: metrics.keywordsAtRisk ?? 0,
+      icon: Target,
+      status: (metrics.keywordsAtRisk ?? 0) > 5 ? "warning" : ("good" as const),
+    },
+    {
+      id: "traffic-loss-risk",
+      label: "Traffic at Risk",
+      value: metrics.trafficLossRisk ?? 0,
+      icon: TrendingDown,
+      status: (metrics.trafficLossRisk ?? 0) > 1000 ? "warning" : ("good" as const),
+    },
+    {
+      id: "avg-decay-severity",
+      label: "Avg Severity",
+      value: metrics.avgDecaySeverity ?? 0,
+      icon: Flame,
+      status: getSeverityStatus(metrics.avgDecaySeverity ?? 0),
+    },
+  ], [metrics]);
+
   return (
     <CrewDashboardShell
       crew={crewIdentity}
+      agentScore={100 - (metrics.avgDecaySeverity ?? 0)}
+      agentScoreTooltip="Content health score - inverse of average decay severity"
       missionStatus={missionStatus}
+      missions={missions}
       missionPrompt={missionPrompt}
+      inspectorTabs={[]}
       headerActions={headerActions}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
+      onRefresh={() => detectDecayMutation.mutate()}
       isLoading={isLoading}
     >
       <div className="space-y-6">
-        <KeyMetricsGrid
-          metrics={[
-            {
-              id: "decaying-pages",
-              label: "Decaying Pages",
-              value: metrics.decayingPages ?? 0,
-              status: getDecayingPagesStatus(metrics.decayingPages ?? 0),
-            },
-            {
-              id: "keywords-at-risk",
-              label: "Keywords at Risk",
-              value: metrics.keywordsAtRisk ?? 0,
-              status: (metrics.keywordsAtRisk ?? 0) > 5 ? "warning" : "good",
-            },
-            {
-              id: "traffic-loss-risk",
-              label: "Traffic at Risk (visits/mo)",
-              value: metrics.trafficLossRisk ?? 0,
-              status: (metrics.trafficLossRisk ?? 0) > 1000 ? "warning" : "good",
-            },
-            {
-              id: "avg-decay-severity",
-              label: "Avg Severity (0-100)",
-              value: metrics.avgDecaySeverity ?? 0,
-              status: getSeverityStatus(metrics.avgDecaySeverity ?? 0),
-            },
-          ]}
-        />
 
         <Card className="border-muted/50">
           <CardHeader className="pb-2">
