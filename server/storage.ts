@@ -54,6 +54,9 @@ import {
   seoAgentSnapshots,
   type SeoAgentSnapshot,
   type InsertSeoAgentSnapshot,
+  seoAgentCompetitors,
+  type SeoAgentCompetitor,
+  type InsertSeoAgentCompetitor,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -471,6 +474,11 @@ export interface IStorage {
   saveRecommendations(recs: InsertKbRecommendation[]): Promise<void>;
   getRecommendationsCount(siteId: string): Promise<number>;
   updateRecommendationStatus(recommendationId: string, status: string): Promise<void>;
+
+  // SEO Agent Competitors
+  getCompetitors(siteId: string, agentSlug?: string): Promise<SeoAgentCompetitor[]>;
+  addCompetitor(competitor: InsertSeoAgentCompetitor): Promise<SeoAgentCompetitor>;
+  deleteCompetitor(id: number): Promise<void>;
 }
 
 class DBStorage implements IStorage {
@@ -2709,6 +2717,27 @@ class DBStorage implements IStorage {
       .update(kbRecommendations)
       .set({ status })
       .where(eq(kbRecommendations.recommendationId, recommendationId));
+  }
+
+  // SEO Agent Competitors
+  async getCompetitors(siteId: string, agentSlug = "natasha"): Promise<SeoAgentCompetitor[]> {
+    return db
+      .select()
+      .from(seoAgentCompetitors)
+      .where(and(
+        eq(seoAgentCompetitors.siteId, siteId),
+        eq(seoAgentCompetitors.agentSlug, agentSlug)
+      ))
+      .orderBy(desc(seoAgentCompetitors.createdAt));
+  }
+
+  async addCompetitor(competitor: InsertSeoAgentCompetitor): Promise<SeoAgentCompetitor> {
+    const [result] = await db.insert(seoAgentCompetitors).values(competitor).returning();
+    return result;
+  }
+
+  async deleteCompetitor(id: number): Promise<void> {
+    await db.delete(seoAgentCompetitors).where(eq(seoAgentCompetitors.id, id));
   }
 }
 

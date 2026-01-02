@@ -5006,6 +5006,60 @@ Return JSON:
     }
   });
 
+  // Competitor management endpoints
+  app.get("/api/competitive/competitors", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      const agentSlug = (req.query.agentSlug as string) || "natasha";
+      const competitors = await storage.getCompetitors(siteId, agentSlug);
+      res.json(competitors);
+    } catch (error: any) {
+      logger.error("Competitive", "Failed to fetch competitors", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/competitive/competitors", async (req, res) => {
+    try {
+      const { siteId = "default", agentSlug = "natasha", domain, name, type = "direct", notes } = req.body;
+      
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+      
+      const competitor = await storage.addCompetitor({
+        siteId,
+        agentSlug,
+        domain,
+        name: name || null,
+        type,
+        notes: notes || null,
+      });
+      
+      logger.info("Competitive", "Added competitor", { siteId, domain });
+      res.json(competitor);
+    } catch (error: any) {
+      logger.error("Competitive", "Failed to add competitor", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/competitive/competitors/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid competitor ID" });
+      }
+      
+      await storage.deleteCompetitor(id);
+      logger.info("Competitive", "Deleted competitor", { id });
+      res.json({ ok: true });
+    } catch (error: any) {
+      logger.error("Competitive", "Failed to delete competitor", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // SERP Tracking Endpoints
   
   // Generate target keywords using AI

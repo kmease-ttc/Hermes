@@ -2047,3 +2047,22 @@ export const insertSeoAgentSnapshotSchema = createInsertSchema(seoAgentSnapshots
 });
 export type InsertSeoAgentSnapshot = z.infer<typeof insertSeoAgentSnapshotSchema>;
 export type SeoAgentSnapshot = typeof seoAgentSnapshots.$inferSelect;
+
+// SEO Agent Competitors - Track competitor domains for competitive analysis
+export const seoAgentCompetitors = pgTable("seo_agent_competitors", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().default("default"),
+  agentSlug: text("agent_slug").notNull().default("natasha"),
+  domain: text("domain").notNull(),
+  name: text("name"),
+  type: text("type").default("direct"), // direct, indirect, serp-only
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSeoAgentCompetitorSchema = createInsertSchema(seoAgentCompetitors).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSeoAgentCompetitor = z.infer<typeof insertSeoAgentCompetitorSchema>;
+export type SeoAgentCompetitor = typeof seoAgentCompetitors.$inferSelect;

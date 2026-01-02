@@ -7,6 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Users, 
   TrendingUp, 
@@ -708,6 +713,139 @@ function OverviewPanel({
   );
 }
 
+interface AddCompetitorDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  siteId: string;
+  onSuccess: () => void;
+}
+
+function AddCompetitorDialog({ open, onOpenChange, siteId, onSuccess }: AddCompetitorDialogProps) {
+  const [domain, setDomain] = useState("");
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"direct" | "indirect" | "serp-only">("direct");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!domain.trim()) {
+      toast.error("Domain is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/competitive/competitors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteId,
+          agentSlug: "natasha",
+          domain: domain.trim(),
+          name: name.trim() || null,
+          type,
+          notes: notes.trim() || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to add competitor");
+      }
+
+      toast.success("Competitor added successfully");
+      setDomain("");
+      setName("");
+      setType("direct");
+      setNotes("");
+      onOpenChange(false);
+      onSuccess();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add competitor");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Competitor</DialogTitle>
+          <DialogDescription>
+            Add a competitor domain to track in your competitive analysis.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="domain">Domain *</Label>
+              <Input
+                id="domain"
+                placeholder="competitor.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                data-testid="input-competitor-domain"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name (optional)</Label>
+              <Input
+                id="name"
+                placeholder="Competitor Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="input-competitor-name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="type">Type</Label>
+              <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
+                <SelectTrigger data-testid="select-competitor-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">Direct Competitor</SelectItem>
+                  <SelectItem value="indirect">Indirect Competitor</SelectItem>
+                  <SelectItem value="serp-only">SERP Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Any additional notes about this competitor..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                data-testid="input-competitor-notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting} data-testid="button-submit-competitor">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add Competitor"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CompetitorsPanel({ 
   competitors, 
   onRemove, 
@@ -722,7 +860,7 @@ function CompetitorsPanel({
       <div className="p-6 text-center">
         <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
         <p className="text-muted-foreground mb-4">No competitors detected yet</p>
-        <Button variant="outline" onClick={onAdd}>
+        <Button variant="outline" onClick={onAdd} data-testid="button-add-competitor-empty">
           <Plus className="w-4 h-4 mr-2" />
           Add Competitor
         </Button>
@@ -733,14 +871,14 @@ function CompetitorsPanel({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={onAdd}>
+        <Button variant="outline" size="sm" onClick={onAdd} data-testid="button-add-competitor">
           <Plus className="w-4 h-4 mr-1" />
           Add Competitor
         </Button>
       </div>
       <div className="space-y-3">
-        {competitors.map((competitor) => (
-          <CompetitorRow key={competitor.id} competitor={competitor} onRemove={onRemove} />
+        {competitors.map((competitor, idx) => (
+          <CompetitorRow key={competitor.id || competitor.domain || idx} competitor={competitor} onRemove={onRemove} />
         ))}
       </div>
     </div>
@@ -1004,8 +1142,13 @@ export default function NatashaContent() {
   const queryClient = useQueryClient();
   const [isRunning, setIsRunning] = useState(false);
   const [isAskingNatasha, setIsAskingNatasha] = useState(false);
+  const [addCompetitorOpen, setAddCompetitorOpen] = useState(false);
 
   const siteId = currentSite?.siteId || "default";
+
+  const handleCompetitorAdded = () => {
+    queryClient.invalidateQueries({ queryKey: ["competitive-overview", siteId] });
+  };
   
   const handleAskNatasha = async (question: string) => {
     setIsAskingNatasha(true);
@@ -1436,11 +1579,19 @@ export default function NatashaContent() {
         label: "Competitors",
         icon: <Users className="w-4 h-4" />,
         content: (
-          <CompetitorsPanel 
-            competitors={data.competitors} 
-            onRemove={handleRemoveCompetitor}
-            onAdd={() => toast.info("Add competitor coming soon")}
-          />
+          <>
+            <CompetitorsPanel 
+              competitors={data.competitors} 
+              onRemove={handleRemoveCompetitor}
+              onAdd={() => setAddCompetitorOpen(true)}
+            />
+            <AddCompetitorDialog
+              open={addCompetitorOpen}
+              onOpenChange={setAddCompetitorOpen}
+              siteId={siteId}
+              onSuccess={handleCompetitorAdded}
+            />
+          </>
         ),
         badge: data.competitors.length,
         state: tabState,
