@@ -158,6 +158,12 @@ import {
   kbRecommendations,
   type KbRecommendation,
   type InsertKbRecommendation,
+  seoAgentCompetitors,
+  type SeoAgentCompetitor,
+  type InsertSeoAgentCompetitor,
+  agentAchievements,
+  type AgentAchievement,
+  type InsertAgentAchievement,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -2738,6 +2744,51 @@ class DBStorage implements IStorage {
 
   async deleteCompetitor(id: number): Promise<void> {
     await db.delete(seoAgentCompetitors).where(eq(seoAgentCompetitors.id, id));
+  }
+
+  // Agent Achievements
+  async saveAchievement(achievement: InsertAgentAchievement): Promise<AgentAchievement> {
+    const [result] = await db.insert(agentAchievements).values(achievement).returning();
+    return result;
+  }
+
+  async getAchievements(agentSlug: string, siteId = "default", limit = 20): Promise<AgentAchievement[]> {
+    return db
+      .select()
+      .from(agentAchievements)
+      .where(and(
+        eq(agentAchievements.agentSlug, agentSlug),
+        eq(agentAchievements.siteId, siteId)
+      ))
+      .orderBy(desc(agentAchievements.achievedAt))
+      .limit(limit);
+  }
+
+  async getRecentAchievements(siteId = "default", limit = 10): Promise<AgentAchievement[]> {
+    return db
+      .select()
+      .from(agentAchievements)
+      .where(eq(agentAchievements.siteId, siteId))
+      .orderBy(desc(agentAchievements.achievedAt))
+      .limit(limit);
+  }
+
+  async hasAchievement(agentSlug: string, siteId: string, type: string, title: string): Promise<boolean> {
+    const existing = await db
+      .select({ id: agentAchievements.id })
+      .from(agentAchievements)
+      .where(and(
+        eq(agentAchievements.agentSlug, agentSlug),
+        eq(agentAchievements.siteId, siteId),
+        eq(agentAchievements.type, type),
+        eq(agentAchievements.title, title)
+      ))
+      .limit(1);
+    return existing.length > 0;
+  }
+
+  async deleteAchievement(id: number): Promise<void> {
+    await db.delete(agentAchievements).where(eq(agentAchievements.id, id));
   }
 }
 

@@ -2066,3 +2066,23 @@ export const insertSeoAgentCompetitorSchema = createInsertSchema(seoAgentCompeti
 });
 export type InsertSeoAgentCompetitor = z.infer<typeof insertSeoAgentCompetitorSchema>;
 export type SeoAgentCompetitor = typeof seoAgentCompetitors.$inferSelect;
+
+// Agent Achievements - Track wins and milestones for each agent
+export const agentAchievements = pgTable("agent_achievements", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().default("default"),
+  agentSlug: text("agent_slug").notNull(), // natasha, lookout, scotty, etc.
+  type: text("type").notNull(), // ranking, sov, competitor, execution
+  title: text("title").notNull(),
+  description: text("description"),
+  value: jsonb("value"), // Flexible JSON for storing achievement-specific data
+  achievedAt: timestamp("achieved_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgentAchievementSchema = createInsertSchema(agentAchievements).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAgentAchievement = z.infer<typeof insertAgentAchievementSchema>;
+export type AgentAchievement = typeof agentAchievements.$inferSelect;
