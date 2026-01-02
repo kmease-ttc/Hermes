@@ -51,6 +51,9 @@ import {
   actionApprovals,
   type ActionApproval,
   type InsertActionApproval,
+  seoAgentSnapshots,
+  type SeoAgentSnapshot,
+  type InsertSeoAgentSnapshot,
   type OAuthToken,
   type InsertOAuthToken,
   type GA4Daily,
@@ -242,6 +245,10 @@ export interface IStorage {
   getRankingHistoryByKeyword(keywordId: number, limit?: number): Promise<SerpRanking[]>;
   getRankingsByDate(date: string): Promise<SerpRanking[]>;
   getAllRankingsWithHistory(days: number): Promise<SerpRanking[]>;
+  
+  // SEO Agent Snapshots
+  saveAgentSnapshot(snapshot: InsertSeoAgentSnapshot): Promise<SeoAgentSnapshot>;
+  getAgentSnapshots(agentSlug: string, siteId?: string, limit?: number): Promise<SeoAgentSnapshot[]>;
   
   // Sites Registry
   getSites(activeOnly?: boolean): Promise<Site[]>;
@@ -950,6 +957,24 @@ class DBStorage implements IStorage {
       .from(serpRankings)
       .where(gte(serpRankings.date, cutoffStr))
       .orderBy(desc(serpRankings.date), asc(serpRankings.keywordId));
+  }
+
+  // SEO Agent Snapshots
+  async saveAgentSnapshot(snapshot: InsertSeoAgentSnapshot): Promise<SeoAgentSnapshot> {
+    const [result] = await db.insert(seoAgentSnapshots).values(snapshot).returning();
+    return result;
+  }
+
+  async getAgentSnapshots(agentSlug: string, siteId = "default", limit = 30): Promise<SeoAgentSnapshot[]> {
+    return db
+      .select()
+      .from(seoAgentSnapshots)
+      .where(and(
+        eq(seoAgentSnapshots.agentSlug, agentSlug),
+        eq(seoAgentSnapshots.siteId, siteId)
+      ))
+      .orderBy(desc(seoAgentSnapshots.timestamp))
+      .limit(limit);
   }
 
   // Sites Registry

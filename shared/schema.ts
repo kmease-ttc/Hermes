@@ -2021,3 +2021,29 @@ export const ACHIEVEMENT_TIERS = {
 } as const;
 
 export type AchievementTier = keyof typeof ACHIEVEMENT_TIERS;
+
+// SEO Agent Snapshots - Track Market SOV and metrics over time for Trends
+export const seoAgentSnapshots = pgTable("seo_agent_snapshots", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().default("default"),
+  agentSlug: text("agent_slug").notNull(), // natasha, lookout, etc.
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  marketSovPct: real("market_sov_pct").notNull(),
+  trackedSovPct: real("tracked_sov_pct"),
+  totalKeywords: integer("total_keywords").notNull(),
+  rankingKeywords: integer("ranking_keywords").notNull(),
+  notRankingKeywords: integer("not_ranking_keywords").notNull(),
+  top1Count: integer("top1_count").notNull().default(0),
+  top3Count: integer("top3_count").notNull().default(0),
+  top10Count: integer("top10_count").notNull().default(0),
+  top20Count: integer("top20_count").notNull().default(0),
+  top50Count: integer("top50_count").notNull().default(0),
+  positionDistribution: jsonb("position_distribution"),
+});
+
+export const insertSeoAgentSnapshotSchema = createInsertSchema(seoAgentSnapshots).omit({
+  id: true,
+  timestamp: true,
+});
+export type InsertSeoAgentSnapshot = z.infer<typeof insertSeoAgentSnapshotSchema>;
+export type SeoAgentSnapshot = typeof seoAgentSnapshots.$inferSelect;
