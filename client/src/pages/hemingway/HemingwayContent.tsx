@@ -1,23 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   FileText, 
   File,
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
-  PenTool,
   BookOpen,
   Shield,
   Loader2,
   Settings,
-  ListChecks,
   Search,
   Upload,
   User,
@@ -44,6 +38,7 @@ import {
   type InspectorTab,
   type MissionPromptConfig,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 
 interface ContentMetrics {
   contentQualityScore: number | null;
@@ -113,125 +108,6 @@ interface HemingwayContentResponse {
   content?: ContentItem[];
 }
 
-interface MetricCardProps {
-  label: string;
-  value: number | null;
-  unit?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  accentColor: string;
-  tooltip?: string;
-  trend?: number;
-  isWarning?: boolean;
-  isLoading?: boolean;
-}
-
-function MetricCard({
-  label,
-  value,
-  unit,
-  icon: Icon,
-  accentColor,
-  tooltip,
-  trend,
-  isWarning,
-  isLoading,
-}: MetricCardProps) {
-  const displayValue = isLoading ? null : value;
-  const hasValue = displayValue !== null && displayValue !== undefined;
-  const showWarning = isWarning && hasValue && displayValue > 0;
-  
-  return (
-    <Card 
-      className={cn(
-        "relative overflow-hidden transition-all hover:shadow-lg",
-        showWarning && "border-amber-500/50 shadow-amber-500/10"
-      )}
-      style={{ 
-        borderColor: showWarning ? undefined : `${accentColor}30`,
-        boxShadow: showWarning ? undefined : `0 0 20px ${accentColor}10`
-      }}
-      data-testid={`metric-card-${label.toLowerCase().replace(/\s+/g, '-')}`}
-    >
-      <div 
-        className="absolute top-0 left-0 w-1 h-full"
-        style={{ backgroundColor: showWarning ? '#f59e0b' : accentColor }}
-      />
-      <CardHeader className="pb-2 pl-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div 
-              className="p-2 rounded-lg"
-              style={{ backgroundColor: showWarning ? 'rgba(245, 158, 11, 0.1)' : `${accentColor}15` }}
-            >
-              <Icon 
-                className="w-5 h-5" 
-                style={{ color: showWarning ? '#f59e0b' : accentColor }}
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {label}
-              </CardTitle>
-              {tooltip && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-muted-foreground/60 hover:text-muted-foreground">
-                        <AlertTriangle className="w-3 h-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs max-w-[200px]">{tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          </div>
-          {showWarning && (
-            <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-600 bg-amber-500/10">
-              Attention
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="pl-5">
-        <div className="flex items-baseline gap-2">
-          {isLoading ? (
-            <Skeleton className="h-10 w-20" />
-          ) : (
-            <>
-              <span 
-                className="text-4xl font-bold"
-                style={{ color: showWarning ? '#f59e0b' : (hasValue ? accentColor : undefined) }}
-              >
-                {hasValue ? displayValue : '—'}
-              </span>
-              {unit && hasValue && (
-                <span className="text-lg text-muted-foreground">{unit}</span>
-              )}
-            </>
-          )}
-          {trend !== undefined && trend !== 0 && !isLoading && (
-            <span 
-              className={cn(
-                "text-sm flex items-center gap-1 ml-2",
-                trend > 0 ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {trend > 0 ? (
-                <TrendingUp className="w-4 h-4" />
-              ) : (
-                <TrendingDown className="w-4 h-4" />
-              )}
-              {Math.abs(trend).toFixed(1)}%
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function EmptyStateCard() {
   return (
@@ -741,6 +617,84 @@ export default function HemingwayContent() {
     metrics.totalPages !== null
   );
 
+  const keyMetrics = useMemo(() => {
+    const qualityScore = metrics.contentQualityScore;
+    const atRisk = metrics.contentAtRisk ?? 0;
+    const thin = metrics.thinContent ?? 0;
+    const stale = metrics.staleContent ?? 0;
+    const noAuthor = metrics.missingAuthor ?? 0;
+
+    return [
+      {
+        id: "quality-score",
+        label: "Quality Score",
+        value: qualityScore !== null ? `${qualityScore}/100` : "—",
+        icon: Shield,
+        status: qualityScore !== null 
+          ? (qualityScore >= 80 ? "good" as const : qualityScore >= 60 ? "warning" as const : "warning" as const)
+          : "neutral" as const,
+      },
+      {
+        id: "readability",
+        label: "Readability Grade",
+        value: metrics.readabilityGrade ?? "—",
+        icon: BookOpen,
+        status: metrics.readabilityGrade !== null ? "good" as const : "neutral" as const,
+      },
+      {
+        id: "eeat-coverage",
+        label: "E-E-A-T Coverage",
+        value: metrics.eeatCoverage !== null ? `${metrics.eeatCoverage}%` : "—",
+        icon: CheckCircle,
+        status: metrics.eeatCoverage !== null
+          ? (metrics.eeatCoverage >= 80 ? "good" as const : "warning" as const)
+          : "neutral" as const,
+      },
+      {
+        id: "content-at-risk",
+        label: "Content at Risk",
+        value: atRisk,
+        icon: AlertTriangle,
+        status: atRisk > 0 ? "warning" as const : "good" as const,
+      },
+      {
+        id: "thin-content",
+        label: "Thin Content",
+        value: thin,
+        icon: FileText,
+        status: thin > 0 ? "warning" as const : "neutral" as const,
+      },
+      {
+        id: "stale-content",
+        label: "Stale Content",
+        value: stale,
+        icon: Clock,
+        status: stale > 0 ? "warning" as const : "neutral" as const,
+      },
+      {
+        id: "missing-author",
+        label: "Missing Author",
+        value: noAuthor,
+        icon: User,
+        status: noAuthor > 0 ? "warning" as const : "neutral" as const,
+      },
+      {
+        id: "total-blogs",
+        label: "Total Blogs",
+        value: metrics.totalBlogs ?? 0,
+        icon: FileText,
+        status: (metrics.totalBlogs ?? 0) > 0 ? "good" as const : "neutral" as const,
+      },
+      {
+        id: "total-pages",
+        label: "Total Pages",
+        value: metrics.totalPages ?? 0,
+        icon: File,
+        status: (metrics.totalPages ?? 0) > 0 ? "good" as const : "neutral" as const,
+      },
+    ];
+  }, [metrics]);
+
   const customMetrics = (
     <div className="space-y-4">
       {!isWorkerConfigured ? (
@@ -748,90 +702,7 @@ export default function HemingwayContent() {
       ) : !hasAnyMetrics && !dashboardLoading ? (
         <EmptyStateCard />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <MetricCard
-            label="Content Quality Score"
-            value={metrics.contentQualityScore}
-            unit="/100"
-            icon={Shield}
-            accentColor="#F59E0B"
-            tooltip="Overall content quality based on readability, structure, and optimization"
-            trend={metrics.trends?.qualityTrend}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Readability Grade"
-            value={metrics.readabilityGrade}
-            icon={BookOpen}
-            accentColor="#3B82F6"
-            tooltip="Average grade level required to understand your content (lower is more accessible)"
-            trend={metrics.trends?.readabilityTrend}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="E-E-A-T Coverage"
-            value={metrics.eeatCoverage}
-            unit="%"
-            icon={CheckCircle}
-            accentColor="#10B981"
-            tooltip="Experience, Expertise, Authoritativeness, and Trust signals in your content"
-            trend={metrics.trends?.eeatTrend}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Content at Risk"
-            value={metrics.contentAtRisk}
-            icon={AlertTriangle}
-            accentColor="#EF4444"
-            tooltip="Content pieces showing decay signals or quality issues"
-            trend={metrics.trends?.riskTrend}
-            isWarning={true}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Thin Content"
-            value={metrics.thinContent ?? null}
-            icon={FileText}
-            accentColor="#F97316"
-            tooltip="Pages with insufficient word count that may need expansion"
-            isWarning={true}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Stale Content"
-            value={metrics.staleContent ?? null}
-            icon={Clock}
-            accentColor="#8B5CF6"
-            tooltip="Content that hasn't been updated recently"
-            isWarning={true}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Missing Author"
-            value={metrics.missingAuthor ?? null}
-            icon={User}
-            accentColor="#EC4899"
-            tooltip="Pages missing author attribution (affects E-E-A-T)"
-            isWarning={true}
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Total Blogs"
-            value={metrics.totalBlogs}
-            icon={FileText}
-            accentColor="#10B981"
-            tooltip="Total blog posts indexed on your site"
-            isLoading={dashboardLoading}
-          />
-          <MetricCard
-            label="Total Pages"
-            value={metrics.totalPages}
-            icon={File}
-            accentColor="#10B981"
-            tooltip="Total pages indexed on your site"
-            isLoading={dashboardLoading}
-          />
-        </div>
+        <KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />
       )}
     </div>
   );

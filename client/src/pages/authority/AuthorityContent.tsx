@@ -51,6 +51,8 @@ import {
   type MissionPromptConfig,
   type HeaderAction,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
+import { Link2, Activity } from "lucide-react";
 
 interface IndustryBenchmark {
   metric: string;
@@ -679,6 +681,82 @@ export default function AuthorityContent() {
     },
   ], [benchmarks, avgPercentile]);
 
+  const keyMetrics = useMemo(() => {
+    const domainAuth = benchmarks?.find(b => b.metric === 'domain_authority')?.yourValue ?? 0;
+    const referringDomains = benchmarks?.find(b => b.metric === 'referring_domains')?.yourValue ?? 0;
+    const totalBacklinks = benchmarks?.find(b => b.metric === 'backlinks')?.yourValue ?? 0;
+    const organicTraffic = benchmarks?.find(b => b.metric === 'organic_traffic')?.yourValue ?? 0;
+    const avgPosition = benchmarks?.find(b => b.metric === 'avg_position')?.yourValue ?? 0;
+
+    const getAuthorityStatus = (val: number): "good" | "warning" | "neutral" => {
+      if (val >= 50) return "good";
+      if (val >= 30) return "neutral";
+      return "warning";
+    };
+
+    const getDomainsStatus = (val: number): "good" | "warning" | "neutral" => {
+      if (val >= 200) return "good";
+      if (val >= 100) return "neutral";
+      return "warning";
+    };
+
+    const getBacklinksStatus = (val: number): "good" | "warning" | "neutral" => {
+      if (val >= 5000) return "good";
+      if (val >= 1000) return "neutral";
+      return "warning";
+    };
+
+    const getTrafficStatus = (val: number): "good" | "warning" | "neutral" => {
+      if (val >= 10000) return "good";
+      if (val >= 5000) return "neutral";
+      return "warning";
+    };
+
+    const getPositionStatus = (val: number): "good" | "warning" | "neutral" => {
+      if (val > 0 && val <= 10) return "good";
+      if (val <= 20) return "neutral";
+      return "warning";
+    };
+
+    return [
+      {
+        id: "web-authority",
+        label: "Web Authority Score",
+        value: domainAuth || "—",
+        icon: Award,
+        status: domainAuth ? getAuthorityStatus(domainAuth) : ("neutral" as const),
+      },
+      {
+        id: "referring-domains",
+        label: "Referring Domains",
+        value: referringDomains ? referringDomains.toLocaleString() : "—",
+        icon: Link2,
+        status: referringDomains ? getDomainsStatus(referringDomains) : ("neutral" as const),
+      },
+      {
+        id: "total-backlinks",
+        label: "Total Backlinks",
+        value: totalBacklinks ? totalBacklinks.toLocaleString() : "—",
+        icon: Globe,
+        status: totalBacklinks ? getBacklinksStatus(totalBacklinks) : ("neutral" as const),
+      },
+      {
+        id: "organic-traffic",
+        label: "Organic Traffic",
+        value: organicTraffic ? organicTraffic.toLocaleString() : "—",
+        icon: Activity,
+        status: organicTraffic ? getTrafficStatus(organicTraffic) : ("neutral" as const),
+      },
+      {
+        id: "avg-position",
+        label: "Avg Position",
+        value: avgPosition ? avgPosition.toFixed(1) : "—",
+        icon: Target,
+        status: avgPosition ? getPositionStatus(avgPosition) : ("neutral" as const),
+      },
+    ];
+  }, [benchmarks]);
+
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
     const belowBenchmarks = benchmarks?.filter(b => getComparisonStatus(b) === 'below') || [];
@@ -882,6 +960,7 @@ export default function AuthorityContent() {
       missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}

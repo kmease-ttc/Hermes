@@ -67,6 +67,7 @@ import {
   type InspectorTab,
   type MissionPromptConfig,
 } from "@/components/crew-dashboard";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 
 interface VitalMetric {
   key: string;
@@ -546,6 +547,68 @@ export default function SpeedsterContent() {
     monitors: ["Core Web Vitals", "Page Speed", "Performance Score"],
   };
 
+  const mapVitalStatusToMetricStatus = (status: 'good' | 'needs-improvement' | 'poor' | 'unknown'): 'good' | 'warning' | 'neutral' => {
+    switch (status) {
+      case 'good': return 'good';
+      case 'needs-improvement': return 'warning';
+      case 'poor': return 'warning';
+      case 'unknown': return 'neutral';
+      default: return 'neutral';
+    }
+  };
+
+  const formatVitalValue = (value: number | null, unit: string): string => {
+    if (value === null || value === undefined) return '—';
+    if (unit === 's') return `${value.toFixed(2)}s`;
+    if (unit === 'ms') return `${Math.round(value)}ms`;
+    return value.toFixed(3);
+  };
+
+  const keyMetrics = useMemo(() => [
+    {
+      id: "lcp",
+      label: "LCP",
+      value: formatVitalValue(coreVitals[0]?.value, coreVitals[0]?.unit),
+      icon: Eye,
+      status: mapVitalStatusToMetricStatus(coreVitals[0]?.status || 'unknown'),
+    },
+    {
+      id: "inp",
+      label: "INP",
+      value: formatVitalValue(coreVitals[2]?.value, coreVitals[2]?.unit),
+      icon: MousePointer,
+      status: mapVitalStatusToMetricStatus(coreVitals[2]?.status || 'unknown'),
+    },
+    {
+      id: "cls",
+      label: "CLS",
+      value: formatVitalValue(coreVitals[1]?.value, coreVitals[1]?.unit),
+      icon: Activity,
+      status: mapVitalStatusToMetricStatus(coreVitals[1]?.status || 'unknown'),
+    },
+    {
+      id: "fcp",
+      label: "FCP",
+      value: formatVitalValue(additionalMetrics[0]?.value, additionalMetrics[0]?.unit),
+      icon: Timer,
+      status: mapVitalStatusToMetricStatus(additionalMetrics[0]?.status || 'unknown'),
+    },
+    {
+      id: "ttfb",
+      label: "TTFB",
+      value: formatVitalValue(additionalMetrics[1]?.value, additionalMetrics[1]?.unit),
+      icon: Server,
+      status: mapVitalStatusToMetricStatus(additionalMetrics[1]?.status || 'unknown'),
+    },
+    {
+      id: "speed-index",
+      label: "Speed Index",
+      value: formatVitalValue(additionalMetrics[3]?.value, additionalMetrics[3]?.unit),
+      icon: Gauge,
+      status: mapVitalStatusToMetricStatus(additionalMetrics[3]?.status || 'unknown'),
+    },
+  ], [coreVitals, additionalMetrics]);
+
   const missionStatus: MissionStatusState = useMemo(() => {
     const poorCount = vitals.filter(v => v.status === 'poor').length;
     const needsWorkCount = vitals.filter(v => v.status === 'needs-improvement').length;
@@ -908,6 +971,7 @@ export default function SpeedsterContent() {
       agentScoreTooltip="Performance score from Core Web Vitals analysis"
       missionStatus={missionStatus}
       missions={missions}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
