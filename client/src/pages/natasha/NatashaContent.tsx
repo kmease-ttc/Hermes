@@ -63,6 +63,17 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -798,22 +809,185 @@ function GapAnalysisPanel({ data }: { data: CompetitiveOverview }) {
   );
 }
 
-function TrendsPanel({ alerts }: { alerts: TrendAlert[] }) {
-  if (alerts.length === 0) {
+interface AgentSnapshot {
+  id: number;
+  agentSlug: string;
+  siteId: string;
+  scoreValue: number;
+  scoreType: string;
+  metrics: { 
+    totalKeywords?: number; 
+    rankingKeywords?: number; 
+    breakdown?: { top1: number; top3: number; top10: number; top20: number; top50: number; notRanking: number } 
+  };
+  triggerType: string;
+  timestamp: string;
+}
+
+function TrendsPanel({ alerts, siteId }: { alerts: TrendAlert[]; siteId: string }) {
+  const { data: snapshots, isLoading } = useQuery<AgentSnapshot[]>({
+    queryKey: ["natasha-snapshots", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/snapshots/natasha?siteId=${siteId}&limit=30`);
+      if (!res.ok) throw new Error("Failed to fetch snapshots");
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  const chartData = useMemo(() => {
+    if (!snapshots || snapshots.length === 0) return [];
+    return [...snapshots]
+      .reverse()
+      .map((s) => ({
+        date: new Date(s.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        timestamp: s.timestamp,
+        marketSov: s.scoreValue,
+        rankingKeywords: s.metrics?.rankingKeywords || 0,
+        totalKeywords: s.metrics?.totalKeywords || 0,
+        top10: (s.metrics?.breakdown?.top1 || 0) + (s.metrics?.breakdown?.top3 || 0) + (s.metrics?.breakdown?.top10 || 0),
+      }));
+  }, [snapshots]);
+
+  const latestChange = useMemo(() => {
+    if (chartData.length < 2) return null;
+    const current = chartData[chartData.length - 1].marketSov;
+    const previous = chartData[chartData.length - 2].marketSov;
+    return current - previous;
+  }, [chartData]);
+
+  if (isLoading) {
+    return (
+      <div className="p-6 text-center">
+        <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading trends...</p>
+      </div>
+    );
+  }
+
+  if (!snapshots || snapshots.length === 0) {
     return (
       <div className="p-6 text-center">
         <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground">No recent alerts</p>
-        <p className="text-sm text-muted-foreground mt-1">We'll notify you when competitors make significant moves.</p>
+        <p className="text-muted-foreground">No historical data yet</p>
+        <p className="text-sm text-muted-foreground mt-1">Run analysis to start tracking Market SOV over time.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {alerts.map((alert) => (
-        <TrendAlertCard key={alert.id} alert={alert} />
-      ))}
+    <div className="space-y-6">
+      {/* Market SOV Trend Chart */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-foreground">Market SOV Trend</h4>
+          {latestChange !== null && (
+            <div className={cn(
+              "flex items-center gap-1 text-sm font-medium",
+              latestChange > 0 ? "text-semantic-success" : latestChange < 0 ? "text-semantic-danger" : "text-muted-foreground"
+            )}>
+              {latestChange > 0 ? <ArrowUp className="w-4 h-4" /> : latestChange < 0 ? <ArrowDown className="w-4 h-4" /> : null}
+              {latestChange > 0 ? "+" : ""}{latestChange}% since last scan
+            </div>
+          )}
+        </div>
+        <div className="h-48 bg-muted/20 rounded-lg p-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={{ stroke: "hsl(var(--border))" }}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={{ stroke: "hsl(var(--border))" }}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+                formatter={(value: number) => [`${value}%`, "Market SOV"]}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="marketSov" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Keywords Ranking Trend */}
+      <div>
+        <h4 className="font-medium text-foreground mb-3">Keywords Ranking Over Time</h4>
+        <div className="h-40 bg-muted/20 rounded-lg p-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={{ stroke: "hsl(var(--border))" }}
+              />
+              <YAxis 
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tickLine={false}
+                axisLine={{ stroke: "hsl(var(--border))" }}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="top10" 
+                stackId="1"
+                stroke="hsl(var(--semantic-success))" 
+                fill="hsl(var(--semantic-success-soft))" 
+                name="Top 10"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="rankingKeywords" 
+                stackId="2"
+                stroke="hsl(var(--semantic-warning))" 
+                fill="hsl(var(--semantic-warning-soft))" 
+                name="Total Ranking"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Trend Alerts */}
+      {alerts.length > 0 && (
+        <div>
+          <h4 className="font-medium text-foreground mb-3">Recent Alerts</h4>
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <TrendAlertCard key={alert.id} alert={alert} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -888,9 +1062,39 @@ export default function NatashaContent() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Competitive analysis completed");
       queryClient.invalidateQueries({ queryKey: ["competitive-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["market-sov"] });
+      queryClient.invalidateQueries({ queryKey: ["natasha-snapshots"] });
+      
+      // Wait briefly for market-sov to refetch, then save snapshot
+      setTimeout(async () => {
+        try {
+          const sovRes = await fetch("/api/serp/market-sov");
+          if (sovRes.ok) {
+            const sovData = await sovRes.json();
+            await fetch("/api/snapshots", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                agentSlug: "natasha",
+                siteId,
+                scoreValue: sovData.marketSov,
+                scoreType: "market_sov",
+                metrics: {
+                  totalKeywords: sovData.totalKeywords,
+                  rankingKeywords: sovData.rankingKeywords,
+                  breakdown: sovData.breakdown,
+                },
+                triggerType: "run_analysis",
+              }),
+            });
+          }
+        } catch (e) {
+          console.error("Failed to save snapshot:", e);
+        }
+      }, 500);
       setIsRunning(false);
     },
     onError: (error: Error) => {
@@ -1253,12 +1457,12 @@ export default function NatashaContent() {
         id: "trends",
         label: "Trends",
         icon: <TrendingUp className="w-4 h-4" />,
-        content: <TrendsPanel alerts={data.alerts} />,
+        content: <TrendsPanel alerts={data.alerts} siteId={siteId} />,
         badge: data.alerts.length > 0 ? data.alerts.length : undefined,
         state: tabState,
       },
     ];
-  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis]);
+  }, [data, summary, error, isLoading, isRunning, handleRefresh, marketSov, marketSovData, normalizedKpis, siteId]);
 
   const missionPrompt: MissionPromptConfig = {
     label: "Ask Natasha",
