@@ -16,7 +16,10 @@ import {
   Wrench,
   Search,
   Loader2,
+  Heart,
+  TrendingUp,
 } from "lucide-react";
+import { KeyMetricsGrid } from "@/components/key-metrics";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -619,6 +622,44 @@ export default function PulseContent() {
     },
   ], [parsed]);
 
+  const keyMetrics = useMemo(() => {
+    const healthyCount = parsed?.healthChecks?.filter(h => h.status === 'healthy').length || 0;
+    const totalChecks = parsed?.healthChecks?.length || 0;
+    const dropsCount = parsed?.totalDrops || 0;
+    const rootCausesCount = parsed?.rootCauses?.length || 0;
+    
+    return [
+      {
+        id: "health-score",
+        label: "Health Score",
+        value: totalChecks > 0 ? `${Math.round((healthyCount / totalChecks) * 100)}%` : "—",
+        icon: Heart,
+        status: (totalChecks > 0 && healthyCount === totalChecks) ? "good" as const : healthyCount > 0 ? "warning" as const : "neutral" as const,
+      },
+      {
+        id: "drops-detected",
+        label: "Drops Detected",
+        value: dropsCount,
+        icon: TrendingDown,
+        status: dropsCount === 0 ? "good" as const : dropsCount <= 2 ? "warning" as const : "warning" as const,
+      },
+      {
+        id: "healthy-checks",
+        label: "Healthy Checks",
+        value: `${healthyCount}/${totalChecks}`,
+        icon: CheckCircle,
+        status: healthyCount === totalChecks ? "good" as const : "warning" as const,
+      },
+      {
+        id: "root-causes-found",
+        label: "Root Causes",
+        value: rootCausesCount,
+        icon: Lightbulb,
+        status: rootCausesCount === 0 ? "good" as const : "warning" as const,
+      },
+    ];
+  }, [parsed]);
+
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];
     
@@ -789,6 +830,7 @@ export default function PulseContent() {
       missionStatus={missionStatus}
       missions={missions}
       kpis={kpis}
+      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
       inspectorTabs={inspectorTabs}
       missionPrompt={missionPrompt}
       headerActions={headerActions}
