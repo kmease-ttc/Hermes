@@ -922,14 +922,39 @@ export default function NatashaContent() {
       });
     }
     
-    // Add individual content gap missions (each gap = one mission)
+    // Add content gap missions - deduplicated by keyword
     if (data.contentGaps.length > 0) {
       const highPriorityGaps = data.contentGaps.filter(g => g.opportunity === "high");
-      highPriorityGaps.forEach((gap, idx) => {
+      
+      // Deduplicate by keyword and count competitors per keyword
+      const keywordMap = new Map<string, { gap: typeof highPriorityGaps[0]; competitorCount: number; competitors: string[] }>();
+      highPriorityGaps.forEach((gap) => {
+        const keyword = gap.keyword?.toLowerCase().trim() || '';
+        if (!keyword) return;
+        
+        if (keywordMap.has(keyword)) {
+          const existing = keywordMap.get(keyword)!;
+          existing.competitorCount++;
+          if (gap.competitorDomain) {
+            existing.competitors.push(gap.competitorDomain);
+          }
+        } else {
+          keywordMap.set(keyword, {
+            gap,
+            competitorCount: 1,
+            competitors: gap.competitorDomain ? [gap.competitorDomain] : [],
+          });
+        }
+      });
+      
+      // Create one mission per unique keyword
+      Array.from(keywordMap.entries()).forEach(([keyword, { gap, competitorCount, competitors }], idx) => {
         items.push({
           id: `content-gap-${gap.id || idx}`,
           title: `Create content for "${gap.keyword}"`,
-          reason: gap.suggestedAction || `${gap.competitorsCovering} competitor${gap.competitorsCovering !== 1 ? 's' : ''} covering this topic`,
+          reason: competitorCount > 1 
+            ? `${competitorCount} competitors ranking for this keyword`
+            : gap.suggestedAction || `${gap.competitorDomain || 'Competitor'} ranking for this`,
           status: "pending" as const,
           impact: "high",
           effort: gap.difficulty && gap.difficulty > 60 ? "L" : gap.difficulty && gap.difficulty > 30 ? "M" : "S",
@@ -1043,13 +1068,24 @@ export default function NatashaContent() {
     ];
   }, [data, summary, error, isLoading, normalizedKpis]);
 
+  // Count unique keywords in content gaps for accurate opportunity count
+  const uniqueKeywordGaps = useMemo(() => {
+    const uniqueKeywords = new Set(
+      data.contentGaps
+        .filter(g => g.opportunity === "high")
+        .map(g => g.keyword?.toLowerCase().trim())
+        .filter(Boolean)
+    );
+    return uniqueKeywords.size;
+  }, [data.contentGaps]);
+
   const keyMetrics = useMemo(() => [
     {
       id: "opportunities-found",
       label: "Opportunities",
-      value: summary.totalGaps || 0,
+      value: uniqueKeywordGaps || 0,
       icon: Target,
-      status: summary.totalGaps > 0 ? "primary" as const : "neutral" as const,
+      status: uniqueKeywordGaps > 0 ? "primary" as const : "neutral" as const,
     },
     {
       id: "competitors-tracked",
@@ -1072,7 +1108,7 @@ export default function NatashaContent() {
       icon: TrendingUp,
       status: normalizedKpis.shareOfVoicePct > 20 ? "primary" as const : normalizedKpis.shareOfVoicePct > 0 ? "warning" as const : "neutral" as const,
     },
-  ], [data, summary, normalizedKpis]);
+  ], [data, summary, normalizedKpis, uniqueKeywordGaps]);
 
   // Inspector tabs
   const inspectorTabs: InspectorTab[] = useMemo(() => {
