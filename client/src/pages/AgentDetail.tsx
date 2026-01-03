@@ -15,6 +15,7 @@ import SocratesContent from "./socrates/SocratesContent";
 import HemingwayContent from "./hemingway/HemingwayContent";
 import ScottyContent from "./scotty/ScottyContent";
 import SentinelContent from "./sentinel/SentinelContent";
+import AtlasContent from "./atlas/AtlasContent";
 import GenericAgentContent from "./agents/GenericAgentContent";
 
 export default function AgentDetail() {
@@ -66,6 +67,8 @@ export default function AgentDetail() {
         return <ScottyContent />;
       case "content_decay":
         return <SentinelContent />;
+      case "ai_optimization":
+        return <AtlasContent />;
       default:
         return <GenericAgentContent agentId={agentId} />;
     }

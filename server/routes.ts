@@ -2025,6 +2025,392 @@ Format your response as JSON with these keys:
   });
 
   // ============================================
+  // ATLAS (AI Optimization) Endpoints
+  // ============================================
+
+  app.get("/api/atlas/data", async (req, res) => {
+    const siteId = (req.query.site_id as string) || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("ai_optimization");
+      
+      // Get stored data
+      const findings = await storage.getAiFindings(siteId, 50);
+      const latestSnapshot = await storage.getLatestAiSnapshot(siteId);
+      const snapshots = await storage.getAiSnapshots(siteId, 7);
+      
+      // If we have real data, use it
+      if (latestSnapshot || findings.length > 0) {
+        const criticalFindings = findings.filter(f => f.severity === 'critical');
+        const warningFindings = findings.filter(f => f.severity === 'warning');
+        const infoFindings = findings.filter(f => f.severity === 'info');
+        
+        const structuredDataFindings = findings.filter(f => f.category === 'structured_data');
+        const entityFindings = findings.filter(f => f.category === 'entity');
+        const summaryFindings = findings.filter(f => f.category === 'summary');
+        const visibilityFindings = findings.filter(f => f.category === 'llm_visibility');
+        
+        const trends = snapshots.map(s => ({
+          date: s.capturedAt.toISOString().split('T')[0],
+          aiVisibilityScore: s.aiVisibilityScore ?? 0,
+          structuredDataCoverage: s.structuredDataCoverage ?? 0,
+          entityCoverage: s.entityCoverage ?? 0,
+          llmAnswerability: s.llmAnswerability ?? 0,
+        })).reverse();
+        
+        return res.json({
+          kpis: {
+            aiVisibilityScore: latestSnapshot?.aiVisibilityScore ?? 68,
+            structuredDataCoverage: latestSnapshot?.structuredDataCoverage ?? 45,
+            entityCoverage: latestSnapshot?.entityCoverage ?? 72,
+            llmAnswerability: latestSnapshot?.llmAnswerability ?? 58,
+          },
+          findings: {
+            critical: criticalFindings.map(f => ({
+              id: f.findingId,
+              url: f.url,
+              type: f.findingType,
+              severity: f.severity,
+              category: f.category,
+              description: f.description,
+              impactEstimate: f.impactEstimate,
+              recommendedAction: f.recommendedAction,
+              fixAction: f.fixAction,
+              isAutoFixable: f.isAutoFixable,
+              detectedAt: f.detectedAt.toISOString(),
+            })),
+            warning: warningFindings.map(f => ({
+              id: f.findingId,
+              url: f.url,
+              type: f.findingType,
+              severity: f.severity,
+              category: f.category,
+              description: f.description,
+              impactEstimate: f.impactEstimate,
+              recommendedAction: f.recommendedAction,
+              fixAction: f.fixAction,
+              isAutoFixable: f.isAutoFixable,
+              detectedAt: f.detectedAt.toISOString(),
+            })),
+            info: infoFindings.map(f => ({
+              id: f.findingId,
+              url: f.url,
+              type: f.findingType,
+              severity: f.severity,
+              category: f.category,
+              description: f.description,
+              impactEstimate: f.impactEstimate,
+              recommendedAction: f.recommendedAction,
+              fixAction: f.fixAction,
+              isAutoFixable: f.isAutoFixable,
+              detectedAt: f.detectedAt.toISOString(),
+            })),
+          },
+          tabData: {
+            structuredData: {
+              findings: structuredDataFindings.length,
+              details: latestSnapshot?.structuredDataDetails ?? { schemaTypes: [], errors: [] },
+            },
+            entities: {
+              findings: entityFindings.length,
+              details: latestSnapshot?.entityDetails ?? { found: [], missing: [] },
+            },
+            summaries: {
+              findings: summaryFindings.length,
+              details: latestSnapshot?.summaryDetails ?? { status: [] },
+            },
+            llmVisibility: {
+              findings: visibilityFindings.length,
+              details: latestSnapshot?.llmVisibilityDetails ?? { results: [] },
+            },
+          },
+          trends,
+          lastScanAt: latestSnapshot?.capturedAt?.toISOString() ?? null,
+          isConfigured: config.valid,
+        });
+      }
+      
+      // Fall back to mock data
+      const mockFindings = {
+        critical: [
+          { id: "af1", url: "/products", type: "schema_error", severity: "critical", category: "structured_data", description: "Invalid JSON-LD syntax in Product schema", impactEstimate: "May prevent rich results", recommendedAction: "Fix JSON-LD validation errors", fixAction: "fix_schema", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af2", url: "/services", type: "missing_entity", severity: "critical", category: "entity", description: "Organization entity missing required properties", impactEstimate: "Reduced knowledge panel visibility", recommendedAction: "Add missing Organization properties", fixAction: "add_entity_props", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af3", url: "/blog/latest", type: "thin_summary", severity: "critical", category: "summary", description: "Page summary too short for LLM extraction", impactEstimate: "May not appear in AI answers", recommendedAction: "Expand page summary to 150+ words", fixAction: "improve_summary", isAutoFixable: false, detectedAt: new Date().toISOString() },
+        ],
+        warning: [
+          { id: "af4", url: "/about", type: "schema_warning", severity: "warning", category: "structured_data", description: "Article schema missing author property", impactEstimate: "May reduce trust signals", recommendedAction: "Add author property to Article schema", fixAction: "fix_schema", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af5", url: "/contact", type: "entity_incomplete", severity: "warning", category: "entity", description: "LocalBusiness entity missing geo coordinates", impactEstimate: "May affect local search visibility", recommendedAction: "Add latitude and longitude to LocalBusiness", fixAction: "add_entity_props", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af6", url: "/faq", type: "faq_format", severity: "warning", category: "structured_data", description: "FAQ page missing FAQPage schema", impactEstimate: "Missing FAQ rich results", recommendedAction: "Add FAQPage structured data", fixAction: "add_schema", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af7", url: "/pricing", type: "llm_unclear", severity: "warning", category: "llm_visibility", description: "Pricing structure unclear for AI extraction", impactEstimate: "May not appear in pricing comparisons", recommendedAction: "Structure pricing data more clearly", fixAction: null, isAutoFixable: false, detectedAt: new Date().toISOString() },
+        ],
+        info: [
+          { id: "af8", url: "/team", type: "schema_suggestion", severity: "info", category: "structured_data", description: "Consider adding Person schema for team members", impactEstimate: "Could improve people panel visibility", recommendedAction: "Add Person schema for key team members", fixAction: "add_schema", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af9", url: "/case-studies", type: "entity_opportunity", severity: "info", category: "entity", description: "Case studies could use CreativeWork schema", impactEstimate: "May improve content categorization", recommendedAction: "Add CreativeWork or Article schema", fixAction: "add_schema", isAutoFixable: true, detectedAt: new Date().toISOString() },
+          { id: "af10", url: "/resources", type: "summary_short", severity: "info", category: "summary", description: "Page meta description could be more descriptive", impactEstimate: "Minor impact on AI summaries", recommendedAction: "Expand meta description to 150-160 characters", fixAction: null, isAutoFixable: false, detectedAt: new Date().toISOString() },
+          { id: "af11", url: "/", type: "llm_optimization", severity: "info", category: "llm_visibility", description: "Homepage could include more FAQ content", impactEstimate: "Could improve question answering", recommendedAction: "Add common questions and answers", fixAction: null, isAutoFixable: false, detectedAt: new Date().toISOString() },
+        ],
+      };
+      
+      const mockTrends = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        return {
+          date: date.toISOString().split('T')[0],
+          aiVisibilityScore: 60 + Math.floor(Math.random() * 10) + i,
+          structuredDataCoverage: 40 + Math.floor(Math.random() * 8) + i,
+          entityCoverage: 65 + Math.floor(Math.random() * 10),
+          llmAnswerability: 50 + Math.floor(Math.random() * 12) + i,
+        };
+      });
+      
+      res.json({
+        kpis: {
+          aiVisibilityScore: 68,
+          structuredDataCoverage: 45,
+          entityCoverage: 72,
+          llmAnswerability: 58,
+        },
+        findings: mockFindings,
+        tabData: {
+          structuredData: {
+            findings: 4,
+            details: {
+              schemaTypes: [
+                { type: "Organization", count: 1, status: "valid" },
+                { type: "Product", count: 12, status: "errors" },
+                { type: "Article", count: 8, status: "warnings" },
+                { type: "BreadcrumbList", count: 1, status: "valid" },
+              ],
+              errors: [
+                { url: "/products", message: "Invalid JSON-LD syntax" },
+                { url: "/products/item-1", message: "Missing required property: price" },
+              ],
+            },
+          },
+          entities: {
+            findings: 2,
+            details: {
+              found: [
+                { type: "Organization", name: "Acme Corp", url: "/" },
+                { type: "LocalBusiness", name: "Acme Store", url: "/contact" },
+              ],
+              missing: [
+                { type: "Person", suggestedFor: "/team" },
+                { type: "FAQPage", suggestedFor: "/faq" },
+              ],
+            },
+          },
+          summaries: {
+            findings: 2,
+            details: {
+              status: [
+                { url: "/", wordCount: 450, status: "good" },
+                { url: "/about", wordCount: 320, status: "good" },
+                { url: "/blog/latest", wordCount: 85, status: "thin" },
+                { url: "/services", wordCount: 120, status: "warning" },
+              ],
+            },
+          },
+          llmVisibility: {
+            findings: 2,
+            details: {
+              results: [
+                { question: "What does Acme Corp do?", answerable: true, confidence: 0.92 },
+                { question: "How much does Acme product cost?", answerable: false, confidence: 0.35 },
+                { question: "Where is Acme located?", answerable: true, confidence: 0.88 },
+                { question: "What are Acme's business hours?", answerable: false, confidence: 0.42 },
+              ],
+            },
+          },
+        },
+        trends: mockTrends,
+        lastScanAt: null,
+        isConfigured: config.valid,
+      });
+    } catch (error: any) {
+      logger.error("API", "Failed to get Atlas data", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/atlas/scan", async (req, res) => {
+    const { site_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("ai_optimization");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Atlas", "AI optimization worker not configured, returning mock response");
+        return res.json({
+          ok: true,
+          message: "AI Readiness Scan started (demo mode)",
+          jobId: `atlas_scan_${Date.now()}`,
+          estimatedDuration: "2-3 minutes",
+          configured: false,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/scan`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      
+      const data = await response.json();
+      res.json({ ok: true, ...data, configured: true });
+    } catch (error: any) {
+      logger.error("API", "Atlas scan failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/atlas/structured-data/fix", async (req, res) => {
+    const { site_id, finding_id, fix_action } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("ai_optimization");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Atlas", "AI optimization worker not configured, returning mock response");
+        
+        // Mark finding as resolved in mock mode
+        if (finding_id) {
+          await storage.resolveAiFinding(finding_id);
+        }
+        
+        return res.json({
+          ok: true,
+          message: "Structured data fix applied (demo mode)",
+          findingId: finding_id,
+          fixAction: fix_action,
+          configured: false,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/structured-data/fix`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId, finding_id, fix_action }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok && finding_id) {
+        await storage.resolveAiFinding(finding_id);
+      }
+      
+      res.json({ ok: true, ...data, configured: true });
+    } catch (error: any) {
+      logger.error("API", "Atlas structured-data fix failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/atlas/llm-summaries/improve", async (req, res) => {
+    const { site_id, url, finding_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("ai_optimization");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Atlas", "AI optimization worker not configured, returning mock response");
+        
+        if (finding_id) {
+          await storage.resolveAiFinding(finding_id);
+        }
+        
+        return res.json({
+          ok: true,
+          message: "LLM summary improvement queued (demo mode)",
+          url,
+          findingId: finding_id,
+          suggestedSummary: "This is a demo summary that would be generated by the AI optimization worker. It provides a comprehensive overview of the page content optimized for LLM extraction and visibility.",
+          configured: false,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/llm-summaries/improve`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId, url, finding_id }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok && finding_id) {
+        await storage.resolveAiFinding(finding_id);
+      }
+      
+      res.json({ ok: true, ...data, configured: true });
+    } catch (error: any) {
+      logger.error("API", "Atlas llm-summaries improve failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  app.post("/api/atlas/entities/optimize", async (req, res) => {
+    const { site_id, entity_type, url, finding_id } = req.body;
+    const siteId = site_id || "default";
+    
+    try {
+      const config = await resolveWorkerConfig("ai_optimization");
+      
+      if (!config.valid || !config.base_url) {
+        logger.info("Atlas", "AI optimization worker not configured, returning mock response");
+        
+        if (finding_id) {
+          await storage.resolveAiFinding(finding_id);
+        }
+        
+        return res.json({
+          ok: true,
+          message: "Entity optimization queued (demo mode)",
+          entityType: entity_type,
+          url,
+          findingId: finding_id,
+          suggestedChanges: [
+            { property: "address", action: "add", value: "123 Main St, City, State" },
+            { property: "geo", action: "add", value: { latitude: 40.7128, longitude: -74.0060 } },
+          ],
+          configured: false,
+        });
+      }
+      
+      const response = await fetch(`${config.base_url}/entities/optimize`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": config.api_key || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ site_id: siteId, entity_type, url, finding_id }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok && finding_id) {
+        await storage.resolveAiFinding(finding_id);
+      }
+      
+      res.json({ ok: true, ...data, configured: true });
+    } catch (error: any) {
+      logger.error("API", "Atlas entities optimize failed", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // ============================================
   // SCOTTY (Technical SEO) Endpoints
   // ============================================
   

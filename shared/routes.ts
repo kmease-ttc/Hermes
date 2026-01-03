@@ -241,6 +241,7 @@ export const KNOWN_AGENT_IDS = [
   "content_generator",      // Hemingway - Content Strategy
   "backlink_authority",     // Beacon - Domain Authority
   "seo_kbase",              // Socrates - Knowledge Base
+  "ai_optimization",        // Atlas - AI Optimization
 ] as const;
 
 export type AgentId = typeof KNOWN_AGENT_IDS[number];
@@ -264,6 +265,7 @@ export const SLUG_TO_SERVICE_ID: Record<string, string> = {
   "hemingway": "content_generator",
   "beacon": "backlink_authority",
   "socrates": "seo_kbase",
+  "atlas": "ai_optimization",
   // Direct service_id mappings (identity)
   "competitive_snapshot": "competitive_snapshot",
   "serp_intel": "serp_intel",
@@ -274,6 +276,7 @@ export const SLUG_TO_SERVICE_ID: Record<string, string> = {
   "content_generator": "content_generator",
   "backlink_authority": "backlink_authority",
   "seo_kbase": "seo_kbase",
+  "ai_optimization": "ai_optimization",
 };
 
 export function resolveAgentSlug(slug: string): string {

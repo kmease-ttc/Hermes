@@ -1627,6 +1627,60 @@ export const insertSeoMetricEventSchema = createInsertSchema(seoMetricEvents).om
 export type InsertSeoMetricEvent = z.infer<typeof insertSeoMetricEventSchema>;
 export type SeoMetricEvent = typeof seoMetricEvents.$inferSelect;
 
+// =============================================================================
+// ATLAS (AI Optimization) Tables
+// =============================================================================
+
+// AI Findings Table for Atlas
+export const aiFindings = pgTable("ai_findings", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  findingId: text("finding_id").notNull().unique(),
+  url: text("url").notNull(),
+  findingType: text("finding_type").notNull(), // 'schema_error', 'missing_entity', 'thin_summary', etc.
+  severity: text("severity").notNull(), // 'critical', 'warning', 'info'
+  category: text("category").notNull(), // 'structured_data', 'entity', 'summary', 'llm_visibility'
+  description: text("description").notNull(),
+  impactEstimate: text("impact_estimate"),
+  recommendedAction: text("recommended_action"),
+  fixAction: text("fix_action"), // action to queue if fixable
+  isAutoFixable: boolean("is_auto_fixable").default(false),
+  metadata: jsonb("metadata"), // additional context
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAiFindingSchema = createInsertSchema(aiFindings).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiFinding = z.infer<typeof insertAiFindingSchema>;
+export type AiFinding = typeof aiFindings.$inferSelect;
+
+// AI Snapshots Table for Atlas trends
+export const aiSnapshots = pgTable("ai_snapshots", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  aiVisibilityScore: integer("ai_visibility_score"), // 0-100
+  structuredDataCoverage: integer("structured_data_coverage"), // 0-100 percent
+  entityCoverage: integer("entity_coverage"), // 0-100 percent
+  llmAnswerability: integer("llm_answerability"), // 0-100 percent
+  structuredDataDetails: jsonb("structured_data_details"), // schema types, errors
+  entityDetails: jsonb("entity_details"), // entities found/missing
+  summaryDetails: jsonb("summary_details"), // summary status per page
+  llmVisibilityDetails: jsonb("llm_visibility_details"), // question answering results
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAiSnapshotSchema = createInsertSchema(aiSnapshots).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiSnapshot = z.infer<typeof insertAiSnapshotSchema>;
+export type AiSnapshot = typeof aiSnapshots.$inferSelect;
+
 // SEO Suggestions - generated recommendations from combined worker signals
 export const seoSuggestions = pgTable("seo_suggestions", {
   id: serial("id").primaryKey(),

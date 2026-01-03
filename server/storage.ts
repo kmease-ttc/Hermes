@@ -139,6 +139,12 @@ import {
   seoMetricEvents,
   type SeoMetricEvent,
   type InsertSeoMetricEvent,
+  aiFindings,
+  type AiFinding,
+  type InsertAiFinding,
+  aiSnapshots,
+  type AiSnapshot,
+  type InsertAiSnapshot,
   seoSuggestions,
   type SeoSuggestion,
   type InsertSeoSuggestion,
@@ -485,6 +491,18 @@ export interface IStorage {
   getCompetitors(siteId: string, agentSlug?: string): Promise<SeoAgentCompetitor[]>;
   addCompetitor(competitor: InsertSeoAgentCompetitor): Promise<SeoAgentCompetitor>;
   deleteCompetitor(id: number): Promise<void>;
+  
+  // AI Findings (Atlas)
+  getAiFindings(siteId: string, limit?: number): Promise<AiFinding[]>;
+  getAiFindingsBySeverity(siteId: string, severity: string): Promise<AiFinding[]>;
+  createAiFinding(finding: InsertAiFinding): Promise<AiFinding>;
+  resolveAiFinding(findingId: string): Promise<void>;
+  clearAiFindings(siteId: string): Promise<void>;
+  
+  // AI Snapshots (Atlas)
+  getAiSnapshots(siteId: string, limit?: number): Promise<AiSnapshot[]>;
+  getLatestAiSnapshot(siteId: string): Promise<AiSnapshot | undefined>;
+  createAiSnapshot(snapshot: InsertAiSnapshot): Promise<AiSnapshot>;
 }
 
 class DBStorage implements IStorage {
@@ -2789,6 +2807,80 @@ class DBStorage implements IStorage {
 
   async deleteAchievement(id: number): Promise<void> {
     await db.delete(agentAchievements).where(eq(agentAchievements.id, id));
+  }
+
+  // AI Findings (Atlas)
+  async getAiFindings(siteId: string, limit?: number): Promise<AiFinding[]> {
+    const query = db
+      .select()
+      .from(aiFindings)
+      .where(and(
+        eq(aiFindings.siteId, siteId),
+        isNull(aiFindings.resolvedAt)
+      ))
+      .orderBy(desc(aiFindings.detectedAt));
+    
+    if (limit) {
+      return query.limit(limit);
+    }
+    return query;
+  }
+
+  async getAiFindingsBySeverity(siteId: string, severity: string): Promise<AiFinding[]> {
+    return db
+      .select()
+      .from(aiFindings)
+      .where(and(
+        eq(aiFindings.siteId, siteId),
+        eq(aiFindings.severity, severity),
+        isNull(aiFindings.resolvedAt)
+      ))
+      .orderBy(desc(aiFindings.detectedAt));
+  }
+
+  async createAiFinding(finding: InsertAiFinding): Promise<AiFinding> {
+    const [result] = await db.insert(aiFindings).values(finding).returning();
+    return result;
+  }
+
+  async resolveAiFinding(findingId: string): Promise<void> {
+    await db
+      .update(aiFindings)
+      .set({ resolvedAt: new Date() })
+      .where(eq(aiFindings.findingId, findingId));
+  }
+
+  async clearAiFindings(siteId: string): Promise<void> {
+    await db.delete(aiFindings).where(eq(aiFindings.siteId, siteId));
+  }
+
+  // AI Snapshots (Atlas)
+  async getAiSnapshots(siteId: string, limit?: number): Promise<AiSnapshot[]> {
+    const query = db
+      .select()
+      .from(aiSnapshots)
+      .where(eq(aiSnapshots.siteId, siteId))
+      .orderBy(desc(aiSnapshots.capturedAt));
+    
+    if (limit) {
+      return query.limit(limit);
+    }
+    return query;
+  }
+
+  async getLatestAiSnapshot(siteId: string): Promise<AiSnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(aiSnapshots)
+      .where(eq(aiSnapshots.siteId, siteId))
+      .orderBy(desc(aiSnapshots.capturedAt))
+      .limit(1);
+    return snapshot;
+  }
+
+  async createAiSnapshot(snapshot: InsertAiSnapshot): Promise<AiSnapshot> {
+    const [result] = await db.insert(aiSnapshots).values(snapshot).returning();
+    return result;
   }
 }
 
