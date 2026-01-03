@@ -20,6 +20,15 @@ import { z } from "zod";
 import { getServiceBySlug } from "@shared/servicesCatalog";
 import { resolveWorkerConfig } from "./workerConfigResolver";
 import { ROUTES, buildRoute, resolveDeprecatedRoute } from "@shared/routes";
+import { 
+  mergeAnomalies, 
+  computePopularScore, 
+  countMissionsFromIssues,
+  updateActionsFromCorroboration,
+  type RawAnomaly, 
+  type CanonicalIssue,
+  type CorroborationCheck
+} from "@shared/canonicalIssues";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -204,70 +213,88 @@ export async function registerRoutes(
       const siteId = (req.query.site_id as string) || "default";
       const requestId = randomUUID();
       
-      // Fetch raw anomalies from existing GA4/diagnostic data
-      // For now, return stub data that will be replaced when worker connected
+      // Get date range for last 7 days
+      const endDate = new Date();
+      const startDate7d = new Date();
+      startDate7d.setDate(startDate7d.getDate() - 7);
+      const endDateStr = endDate.toISOString().slice(0, 10);
+      const startDateStr = startDate7d.toISOString().slice(0, 10);
       
-      const stubIssues = [
-        {
-          id: "issue_organic_traffic_2025-12-07",
-          displayTitle: "Organic Traffic (Sessions)",
-          severity: "high",
-          status: "detected",
-          evidence: {
-            rawAnomalies: [],
-            primaryAnomaly: {
-              id: "anomaly_1",
-              date: "2025-12-07",
-              source: "GA4",
-              metric: "sessions",
-              dropPercent: -42.4,
-              currentValue: 1200,
-              baselineValue: 2083,
-              zScore: -3.2,
-            },
-            confirmedMetrics: {
-              confirmedPctChange: -42.4,
-              confirmedCurrentValue: 1200,
-              confirmedBaselineValue: 2083,
-              confirmedMethod: "vs_prev_7day_avg",
-              validatedAt: new Date().toISOString(),
-            },
-            corroborations: [],
-          },
-          confidence: 70,
-          recommendedActions: [
-            { id: "check_performance", title: "Check Site Performance", applicable: true, priority: 1 },
-            { id: "check_content", title: "Review Content Changes", applicable: true, priority: 2 },
-          ],
-          detectedAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-        },
-      ];
+      // Fetch real anomalies from the last 30 days
+      const [recentAnomalies, ga4Data, gscData, site] = await Promise.all([
+        storage.getRecentAnomalies(siteId, 30),
+        storage.getGA4DataByDateRange(startDateStr, endDateStr, siteId),
+        storage.getGSCDataByDateRange(startDateStr, endDateStr, siteId),
+        storage.getSiteById(siteId),
+      ]);
       
-      // Compute score and mission count from issues
-      const score = 100 - stubIssues.filter(i => i.status !== "resolved").length * 25;
-      const missionCount = stubIssues.reduce((acc, i) => 
-        acc + i.recommendedActions.filter(a => a.applicable).length, 0);
+      // Get domain from site or use default
+      const domain = site?.baseUrl || "unknown";
+      
+      // Transform Anomaly[] to RawAnomaly[] format
+      const rawAnomalies: RawAnomaly[] = recentAnomalies.map((anomaly, index) => ({
+        id: `anomaly_${anomaly.id || index}`,
+        date: anomaly.startDate || anomaly.endDate || new Date().toISOString().slice(0, 10),
+        source: anomaly.anomalyType?.includes("gsc") ? "GSC" : "GA4",
+        metric: anomaly.metric || "sessions",
+        metricFamily: anomaly.anomalyType?.includes("traffic") ? "organic_traffic" : 
+                      anomaly.anomalyType?.includes("click") ? "search_clicks" : "organic_traffic",
+        dropPercent: anomaly.deltaPct || 0,
+        currentValue: anomaly.observedValue || 0,
+        baselineValue: anomaly.baselineValue || 0,
+        zScore: anomaly.zScore || 0,
+        severity: Math.abs(anomaly.zScore || 0) >= 3 ? "severe" : 
+                  Math.abs(anomaly.zScore || 0) >= 2 ? "moderate" : "mild",
+      }));
+      
+      // Merge anomalies into canonical issues using the shared function
+      const canonicalIssues = mergeAnomalies(rawAnomalies, domain, 3);
+      
+      // Compute score and mission count from canonical issues
+      const score = canonicalIssues.length === 0 ? 100 : computePopularScore(canonicalIssues);
+      const missionCount = canonicalIssues.length === 0 ? 0 : countMissionsFromIssues(canonicalIssues);
+      
+      // Compute KPIs from real GA4/GSC data
+      const sessions7d = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0);
+      const users7d = ga4Data.reduce((sum, d) => sum + (d.users || 0), 0);
+      const clicks7d = gscData.reduce((sum, d) => sum + (d.clicks || 0), 0);
+      const impressions7d = gscData.reduce((sum, d) => sum + (d.impressions || 0), 0);
+      
+      // Determine meta based on whether we have issues or not
+      const meta = canonicalIssues.length === 0 
+        ? {
+            status: "needs_data",
+            reasonCode: "NO_ANOMALIES",
+            userMessage: "No traffic anomalies detected. Run diagnostics to start monitoring.",
+            actions: [
+              {
+                code: "run_diagnostics",
+                label: "Run Diagnostics",
+                route: "/api/diagnostics/run"
+              }
+            ]
+          }
+        : {
+            status: "ok",
+            reasonCode: "SUCCESS",
+            userMessage: `Found ${canonicalIssues.length} issue(s) requiring attention`,
+            actions: [],
+          };
       
       res.json({
         ok: true,
         siteId,
         request_id: requestId,
-        score: Math.max(0, score),
+        score,
         missionCount,
-        issues: stubIssues,
+        issues: canonicalIssues,
         kpis: {
-          sessions7d: null,
-          users7d: null,
-          clicks7d: null,
-          impressions7d: null,
+          sessions7d: sessions7d || null,
+          users7d: users7d || null,
+          clicks7d: clicks7d || null,
+          impressions7d: impressions7d || null,
         },
-        meta: {
-          status: "ok",
-          reasonCode: "SUCCESS",
-          userMessage: "Dashboard loaded",
-          actions: [],
-        },
+        meta,
       });
     } catch (error) {
       logger.error("Popular", "Dashboard error", { error });
@@ -279,40 +306,176 @@ export async function registerRoutes(
   app.post("/api/popular/issues/:issueId/corroborate", async (req, res) => {
     try {
       const { issueId } = req.params;
-      const { sources } = req.body; // ["speedster", "hemingway"]
+      const { sources, windowStart, windowEnd, siteId = "default" } = req.body;
       const requestId = randomUUID();
       
-      // Stub corroboration results (will be replaced with actual worker calls)
-      const results: Array<{
-        source: string;
-        status: string;
-        checkedAt: string;
-        summary: string;
-        degraded?: boolean;
-        contentChanged?: boolean;
-        details: string;
-      }> = [];
+      // Calculate date range for corroboration checks
+      const endDate = windowEnd ? new Date(windowEnd) : new Date();
+      const startDate = windowStart ? new Date(windowStart) : new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
       
+      // Historical baseline period (14 days before the window)
+      const baselineEnd = new Date(startDate.getTime() - 1);
+      const baselineStart = new Date(baselineEnd.getTime() - 14 * 24 * 60 * 60 * 1000);
+      
+      const results: CorroborationCheck[] = [];
+      
+      // Speedster corroboration: Check Core Web Vitals degradation
       if (sources?.includes("speedster") || !sources) {
-        results.push({
-          source: "speedster",
-          status: "ok",
-          checkedAt: new Date().toISOString(),
-          summary: "No performance degradation detected",
-          degraded: false,
-          details: "Core Web Vitals within acceptable ranges during the anomaly window",
-        });
+        try {
+          const [recentVitals, baselineVitals] = await Promise.all([
+            storage.getSeoWorkerResultsByDateRange(siteId, "core_web_vitals", startDate, endDate),
+            storage.getSeoWorkerResultsByDateRange(siteId, "core_web_vitals", baselineStart, baselineEnd),
+          ]);
+          
+          if (recentVitals.length === 0 && baselineVitals.length === 0) {
+            results.push({
+              source: "speedster",
+              status: "no_data",
+              checkedAt: new Date().toISOString(),
+              summary: "No Core Web Vitals data available",
+              details: "No performance data found for the specified period. Consider running a Speedster check.",
+            });
+          } else {
+            // Extract metrics from recent and baseline results
+            const extractVitals = (results: typeof recentVitals) => {
+              const lcpValues: number[] = [];
+              const clsValues: number[] = [];
+              const inpValues: number[] = [];
+              
+              for (const result of results) {
+                const metrics = result.metricsJson as Record<string, any> | null;
+                if (metrics) {
+                  if (typeof metrics.lcp === "number") lcpValues.push(metrics.lcp);
+                  if (typeof metrics["vitals.lcp"] === "number") lcpValues.push(metrics["vitals.lcp"]);
+                  if (typeof metrics.cls === "number") clsValues.push(metrics.cls);
+                  if (typeof metrics["vitals.cls"] === "number") clsValues.push(metrics["vitals.cls"]);
+                  if (typeof metrics.inp === "number") inpValues.push(metrics.inp);
+                  if (typeof metrics["vitals.inp"] === "number") inpValues.push(metrics["vitals.inp"]);
+                }
+              }
+              
+              return {
+                lcp: lcpValues.length > 0 ? lcpValues.reduce((a, b) => a + b, 0) / lcpValues.length : null,
+                cls: clsValues.length > 0 ? clsValues.reduce((a, b) => a + b, 0) / clsValues.length : null,
+                inp: inpValues.length > 0 ? inpValues.reduce((a, b) => a + b, 0) / inpValues.length : null,
+              };
+            };
+            
+            const recentAvg = extractVitals(recentVitals);
+            const baselineAvg = extractVitals(baselineVitals);
+            
+            // Determine if there's degradation (worse = higher LCP, higher CLS, higher INP)
+            let degraded = false;
+            const degradations: string[] = [];
+            
+            // LCP threshold: 10% increase is considered degradation
+            if (recentAvg.lcp !== null && baselineAvg.lcp !== null && baselineAvg.lcp > 0) {
+              const lcpChange = ((recentAvg.lcp - baselineAvg.lcp) / baselineAvg.lcp) * 100;
+              if (lcpChange > 10) {
+                degraded = true;
+                degradations.push(`LCP increased by ${lcpChange.toFixed(1)}% (${baselineAvg.lcp.toFixed(2)}s → ${recentAvg.lcp.toFixed(2)}s)`);
+              }
+            }
+            
+            // CLS threshold: any significant increase (>0.05 absolute change)
+            if (recentAvg.cls !== null && baselineAvg.cls !== null) {
+              const clsChange = recentAvg.cls - baselineAvg.cls;
+              if (clsChange > 0.05) {
+                degraded = true;
+                degradations.push(`CLS increased by ${clsChange.toFixed(3)} (${baselineAvg.cls.toFixed(3)} → ${recentAvg.cls.toFixed(3)})`);
+              }
+            }
+            
+            // INP threshold: 10% increase is considered degradation
+            if (recentAvg.inp !== null && baselineAvg.inp !== null && baselineAvg.inp > 0) {
+              const inpChange = ((recentAvg.inp - baselineAvg.inp) / baselineAvg.inp) * 100;
+              if (inpChange > 10) {
+                degraded = true;
+                degradations.push(`INP increased by ${inpChange.toFixed(1)}% (${baselineAvg.inp.toFixed(0)}ms → ${recentAvg.inp.toFixed(0)}ms)`);
+              }
+            }
+            
+            const summary = degraded
+              ? `Performance degradation detected: ${degradations.length} metric(s) worsened`
+              : "No significant performance degradation detected";
+            
+            const details = degraded
+              ? degradations.join("; ")
+              : `Core Web Vitals stable. LCP: ${recentAvg.lcp?.toFixed(2) || "N/A"}s, CLS: ${recentAvg.cls?.toFixed(3) || "N/A"}, INP: ${recentAvg.inp?.toFixed(0) || "N/A"}ms`;
+            
+            results.push({
+              source: "speedster",
+              status: "ok",
+              checkedAt: new Date().toISOString(),
+              summary,
+              degraded,
+              details,
+            });
+          }
+        } catch (error: any) {
+          logger.error("Popular", "Speedster corroboration error", { error: error.message });
+          results.push({
+            source: "speedster",
+            status: "error",
+            checkedAt: new Date().toISOString(),
+            summary: "Failed to check performance data",
+            details: error.message || "Unknown error during Speedster corroboration",
+          });
+        }
       }
       
+      // Hemingway corroboration: Check content changes
       if (sources?.includes("hemingway") || !sources) {
-        results.push({
-          source: "hemingway",
-          status: "ok",
-          checkedAt: new Date().toISOString(),
-          summary: "No significant content changes detected",
-          contentChanged: false,
-          details: "No major content updates or deletions during the anomaly window",
-        });
+        try {
+          const contentChanges = await storage.getContentDraftsByDateRange(siteId, startDate, endDate);
+          
+          if (contentChanges.length === 0) {
+            results.push({
+              source: "hemingway",
+              status: "ok",
+              checkedAt: new Date().toISOString(),
+              summary: "No content changes detected during the issue window",
+              contentChanged: false,
+              details: "No content drafts were created, updated, or published during this period",
+            });
+          } else {
+            // Analyze content changes
+            const majorChanges = contentChanges.filter(draft => {
+              const state = draft.state;
+              return state === "published" || state === "approved" || state === "deleted" || state === "archived";
+            });
+            
+            const contentChanged = majorChanges.length > 0;
+            const affectedUrls = [...new Set(contentChanges.map(d => d.targetUrl).filter(Boolean))] as string[];
+            
+            const summary = contentChanged
+              ? `${majorChanges.length} major content change(s) detected`
+              : `${contentChanges.length} content draft(s) in progress, no major changes published`;
+            
+            const details = contentChanged
+              ? `Major changes: ${majorChanges.map(d => `${d.contentType} "${d.title || d.draftId}" (${d.state})`).join("; ")}`
+              : `Content activity: ${contentChanges.length} draft(s) in various stages`;
+            
+            results.push({
+              source: "hemingway",
+              status: "ok",
+              checkedAt: new Date().toISOString(),
+              summary,
+              contentChanged,
+              details,
+              urlsAffected: affectedUrls.length > 0 ? affectedUrls : undefined,
+            });
+          }
+        } catch (error: any) {
+          logger.error("Popular", "Hemingway corroboration error", { error: error.message });
+          results.push({
+            source: "hemingway",
+            status: "error",
+            checkedAt: new Date().toISOString(),
+            summary: "Failed to check content changes",
+            details: error.message || "Unknown error during Hemingway corroboration",
+          });
+        }
       }
       
       res.json({
@@ -331,20 +494,81 @@ export async function registerRoutes(
   app.post("/api/popular/issues/:issueId/validate", async (req, res) => {
     try {
       const { issueId } = req.params;
-      const { windowStart, windowEnd } = req.body;
+      const { windowStart, windowEnd, siteId = "default", metric = "sessions" } = req.body;
       const requestId = randomUUID();
       
-      // Stub validation (will call GA4 API when wired)
+      if (!windowStart || !windowEnd) {
+        return res.status(400).json({ 
+          ok: false, 
+          error: "windowStart and windowEnd are required" 
+        });
+      }
+      
+      // Get current period GA4 data
+      const currentPeriodData = await storage.getGA4DataByDateRange(
+        windowStart, 
+        windowEnd, 
+        siteId
+      );
+      
+      // Calculate previous 7-day period for baseline
+      const windowStartDate = new Date(windowStart);
+      const windowEndDate = new Date(windowEnd);
+      const windowDays = Math.ceil(
+        (windowEndDate.getTime() - windowStartDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
+      
+      const baselineEnd = new Date(windowStartDate);
+      baselineEnd.setDate(baselineEnd.getDate() - 1);
+      const baselineStart = new Date(baselineEnd);
+      baselineStart.setDate(baselineStart.getDate() - 6); // 7 days before windowStart
+      
+      const baselinePeriodData = await storage.getGA4DataByDateRange(
+        baselineStart.toISOString().slice(0, 10),
+        baselineEnd.toISOString().slice(0, 10),
+        siteId
+      );
+      
+      // Calculate metrics based on requested metric type
+      let currentValue = 0;
+      let baselineValue = 0;
+      
+      if (metric === "sessions" || metric === "ga4_sessions") {
+        currentValue = currentPeriodData.reduce((sum, d) => sum + (d.sessions || 0), 0);
+        baselineValue = baselinePeriodData.reduce((sum, d) => sum + (d.sessions || 0), 0);
+      } else if (metric === "users" || metric === "ga4_users") {
+        currentValue = currentPeriodData.reduce((sum, d) => sum + (d.users || 0), 0);
+        baselineValue = baselinePeriodData.reduce((sum, d) => sum + (d.users || 0), 0);
+      } else {
+        currentValue = currentPeriodData.reduce((sum, d) => sum + (d.sessions || 0), 0);
+        baselineValue = baselinePeriodData.reduce((sum, d) => sum + (d.sessions || 0), 0);
+      }
+      
+      // Normalize baseline to same period length
+      const normalizedBaseline = baselinePeriodData.length > 0 
+        ? (baselineValue / baselinePeriodData.length) * windowDays
+        : baselineValue;
+      
+      // Compute percent change
+      const pctChange = normalizedBaseline > 0 
+        ? ((currentValue - normalizedBaseline) / normalizedBaseline) * 100 
+        : 0;
+      
       res.json({
         ok: true,
         issueId,
         request_id: requestId,
         confirmedMetrics: {
-          confirmedPctChange: -42.4,
-          confirmedCurrentValue: 1200,
-          confirmedBaselineValue: 2083,
-          confirmedMethod: "vs_prev_7day_avg",
+          confirmedPctChange: Math.round(pctChange * 10) / 10,
+          confirmedCurrentValue: currentValue,
+          confirmedBaselineValue: Math.round(normalizedBaseline),
+          confirmedMethod: "vs_prev_7day_avg" as const,
           validatedAt: new Date().toISOString(),
+        },
+        debug: {
+          currentPeriodDays: currentPeriodData.length,
+          baselinePeriodDays: baselinePeriodData.length,
+          windowDays,
         },
       });
     } catch (error) {

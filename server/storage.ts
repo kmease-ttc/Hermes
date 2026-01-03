@@ -244,6 +244,7 @@ export interface IStorage {
   // Anomalies
   saveAnomalies(data: InsertAnomaly[]): Promise<Anomaly[]>;
   getAnomaliesByRunId(runId: string): Promise<Anomaly[]>;
+  getRecentAnomalies(siteId: string, days: number): Promise<Anomaly[]>;
   
   // Hypotheses
   saveHypotheses(data: InsertHypothesis[]): Promise<Hypothesis[]>;
@@ -384,6 +385,7 @@ export interface IStorage {
   getContentDraftById(draftId: string): Promise<ContentDraft | undefined>;
   getContentDraftsByWebsite(websiteId: string, limit?: number): Promise<ContentDraft[]>;
   getContentDraftsByState(state: string): Promise<ContentDraft[]>;
+  getContentDraftsByDateRange(websiteId: string, startDate: Date, endDate: Date): Promise<ContentDraft[]>;
   
   // Hub-and-Spoke: Service Events
   createServiceEvent(event: InsertServiceEvent): Promise<ServiceEvent>;
@@ -423,6 +425,7 @@ export interface IStorage {
   getLatestSeoWorkerResults(siteId: string): Promise<SeoWorkerResult[]>;
   getLatestWorkerResultByKey(siteId: string, workerKey: string): Promise<SeoWorkerResult | undefined>;
   updateSeoWorkerResult(id: number, updates: Partial<InsertSeoWorkerResult>): Promise<SeoWorkerResult | undefined>;
+  getSeoWorkerResultsByDateRange(siteId: string, workerKey: string, startDate: Date, endDate: Date): Promise<SeoWorkerResult[]>;
   
   // SEO Metric Events (normalized metrics with canonical keys)
   saveMetricEvent(event: InsertSeoMetricEvent): Promise<SeoMetricEvent>;
@@ -873,6 +876,38 @@ class DBStorage implements IStorage {
       .select()
       .from(anomalies)
       .where(eq(anomalies.runId, runId))
+      .orderBy(desc(anomalies.createdAt));
+  }
+
+  async getRecentAnomalies(siteId: string, days: number): Promise<Anomaly[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    // Filter by createdAt and siteId via scope JSONB field
+    // If siteId is "default" or scope contains matching siteId, include it
+    // Also include anomalies with null scope for backwards compatibility
+    if (siteId === "default") {
+      // For default site, return all recent anomalies
+      return db
+        .select()
+        .from(anomalies)
+        .where(gte(anomalies.createdAt, cutoffDate))
+        .orderBy(desc(anomalies.createdAt));
+    }
+    
+    // For specific siteId, filter by scope->>'siteId' or null scope
+    return db
+      .select()
+      .from(anomalies)
+      .where(
+        and(
+          gte(anomalies.createdAt, cutoffDate),
+          or(
+            sql`${anomalies.scope}->>'siteId' = ${siteId}`,
+            isNull(anomalies.scope)
+          )
+        )
+      )
       .orderBy(desc(anomalies.createdAt));
   }
 
@@ -1656,6 +1691,18 @@ class DBStorage implements IStorage {
       .orderBy(desc(contentDrafts.updatedAt));
   }
 
+  async getContentDraftsByDateRange(websiteId: string, startDate: Date, endDate: Date): Promise<ContentDraft[]> {
+    return db
+      .select()
+      .from(contentDrafts)
+      .where(and(
+        eq(contentDrafts.websiteId, websiteId),
+        gte(contentDrafts.updatedAt, startDate),
+        sql`${contentDrafts.updatedAt} <= ${endDate}`
+      ))
+      .orderBy(desc(contentDrafts.updatedAt));
+  }
+
   // Hub-and-Spoke: Service Events implementation
   async createServiceEvent(event: InsertServiceEvent): Promise<ServiceEvent> {
     const [newEvent] = await db.insert(serviceEvents).values(event).returning();
@@ -2014,6 +2061,19 @@ class DBStorage implements IStorage {
       .where(eq(seoWorkerResults.id, id))
       .returning();
     return updated;
+  }
+
+  async getSeoWorkerResultsByDateRange(siteId: string, workerKey: string, startDate: Date, endDate: Date): Promise<SeoWorkerResult[]> {
+    return db
+      .select()
+      .from(seoWorkerResults)
+      .where(and(
+        eq(seoWorkerResults.siteId, siteId),
+        eq(seoWorkerResults.workerKey, workerKey),
+        gte(seoWorkerResults.createdAt, startDate),
+        sql`${seoWorkerResults.createdAt} <= ${endDate}`
+      ))
+      .orderBy(desc(seoWorkerResults.createdAt));
   }
 
   // SEO Metric Events (normalized metrics with canonical keys)
