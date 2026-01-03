@@ -15906,6 +15906,135 @@ Return JSON in this exact format:
     }
   });
 
+  // ==================== API KEY MANAGEMENT ====================
+  
+  const apiKeyCreateSchema = z.object({
+    displayName: z.string().min(1, "Display name is required"),
+    siteId: z.string().default("default"),
+    scopes: z.array(z.string()).default([]),
+    expiresInDays: z.number().optional(),
+  });
+
+  // Import API key utilities at the top of the function
+  const { generateApiKey, hashApiKey, maskApiKey, generateKeyId, AVAILABLE_SCOPES } = await import("./utils/apiKeyUtils");
+
+  // Get available scopes
+  app.get("/api/api-keys/scopes", async (_req, res) => {
+    res.json({
+      ok: true,
+      data: AVAILABLE_SCOPES,
+    });
+  });
+
+  // List API keys (metadata only, no secrets)
+  app.get("/api/api-keys", async (req, res) => {
+    try {
+      const siteId = (req.query.site_id as string) || "default";
+      const keys = await storage.getApiKeys(siteId);
+      
+      const keysWithMasked = keys.map(key => ({
+        keyId: key.keyId,
+        displayName: key.displayName,
+        maskedKey: maskApiKey(key.prefix),
+        scopes: key.scopes,
+        createdBy: key.createdBy,
+        lastUsedAt: key.lastUsedAt,
+        expiresAt: key.expiresAt,
+        createdAt: key.createdAt,
+      }));
+      
+      res.json({
+        ok: true,
+        data: keysWithMasked,
+      });
+    } catch (error: any) {
+      logger.error("ApiKeys", "Failed to list API keys", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Create a new API key (returns plaintext ONCE)
+  app.post("/api/api-keys", async (req, res) => {
+    try {
+      const parsed = apiKeyCreateSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ ok: false, error: parsed.error.message });
+      }
+      
+      const { displayName, siteId, scopes, expiresInDays } = parsed.data;
+      
+      const environment = process.env.NODE_ENV === "production" ? "prod" : "dev";
+      const { plaintext, hashedKey, prefix } = generateApiKey(environment as "prod" | "dev");
+      const keyId = generateKeyId();
+      
+      let expiresAt: Date | undefined;
+      if (expiresInDays) {
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+      }
+      
+      await storage.createApiKey({
+        keyId,
+        siteId,
+        displayName,
+        hashedKey,
+        prefix,
+        scopes,
+        createdBy: "user",
+        expiresAt,
+      });
+      
+      logger.info("ApiKeys", `Created API key ${keyId} for site ${siteId}`);
+      
+      res.json({
+        ok: true,
+        data: {
+          keyId,
+          displayName,
+          apiKey: plaintext,
+          maskedKey: maskApiKey(prefix),
+          scopes,
+          expiresAt,
+          createdAt: new Date().toISOString(),
+          warning: "Store this key securely. It will not be shown again.",
+        },
+      });
+    } catch (error: any) {
+      logger.error("ApiKeys", "Failed to create API key", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Revoke an API key
+  app.post("/api/api-keys/:keyId/revoke", async (req, res) => {
+    const { keyId } = req.params;
+    
+    try {
+      const existingKey = await storage.getApiKeyById(keyId);
+      
+      if (!existingKey) {
+        return res.status(404).json({ ok: false, error: "API key not found" });
+      }
+      
+      if (existingKey.revokedAt) {
+        return res.status(400).json({ ok: false, error: "API key already revoked" });
+      }
+      
+      await storage.revokeApiKey(keyId);
+      
+      logger.info("ApiKeys", `Revoked API key ${keyId}`);
+      
+      res.json({
+        ok: true,
+        message: "API key revoked successfully",
+      });
+    } catch (error: any) {
+      logger.error("ApiKeys", `Failed to revoke API key ${keyId}`, { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
   // ==================== EMPATHY HEALTH EXECUTOR ====================
   
   // Get Empathy executor configuration

@@ -2183,3 +2183,26 @@ export const insertAgentAchievementSchema = createInsertSchema(agentAchievements
 });
 export type InsertAgentAchievement = z.infer<typeof insertAgentAchievementSchema>;
 export type AgentAchievement = typeof agentAchievements.$inferSelect;
+
+// API Keys - Secure key management for external integrations
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  keyId: text("key_id").notNull().unique(), // UUID for external reference
+  siteId: text("site_id").notNull().default("default"),
+  displayName: text("display_name").notNull(),
+  hashedKey: text("hashed_key").notNull(), // bcrypt hash of the actual key
+  prefix: text("prefix").notNull(), // First 8 chars for quick lookup (ark_prod_abc12345)
+  scopes: text("scopes").array().default([]), // ['read', 'write', 'empathy:apply', etc.]
+  createdBy: text("created_by"), // User or system that created the key
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"), // Optional expiry
+  revokedAt: timestamp("revoked_at"), // Soft delete
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;

@@ -176,6 +176,9 @@ import {
   agentAchievements,
   type AgentAchievement,
   type InsertAgentAchievement,
+  apiKeys,
+  type ApiKey,
+  type InsertApiKey,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -3018,6 +3021,68 @@ class DBStorage implements IStorage {
       .update(draperActionQueue)
       .set({ status: "cancelled", updatedAt: new Date() })
       .where(eq(draperActionQueue.id, id));
+  }
+
+  // API Keys
+  async createApiKey(key: InsertApiKey): Promise<ApiKey> {
+    const [result] = await db.insert(apiKeys).values(key).returning();
+    return result;
+  }
+
+  async getApiKeys(siteId = "default"): Promise<ApiKey[]> {
+    return db
+      .select()
+      .from(apiKeys)
+      .where(and(
+        eq(apiKeys.siteId, siteId),
+        isNull(apiKeys.revokedAt)
+      ))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async getApiKeyByPrefix(prefix: string): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .select()
+      .from(apiKeys)
+      .where(and(
+        eq(apiKeys.prefix, prefix),
+        isNull(apiKeys.revokedAt)
+      ))
+      .limit(1);
+    return key;
+  }
+
+  async getApiKeyById(keyId: string): Promise<ApiKey | undefined> {
+    const [key] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.keyId, keyId))
+      .limit(1);
+    return key;
+  }
+
+  async revokeApiKey(keyId: string): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ revokedAt: new Date() })
+      .where(eq(apiKeys.keyId, keyId));
+  }
+
+  async updateApiKeyLastUsed(keyId: string): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.keyId, keyId));
+  }
+
+  // Finding by ID
+  async getFindingById(findingId: string): Promise<Finding | undefined> {
+    const [finding] = await db
+      .select()
+      .from(findings)
+      .where(eq(findings.findingId, findingId))
+      .limit(1);
+    return finding;
   }
 }
 

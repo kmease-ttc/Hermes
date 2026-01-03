@@ -109,8 +109,27 @@ export async function pushChangesToEmpathy(
       );
     }
 
-    const result: ApplyChangesResponse = JSON.parse(responseText);
-    logger.info("EmpathyExecutor", `Empathy response: ${result.summary.updated} updated, ${result.summary.skipped} skipped, ${result.summary.failed} failed`);
+    let result: ApplyChangesResponse;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error("EmpathyExecutor", "Failed to parse Empathy response as JSON");
+      throw new EmpathyExecutorError(
+        "Invalid response from Empathy server - not valid JSON",
+        response.status,
+        responseText
+      );
+    }
+
+    if (!result.ok && result.error) {
+      throw new EmpathyExecutorError(
+        `Empathy returned error: ${result.error}`,
+        response.status,
+        responseText
+      );
+    }
+
+    logger.info("EmpathyExecutor", `Empathy response: ${result.summary?.updated || 0} updated, ${result.summary?.skipped || 0} skipped, ${result.summary?.failed || 0} failed`);
     
     return result;
   } catch (error) {

@@ -124,6 +124,266 @@ function formatDate(date: string | null) {
   });
 }
 
+interface ApiKeyDisplay {
+  keyId: string;
+  displayName: string;
+  maskedKey: string;
+  scopes: string[] | null;
+  createdBy: string | null;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+interface ApiKeyCreateResponse {
+  keyId: string;
+  displayName: string;
+  apiKey: string;
+  maskedKey: string;
+  scopes: string[];
+  expiresAt: string | null;
+  createdAt: string;
+  warning: string;
+}
+
+function ApiKeysSection() {
+  const queryClient = useQueryClient();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyResult, setNewKeyResult] = useState<ApiKeyCreateResponse | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const { data: apiKeys, isLoading } = useQuery<ApiKeyDisplay[]>({
+    queryKey: ['apiKeys'],
+    queryFn: async () => {
+      const res = await fetch('/api/api-keys');
+      if (!res.ok) throw new Error('Failed to fetch API keys');
+      const json = await res.json();
+      return json.data || [];
+    },
+  });
+
+  const createKeyMutation = useMutation({
+    mutationFn: async (displayName: string) => {
+      const res = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName, scopes: ['empathy:apply', 'empathy:preview'] }),
+      });
+      if (!res.ok) throw new Error('Failed to create API key');
+      const json = await res.json();
+      return json.data as ApiKeyCreateResponse;
+    },
+    onSuccess: (data) => {
+      setNewKeyResult(data);
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to create API key", { description: error.message });
+    },
+  });
+
+  const revokeKeyMutation = useMutation({
+    mutationFn: async (keyId: string) => {
+      const res = await fetch(`/api/api-keys/${keyId}/revoke`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to revoke API key');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("API key revoked");
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to revoke API key", { description: error.message });
+    },
+  });
+
+  const handleCreate = () => {
+    if (!newKeyName.trim()) {
+      toast.error("Please enter a name for the API key");
+      return;
+    }
+    createKeyMutation.mutate(newKeyName.trim());
+  };
+
+  const handleCopyKey = async () => {
+    if (newKeyResult?.apiKey) {
+      await navigator.clipboard.writeText(newKeyResult.apiKey);
+      setCopied(true);
+      toast.success("API key copied to clipboard");
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setNewKeyName("");
+    setNewKeyResult(null);
+    setCopied(false);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Key className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">API Keys</h2>
+            <p className="text-sm text-muted-foreground">Generate keys for external integrations like Empathy Health</p>
+          </div>
+        </div>
+        <Button 
+          onClick={() => setShowCreateModal(true)}
+          data-testid="button-create-api-key"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create API Key
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : apiKeys && apiKeys.length > 0 ? (
+        <div className="border rounded-lg divide-y">
+          {apiKeys.map((key) => (
+            <div 
+              key={key.keyId} 
+              className="flex items-center gap-4 p-4"
+              data-testid={`card-api-key-${key.keyId}`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium" data-testid={`text-key-name-${key.keyId}`}>{key.displayName}</h3>
+                  {key.scopes && key.scopes.length > 0 && (
+                    <div className="flex gap-1">
+                      {key.scopes.slice(0, 2).map(scope => (
+                        <Badge key={scope} variant="outline" className="text-xs">{scope}</Badge>
+                      ))}
+                      {key.scopes.length > 2 && (
+                        <Badge variant="outline" className="text-xs">+{key.scopes.length - 2}</Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                  <code className="text-xs bg-muted px-2 py-0.5 rounded">{key.maskedKey}</code>
+                  <span>Created {formatDate(key.createdAt)}</span>
+                  {key.lastUsedAt && <span>Last used {formatTimeAgo(key.lastUsedAt)}</span>}
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  if (confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+                    revokeKeyMutation.mutate(key.keyId);
+                  }
+                }}
+                disabled={revokeKeyMutation.isPending}
+                data-testid={`button-revoke-key-${key.keyId}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 border rounded-lg bg-muted/30">
+          <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="font-medium mb-2">No API keys yet</h3>
+          <p className="text-muted-foreground mb-4">Create an API key to connect external services</p>
+          <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-first-key">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Your First API Key
+          </Button>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md shadow-xl">
+            {!newKeyResult ? (
+              <>
+                <h3 className="text-lg font-semibold mb-4">Create API Key</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Key Name</label>
+                    <input
+                      type="text"
+                      value={newKeyName}
+                      onChange={(e) => setNewKeyName(e.target.value)}
+                      placeholder="e.g., Empathy Health Production"
+                      className="w-full px-3 py-2 border rounded-md bg-background"
+                      data-testid="input-key-name"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
+                    <Button 
+                      onClick={handleCreate}
+                      disabled={createKeyMutation.isPending}
+                      data-testid="button-confirm-create"
+                    >
+                      {createKeyMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Create Key
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle className="w-5 h-5 text-semantic-success" />
+                  <h3 className="text-lg font-semibold">API Key Created</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-semantic-warning-soft border border-semantic-warning-border rounded-md">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-semantic-warning flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-semantic-warning">Copy this key now!</p>
+                        <p className="text-sm text-muted-foreground">You won't be able to see it again after closing this dialog.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Your API Key</label>
+                    <div className="flex gap-2">
+                      <code className="flex-1 px-3 py-2 border rounded-md bg-muted font-mono text-sm break-all" data-testid="text-new-api-key">
+                        {newKeyResult.apiKey}
+                      </code>
+                      <Button
+                        variant="outline"
+                        onClick={handleCopyKey}
+                        className={copied ? "bg-semantic-success text-white" : ""}
+                        data-testid="button-copy-key"
+                      >
+                        {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleCloseModal} data-testid="button-done">
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SitesSection() {
   const queryClient = useQueryClient();
 
@@ -446,7 +706,7 @@ export default function Settings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="vault" data-testid="tab-vault">
               <Shield className="w-4 h-4 mr-2" />
               Vault
@@ -462,6 +722,10 @@ export default function Settings() {
             <TabsTrigger value="data" data-testid="tab-data">
               <Database className="w-4 h-4 mr-2" />
               Data Sources
+            </TabsTrigger>
+            <TabsTrigger value="api-keys" data-testid="tab-api-keys">
+              <Key className="w-4 h-4 mr-2" />
+              API Keys
             </TabsTrigger>
           </TabsList>
 
@@ -735,6 +999,10 @@ export default function Settings() {
                 <p className="text-muted-foreground text-center py-4">No data source information available</p>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="api-keys">
+            <ApiKeysSection />
           </TabsContent>
         </Tabs>
       </div>
