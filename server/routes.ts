@@ -224,15 +224,19 @@ export async function registerRoutes(
   // GET /api/popular/dashboard - Returns unified Popular dashboard
   app.get("/api/popular/dashboard", async (req, res) => {
     try {
-      const siteId = (req.query.site_id as string) || "default";
+      // Accept both site_id and siteId query params for compatibility
+      const siteId = (req.query.site_id as string) || (req.query.siteId as string) || "default";
       const requestId = randomUUID();
+      
+      // Format date as YYYYMMDD to match database format
+      const formatDateCompact = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
       
       // Get date range for last 7 days
       const endDate = new Date();
       const startDate7d = new Date();
       startDate7d.setDate(startDate7d.getDate() - 7);
-      const endDateStr = endDate.toISOString().slice(0, 10);
-      const startDateStr = startDate7d.toISOString().slice(0, 10);
+      const endDateStr = formatDateCompact(endDate);
+      const startDateStr = formatDateCompact(startDate7d);
       
       // Fetch real anomalies from the last 30 days
       const [recentAnomalies, ga4Data, gscData, site] = await Promise.all([
@@ -268,11 +272,60 @@ export async function registerRoutes(
       const score = canonicalIssues.length === 0 ? 100 : computePopularScore(canonicalIssues);
       const missionCount = canonicalIssues.length === 0 ? 0 : countMissionsFromIssues(canonicalIssues);
       
-      // Compute KPIs from real GA4/GSC data
+      // Compute KPIs from real GA4/GSC data (7-day metrics)
       const sessions7d = ga4Data.reduce((sum, d) => sum + (d.sessions || 0), 0);
       const users7d = ga4Data.reduce((sum, d) => sum + (d.users || 0), 0);
       const clicks7d = gscData.reduce((sum, d) => sum + (d.clicks || 0), 0);
       const impressions7d = gscData.reduce((sum, d) => sum + (d.impressions || 0), 0);
+      
+      // Get 30-day data for monthly metrics (Bounce Rate, Conversion Rate, Monthly Sessions)
+      const startDate30d = new Date();
+      startDate30d.setDate(startDate30d.getDate() - 30);
+      const startDate30dStr = formatDateCompact(startDate30d);
+      
+      // Also fetch 30-day GA4 data for monthly KPIs
+      const ga4Data30d = await storage.getGA4DataByDateRange(startDate30dStr, endDateStr, siteId);
+      
+      // Calculate Bounce Rate (weighted average)
+      const bounceRateData = ga4Data30d.filter(d => d.bounceRate !== null && d.sessions > 0);
+      const bounceRate = bounceRateData.length > 0
+        ? bounceRateData.reduce((sum, d) => sum + ((d.bounceRate || 0) * d.sessions), 0) / 
+          bounceRateData.reduce((sum, d) => sum + d.sessions, 0)
+        : null;
+      
+      // Calculate Conversion Rate
+      const totalSessions30d = ga4Data30d.reduce((sum, d) => sum + (d.sessions || 0), 0);
+      const totalConversions30d = ga4Data30d.reduce((sum, d) => sum + (d.conversions || 0), 0);
+      const conversionRate = totalSessions30d > 0 ? (totalConversions30d / totalSessions30d) * 100 : null;
+      
+      // Calculate Monthly Sessions (scaled to 30 days if less data)
+      const daysOfData = ga4Data30d.length;
+      const scaleFactor = daysOfData > 0 ? 30 / Math.min(daysOfData, 30) : 1;
+      const monthlySessions = totalSessions30d > 0 ? Math.round(totalSessions30d * scaleFactor) : null;
+      
+      // Determine if GA4 is connected based on data availability
+      const hasGa4Data = ga4Data30d.length > 0;
+      
+      // Build per-metric meta status
+      const buildMetricMeta = (value: number | null, metricName: string) => {
+        if (value !== null) {
+          return { status: "ok", reasonCode: "SUCCESS", userMessage: `${metricName} computed successfully`, actions: [] };
+        }
+        if (!hasGa4Data) {
+          return { 
+            status: "needs_data", 
+            reasonCode: "NO_GA4_DATA", 
+            userMessage: "GA4 is not connected or has no data",
+            actions: [{ code: "connect_ga4", label: "Connect GA4", route: "/settings/websites" }]
+          };
+        }
+        return { 
+          status: "needs_data", 
+          reasonCode: "NO_METRIC_DATA", 
+          userMessage: `${metricName} data not available`,
+          actions: [{ code: "run_popular", label: "Run Popular", route: "/api/crew/popular/run" }]
+        };
+      };
       
       // Determine meta based on whether we have issues or not
       const meta = canonicalIssues.length === 0 
@@ -307,6 +360,24 @@ export async function registerRoutes(
           users7d: users7d || null,
           clicks7d: clicks7d || null,
           impressions7d: impressions7d || null,
+          // Add monthly metrics for homepage Key Metrics consistency
+          bounceRate: bounceRate !== null ? Math.round(bounceRate * 10) / 10 : null,
+          conversionRate: conversionRate !== null ? Math.round(conversionRate * 100) / 100 : null,
+          monthlySessions: monthlySessions,
+        },
+        keyMetrics: {
+          bounceRate: { 
+            data: { value: bounceRate !== null ? Math.round(bounceRate * 10) / 10 : null }, 
+            meta: buildMetricMeta(bounceRate, "Bounce Rate") 
+          },
+          conversionRate: { 
+            data: { value: conversionRate !== null ? Math.round(conversionRate * 100) / 100 : null }, 
+            meta: buildMetricMeta(conversionRate, "Conversion Rate") 
+          },
+          monthlySessions: { 
+            data: { value: monthlySessions }, 
+            meta: buildMetricMeta(monthlySessions, "Monthly Sessions") 
+          },
         },
         meta,
       });
@@ -4922,11 +4993,26 @@ When answering:
       }
       resolvedSiteId = targetSiteId; // Update hoisted variable for catch block
       
-      const [gscData, ga4Data, workerResults] = await Promise.all([
+      // Try to get data with resolved siteId first, fallback to 'default' if no data found
+      let [gscData, ga4Data, workerResults] = await Promise.all([
         storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
         storage.getGA4DataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), targetSiteId),
         storage.getLatestSeoWorkerResults(targetSiteId),
       ]);
+      
+      // Fallback to 'default' siteId if no GA4 data found (legacy data may use 'default')
+      if (ga4Data.length === 0 && targetSiteId !== 'default') {
+        const fallbackGa4Data = await storage.getGA4DataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), 'default');
+        if (fallbackGa4Data.length > 0) {
+          ga4Data = fallbackGa4Data;
+        }
+      }
+      if (gscData.length === 0 && targetSiteId !== 'default') {
+        const fallbackGscData = await storage.getGSCDataByDateRange(formatDate(thirtyDaysAgo), formatDate(now), 'default');
+        if (fallbackGscData.length > 0) {
+          gscData = fallbackGscData;
+        }
+      }
       
       // Extract Core Web Vitals from worker results
       const cwvResult = workerResults.find(r => r.workerKey === 'core_web_vitals');

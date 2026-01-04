@@ -840,12 +840,24 @@ export default function PopularContent() {
   const issues = data.issues;
   
   // Transform kpis object to array format for display
-  const kpisObj = data.kpis as { sessions7d?: number; users7d?: number; clicks7d?: number; impressions7d?: number } | undefined;
+  const kpisObj = data.kpis as { 
+    sessions7d?: number; 
+    users7d?: number; 
+    clicks7d?: number; 
+    impressions7d?: number;
+    bounceRate?: number | null;
+    conversionRate?: number | null;
+    monthlySessions?: number | null;
+  } | undefined;
+  
   const kpisRaw = kpisObj ? [
     { id: "sessions", label: "Sessions (7d)", value: kpisObj.sessions7d ?? 0, delta: undefined, deltaLabel: undefined },
     { id: "users", label: "Users (7d)", value: kpisObj.users7d ?? 0, delta: undefined, deltaLabel: undefined },
     { id: "clicks", label: "Clicks (7d)", value: kpisObj.clicks7d ?? 0, delta: undefined, deltaLabel: undefined },
     { id: "impressions", label: "Impressions (7d)", value: kpisObj.impressions7d ?? 0, delta: undefined, deltaLabel: undefined },
+    { id: "bounceRate", label: "Bounce Rate", value: kpisObj.bounceRate != null ? `${kpisObj.bounceRate.toFixed(1)}%` : "—", delta: undefined, deltaLabel: undefined, isMissing: kpisObj.bounceRate == null },
+    { id: "conversionRate", label: "Conversion Rate", value: kpisObj.conversionRate != null ? `${kpisObj.conversionRate.toFixed(2)}%` : "—", delta: undefined, deltaLabel: undefined, isMissing: kpisObj.conversionRate == null },
+    { id: "monthlySessions", label: "Monthly Sessions", value: kpisObj.monthlySessions != null ? kpisObj.monthlySessions.toLocaleString() : "—", delta: undefined, deltaLabel: undefined, isMissing: kpisObj.monthlySessions == null },
   ] : [];
 
   const tier: MissionStatusState["tier"] =
@@ -903,11 +915,14 @@ export default function PopularContent() {
     value: kpi.value,
     delta: kpi.delta,
     deltaLabel: kpi.deltaLabel,
-    deltaIsGood: kpi.delta ? kpi.delta > 0 : undefined,
+    deltaIsGood: kpi.delta ? Number(kpi.delta) > 0 : undefined,
     icon:
       kpi.id === "sessions" ? <Activity className="w-4 h-4" /> :
       kpi.id === "users" ? <Users className="w-4 h-4" /> :
       kpi.id === "clicks" ? <MousePointerClick className="w-4 h-4" /> :
+      kpi.id === "bounceRate" ? <TrendingDown className="w-4 h-4" /> :
+      kpi.id === "conversionRate" ? <TrendingUp className="w-4 h-4" /> :
+      kpi.id === "monthlySessions" ? <BarChart3 className="w-4 h-4" /> :
       <Eye className="w-4 h-4" />,
   }));
 

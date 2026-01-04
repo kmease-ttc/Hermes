@@ -149,6 +149,11 @@ interface MetricCardData {
   nextAction: { text: string; link: string };
   benchmarkLink?: string;
   timeRange: string;
+  emptyState?: {
+    message: string;
+    actionLabel: string;
+    actionRoute: string;
+  } | null;
 }
 
 function AreaSparkline({ data, color, fillColor }: { data: number[]; color: string; fillColor: string }) {
@@ -262,6 +267,8 @@ function MetricCard({ metric, highlighted = false }: { metric: MetricCardData; h
   
   const highlightStyles = highlighted ? getHighlightedCardStyles(styles.lineColor) : {};
   
+  const hasNoData = metric.value === '—' && metric.emptyState;
+  
   return (
     <Card 
       className={cn("transition-all overflow-hidden rounded-2xl backdrop-blur-sm", !highlighted && "bg-card/80 border", !highlighted && styles.border, !highlighted && styles.glow)} 
@@ -276,16 +283,38 @@ function MetricCard({ metric, highlighted = false }: { metric: MetricCardData; h
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground mb-3">{metric.timeRange}</p>
-        <div className="flex items-baseline gap-3 mb-4">
-          <span className="text-4xl font-bold text-foreground">{metric.value}</span>
-          <span className={cn("text-base flex items-center gap-1 font-medium", trendColor)}>
-            <TrendIcon className="w-4 h-4" />
-            {metric.delta}
-          </span>
-        </div>
-        <div className="h-16 w-full overflow-hidden mb-4">
-          <AreaSparkline data={metric.sparkline} color={styles.lineColor} fillColor={styles.fillColor} />
-        </div>
+        
+        {hasNoData ? (
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="text-3xl font-bold text-muted-foreground mb-2">—</div>
+            <p className="text-sm text-muted-foreground text-center mb-3">{metric.emptyState!.message}</p>
+            <Link href={metric.emptyState!.actionRoute}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs"
+                data-testid={`button-${metric.id}-empty-action`}
+              >
+                {metric.emptyState!.actionLabel}
+                <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="text-4xl font-bold text-foreground">{metric.value}</span>
+              <span className={cn("text-base flex items-center gap-1 font-medium", trendColor)}>
+                <TrendIcon className="w-4 h-4" />
+                {metric.delta}
+              </span>
+            </div>
+            <div className="h-16 w-full overflow-hidden mb-4">
+              <AreaSparkline data={metric.sparkline} color={styles.lineColor} fillColor={styles.fillColor} />
+            </div>
+          </>
+        )}
+        
         <div className="space-y-2">
           <Link href={ROUTES.BENCHMARKS}>
             <span className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer">
@@ -378,6 +407,23 @@ function MetricCardsRow() {
     return 'bad';
   };
   
+  const buildEmptyState = (metricId: string, value: number | null | undefined) => {
+    const hasData = value !== null && value !== undefined;
+    if (hasData) return null;
+    switch (metricId) {
+      case 'conversion-rate':
+        return { message: 'GA4 not connected or no conversion data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
+      case 'bounce-rate':
+        return { message: 'GA4 not connected or no bounce data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
+      case 'sessions':
+        return { message: 'GA4 not connected or no session data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
+      case 'market-sov':
+        return { message: 'No SERP data available', actionLabel: 'Run Lookout', actionRoute: buildRoute.agent('serp_tracker') };
+      default:
+        return { message: 'No data available', actionLabel: 'Run Diagnostics', actionRoute: '/dashboard' };
+    }
+  };
+  
   const metrics: MetricCardData[] = [
     {
       id: 'conversion-rate',
@@ -389,6 +435,7 @@ function MetricCardsRow() {
       sparkline: [3.8, 3.6, 3.4, 3.5, 3.3, 3.1, conversionData?.actualValue || 3.2],
       nextAction: { text: 'Review Pulse', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
+      emptyState: buildEmptyState('conversion-rate', conversionData?.actualValue),
     },
     {
       id: 'bounce-rate',
@@ -400,6 +447,7 @@ function MetricCardsRow() {
       sparkline: [38, 39, 40, 41, 43, 44, bounceData?.actualValue || 42],
       nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
+      emptyState: buildEmptyState('bounce-rate', bounceData?.actualValue),
     },
     {
       id: 'sessions',
@@ -411,6 +459,7 @@ function MetricCardsRow() {
       sparkline: [80000, 85000, 88000, 90000, 92000, 94000, sessionsData?.actualValue || 96000],
       nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
+      emptyState: buildEmptyState('sessions', sessionsData?.actualValue),
     },
     {
       id: 'market-sov',
@@ -422,6 +471,7 @@ function MetricCardsRow() {
       sparkline: [0, 5, 8, 12, 15, 18, marketSovData?.marketSov || 0],
       nextAction: { text: 'Review Lookout', link: buildRoute.agent('serp_tracker') },
       timeRange: 'CTR-weighted',
+      emptyState: buildEmptyState('market-sov', marketSovData?.marketSov),
     },
   ];
 
