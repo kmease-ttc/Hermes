@@ -195,6 +195,19 @@ export type ServiceId = keyof typeof SERVICES;
 // CREW DEFINITIONS (User-Facing Agents)
 // ═══════════════════════════════════════════════════════════════════════════
 
+export interface CrewTheme {
+  primary: string;
+  ring: string;
+  bg: string;
+  text: string;
+  badge: string;
+}
+
+export interface CrewDependencies {
+  required: string[];
+  optional: string[];
+}
+
 export interface CrewDefinition {
   crewId: string;
   nickname: string;
@@ -202,6 +215,19 @@ export interface CrewDefinition {
   services: ServiceId[];
   metricsOwned: MetricKey[];
   color: string;
+  theme: CrewTheme;
+  primaryMetricId: MetricKey | null;
+  dependencies: CrewDependencies;
+}
+
+function deriveTheme(color: string): CrewTheme {
+  return {
+    primary: color,
+    ring: `${color}30`,
+    bg: `${color}15`,
+    text: color,
+    badge: `${color}20`,
+  };
 }
 
 export const CREW: Record<string, CrewDefinition> = {
@@ -216,6 +242,9 @@ export const CREW: Record<string, CrewDefinition> = {
       'gsc.clicks', 'gsc.impressions', 'gsc.ctr', 'gsc.position',
     ],
     color: '#14B8A6',
+    theme: deriveTheme('#14B8A6'),
+    primaryMetricId: 'ga4.sessions',
+    dependencies: { required: ['ga4', 'gsc'], optional: [] },
   },
   speedster: {
     crewId: 'speedster',
@@ -224,6 +253,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['core_web_vitals'],
     metricsOwned: ['vitals.lcp', 'vitals.cls', 'vitals.inp', 'vitals.performance_score'],
     color: '#10B981',
+    theme: deriveTheme('#10B981'),
+    primaryMetricId: 'vitals.performance_score',
+    dependencies: { required: ['pagespeed'], optional: [] },
   },
   lookout: {
     crewId: 'lookout',
@@ -232,6 +264,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['serp_intel'],
     metricsOwned: ['serp.keywords_tracked', 'serp.keywords_top10', 'serp.avg_position'],
     color: '#EC4899',
+    theme: deriveTheme('#EC4899'),
+    primaryMetricId: 'serp.keywords_top10',
+    dependencies: { required: ['serp_api'], optional: ['gsc'] },
   },
   scotty: {
     crewId: 'scotty',
@@ -240,6 +275,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['crawl_render'],
     metricsOwned: ['tech.pages_crawled', 'tech.errors', 'tech.warnings', 'tech.blocked_urls'],
     color: '#F97316',
+    theme: deriveTheme('#F97316'),
+    primaryMetricId: 'tech.errors',
+    dependencies: { required: ['crawler'], optional: ['gsc'] },
   },
   beacon: {
     crewId: 'beacon',
@@ -248,6 +286,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['backlink_authority'],
     metricsOwned: ['links.total', 'links.new', 'links.lost', 'links.domain_authority'],
     color: '#F59E0B',
+    theme: deriveTheme('#F59E0B'),
+    primaryMetricId: 'links.domain_authority',
+    dependencies: { required: ['backlink_api'], optional: [] },
   },
   sentinel: {
     crewId: 'sentinel',
@@ -256,6 +297,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['content_decay'],
     metricsOwned: ['content.decay_signals', 'content.refresh_candidates'],
     color: '#6366F1',
+    theme: deriveTheme('#6366F1'),
+    primaryMetricId: 'content.decay_signals',
+    dependencies: { required: ['ga4'], optional: ['gsc'] },
   },
   natasha: {
     crewId: 'natasha',
@@ -264,6 +308,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['competitive_snapshot'],
     metricsOwned: ['competitive.gaps', 'competitive.opportunities'],
     color: '#A855F7',
+    theme: deriveTheme('#A855F7'),
+    primaryMetricId: 'competitive.gaps',
+    dependencies: { required: ['serp_api'], optional: ['backlink_api'] },
   },
   draper: {
     crewId: 'draper',
@@ -272,6 +319,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['google_ads_connector'],
     metricsOwned: ['ads.spend', 'ads.clicks', 'ads.impressions', 'ads.conversions', 'ads.cpc'],
     color: '#FB7185',
+    theme: deriveTheme('#FB7185'),
+    primaryMetricId: 'ads.conversions',
+    dependencies: { required: ['google_ads'], optional: ['ga4'] },
   },
   hemingway: {
     crewId: 'hemingway',
@@ -280,6 +330,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['content_generator'],
     metricsOwned: [],
     color: '#0EA5E9',
+    theme: deriveTheme('#0EA5E9'),
+    primaryMetricId: null,
+    dependencies: { required: ['openai'], optional: ['seo_kbase'] },
   },
   socrates: {
     crewId: 'socrates',
@@ -288,6 +341,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['seo_kbase'],
     metricsOwned: ['kb.insights_written', 'kb.guidance_used', 'kb.last_sync_at'],
     color: '#84CC16',
+    theme: deriveTheme('#84CC16'),
+    primaryMetricId: 'kb.insights_written',
+    dependencies: { required: ['kbase_api'], optional: [] },
   },
   atlas: {
     crewId: 'atlas',
@@ -296,6 +352,9 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['ai_optimization'],
     metricsOwned: ['ai.coverage_score', 'ai.llm_visibility'],
     color: '#D946EF',
+    theme: deriveTheme('#D946EF'),
+    primaryMetricId: 'ai.coverage_score',
+    dependencies: { required: ['openai'], optional: ['crawler', 'seo_kbase'] },
   },
   major_tom: {
     crewId: 'major_tom',
@@ -304,14 +363,131 @@ export const CREW: Record<string, CrewDefinition> = {
     services: ['orchestrator'],
     metricsOwned: [],
     color: '#4F46E5',
+    theme: deriveTheme('#4F46E5'),
+    primaryMetricId: null,
+    dependencies: { required: [], optional: [] },
   },
 } as const;
 
 export type CrewId = keyof typeof CREW;
 
 // ═══════════════════════════════════════════════════════════════════════════
+// INTEGRATION DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface IntegrationDefinition {
+  id: string;
+  name: string;
+  ownerCrewId: CrewId | null;
+  connectRoute: string;
+  testRoute: string;
+}
+
+export const INTEGRATIONS: Record<string, IntegrationDefinition> = {
+  ga4: {
+    id: 'ga4',
+    name: 'Google Analytics 4',
+    ownerCrewId: 'popular',
+    connectRoute: '/api/integrations/ga4/connect',
+    testRoute: '/api/integrations/ga4/test',
+  },
+  gsc: {
+    id: 'gsc',
+    name: 'Google Search Console',
+    ownerCrewId: 'popular',
+    connectRoute: '/api/integrations/gsc/connect',
+    testRoute: '/api/integrations/gsc/test',
+  },
+  google_ads: {
+    id: 'google_ads',
+    name: 'Google Ads',
+    ownerCrewId: 'draper',
+    connectRoute: '/api/integrations/google-ads/connect',
+    testRoute: '/api/integrations/google-ads/test',
+  },
+  pagespeed: {
+    id: 'pagespeed',
+    name: 'PageSpeed Insights',
+    ownerCrewId: 'speedster',
+    connectRoute: '/api/integrations/pagespeed/connect',
+    testRoute: '/api/integrations/pagespeed/test',
+  },
+  serp_api: {
+    id: 'serp_api',
+    name: 'SERP API',
+    ownerCrewId: 'lookout',
+    connectRoute: '/api/integrations/serp/connect',
+    testRoute: '/api/integrations/serp/test',
+  },
+  backlink_api: {
+    id: 'backlink_api',
+    name: 'Backlink API',
+    ownerCrewId: 'beacon',
+    connectRoute: '/api/integrations/backlinks/connect',
+    testRoute: '/api/integrations/backlinks/test',
+  },
+  crawler: {
+    id: 'crawler',
+    name: 'Site Crawler',
+    ownerCrewId: 'scotty',
+    connectRoute: '/api/integrations/crawler/connect',
+    testRoute: '/api/integrations/crawler/test',
+  },
+  openai: {
+    id: 'openai',
+    name: 'OpenAI',
+    ownerCrewId: null,
+    connectRoute: '/api/integrations/openai/connect',
+    testRoute: '/api/integrations/openai/test',
+  },
+  kbase_api: {
+    id: 'kbase_api',
+    name: 'Knowledge Base API',
+    ownerCrewId: 'socrates',
+    connectRoute: '/api/integrations/kbase/connect',
+    testRoute: '/api/integrations/kbase/test',
+  },
+  seo_kbase: {
+    id: 'seo_kbase',
+    name: 'SEO Knowledge Base',
+    ownerCrewId: 'socrates',
+    connectRoute: '/api/integrations/seo-kbase/connect',
+    testRoute: '/api/integrations/seo-kbase/test',
+  },
+} as const;
+
+export type IntegrationId = keyof typeof INTEGRATIONS;
+
+// ═══════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get a crew definition by crewId, with all theme tokens included
+ */
+export function getCrew(crewId: string): CrewDefinition | undefined {
+  return CREW[crewId];
+}
+
+/**
+ * Get integration definition by integrationId
+ */
+export function getIntegration(integrationId: string): IntegrationDefinition | undefined {
+  return INTEGRATIONS[integrationId];
+}
+
+/**
+ * Get all integrations required/optional for a crew
+ */
+export function getIntegrationsForCrew(crewId: string): { required: IntegrationDefinition[]; optional: IntegrationDefinition[] } {
+  const crew = CREW[crewId];
+  if (!crew) return { required: [], optional: [] };
+  
+  return {
+    required: crew.dependencies.required.map(id => INTEGRATIONS[id]).filter(Boolean) as IntegrationDefinition[],
+    optional: crew.dependencies.optional.map(id => INTEGRATIONS[id]).filter(Boolean) as IntegrationDefinition[],
+  };
+}
 
 /**
  * Maps service_id to crew_id
