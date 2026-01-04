@@ -314,14 +314,12 @@ export function MissionOverviewWidget({
   const StatusIcon = config.icon;
   const needsAttention = status.tier === "needs_attention";
 
-  const hasPerformanceScore = status.performanceScore !== undefined;
-  const scoreValue = status.performanceScore;
-
   const pendingMissions = missions.filter(m => m.status === "pending" || m.status === "in_progress");
   const visibleMissions = pendingMissions.slice(0, maxActions);
   const hasMoreMissions = pendingMissions.length > maxActions;
 
   const openCount = pendingMissions.length;
+  const scoreValue = status.pendingCount ?? openCount;
   const blockerCount = blockers.length;
 
   return (
@@ -386,17 +384,29 @@ export function MissionOverviewWidget({
             </div>
 
             <div className="flex items-center gap-4 py-3 px-4 rounded-lg bg-background/40 border border-border/30 mb-4">
-              {hasPerformanceScore && (
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center bg-gold-soft ring-2 ring-gold/40"
-                  >
-                    <span className="text-lg font-bold leading-none text-gold">
-                      {scoreValue === null ? "—" : Math.round(scoreValue)}
-                    </span>
-                  </div>
+              <div className="flex items-center gap-2">
+                <div 
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center ring-2",
+                    scoreValue === 0 
+                      ? "bg-semantic-success-soft ring-semantic-success/40" 
+                      : scoreValue <= 2 
+                      ? "bg-semantic-info-soft ring-semantic-info/40"
+                      : "bg-gold-soft ring-gold/40"
+                  )}
+                >
+                  <span className={cn(
+                    "text-lg font-bold leading-none",
+                    scoreValue === 0 
+                      ? "text-semantic-success" 
+                      : scoreValue <= 2 
+                      ? "text-semantic-info"
+                      : "text-gold"
+                  )}>
+                    {scoreValue}
+                  </span>
                 </div>
-              )}
+              </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 text-sm">
