@@ -387,6 +387,92 @@ export async function registerRoutes(
     }
   });
 
+  // GET /api/crew/popular/readiness - Check Popular crew readiness for GA4/GSC data
+  app.get("/api/crew/popular/readiness", async (req, res) => {
+    try {
+      const siteId = (req.query.site_id as string) || (req.query.siteId as string) || "default";
+      
+      // Check if Popular (google_data_connector) is "hired" - exists in integrations table with enabled=true
+      const popularIntegration = await storage.getIntegrationById("google_data_connector");
+      const hired = popularIntegration?.enabled === true;
+      
+      // Check configuration status
+      const configured = popularIntegration?.configState === 'ready' || popularIntegration?.configState === 'configured';
+      
+      // Get site to check GA4_PROPERTY_ID configuration
+      const site = await storage.getSiteById(siteId);
+      const siteIntegrations = (site?.integrations as Record<string, any>) || {};
+      const hasGa4PropertyId = Boolean(siteIntegrations.ga4?.property_id);
+      const hasGscProperty = Boolean(siteIntegrations.gsc?.property);
+      
+      // Check OAuth token status for Google
+      const googleToken = await storage.getToken("google");
+      const hasValidToken = googleToken && googleToken.expiresAt && new Date(googleToken.expiresAt) > new Date();
+      
+      // Check for recent GA4 data (within last 7 days)
+      const formatDateCompact = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const recentGa4Data = await storage.getGA4DataByDateRange(formatDateCompact(sevenDaysAgo), formatDateCompact(now), siteId);
+      const recentGscData = await storage.getGSCDataByDateRange(formatDateCompact(sevenDaysAgo), formatDateCompact(now), siteId);
+      
+      const hasRecentGa4Data = recentGa4Data.length > 0;
+      const hasRecentGscData = recentGscData.length > 0;
+      
+      // Determine GA4 status
+      let ga4Status: 'connected' | 'needs_auth' | 'needs_config' | 'error' = 'needs_config';
+      if (hasRecentGa4Data) {
+        ga4Status = 'connected';
+      } else if (!hasGa4PropertyId) {
+        ga4Status = 'needs_config';
+      } else if (!hasValidToken) {
+        ga4Status = 'needs_auth';
+      } else {
+        ga4Status = 'error'; // Has config but no data
+      }
+      
+      // Determine GSC status
+      let gscStatus: 'connected' | 'needs_auth' | 'needs_config' | 'error' = 'needs_config';
+      if (hasRecentGscData) {
+        gscStatus = 'connected';
+      } else if (!hasGscProperty) {
+        gscStatus = 'needs_config';
+      } else if (!hasValidToken) {
+        gscStatus = 'needs_auth';
+      } else {
+        gscStatus = 'error';
+      }
+      
+      // Get last run info
+      const lastRun = popularIntegration?.lastRunAt;
+      
+      // Determine if we can run now (hired and configured)
+      const canRunNow = hired && configured && hasValidToken;
+      
+      res.json({
+        hired,
+        configured,
+        integrations: {
+          ga4: { 
+            status: ga4Status, 
+            last_ok_at: hasRecentGa4Data ? recentGa4Data[0]?.createdAt?.toISOString() || null : null,
+            last_error: ga4Status === 'error' ? 'No recent data despite configuration' : null,
+          },
+          gsc: { 
+            status: gscStatus, 
+            last_ok_at: hasRecentGscData ? recentGscData[0]?.createdAt?.toISOString() || null : null,
+            last_error: gscStatus === 'error' ? 'No recent data despite configuration' : null,
+          },
+        },
+        last_run_at: lastRun ? lastRun.toISOString() : null,
+        can_run_now: canRunNow,
+      });
+    } catch (error) {
+      logger.error("Popular", "Readiness check error", { error });
+      res.status(500).json({ ok: false, error: "Failed to check Popular readiness" });
+    }
+  });
+
   // POST /api/popular/issues/:issueId/corroborate - Runs cross-agent corroboration
   app.post("/api/popular/issues/:issueId/corroborate", async (req, res) => {
     try {
@@ -5099,6 +5185,76 @@ When answering:
       // Metrics where lower is better
       const lowerIsBetter = ['avg_position', 'bounce_rate', 'lcp', 'cls', 'inp'];
       
+      // Metrics that depend on GA4 via Popular
+      const ga4DependentMetrics = ['sessions', 'conversion_rate', 'bounce_rate', 'session_duration', 'pages_per_session'];
+      
+      // Check Popular readiness for dependency-aware meta
+      const popularIntegration = await storage.getIntegrationById("google_data_connector");
+      const popularHired = popularIntegration?.enabled === true;
+      const popularConfigured = popularIntegration?.configState === 'ready' || popularIntegration?.configState === 'configured';
+      
+      // Get site integrations to check GA4 property ID
+      const site = await storage.getSiteById(targetSiteId);
+      const siteIntegrations = (site?.integrations as Record<string, any>) || {};
+      const hasGa4PropertyId = Boolean(siteIntegrations.ga4?.property_id);
+      
+      // Check for valid Google OAuth token
+      const googleToken = await storage.getToken("google");
+      const hasValidToken = googleToken && googleToken.expiresAt && new Date(googleToken.expiresAt) > new Date();
+      
+      // Helper to build dependency-aware meta for a metric
+      const buildDependencyMeta = (metricName: string, actualValue: number | null) => {
+        // Only apply to GA4-dependent metrics
+        if (!ga4DependentMetrics.includes(metricName)) {
+          return actualValue !== null 
+            ? { status: 'ok', owner: null, reason_code: null, message: null, actions: [] }
+            : { status: 'empty', owner: null, reason_code: 'NO_DATA', message: 'No data available', actions: [] };
+        }
+        
+        // Decision tree for GA4-dependent metrics
+        if (!popularHired) {
+          return {
+            status: 'needs_setup',
+            owner: 'popular',
+            reason_code: 'POPULAR_NOT_ENABLED',
+            message: "Popular isn't enabled for this site.",
+            actions: [{ id: 'hire_popular', label: 'Hire Popular', kind: 'route', route: '/crew' }],
+          };
+        }
+        
+        if (!popularConfigured) {
+          return {
+            status: 'needs_setup',
+            owner: 'popular',
+            reason_code: 'POPULAR_NOT_CONFIGURED',
+            message: 'Popular needs setup to fetch GA4 metrics.',
+            actions: [{ id: 'configure_popular', label: 'Configure Popular', kind: 'route', route: '/agents/google_data_connector' }],
+          };
+        }
+        
+        if (!hasValidToken || !hasGa4PropertyId) {
+          return {
+            status: 'needs_integration',
+            owner: 'popular',
+            reason_code: 'GA4_NOT_CONNECTED',
+            message: 'GA4 connection needs attention in Popular.',
+            actions: [{ id: 'connect_ga4', label: 'Go to Popular Setup', kind: 'route', route: '/agents/google_data_connector' }],
+          };
+        }
+        
+        if (actualValue === null) {
+          return {
+            status: 'empty',
+            owner: 'popular',
+            reason_code: 'NO_RECENT_DATA',
+            message: 'No recent Popular data yet.',
+            actions: [{ id: 'run_popular', label: 'Run Popular', kind: 'route', route: '/agents/google_data_connector' }],
+          };
+        }
+        
+        return { status: 'ok', owner: 'popular', reason_code: null, message: null, actions: [] };
+      };
+      
       // Map benchmarks to comparison format with deltas
       const comparison = benchmarks.map(b => {
         const actualValue = actualMetrics[b.metric] ?? null;
@@ -5150,6 +5306,7 @@ When answering:
           },
           source: b.source,
           sourceYear: b.sourceYear,
+          meta: buildDependencyMeta(b.metric, actualValue),
         };
       });
       

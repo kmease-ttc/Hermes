@@ -139,12 +139,21 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={cn("text-xs capitalize", colors[status] || colors.new)}>{status}</Badge>;
 }
 
+interface MetricMeta {
+  status: 'ok' | 'needs_setup' | 'needs_integration' | 'empty';
+  owner?: string | null;
+  reason_code?: string | null;
+  message?: string | null;
+  actions?: Array<{ id: string; label: string; kind: 'route' | 'action'; route?: string }>;
+}
+
 interface MetricCardData {
   id: string;
   label: string;
   value: string;
   delta: string;
   deltaPct: number;
+  meta?: MetricMeta;
   verdict: 'good' | 'watch' | 'bad' | 'neutral';
   sparkline: number[];
   nextAction: { text: string; link: string };
@@ -408,20 +417,24 @@ function MetricCardsRow() {
     return 'bad';
   };
   
-  const buildEmptyState = (metricId: string, value: number | null | undefined) => {
+  const buildEmptyStateFromMeta = (metricId: string, meta: MetricMeta | undefined, value: number | null | undefined) => {
     const hasData = value !== null && value !== undefined;
     if (hasData) return null;
+    
+    if (meta && meta.status !== 'ok' && meta.message) {
+      const action = meta.actions?.[0];
+      return { 
+        message: meta.message, 
+        actionLabel: action?.label || 'Set Up',
+        actionRoute: action?.route || ROUTES.CREW
+      };
+    }
+    
     switch (metricId) {
-      case 'conversion-rate':
-        return { message: 'GA4 not connected or no conversion data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
-      case 'bounce-rate':
-        return { message: 'GA4 not connected or no bounce data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
-      case 'sessions':
-        return { message: 'GA4 not connected or no session data', actionLabel: 'Connect GA4', actionRoute: '/settings/websites' };
       case 'market-sov':
         return { message: 'No SERP data available', actionLabel: 'Run Lookout', actionRoute: buildRoute.agent('serp_tracker') };
       default:
-        return { message: 'No data available', actionLabel: 'Run Diagnostics', actionRoute: '/dashboard' };
+        return { message: 'No data available', actionLabel: 'View Setup', actionRoute: ROUTES.CREW };
     }
   };
   
@@ -432,11 +445,12 @@ function MetricCardsRow() {
       value: conversionData ? formatValue(conversionData.actualValue, 'percent') : '—',
       delta: conversionData?.deltaPct ? `${conversionData.deltaPct > 0 ? '+' : ''}${conversionData.deltaPct.toFixed(1)}%` : '—',
       deltaPct: conversionData?.deltaPct || 0,
+      meta: conversionData?.meta,
       verdict: conversionData ? getVerdict(conversionData.status) : 'neutral',
       sparkline: [3.8, 3.6, 3.4, 3.5, 3.3, 3.1, conversionData?.actualValue || 3.2],
       nextAction: { text: 'Review Pulse', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
-      emptyState: buildEmptyState('conversion-rate', conversionData?.actualValue),
+      emptyState: buildEmptyStateFromMeta('conversion-rate', conversionData?.meta, conversionData?.actualValue),
     },
     {
       id: 'bounce-rate',
@@ -444,11 +458,12 @@ function MetricCardsRow() {
       value: bounceData ? formatValue(bounceData.actualValue, 'percent') : '—',
       delta: bounceData?.deltaPct ? `${bounceData.deltaPct > 0 ? '+' : ''}${bounceData.deltaPct.toFixed(1)}%` : '—',
       deltaPct: bounceData?.deltaPct || 0,
+      meta: bounceData?.meta,
       verdict: bounceData ? getVerdict(bounceData.status) : 'neutral',
       sparkline: [38, 39, 40, 41, 43, 44, bounceData?.actualValue || 42],
       nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
-      emptyState: buildEmptyState('bounce-rate', bounceData?.actualValue),
+      emptyState: buildEmptyStateFromMeta('bounce-rate', bounceData?.meta, bounceData?.actualValue),
     },
     {
       id: 'sessions',
@@ -456,11 +471,12 @@ function MetricCardsRow() {
       value: sessionsData ? formatValue(sessionsData.actualValue, 'count_monthly') : '—',
       delta: sessionsData?.deltaPct ? `${sessionsData.deltaPct > 0 ? '+' : ''}${sessionsData.deltaPct.toFixed(0)}%` : '—',
       deltaPct: sessionsData?.deltaPct || 0,
+      meta: sessionsData?.meta,
       verdict: sessionsData ? getVerdict(sessionsData.status) : 'neutral',
       sparkline: [80000, 85000, 88000, 90000, 92000, 94000, sessionsData?.actualValue || 96000],
       nextAction: { text: 'Review Popular', link: buildRoute.agent('google_data_connector') },
       timeRange: 'Last 30 days',
-      emptyState: buildEmptyState('sessions', sessionsData?.actualValue),
+      emptyState: buildEmptyStateFromMeta('sessions', sessionsData?.meta, sessionsData?.actualValue),
     },
     {
       id: 'market-sov',
@@ -472,7 +488,7 @@ function MetricCardsRow() {
       sparkline: [0, 5, 8, 12, 15, 18, marketSovData?.marketSov || 0],
       nextAction: { text: 'Review Lookout', link: buildRoute.agent('serp_tracker') },
       timeRange: 'CTR-weighted',
-      emptyState: buildEmptyState('market-sov', marketSovData?.marketSov),
+      emptyState: buildEmptyStateFromMeta('market-sov', undefined, marketSovData?.marketSov),
     },
   ];
 
