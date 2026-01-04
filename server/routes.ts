@@ -5614,6 +5614,34 @@ When answering:
         twoWeekHours
       );
       
+      // Fetch Popular's issue-based score for consistency with Popular page
+      let popularScoreFromIssues: number | null = null;
+      try {
+        const formatDateCompact = (d: Date) => d.toISOString().split("T")[0].replace(/-/g, "");
+        const endDateStr = formatDateCompact(now);
+        const recentAnomalies = await storage.getRecentAnomalies(targetSiteId, 30);
+        const site = await storage.getSiteById(targetSiteId);
+        const domain = site?.baseUrl || "unknown";
+        const rawAnomalies = recentAnomalies.map((anomaly, index) => ({
+          id: `anomaly_${anomaly.id || index}`,
+          date: anomaly.startDate || anomaly.endDate || new Date().toISOString().slice(0, 10),
+          source: anomaly.anomalyType?.includes("gsc") ? "GSC" : "GA4",
+          metric: anomaly.metric || "sessions",
+          metricFamily: anomaly.anomalyType?.includes("traffic") ? "organic_traffic" : 
+                        anomaly.anomalyType?.includes("click") ? "search_clicks" : "organic_traffic",
+          dropPercent: anomaly.deltaPct || 0,
+          currentValue: anomaly.observedValue || 0,
+          baselineValue: anomaly.baselineValue || 0,
+          zScore: anomaly.zScore || 0,
+          severity: Math.abs(anomaly.zScore || 0) >= 3 ? "severe" : 
+                    Math.abs(anomaly.zScore || 0) >= 2 ? "moderate" : "mild",
+        })) as any[];
+        const canonicalIssues = mergeAnomalies(rawAnomalies, domain, 3);
+        popularScoreFromIssues = canonicalIssues.length === 0 ? 100 : computePopularScore(canonicalIssues);
+      } catch (err) {
+        // If fetching Popular score fails, we'll fall back to mission-based score
+      }
+      
       const crewSummaries = crewIds.map(crewId => {
         const crew = CREW[crewId];
         const crewMissions = getMissionsForCrew(crewId);
@@ -5698,21 +5726,27 @@ When answering:
           : null;
         
         // Compute unified score using consistent formula
-        // Score formula: base on status + completion activity + delta bonus
         let score: number;
-        const completedThisWeek = metricValue;
-        const deltaBonus = deltaPercent !== null && deltaPercent > 0 ? Math.min(deltaPercent / 10, 10) : 0;
         
-        if (status === 'looking_good') {
-          score = 80 + Math.min(completedThisWeek * 2, 15) + deltaBonus; // 80-105, capped at 100
-        } else if (status === 'doing_okay') {
-          score = 50 + Math.min(completedThisWeek * 3, 25) + deltaBonus; // 50-85
+        // For Popular, use issue-based score (same as Popular dashboard page)
+        if (crewId === 'popular' && popularScoreFromIssues !== null) {
+          score = popularScoreFromIssues;
         } else {
-          // needs_attention: factor in completions to differentiate crews with activity
-          const completionBonus = completedThisWeek * 5;
-          score = Math.max(15, 35 - pendingForCrew.length * 2 + completionBonus + deltaBonus);
+          // Score formula: base on status + completion activity + delta bonus
+          const completedThisWeek = metricValue;
+          const deltaBonus = deltaPercent !== null && deltaPercent > 0 ? Math.min(deltaPercent / 10, 10) : 0;
+          
+          if (status === 'looking_good') {
+            score = 80 + Math.min(completedThisWeek * 2, 15) + deltaBonus; // 80-105, capped at 100
+          } else if (status === 'doing_okay') {
+            score = 50 + Math.min(completedThisWeek * 3, 25) + deltaBonus; // 50-85
+          } else {
+            // needs_attention: factor in completions to differentiate crews with activity
+            const completionBonus = completedThisWeek * 5;
+            score = Math.max(15, 35 - pendingForCrew.length * 2 + completionBonus + deltaBonus);
+          }
+          score = Math.min(100, Math.max(0, Math.round(score)));
         }
-        score = Math.min(100, Math.max(0, Math.round(score)));
         
         return {
           crewId,

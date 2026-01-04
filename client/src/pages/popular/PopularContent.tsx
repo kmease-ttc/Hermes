@@ -59,7 +59,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const POPULAR_ACCENT_COLOR = "#F59E0B";
+// Use crew color from config for consistency
 
 interface PopularKpi {
   id: string;
@@ -883,7 +883,7 @@ export default function PopularContent() {
         className="w-8 h-8 object-contain"
       />
     ),
-    accentColor: POPULAR_ACCENT_COLOR,
+    accentColor: crewMember.color,
     capabilities: crewMember.capabilities || ["GA4 Data", "GSC Data", "Traffic Metrics"],
     monitors: ["Sessions", "Users", "Search Clicks", "Impressions"],
   };

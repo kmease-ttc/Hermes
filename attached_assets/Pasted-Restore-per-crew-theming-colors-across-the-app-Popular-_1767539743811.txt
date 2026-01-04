@@ -1,0 +1,133 @@
+Restore per-crew theming (colors) across the app: Popular must stay teal on its own page, not only on the homepage. Make crew color a first-class system token and apply it consistently to crew cards + crew dashboards + key metric widgets. Prevent future theme regressions.
+
+What’s wrong
+
+* On the homepage Crew Summary card, Popular correctly appears teal.
+* On the Popular crew page, the teal theme is missing (falls back to generic styling).
+* This indicates the crew page is not consuming the same “crew theme token” source as the homepage cards, or the theme prop was dropped during refactors.
+
+Goal
+
+* Every crew has a canonical color/theme (primary + subtle accents).
+* Any page “owned” by a crew must be themed by that crew (header, badges, key metric cards, outlines, highlights).
+* Home summary cards and the crew’s own dashboard page must use the same theme source.
+
+1. Create a single source of truth: CrewTheme tokens
+   In shared/, define a canonical mapping:
+
+CrewId:
+"natasha" | "lookout" | "popular" | "scotty" | "speedster" | "sentinel" | "hemingway" | "beacon" | "atlas" | "draper" | "socrates"
+
+CrewTheme:
+{
+id: CrewId,
+name: string,
+color: {
+primary: string,     // e.g. teal for Popular
+ring: string,        // border/outline
+bgSubtle: string,    // tinted background
+text: string,        // headline
+badge: string        // pill/badge background or border
+}
+}
+
+Export:
+
+* getCrewTheme(crewId): CrewTheme
+* crewThemes: Record<CrewId, CrewTheme>
+
+Important: do NOT scatter colors in components. All colors must flow from CrewTheme.
+
+2. Standardize a CSS/Tailwind token approach (so you don’t fight class strings)
+   Option A (recommended): CSS variables applied at page root
+
+* On a crew page, set:
+
+  * --crew-primary
+  * --crew-ring
+  * --crew-bg
+  * --crew-text
+    Then components use consistent utility classes referencing those vars:
+* border-[var(--crew-ring)]
+* text-[var(--crew-text)]
+* bg-[var(--crew-bg)]
+* shadow/glow based on --crew-primary
+
+Option B: Tailwind class mapping per crew (works but more brittle)
+
+* crewTheme.classNames = { border, text, bg, badge }
+* Components consume classNames
+
+CSS variables are better because it prevents missed props and is harder to regress.
+
+3. Apply CrewTheme at the page level (most important fix)
+   Every crew page should wrap its content with a CrewThemeProvider or apply a root container attribute:
+
+Example: <CrewPageLayout crew="popular">
+...Popular content... </CrewPageLayout>
+
+CrewPageLayout responsibilities:
+
+* resolves theme via getCrewTheme(crew)
+* sets CSS vars on a root div
+* provides theme via context for nested components
+
+This ensures teal never disappears because someone forgot to pass a color prop to a child component.
+
+4. Update components to consume the theme automatically
+   Convert “themed” components to read from context / CSS vars:
+
+* Crew header banner
+* Score badge
+* Tabs (active underline)
+* Key Metrics cards
+* Detected Drops severity pills
+* “Fix it” buttons (at least outline/hover accent)
+
+For Popular specifically:
+
+* Key Metrics (Sessions, Users, Clicks, Impressions, Bounce Rate, Conversion Rate) should use teal accents:
+
+  * subtle teal outline or glow
+  * teal badge highlights consistent with the homepage card styling
+
+5. Fix the regression point (why teal is missing on Popular page)
+   Very likely one of these:
+
+* The Popular page switched from a generic CrewLayout to a generic PageLayout (lost theme wrapper)
+* The theme prop is only applied on the Crew Summary card component, not on the crew page layout
+* The crew page is using a different crewId string (e.g. "Popular" vs "popular") so theme lookup fails and falls back
+
+Immediate patch:
+
+* Ensure Popular route uses crewId="popular" (lowercase stable enum)
+* Wrap Popular page with CrewPageLayout crew="popular" (or provider)
+* Remove any manual teal classes inside Popular page (so it stays consistent going forward)
+
+6. Add regression tests for theming
+   A) Component test (cheap)
+
+* Render CrewPageLayout crew="popular"
+* Assert root element has CSS var --crew-primary set (non-empty)
+
+B) Playwright smoke check (best)
+
+* Navigate to /crew/popular
+* Assert a known element (header badge or key metric card border) has teal theme class or computed style (via CSS var presence)
+
+7. Acceptance criteria
+
+* Popular card is teal on homepage AND Popular crew page header + key metrics reflect teal theme.
+* Natasha is purple on her page; Scotty is orange on his page; etc.
+* No crew page can render without a theme (fallback is an explicit error/empty-state in dev).
+* All crew pages share the same theme source (getCrewTheme / CSS vars), eliminating drift.
+
+Deliverable
+
+* One PR that:
+
+  1. introduces shared CrewTheme tokens + getCrewTheme()
+  2. adds CrewPageLayout (theme provider / CSS vars)
+  3. wraps every crew page with CrewPageLayout
+  4. updates key shared widgets to consume theme vars
+  5. adds at least one regression test ensuring /crew/popular uses teal theme
