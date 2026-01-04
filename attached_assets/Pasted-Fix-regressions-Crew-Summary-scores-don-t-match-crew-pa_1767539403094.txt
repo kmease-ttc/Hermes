@@ -1,0 +1,132 @@
+Fix regressions: Crew Summary scores don’t match crew pages (e.g., Popular 31 on dashboard vs 98 on Popular), and Popular Key Metrics styling reverted. Also add guardrails to stop this “fix one thing, break another” cycle.
+
+1. Root cause (most likely)
+   A) Score mismatch
+
+* The dashboard “Crew Summary” is using a different score calculation or a stale/placeholder “summary score” field than the crew detail page.
+* The crew detail page is computing score from missions/findings in real time (or from a different endpoint), while the dashboard is reading a cached/legacy field (often defaulting to ~31).
+
+B) Styling regression
+
+* Popular page Key Metrics styling (purple/pill/highlight) likely depends on:
+
+  * a component variant (e.g., <MetricCard variant="crew" color="popular" />)
+  * CSS modules/Tailwind class names
+  * or shared theme tokens for crew colors
+* A recent refactor probably replaced the component or removed the crew color prop, causing fallback styling.
+
+2. Fix strategy (single source of truth for score + locked styling)
+   A) Make score a single-source-of-truth value per crew per site
+
+* Dashboard must display the exact same score as the crew page.
+* Do this by having BOTH pages read from the same server model (same endpoint or same function).
+
+Implementation:
+
+* Create a server function:
+  computeCrewStatus(crewId, siteId, window) -> {
+  score,
+  status,
+  primaryMetric,
+  missions: { total, pending, completedThisWeek },
+  updatedAt
+  }
+
+* Use it in:
+
+  * GET /api/dashboard/crew-summary
+  * GET /api/crew/:crewId/summary (or /api/crew/:crewId/dashboard)
+
+No duplicate scoring code in client. No separate “dashboard score”.
+
+B) Ensure dashboard is not showing placeholder scores
+
+* If computeCrewStatus cannot compute (missing data/integration), return:
+
+  * score: null
+  * meta.status: needs_setup
+  * actions: [{ label: "Configure Popular", route: "/crew/popular" }]
+* The dashboard card should render “Needs setup” state, not a fake 31.
+
+C) Popular Key Metrics styling: reintroduce crew-themed component variants
+
+* Identify the component used for Popular Key Metrics row (it’s now plain).
+* Restore crew-theme styling:
+
+  * Apply Popular’s accent color (purple)
+  * Use consistent token classes (e.g., border, glow, badge color)
+  * Ensure the “Key Metrics” cards match Natasha’s standard highlight rules you described earlier.
+
+3. Concrete tasks (do these now)
+   Task 1: Find why dashboard shows ~31
+
+* Search for the crew summary endpoint or data builder used on the homepage.
+* Locate where “score” is assigned.
+* If you see something like:
+  score = crew.score ?? 31
+  or a default score constant
+  delete that fallback.
+* Ensure it calls computeCrewStatus().
+
+Task 2: Unify the score computation
+
+* Move any scoring logic from the crew page to server/shared and reuse it everywhere.
+* The dashboard crew cards and the “Review Popular” page must read the same field.
+
+Task 3: Fix Popular Key Metrics styling regression
+
+* Compare the Popular page before/after: the Key Metrics section should use the themed MetricCard variant.
+* Restore the correct component or props:
+
+  * if it used to pass crew="popular" but now passes nothing, re-add it.
+  * ensure CSS/Tailwind classes are driven by crew theme tokens.
+
+Task 4: Add regression tests that would have caught this
+A) Score consistency test (server)
+
+* Add a test that fetches:
+
+  * /api/dashboard/crew-summary
+  * /api/crew/popular/summary
+* Assert:
+  dashboard.crews.find(popular).score === popularSummary.score
+
+B) Styling snapshot (client)
+
+* Add a lightweight render test for Popular Key Metrics ensuring it includes the crew theme class (e.g., “crew-popular” or “border-popular”).
+* If you don’t have a test harness, add a minimal Playwright check:
+
+  * navigate to /crew/popular
+  * assert Key Metrics cards have the expected class or computed style.
+
+Task 5: Add “build-safe” protection against regressions
+
+* CI gate: run tests + typecheck + lint before allowing deploy/publish.
+* If you can’t add full CI yet, add a local prebuild step:
+  npm run test && npm run typecheck && npm run lint
+  and fail build if any fail.
+
+4. Acceptance criteria
+
+* On homepage Crew Summary:
+
+  * Popular card score equals Popular page score (e.g., 98).
+  * Other crews show their real scores or “Needs setup” (never a placeholder like 31).
+* Popular page Key Metrics regain the themed styling (consistent with your purple highlight standard).
+* A change that breaks either score consistency or Popular styling will fail tests.
+
+5. Notes (why this keeps happening)
+   Right now, you have “duplicated logic + duplicated styling paths”:
+
+* Two score systems (dashboard vs crew page)
+* Two metric card implementations (themed vs generic)
+  Unifying them (single function + single component variant) is the fastest way to stop regressions.
+
+Deliverable
+
+* One PR that:
+
+  1. introduces computeCrewStatus() and uses it for both dashboard + crew page
+  2. removes any placeholder score fallback (31)
+  3. restores Popular Key Metrics themed styling via shared component/tokens
+  4. adds the score-consistency test + a minimal styling regression check

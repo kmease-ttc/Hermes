@@ -1025,31 +1025,9 @@ export default function MissionControl() {
     // Map service_id to crew_id for lookup in crewSummaries
     const crewId = SERVICE_TO_CREW[serviceId] || serviceId;
     const crewSummary = dashboard?.crewSummaries?.find((cs: any) => cs.crewId === crewId);
-    const statusFromSummary = crewSummary?.status;
     
-    // Calculate unique score based on actual crew data
-    let score = 50; // Default fallback
-    if (crewSummary) {
-      // Use completion metrics and pending count to calculate a unique score
-      const completedThisWeek = crewSummary.primaryMetricValue || 0;
-      const pendingCount = crewSummary.pendingCount || 0;
-      const deltaPercent = crewSummary.deltaPercent || 0;
-      
-      // Score formula: base on status + completion activity + delta + variance
-      if (statusFromSummary === 'looking_good') {
-        score = 80 + Math.min(completedThisWeek * 2, 15); // 80-95
-      } else if (statusFromSummary === 'doing_okay') {
-        score = 50 + Math.min(completedThisWeek * 3, 25); // 50-75
-      } else if (statusFromSummary === 'needs_attention') {
-        // Factor in completions to differentiate crews with activity
-        const completionBonus = completedThisWeek * 5;
-        const deltaBonus = deltaPercent > 0 ? Math.min(deltaPercent / 10, 10) : 0;
-        score = Math.max(15, Math.min(45, 35 - pendingCount * 2 + completionBonus + deltaBonus));
-      }
-    } else {
-      // No crew summary - use pending/inactive state
-      score = 0;
-    }
+    // Use server-provided score for consistency with crew pages (single source of truth)
+    const score = crewSummary?.score ?? 0;
     
     return {
       serviceId,

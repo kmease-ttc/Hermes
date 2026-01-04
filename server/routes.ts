@@ -5697,12 +5697,30 @@ When answering:
           ? (pendingForCrew.length > 0 ? 'Run missions to see metrics' : 'All caught up!')
           : null;
         
+        // Compute unified score using consistent formula
+        // Score formula: base on status + completion activity + delta bonus
+        let score: number;
+        const completedThisWeek = metricValue;
+        const deltaBonus = deltaPercent !== null && deltaPercent > 0 ? Math.min(deltaPercent / 10, 10) : 0;
+        
+        if (status === 'looking_good') {
+          score = 80 + Math.min(completedThisWeek * 2, 15) + deltaBonus; // 80-105, capped at 100
+        } else if (status === 'doing_okay') {
+          score = 50 + Math.min(completedThisWeek * 3, 25) + deltaBonus; // 50-85
+        } else {
+          // needs_attention: factor in completions to differentiate crews with activity
+          const completionBonus = completedThisWeek * 5;
+          score = Math.max(15, 35 - pendingForCrew.length * 2 + completionBonus + deltaBonus);
+        }
+        score = Math.min(100, Math.max(0, Math.round(score)));
+        
         return {
           crewId,
           nickname: crew.nickname,
           pendingCount: pendingForCrew.length,
           lastCompletedAt: lastCompleted?.createdAt || null,
           status,
+          score, // Server-computed score for consistency with crew pages
           // New fields for per-crew metrics
           primaryMetric: metricType === 'runs' ? 'Successful runs' : 'Completed this week',
           primaryMetricValue: metricValue,
