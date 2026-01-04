@@ -14,6 +14,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -875,61 +876,65 @@ export default function ScottyContent() {
 
   if (!health.isConfigured) {
     return (
-      <CrewDashboardShell
-        crew={crewIdentity}
-        agentScore={null}
-        agentScoreTooltip="Technical health score"
-        missionStatus={{
-          tier: "needs_attention",
-          summaryLine: "Crawl service not configured",
-          nextStep: "Configure the crawl-render worker to get started",
-          priorityCount: 1,
-          blockerCount: 1,
-          autoFixableCount: 0,
-          status: "ready",
-          performanceScore: null,
-        }}
-        missions={[]}
-        kpis={[]}
-        inspectorTabs={[]}
-        headerActions={[]}
-      >
-        <Card className="border-semantic-warning/30 bg-semantic-warning-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-semantic-warning">
-              <AlertTriangle className="w-5 h-5" />
-              Scotty Not Configured
-            </CardTitle>
-            <CardDescription>
-              Configure the crawl-render worker to enable technical SEO monitoring.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => runCrawlMutation.mutate()} data-testid="button-configure-scotty">
-              <Settings2 className="w-4 h-4 mr-2" />
-              Run Crawl to Populate
-            </Button>
-          </CardContent>
-        </Card>
-      </CrewDashboardShell>
+      <CrewPageLayout crewId="scotty">
+        <CrewDashboardShell
+          crew={crewIdentity}
+          agentScore={null}
+          agentScoreTooltip="Technical health score"
+          missionStatus={{
+            tier: "needs_attention",
+            summaryLine: "Crawl service not configured",
+            nextStep: "Configure the crawl-render worker to get started",
+            priorityCount: 1,
+            blockerCount: 1,
+            autoFixableCount: 0,
+            status: "ready",
+            performanceScore: null,
+          }}
+          missions={[]}
+          kpis={[]}
+          inspectorTabs={[]}
+          headerActions={[]}
+        >
+          <Card className="border-semantic-warning/30 bg-semantic-warning-soft">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-semantic-warning">
+                <AlertTriangle className="w-5 h-5" />
+                Scotty Not Configured
+              </CardTitle>
+              <CardDescription>
+                Configure the crawl-render worker to enable technical SEO monitoring.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => runCrawlMutation.mutate()} data-testid="button-configure-scotty">
+                <Settings2 className="w-4 h-4 mr-2" />
+                Run Crawl to Populate
+              </Button>
+            </CardContent>
+          </Card>
+        </CrewDashboardShell>
+      </CrewPageLayout>
     );
   }
 
   return (
-    <CrewDashboardShell
-      crew={crewIdentity}
-      agentScore={health.crawlHealthPercent}
-      agentScoreTooltip="Crawl health percentage - % of URLs returning valid 200 responses"
-      missionStatus={missionStatus}
-      missions={missions}
-      kpis={kpis}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={() => refetch()}
-      onSettings={() => toast.info("Settings coming soon")}
-      isRefreshing={isRefetching}
-    />
+    <CrewPageLayout crewId="scotty">
+      <CrewDashboardShell
+        crew={crewIdentity}
+        agentScore={health.crawlHealthPercent}
+        agentScoreTooltip="Crawl health percentage - % of URLs returning valid 200 responses"
+        missionStatus={missionStatus}
+        missions={missions}
+        kpis={kpis}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={() => refetch()}
+        onSettings={() => toast.info("Settings coming soon")}
+        isRefreshing={isRefetching}
+      />
+    </CrewPageLayout>
   );
 }

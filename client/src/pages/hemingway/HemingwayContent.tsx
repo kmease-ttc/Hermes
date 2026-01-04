@@ -13,6 +13,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { NoDeadEndsState, TableEmptyState, ChartEmptyState } from "@/components/empty-states";
 import type { MetaStatus, RemediationAction } from "@shared/noDeadEnds";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1217,17 +1218,19 @@ export default function HemingwayContent() {
   );
 
   return (
-    <CrewDashboardShell
-      crew={crewIdentity}
-      agentScore={metrics.contentQualityScore}
-      agentScoreTooltip="Content quality score based on readability, structure, and E-E-A-T signals"
-      missionStatus={missionStatus}
-      missions={missions}
-      customMetrics={customMetrics}
-      inspectorTabs={inspectorTabs}
-      headerActions={headerActions}
-      onRefresh={() => refetch()}
-      isRefreshing={isRefetching}
-    />
+    <CrewPageLayout crewId="hemingway">
+      <CrewDashboardShell
+        crew={crewIdentity}
+        agentScore={metrics.contentQualityScore}
+        agentScoreTooltip="Content quality score based on readability, structure, and E-E-A-T signals"
+        missionStatus={missionStatus}
+        missions={missions}
+        customMetrics={customMetrics}
+        inspectorTabs={inspectorTabs}
+        headerActions={headerActions}
+        onRefresh={() => refetch()}
+        isRefreshing={isRefetching}
+      />
+    </CrewPageLayout>
   );
 }

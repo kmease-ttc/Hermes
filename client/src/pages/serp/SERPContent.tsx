@@ -23,6 +23,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid, TieredCrown } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 
 interface RankingData {
   id: number;
@@ -1291,25 +1292,26 @@ export default function SERPContent() {
   ];
 
   return (
-    <CrewDashboardShell
-      crew={crew}
-      agentScore={agentScore}
-      agentScoreTooltip="Percentage of keywords ranking in top 10"
-      missionStatus={missionStatus}
-      missions={missions}
-      kpis={kpis}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewMember.color} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={() => {
-        runCheck.mutate(50);
-        queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
-      }}
-      onSettings={() => {}}
-      onFixEverything={() => fixEverything.mutate()}
-      isRefreshing={runCheck.isPending || isFixingEverything}
-    >
+    <CrewPageLayout crewId="lookout">
+      <CrewDashboardShell
+        crew={crew}
+        agentScore={agentScore}
+        agentScoreTooltip="Percentage of keywords ranking in top 10"
+        missionStatus={missionStatus}
+        missions={missions}
+        kpis={kpis}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewMember.color} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={() => {
+          runCheck.mutate(50);
+          queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
+        }}
+        onSettings={() => {}}
+        onFixEverything={() => fixEverything.mutate()}
+        isRefreshing={runCheck.isPending || isFixingEverything}
+      >
       {!overview?.configured && (
         <Card className="border-semantic-warning-border bg-semantic-warning-soft">
           <CardHeader>
@@ -1385,5 +1387,6 @@ export default function SERPContent() {
         </Button>
       </div>
     </CrewDashboardShell>
+    </CrewPageLayout>
   );
 }

@@ -14,6 +14,7 @@ import { RefreshCw, Settings, HelpCircle, AlertCircle, MessageSquare, Send, Load
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useOptionalCrewTheme } from "@/components/crew/CrewPageLayout";
 import { MissionOverviewWidget } from "./widgets/MissionOverviewWidget";
 import { KpiStripWidget } from "./widgets/KpiStripWidget";
 import type { CrewDashboardShellProps, WidgetState, HeaderAction } from "./types";
@@ -117,6 +118,7 @@ function InlinePrompt({
   accentColor: string;
 }) {
   const [question, setQuestion] = useState("");
+  const crewTheme = useOptionalCrewTheme();
 
   const handleSubmit = () => {
     if (question.trim() && !config.isLoading) {
@@ -125,10 +127,13 @@ function InlinePrompt({
     }
   };
 
+  const iconColor = crewTheme ? "var(--crew-text)" : accentColor;
+  const buttonBg = crewTheme ? "var(--crew-primary)" : accentColor;
+
   return (
     <div className="flex items-center gap-3 pt-4 mt-4 border-t border-border/50">
       <div className="flex items-center gap-1.5 shrink-0">
-        <MessageSquare className="w-4 h-4" style={{ color: accentColor }} />
+        <MessageSquare className="w-4 h-4" style={{ color: iconColor }} />
         <span className="text-sm font-medium text-muted-foreground">{config.label}</span>
       </div>
       <div className="flex gap-2 flex-1">
@@ -154,7 +159,7 @@ function InlinePrompt({
             handleSubmit();
           }}
           disabled={!question.trim() || config.isLoading}
-          style={{ backgroundColor: question.trim() ? accentColor : undefined }}
+          style={{ backgroundColor: question.trim() ? buttonBg : undefined }}
           className="h-9 px-3"
           data-testid="button-submit-mission-prompt"
         >
@@ -188,6 +193,9 @@ export function CrewDashboardShell({
   isRefreshing = false,
   children,
 }: CrewDashboardShellProps) {
+  const crewTheme = useOptionalCrewTheme();
+  const accentColor = crewTheme?.theme.color.primary ?? crew.accentColor;
+  
   const missionStatusState: WidgetState =
     missionStatus.status || (missionStatus.priorityCount >= 0 ? "ready" : "loading");
 
@@ -203,7 +211,7 @@ export function CrewDashboardShell({
           <div className="flex items-start gap-4 flex-1 min-w-0">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${crew.accentColor}20` }}
+              style={{ backgroundColor: crewTheme ? "var(--crew-bg)" : `${accentColor}20` }}
             >
               {crew.avatar}
             </div>
@@ -215,8 +223,8 @@ export function CrewDashboardShell({
                   variant="outline"
                   className="text-xs font-medium"
                   style={{
-                    borderColor: `${crew.accentColor}40`,
-                    color: crew.accentColor,
+                    borderColor: crewTheme ? "var(--crew-ring)" : `${accentColor}40`,
+                    color: crewTheme ? "var(--crew-text)" : accentColor,
                   }}
                 >
                   {crew.subtitle}
@@ -234,9 +242,9 @@ export function CrewDashboardShell({
                     variant="secondary"
                     className="text-xs font-medium"
                     style={{
-                      backgroundColor: `${crew.accentColor}15`,
-                      color: crew.accentColor,
-                      borderColor: `${crew.accentColor}30`,
+                      backgroundColor: crewTheme ? "var(--crew-badge)" : `${accentColor}15`,
+                      color: crewTheme ? "var(--crew-text)" : accentColor,
+                      borderColor: crewTheme ? "var(--crew-ring)" : `${accentColor}30`,
                     }}
                   >
                     {cap}
@@ -324,7 +332,7 @@ export function CrewDashboardShell({
         
         {/* Inline Prompt - embedded in header container */}
         {missionPrompt && (
-          <InlinePrompt config={missionPrompt} accentColor={crew.accentColor} />
+          <InlinePrompt config={missionPrompt} accentColor={accentColor} />
         )}
       </div>
 

@@ -13,6 +13,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { NoDeadEndsState, TableEmptyState, ChartEmptyState } from "@/components/empty-states";
 import type { MetaStatus, RemediationAction } from "@shared/noDeadEnds";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1437,17 +1438,19 @@ export default function AtlasContent() {
   );
 
   return (
-    <CrewDashboardShell
-      crew={crewIdentity}
-      agentScore={metrics.aiVisibilityScore}
-      agentScoreTooltip="AI Visibility Score based on structured data, entity coverage, and LLM answerability"
-      missionStatus={missionStatus}
-      missions={missions}
-      customMetrics={customMetrics}
-      inspectorTabs={inspectorTabs}
-      headerActions={headerActions}
-      onRefresh={() => refetch()}
-      isRefreshing={isRefetching}
-    />
+    <CrewPageLayout crewId="atlas">
+      <CrewDashboardShell
+        crew={crewIdentity}
+        agentScore={metrics.aiVisibilityScore}
+        agentScoreTooltip="AI Visibility Score based on structured data, entity coverage, and LLM answerability"
+        missionStatus={missionStatus}
+        missions={missions}
+        customMetrics={customMetrics}
+        inspectorTabs={inspectorTabs}
+        headerActions={headerActions}
+        onRefresh={() => refetch()}
+        isRefreshing={isRefetching}
+      />
+    </CrewPageLayout>
   );
 }

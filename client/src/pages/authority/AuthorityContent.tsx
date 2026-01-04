@@ -52,6 +52,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { Link2, Activity } from "lucide-react";
 
 interface IndustryBenchmark {
@@ -953,20 +954,22 @@ export default function AuthorityContent() {
   ];
 
   return (
-    <CrewDashboardShell
-      crew={crew}
-      agentScore={avgPercentile ? Math.round(avgPercentile) : null}
-      agentScoreTooltip="Overall authority percentile vs industry"
-      missionStatus={missionStatus}
-      missions={missions}
-      kpis={kpis}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={() => refetch()}
-      onSettings={() => toast.info("Settings coming soon")}
-      isRefreshing={isLoading}
-    />
+    <CrewPageLayout crewId="beacon">
+      <CrewDashboardShell
+        crew={crew}
+        agentScore={avgPercentile ? Math.round(avgPercentile) : null}
+        agentScoreTooltip="Overall authority percentile vs industry"
+        missionStatus={missionStatus}
+        missions={missions}
+        kpis={kpis}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={() => refetch()}
+        onSettings={() => toast.info("Settings coming soon")}
+        isRefreshing={isLoading}
+      />
+    </CrewPageLayout>
   );
 }

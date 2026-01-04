@@ -68,6 +68,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import {
   LineChart,
   Line,
@@ -1859,21 +1860,23 @@ export default function NatashaContent() {
   ];
 
   return (
-    <CrewDashboardShell
-      crew={crewIdentity}
-      agentScore={marketSov}
-      agentScoreTooltip="Market SOV — Your visibility across all target keywords (CTR-weighted)"
-      missionStatus={missionStatus}
-      missions={missions}
-      kpis={kpis}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={handleRefresh}
-      onSettings={() => toast.info("Settings coming soon")}
-      onFixEverything={() => toast.info("Fix everything coming soon")}
-      isRefreshing={isRunning}
-    />
+    <CrewPageLayout crewId="natasha">
+      <CrewDashboardShell
+        crew={crewIdentity}
+        agentScore={marketSov}
+        agentScoreTooltip="Market SOV — Your visibility across all target keywords (CTR-weighted)"
+        missionStatus={missionStatus}
+        missions={missions}
+        kpis={kpis}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={handleRefresh}
+        onSettings={() => toast.info("Settings coming soon")}
+        onFixEverything={() => toast.info("Fix everything coming soon")}
+        isRefreshing={isRunning}
+      />
+    </CrewPageLayout>
   );
 }

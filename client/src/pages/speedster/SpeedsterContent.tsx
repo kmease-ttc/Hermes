@@ -68,6 +68,7 @@ import {
   type MissionPromptConfig,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 
 interface VitalMetric {
   key: string;
@@ -965,20 +966,21 @@ export default function SpeedsterContent() {
   ];
 
   return (
-    <CrewDashboardShell
-      crew={crew}
-      agentScore={performanceScore}
-      agentScoreTooltip="Performance score from Core Web Vitals analysis"
-      missionStatus={missionStatus}
-      missions={missions}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={() => refetch()}
-      onSettings={() => toast.info("Settings coming soon")}
-      isRefreshing={isRefetching}
-    >
+    <CrewPageLayout crewId="speedster">
+      <CrewDashboardShell
+        crew={crew}
+        agentScore={performanceScore}
+        agentScoreTooltip="Performance score from Core Web Vitals analysis"
+        missionStatus={missionStatus}
+        missions={missions}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={() => refetch()}
+        onSettings={() => toast.info("Settings coming soon")}
+        isRefreshing={isRefetching}
+      >
       {speedsterData?.benchmarks && Object.keys(speedsterData.benchmarks).length > 0 && (
         <Card>
           <CardHeader>
@@ -1451,6 +1453,7 @@ export default function SpeedsterContent() {
           )}
         </DialogContent>
       </Dialog>
-    </CrewDashboardShell>
+      </CrewDashboardShell>
+    </CrewPageLayout>
   );
 }

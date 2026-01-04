@@ -58,6 +58,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 
 interface Learning {
   id: string;
@@ -968,20 +969,21 @@ export function SocratesContent() {
   } : null;
 
   return (
-    <CrewDashboardShell
-      crew={crew}
-      agentScore={data?.totalLearnings ? Math.min(100, data.totalLearnings * 5) : null}
-      agentScoreTooltip="Based on learnings collected from all agents"
-      missionStatus={missionStatus}
-      missions={missions}
-      recentlyCompleted={recentlyCompleted}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
-      inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
-      headerActions={headerActions}
-      onRefresh={() => runMutation.mutate()}
-      isRefreshing={runMutation.isPending}
-    >
+    <CrewPageLayout crewId="socrates">
+      <CrewDashboardShell
+        crew={crew}
+        agentScore={data?.totalLearnings ? Math.min(100, data.totalLearnings * 5) : null}
+        agentScoreTooltip="Based on learnings collected from all agents"
+        missionStatus={missionStatus}
+        missions={missions}
+        recentlyCompleted={recentlyCompleted}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
+        inspectorTabs={inspectorTabs}
+        missionPrompt={missionPrompt}
+        headerActions={headerActions}
+        onRefresh={() => runMutation.mutate()}
+        isRefreshing={runMutation.isPending}
+      >
       
       {!data?.configured && <ConfigurationWarning error={data?.configError} />}
       
@@ -1006,6 +1008,7 @@ export function SocratesContent() {
         </Card>
       )}
     </CrewDashboardShell>
+    </CrewPageLayout>
   );
 }
 

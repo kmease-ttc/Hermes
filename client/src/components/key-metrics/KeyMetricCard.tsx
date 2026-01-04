@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { useOptionalCrewTheme } from "@/components/crew/CrewPageLayout";
 
 interface KeyMetricCardProps {
   label: string;
@@ -59,16 +60,17 @@ export function KeyMetricCard({
   accentColor,
   className 
 }: KeyMetricCardProps) {
+  const crewTheme = useOptionalCrewTheme();
   const isZero = value === 0 || value === "0";
   const effectiveStatus = isZero ? "inactive" : status;
   const effectiveStyles = statusStyles[effectiveStatus];
 
-  const dynamicStyles = accentColor && !isZero ? {
-    border: { borderColor: `${accentColor}30` },
-    glow: { boxShadow: `0 0 20px -5px ${accentColor}30` },
-    accent: { backgroundColor: accentColor },
-    iconBg: { backgroundColor: `${accentColor}15` },
-    iconColor: { color: accentColor },
+  const dynamicStyles = (crewTheme || accentColor) && !isZero ? {
+    border: { borderColor: crewTheme ? "var(--crew-ring)" : `${accentColor}30` },
+    glow: { boxShadow: crewTheme ? "0 0 20px -5px var(--crew-ring)" : `0 0 20px -5px ${accentColor}30` },
+    accent: { backgroundColor: crewTheme ? "var(--crew-primary)" : accentColor },
+    iconBg: { backgroundColor: crewTheme ? "var(--crew-bg)" : `${accentColor}15` },
+    iconColor: { color: crewTheme ? "var(--crew-text)" : accentColor },
   } : null;
 
   return (

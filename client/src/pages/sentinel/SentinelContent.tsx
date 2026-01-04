@@ -14,6 +14,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -796,19 +797,20 @@ export default function SentinelContent() {
   ], [metrics]);
 
   return (
-    <CrewDashboardShell
-      crew={crewIdentity}
-      agentScore={100 - (metrics.avgDecaySeverity ?? 0)}
-      agentScoreTooltip="Content health score - inverse of average decay severity"
-      missionStatus={missionStatus}
-      missions={missions}
-      missionPrompt={missionPrompt}
-      inspectorTabs={[]}
-      headerActions={headerActions}
-      customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
-      onRefresh={() => detectDecayMutation.mutate()}
-      isLoading={isLoading}
-    >
+    <CrewPageLayout crewId="sentinel">
+      <CrewDashboardShell
+        crew={crewIdentity}
+        agentScore={100 - (metrics.avgDecaySeverity ?? 0)}
+        agentScoreTooltip="Content health score - inverse of average decay severity"
+        missionStatus={missionStatus}
+        missions={missions}
+        missionPrompt={missionPrompt}
+        inspectorTabs={[]}
+        headerActions={headerActions}
+        customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
+        onRefresh={() => detectDecayMutation.mutate()}
+        isLoading={isLoading}
+      >
       <div className="space-y-6">
 
         <Card className="border-muted/50">
@@ -978,5 +980,6 @@ export default function SentinelContent() {
         )}
       </div>
     </CrewDashboardShell>
+    </CrewPageLayout>
   );
 }

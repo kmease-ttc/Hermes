@@ -13,6 +13,7 @@ import {
   type HeaderAction,
 } from "@/components/crew-dashboard";
 import { KeyMetricsGrid } from "@/components/key-metrics";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { NoDeadEndsState, TableEmptyState, ChartEmptyState } from "@/components/empty-states";
 import type { MetaStatus, RemediationAction } from "@shared/noDeadEnds";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -906,26 +907,28 @@ export default function DraperContent() {
   ];
 
   return (
-    <div className="space-y-4">
-      {draperMeta.status !== "ok" && (
-        <NoDeadEndsState
-          meta={draperMeta}
-          title="Worker Not Connected"
-          onAction={handleRemediationAction}
-          isLoading={snapshotLoading}
-        />
-      )}
+    <CrewPageLayout crewId="draper">
+      <div className="space-y-4">
+        {draperMeta.status !== "ok" && (
+          <NoDeadEndsState
+            meta={draperMeta}
+            title="Worker Not Connected"
+            onAction={handleRemediationAction}
+            isLoading={snapshotLoading}
+          />
+        )}
 
-      <CrewDashboardShell
-        crew={crew}
-        missionStatus={missionStatus}
-        missions={missions}
-        kpis={kpis}
-        inspectorTabs={inspectorTabs}
-        headerActions={headerActions}
-        onRefresh={() => refetchSnapshot()}
-        isRefreshing={snapshotLoading}
-      />
-    </div>
+        <CrewDashboardShell
+          crew={crew}
+          missionStatus={missionStatus}
+          missions={missions}
+          kpis={kpis}
+          inspectorTabs={inspectorTabs}
+          headerActions={headerActions}
+          onRefresh={() => refetchSnapshot()}
+          isRefreshing={snapshotLoading}
+        />
+      </div>
+    </CrewPageLayout>
   );
 }
