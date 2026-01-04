@@ -51,12 +51,12 @@ interface Integration {
 }
 
 interface CrewReadiness {
-  crewId: string;
-  crewName: string;
-  status: "ready" | "blocked" | "partial";
-  requiredIntegrations: string[];
-  missingIntegrations: string[];
-  fixUrl?: string;
+  slug: string;
+  name: string;
+  description: string;
+  status: "ready" | "blocked";
+  blockedBy: string[];
+  requiresAny: boolean;
 }
 
 const DEPLOY_METHODS = [
@@ -412,46 +412,46 @@ function CrewReadinessPanel({ crews, siteId }: { crews: CrewReadiness[]; siteId:
           ) : (
             crews.map(crew => (
               <div 
-                key={crew.crewId}
+                key={crew.slug}
                 className={`flex items-center justify-between p-3 rounded-lg border ${
                   crew.status === "ready" ? "bg-semantic-success/5 border-semantic-success/20" :
-                  crew.status === "blocked" ? "bg-semantic-danger/5 border-semantic-danger/20" :
-                  "bg-semantic-warning/5 border-semantic-warning/20"
+                  "bg-semantic-danger/5 border-semantic-danger/20"
                 }`}
-                data-testid={`card-crew-${crew.crewId}`}
+                data-testid={`card-crew-${crew.slug}`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${
-                    crew.status === "ready" ? "bg-semantic-success" :
-                    crew.status === "blocked" ? "bg-semantic-danger" :
-                    "bg-semantic-warning"
+                    crew.status === "ready" ? "bg-semantic-success" : "bg-semantic-danger"
                   }`} />
                   <div>
-                    <p className="font-medium" data-testid={`text-crew-name-${crew.crewId}`}>{crew.crewName}</p>
-                    {crew.missingIntegrations.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Missing: {crew.missingIntegrations.join(", ")}
+                    <p className="font-medium" data-testid={`text-crew-name-${crew.slug}`}>{crew.name}</p>
+                    <p className="text-xs text-muted-foreground">{crew.description}</p>
+                    {crew.blockedBy.length > 0 && (
+                      <p className="text-xs text-semantic-danger mt-1">
+                        Missing: {crew.blockedBy.join(", ")}{crew.requiresAny ? " (need any one)" : ""}
                       </p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge 
-                    variant={crew.status === "ready" ? "default" : crew.status === "blocked" ? "destructive" : "outline"}
+                    variant={crew.status === "ready" ? "default" : "destructive"}
                     className={crew.status === "ready" ? "bg-semantic-success" : ""}
-                    data-testid={`badge-crew-status-${crew.crewId}`}
+                    data-testid={`badge-crew-status-${crew.slug}`}
                   >
                     {crew.status === "ready" && <CheckCircle className="w-3 h-3 mr-1" />}
                     {crew.status === "blocked" && <XCircle className="w-3 h-3 mr-1" />}
-                    {crew.status === "partial" && <AlertTriangle className="w-3 h-3 mr-1" />}
                     {crew.status.charAt(0).toUpperCase() + crew.status.slice(1)}
                   </Badge>
-                  {crew.status !== "ready" && crew.fixUrl && (
+                  {crew.status === "blocked" && (
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => navigate(crew.fixUrl!)}
-                      data-testid={`button-fix-crew-${crew.crewId}`}
+                      onClick={() => {
+                        const section = document.getElementById('integrations-section');
+                        section?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      data-testid={`button-fix-crew-${crew.slug}`}
                     >
                       Fix
                       <ExternalLink className="w-3 h-3 ml-1" />
@@ -493,7 +493,37 @@ export default function WebsiteDetail() {
       const res = await fetch(`/api/settings/websites/${siteId}/integrations`);
       if (!res.ok) throw new Error('Failed to fetch integrations');
       const json = await res.json();
-      return json.data || [];
+      const rawData = json.data || [];
+      
+      // Define config fields for each integration type
+      const configFieldsMap: Record<string, { key: string; label: string; type: string; required: boolean }[]> = {
+        ga4: [{ key: "propertyId", label: "GA4 Property ID", type: "text", required: true }],
+        gsc: [{ key: "siteUrl", label: "Site URL", type: "text", required: true }],
+        google_ads: [{ key: "customerId", label: "Customer ID", type: "text", required: true }],
+        clarity: [{ key: "projectId", label: "Clarity Project ID", type: "text", required: true }],
+        core_web_vitals: [{ key: "measurementUrl", label: "Measurement URL", type: "text", required: false }],
+        crawler: [{ key: "maxDepth", label: "Max Crawl Depth", type: "number", required: false }],
+        empathy: [{ key: "baseUrl", label: "Empathy Base URL", type: "text", required: true }],
+      };
+      
+      // Transform API data to expected frontend format
+      return rawData.map((item: any) => {
+        const meta = INTEGRATION_TYPES.find(t => t.key === item.integrationType);
+        const configFields = (configFieldsMap[item.integrationType] || []).map(field => ({
+          ...field,
+          value: item.configJson?.[field.key] || "",
+        }));
+        
+        return {
+          type: item.integrationType,
+          label: meta?.label || item.integrationType,
+          description: meta?.description || "",
+          status: item.status === "connected" ? "connected" : item.status === "error" ? "error" : "disconnected",
+          lastTestedAt: item.lastOkAt,
+          configFields,
+          error: item.lastError?.message,
+        };
+      });
     },
     enabled: !!siteId,
   });
@@ -558,10 +588,12 @@ export default function WebsiteDetail() {
 
   const connectDeployMutation = useMutation({
     mutationFn: async ({ method, config }: { method: string; config: Record<string, string> }) => {
-      const res = await fetch(`/api/settings/websites/${siteId}/deploy/connect`, {
+      // Use the standard integration connect route with deploy_ prefix
+      const integrationType = `deploy_${method}`;
+      const res = await fetch(`/api/settings/websites/${siteId}/integrations/${integrationType}/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, config }),
+        body: JSON.stringify({ config }),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -572,6 +604,7 @@ export default function WebsiteDetail() {
     onSuccess: () => {
       toast.success("Deployment method connected");
       queryClient.invalidateQueries({ queryKey: ['settings-website', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['settings-website-integrations', siteId] });
     },
     onError: (error: Error) => {
       toast.error("Failed to connect deployment", { description: error.message });
