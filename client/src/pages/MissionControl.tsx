@@ -31,7 +31,7 @@ import {
   Users
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshingBadge } from "@/components/ui/stale-indicator";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { SiteSelector } from "@/components/site/SiteSelector";
@@ -978,7 +978,6 @@ export default function MissionControl() {
       return res.json();
     },
     enabled: !!currentSite,
-    placeholderData: keepPreviousData,
   });
 
   const isRefreshing = dashboardRefreshing || (statsFetching && !!dashboardStats);

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Download, AlertCircle, Activity, Shield, Search, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshingBadge, StaleIndicator } from "@/components/ui/stale-indicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
@@ -294,7 +294,6 @@ export default function Dashboard() {
     },
     refetchInterval: 30000,
     enabled: !!selectedSiteId || sites.length === 0,
-    placeholderData: keepPreviousData,
   });
 
   const { data: serpOverview, isFetching: serpFetching, isError: serpError, refetch: refetchSerp } = useQuery({
@@ -305,7 +304,6 @@ export default function Dashboard() {
       return res.json();
     },
     enabled: !!selectedSiteId || sites.length === 0,
-    placeholderData: keepPreviousData,
   });
 
   const isRefreshing = (statsFetching && !!stats) || (serpFetching && !!serpOverview);
