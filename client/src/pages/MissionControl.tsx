@@ -48,6 +48,7 @@ import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal"
 import { MissionOverviewWidget } from "@/components/crew-dashboard/widgets/MissionOverviewWidget";
 import { useMissionsDashboard } from "@/hooks/useMissionsDashboard";
 import type { MissionItem, MissionStatusState } from "@/components/crew-dashboard/types";
+import { MissionBadge, ScorePill } from "@/components/ui/MissionBadge";
 
 const verdictColors = {
   good: { bg: "bg-semantic-success-soft", border: "border-semantic-success-border", text: "text-semantic-success", badge: "bg-semantic-success-soft text-semantic-success" },
@@ -506,7 +507,7 @@ function MetricCardsRow() {
 }
 
 
-function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: string; score: number; status: 'good' | 'watch' | 'bad' | 'neutral'; keyMetric: string; keyMetricValue: string; delta: string; whatChanged: string }; enabled?: boolean }) {
+function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' | 'neutral'; keyMetric: string; keyMetricValue: string; delta: string; whatChanged: string }; enabled?: boolean }) {
   const crew = getCrewMember(agent.serviceId);
   
   const tintedGlassStyles = getTintedGlassStyles(crew.color);
@@ -699,13 +700,10 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
         <div className="flex-1" />
         
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-          <Badge 
-            variant="outline" 
-            className="text-xs px-2 py-0.5 rounded-full border"
-            style={crewBadgeStyles}
-          >
-            {agent.status === 'good' ? 'Good' : agent.status === 'watch' ? 'Watch' : 'Alert'}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <ScorePill value={agent.score} size="sm" />
+            <MissionBadge open={agent.missionsOpen ?? 0} size="sm" accentColor={crew.color} />
+          </div>
           <Link href={buildRoute.agent(agent.serviceId)}>
             <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-foreground hover:text-foreground/80 whitespace-nowrap">
               Review {crew.nickname} <ArrowRight className="w-3 h-3 ml-1" />
@@ -729,15 +727,13 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
   const enabledCount = agents.length;
   
   const enabledAgentData = agents.map(agent => {
-    // Map service_id to crew_id for lookup in crewSummaries
     const crewId = SERVICE_TO_CREW[agent.serviceId] || agent.serviceId;
-    const crewSummary = crewSummaries?.find(cs => cs.crewId === crewId);
+    const crewSummary = crewSummaries?.find((cs: any) => cs.crewId === crewId);
     const isSocrates = agent.serviceId === 'seo_kbase';
     
     let keyMetric = crewSummary?.primaryMetric || "Pending missions";
-    let keyMetricValue = String(crewSummary?.primaryMetricValue ?? crewSummary?.pendingCount ?? 0);
+    let keyMetricValue = String(crewSummary?.primaryMetricValue ?? crewSummary?.missions?.open ?? 0);
     
-    // Use emptyStateReason for "No Dead Ends" UX when crew has no data
     let whatChanged = crewSummary?.emptyStateReason 
       || (crewSummary?.lastCompletedAt 
         ? `Last completed: ${new Date(crewSummary.lastCompletedAt).toLocaleDateString()}`
@@ -749,12 +745,13 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
       whatChanged = kbStatus.configured ? "Knowledge base connected" : "Connect to SEO KBase worker";
     }
     
-    // Use real delta from API instead of hardcoded values
     let delta = "—";
     if (crewSummary?.deltaPercent !== null && crewSummary?.deltaPercent !== undefined) {
       const sign = crewSummary.deltaPercent > 0 ? "+" : "";
       delta = `${sign}${crewSummary.deltaPercent}%`;
     }
+    
+    const missionsOpen = crewSummary?.missions?.open ?? agent.missionsOpen ?? 0;
     
     return {
       ...agent,
@@ -763,6 +760,7 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
       keyMetricValue,
       delta,
       whatChanged,
+      missionsOpen,
     };
   });
 
@@ -770,7 +768,8 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
     .filter(id => !enabledIds.has(id))
     .map(serviceId => ({
       serviceId,
-      score: 0,
+      score: null,
+      missionsOpen: 0,
       status: 'neutral' as const,
       enabled: false,
       keyMetric: "Not hired",
@@ -838,6 +837,7 @@ function ConsolidatedMissionWidget({
   onReview,
   onRunDiagnostics,
   isRunning,
+  totalOpenMissions,
 }: {
   priorities: any[];
   blockers: any[];
@@ -847,6 +847,7 @@ function ConsolidatedMissionWidget({
   onReview?: (mission: any) => void;
   onRunDiagnostics?: () => void;
   isRunning?: boolean;
+  totalOpenMissions?: number;
 }) {
   const terminalStatuses = ['completed', 'done', 'approved', 'verified', 'resolved'];
   const completedCount = priorities.filter(p => terminalStatuses.includes(p.status)).length;
@@ -875,6 +876,8 @@ function ConsolidatedMissionWidget({
 
   const autoFixableItems = priorities.filter(p => p.impact !== "High" || p.effort === "S");
 
+  const openCount = totalOpenMissions ?? priorities.filter(p => !terminalStatuses.includes(p.status)).length;
+  
   const status: MissionStatusState = {
     tier: statusTier,
     summaryLine: isRealData === false
@@ -884,6 +887,7 @@ function ConsolidatedMissionWidget({
     performanceScore: missionScore,
     autoFixableCount: autoFixableItems.length,
     priorityCount: priorities.length,
+    missions: { open: openCount },
   };
 
   const missions: MissionItem[] = priorities.map((p, idx) => ({
@@ -1094,6 +1098,10 @@ export default function MissionControl() {
   const hasDashboardData = dashboard && dashboard.nextActions && dashboard.nextActions.length > 0;
   const hasRecommendationsData = recommendationsData?.isRealData && recommendationsData?.priorities?.length > 0;
   
+  const totalOpenMissions = dashboard?.crewSummaries?.reduce((sum: number, crew: any) => {
+    return sum + (crew.missions?.open ?? 0);
+  }, 0) ?? 0;
+  
   const captainData = hasDashboardData ? {
     priorities: dashboardPriorities,
     blockers: [],
@@ -1210,6 +1218,7 @@ export default function MissionControl() {
           onReview={handleReviewMission}
           onRunDiagnostics={() => runDiagnostics.mutate()}
           isRunning={runDiagnostics.isPending}
+          totalOpenMissions={totalOpenMissions}
         />
 
         {showValidationPanel && validationResults && (

@@ -76,6 +76,9 @@ export function useCrewStatus(options: UseCrewStatusOptions) {
   const isRefreshing = isFetching && !isLoading;
   const hasData = !!crewStatus;
 
+  const rawScore = crewStatus?.score;
+  const extractedScore = typeof rawScore === 'object' && rawScore !== null ? (rawScore as any).value : rawScore;
+
   return {
     crewStatus,
     isLoading: isLoading && !hasData,
@@ -86,7 +89,7 @@ export function useCrewStatus(options: UseCrewStatusOptions) {
     refetch,
     dataUpdatedAt,
     hasData,
-    score: crewStatus?.score ?? null,
+    score: extractedScore ?? null,
     status: crewStatus?.status ?? null,
     tier: crewStatus?.tier ?? null,
     missions: crewStatus?.missions ?? null,

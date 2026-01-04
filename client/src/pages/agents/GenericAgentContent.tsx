@@ -6,6 +6,7 @@ import { PlayCircle, AlertCircle, CheckCircle2, Clock, Wrench, Download, Setting
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { CrewDashboardShell } from "@/components/crew-dashboard/CrewDashboardShell";
 import { useCrewMissions } from "@/hooks/useCrewMissions";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { SERVICE_TO_CREW } from "@shared/registry";
 import type { 
   CrewIdentity, 
@@ -49,6 +50,11 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
   const crewId = SERVICE_TO_CREW[agentId] || agentId;
 
   const { missionState, executeMission, isLoading: missionsLoading } = useCrewMissions({
+    siteId,
+    crewId,
+  });
+
+  const { score: crewScore, missions: crewMissions, isLoading: scoreLoading } = useCrewStatus({
     siteId,
     crewId,
   });
@@ -97,7 +103,12 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     blockerCount: 0,
     autoFixableCount: missionState.status.autoFixableCount,
     status: missionsLoading ? "loading" : "ready",
-    performanceScore: missionState?.score ?? null,
+    score: crewScore !== null ? { value: crewScore, status: 'ok' as const } : { value: null, status: 'unknown' as const },
+    missions: crewMissions ? { 
+      open: crewMissions.pending, 
+      total: crewMissions.total, 
+      completedThisWeek: 0 
+    } : { open: (missionState?.nextActions || []).length, total: 0, completedThisWeek: 0 },
   } : {
     tier: "doing_okay",
     summaryLine: "Loading missions...",
@@ -106,7 +117,8 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     blockerCount: 0,
     autoFixableCount: 0,
     status: missionsLoading ? "loading" : "ready",
-    performanceScore: null,
+    score: { value: null, status: 'unknown' as const },
+    missions: { open: 0, total: 0, completedThisWeek: 0 },
   };
 
   const missions: MissionItem[] = (missionState?.nextActions || []).map((action) => ({
@@ -148,9 +160,9 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     {
       id: "score",
       label: "Agent Score",
-      value: hasRealData && data?.score !== undefined ? data.score : 0,
+      value: hasRealData && crewScore !== null ? crewScore : 0,
       icon: CheckCircle2,
-      status: (data?.score ?? 0) >= 80 ? "good" : (data?.score ?? 0) >= 50 ? "warning" : "neutral" as const,
+      status: (crewScore ?? 0) >= 80 ? "good" : (crewScore ?? 0) >= 50 ? "warning" : "neutral" as const,
     },
     {
       id: "findings",
@@ -166,7 +178,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
       icon: Lightbulb,
       status: (data?.suggestionsCount ?? 0) > 0 ? "warning" : "good" as const,
     },
-  ], [hasRealData, data, findings.length]);
+  ], [hasRealData, crewScore, data, findings.length]);
 
   const missionPrompt: MissionPromptConfig = {
     label: `Ask ${crew.nickname}`,
@@ -343,7 +355,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
   return (
     <CrewDashboardShell
       crew={crewIdentity}
-      agentScore={data?.score ?? null}
+      agentScore={crewScore}
       agentScoreTooltip={`${crew.nickname}'s current performance score based on site health`}
       missionStatus={missionStatus}
       missions={missions}

@@ -843,7 +843,7 @@ export default function PopularContent() {
   const meta = apiResult ? getPopularMeta(apiResult) : { status: "ok" as const, reasonCode: "SUCCESS", userMessage: "Data loaded", actions: [] };
   const isPreviewMode = apiResult?.isPreviewMode ?? true;
 
-  const score = data.score;
+  const score = typeof data.score === 'object' && data.score !== null ? (data.score as any).value : data.score;
   const issues = data.issues;
   
   // Transform kpis object to array format for display

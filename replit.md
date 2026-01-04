@@ -87,17 +87,33 @@ All crew identity, theming, integrations, and scores come from a single canonica
 - **Frontend Hook**: `useCrewStatus` hook fetches from crew-status API for consistent scores
 - **Rule**: All crew pages consume scores via useCrewStatus; no client-side score computation allowed
 
-### Crew Score Semantics (Updated)
-Score = pending mission count (NOT 0-100 health percentage):
-- **Score value**: Number of open/pending missions for the crew
-- **Display label**: "Open missions" (not "Score")
-- **Status tiers based on pending count**:
-  - 0 pending = `looking_good` (green, "All clear")
-  - 1-2 pending = `doing_okay` (blue, "X open")
-  - 3+ pending = `needs_attention` (orange/warning)
-- **Backend sources**: `CrewStatusService.computeStatus()` and `/api/missions/dashboard` crewSummaries
-- **UI components**: `AgentScoreBadge` (AgentCard), `AgentScoreDisplay` (CrewDashboardShell)
-- **Color logic**: Lower is better (inverted from health scores)
+### Score vs Missions Separation (CRITICAL)
+Score and Missions are two DISTINCT concepts that must never be confused:
+
+#### Score (0-100 health rating)
+- **What it means**: Performance/health rating for the crew's domain
+- **Display**: "Score X" pill/badge, or "—" if not available
+- **Data source**: Crew scoring function based on KPIs (e.g., Popular uses health issues, Lookout uses ranking coverage %)
+- **Data contract**: `score: { value: number | null, status: 'ok' | 'unknown', updatedAt: string }`
+- **UI component**: `ScorePill` from `client/src/components/ui/MissionBadge.tsx`
+
+#### Missions (open task count)
+- **What it means**: Count of actionable tasks still left to do
+- **Display**: Target icon + count, or "0" with "All clear" state
+- **Data source**: Mission engine output (pending missions)
+- **Data contract**: `missions: { open: number, total: number, completedThisWeek: number }`
+- **UI component**: `MissionBadge` from `client/src/components/ui/MissionBadge.tsx`
+
+#### UI Rules
+- **Gold circle in MissionOverviewWidget**: ALWAYS shows missions.open (never score)
+- **Dashboard crew cards**: Show Score pill + MissionBadge
+- **Crew page headers**: Show Score pill + MissionBadge
+- **Mission Control**: Total open missions in gold circle, each crew shows both Score and MissionBadge
+
+#### Backend Sources
+- `CrewStatusService.computeCrewStatus()` returns both `score` and `missions` objects
+- `/api/missions/dashboard` crewSummaries includes both fields
+- `useCrewStatus` hook extracts `score` value and `missions` data for frontend use
 
 ### Gold Standard Worker Blueprint
 All microservice workers adhere to a blueprint defining required endpoints (`/health`, `/smoke-test`, `/capabilities`, `/run`), a standard JSON response shape, API key authentication (`x-api-key` or `Authorization: Bearer`), `X-Request-Id` correlation, and API key fingerprint diagnostics for verification.
