@@ -13,6 +13,7 @@ import {
   type HeaderAction,
   type KpiDescriptor,
 } from "@/components/crew-dashboard";
+import { CrewPageLayout } from "@/components/crew/CrewPageLayout";
 import { KeyMetricsGrid } from "@/components/key-metrics";
 import { NoDeadEndsState, TableEmptyState, ChartEmptyState } from "@/components/empty-states";
 import type { MetaStatus, RemediationAction } from "@shared/noDeadEnds";
@@ -989,31 +990,35 @@ export default function PopularContent() {
 
   if (meta.status !== "ok" && meta.status !== "empty") {
     return (
-      <div className="p-6">
-        <NoDeadEndsState
-          meta={meta}
-          title="Popular Dashboard"
-          onAction={handleAction}
-          isLoading={isLoading}
-        />
-      </div>
+      <CrewPageLayout crewId="popular">
+        <div className="p-6">
+          <NoDeadEndsState
+            meta={meta}
+            title="Popular Dashboard"
+            onAction={handleAction}
+            isLoading={isLoading}
+          />
+        </div>
+      </CrewPageLayout>
     );
   }
 
   return (
-    <TooltipProvider>
-      <CrewDashboardShell
-        crew={crewIdentity}
-        agentScore={score}
-        agentScoreTooltip="Traffic health score based on analytics trends"
-        missionStatus={missionStatus}
-        missions={missions}
-        kpis={kpis}
-        inspectorTabs={inspectorTabs}
-        headerActions={headerActions}
-        onRefresh={() => refetch()}
-        isRefreshing={isRefetching}
-      />
-    </TooltipProvider>
+    <CrewPageLayout crewId="popular">
+      <TooltipProvider>
+        <CrewDashboardShell
+          crew={crewIdentity}
+          agentScore={score}
+          agentScoreTooltip="Traffic health score based on analytics trends"
+          missionStatus={missionStatus}
+          missions={missions}
+          kpis={kpis}
+          inspectorTabs={inspectorTabs}
+          headerActions={headerActions}
+          onRefresh={() => refetch()}
+          isRefreshing={isRefetching}
+        />
+      </TooltipProvider>
+    </CrewPageLayout>
   );
 }
