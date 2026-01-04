@@ -1302,7 +1302,7 @@ export default function NatashaContent() {
   const [addCompetitorOpen, setAddCompetitorOpen] = useState(false);
 
   const siteId = currentSite?.siteId || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'natasha' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'natasha' });
 
   const handleCompetitorAdded = async () => {
     await queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
@@ -1877,7 +1877,8 @@ export default function NatashaContent() {
         onRefresh={handleRefresh}
         onSettings={() => toast.info("Settings coming soon")}
         onFixEverything={() => toast.info("Fix everything coming soon")}
-        isRefreshing={isRunning}
+        isRefreshing={isRunning || crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       />
     </CrewPageLayout>
   );

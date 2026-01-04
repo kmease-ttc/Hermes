@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Download, AlertCircle, Activity, Shield, Search, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { RefreshingBadge, StaleIndicator } from "@/components/ui/stale-indicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -284,7 +285,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, isFetching: statsFetching, isError: statsError, dataUpdatedAt: statsUpdatedAt, refetch: refetchStats } = useQuery({
     queryKey: ['dashboard-stats', selectedSiteId],
     queryFn: async () => {
       const res = await fetch(`/api/dashboard/stats${selectedSiteId ? `?siteId=${selectedSiteId}` : ''}`);
@@ -293,9 +294,10 @@ export default function Dashboard() {
     },
     refetchInterval: 30000,
     enabled: !!selectedSiteId || sites.length === 0,
+    placeholderData: keepPreviousData,
   });
 
-  const { data: serpOverview } = useQuery({
+  const { data: serpOverview, isFetching: serpFetching, isError: serpError, refetch: refetchSerp } = useQuery({
     queryKey: ['serp-overview', selectedSiteId],
     queryFn: async () => {
       const res = await fetch(`/api/serp/overview${selectedSiteId ? `?siteId=${selectedSiteId}` : ''}`);
@@ -303,7 +305,11 @@ export default function Dashboard() {
       return res.json();
     },
     enabled: !!selectedSiteId || sites.length === 0,
+    placeholderData: keepPreviousData,
   });
+
+  const isRefreshing = (statsFetching && !!stats) || (serpFetching && !!serpOverview);
+  const hasError = statsError || serpError;
 
   const runDiagnostics = useMutation({
     mutationFn: async () => {
@@ -402,7 +408,8 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+        <div className="relative flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <RefreshingBadge isRefreshing={isRefreshing} />
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <SiteSelector />

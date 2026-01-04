@@ -345,7 +345,7 @@ function getStatusBadge(status: DraperAction["status"]) {
 export default function DraperContent() {
   const { currentSite } = useSiteContext();
   const siteId = currentSite?.id || 1;
-  const { score: unifiedScore } = useCrewStatus({ siteId: String(siteId), crewId: 'draper' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId: String(siteId), crewId: 'draper' });
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const agent = getCrewMember("google_ads_connector");
@@ -929,7 +929,8 @@ export default function DraperContent() {
           inspectorTabs={inspectorTabs}
           headerActions={headerActions}
           onRefresh={() => refetchSnapshot()}
-          isRefreshing={snapshotLoading}
+          isRefreshing={snapshotLoading || crewIsRefreshing}
+          dataUpdatedAt={crewDataUpdatedAt}
         />
       </div>
     </CrewPageLayout>

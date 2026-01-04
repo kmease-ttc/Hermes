@@ -552,7 +552,7 @@ function OverallScoreCard({ benchmarks }: { benchmarks: IndustryBenchmark[] }) {
 export default function AuthorityContent() {
   const { currentSite } = useSiteContext();
   const siteId = currentSite?.siteId || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'beacon' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'beacon' });
   const [selectedIndustry, setSelectedIndustry] = useState('healthcare');
   const [isAskingAuthority, setIsAskingAuthority] = useState(false);
 
@@ -971,7 +971,8 @@ export default function AuthorityContent() {
         headerActions={headerActions}
         onRefresh={() => refetch()}
         onSettings={() => toast.info("Settings coming soon")}
-        isRefreshing={isLoading}
+        isRefreshing={isLoading || crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       />
     </CrewPageLayout>
   );

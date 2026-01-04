@@ -739,7 +739,7 @@ export default function HemingwayContent() {
   const crew = getCrewMember("content_generator");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'hemingway' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'hemingway' });
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
@@ -1231,7 +1231,8 @@ export default function HemingwayContent() {
         inspectorTabs={inspectorTabs}
         headerActions={headerActions}
         onRefresh={() => refetch()}
-        isRefreshing={isRefetching}
+        isRefreshing={isRefetching || crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       />
     </CrewPageLayout>
   );

@@ -846,7 +846,7 @@ export default function AtlasContent() {
   const crew = getCrewMember("ai_optimization");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'atlas' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'atlas' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
   const [, navigate] = useLocation();
@@ -1451,7 +1451,8 @@ export default function AtlasContent() {
         inspectorTabs={inspectorTabs}
         headerActions={headerActions}
         onRefresh={() => refetch()}
-        isRefreshing={isRefetching}
+        isRefreshing={isRefetching || crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       />
     </CrewPageLayout>
   );

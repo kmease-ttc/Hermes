@@ -404,7 +404,7 @@ export default function ScottyContent() {
   const crew = getCrewMember("crawl_render");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'scotty' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'scotty' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
 
@@ -897,6 +897,8 @@ export default function ScottyContent() {
           kpis={[]}
           inspectorTabs={[]}
           headerActions={[]}
+          isRefreshing={crewIsRefreshing}
+          dataUpdatedAt={crewDataUpdatedAt}
         >
           <Card className="border-semantic-warning/30 bg-semantic-warning-soft">
             <CardHeader>
@@ -935,7 +937,8 @@ export default function ScottyContent() {
         headerActions={headerActions}
         onRefresh={() => refetch()}
         onSettings={() => toast.info("Settings coming soon")}
-        isRefreshing={isRefetching}
+        isRefreshing={isRefetching || crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       />
     </CrewPageLayout>
   );

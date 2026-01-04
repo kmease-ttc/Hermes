@@ -31,7 +31,8 @@ import {
   Users
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { RefreshingBadge } from "@/components/ui/stale-indicator";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { SiteSelector } from "@/components/site/SiteSelector";
 import { USER_FACING_AGENTS, getCrewMember } from "@/config/agents";
@@ -942,7 +943,7 @@ export default function MissionControl() {
   const [selectedMission, setSelectedMission] = useState<any>(null);
   const [isExecutingAll, setIsExecutingAll] = useState(false);
 
-  const { dashboard, isLoading: dashboardLoading, executeAll, refetch } = useMissionsDashboard({
+  const { dashboard, isLoading: dashboardLoading, isRefreshing: dashboardRefreshing, executeAll, refetch } = useMissionsDashboard({
     siteId: currentSite?.siteId,
   });
 
@@ -969,7 +970,7 @@ export default function MissionControl() {
     }
   };
 
-  const { data: dashboardStats } = useQuery({
+  const { data: dashboardStats, isFetching: statsFetching } = useQuery({
     queryKey: ["dashboard-stats", currentSite?.siteId],
     queryFn: async () => {
       const res = await fetch(`/api/dashboard/stats?siteId=${currentSite?.siteId || ""}`);
@@ -977,7 +978,10 @@ export default function MissionControl() {
       return res.json();
     },
     enabled: !!currentSite,
+    placeholderData: keepPreviousData,
   });
+
+  const isRefreshing = dashboardRefreshing || (statsFetching && !!dashboardStats);
 
   const runDiagnostics = useMutation({
     mutationFn: async () => {
@@ -1108,7 +1112,8 @@ export default function MissionControl() {
   return (
     <DashboardLayout>
       <div className="space-y-6" data-testid="mission-control-page">
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
+          <RefreshingBadge isRefreshing={isRefreshing} />
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">

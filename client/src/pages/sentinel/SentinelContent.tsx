@@ -505,7 +505,7 @@ export default function SentinelContent() {
   const crew = getCrewMember("content_decay");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.siteId || "default";
-  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'sentinel' });
+  const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'sentinel' });
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"findings" | "trends">("findings");
 
@@ -813,6 +813,8 @@ export default function SentinelContent() {
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
         onRefresh={() => detectDecayMutation.mutate()}
         isLoading={isLoading}
+        isRefreshing={crewIsRefreshing}
+        dataUpdatedAt={crewDataUpdatedAt}
       >
       <div className="space-y-6">
 
