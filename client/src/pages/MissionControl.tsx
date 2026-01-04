@@ -652,7 +652,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
 function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: { 
   agents: Array<{ serviceId: string; score: number; status: 'good' | 'watch' | 'bad' }>; 
   totalAgents: number;
-  crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention' }>;
+  crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null }>;
   kbStatus?: { totalLearnings?: number; configured?: boolean; status?: string };
 }) {
   const enabledIds = new Set(agents.map(a => a.serviceId));
@@ -662,11 +662,14 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
     const crewSummary = crewSummaries?.find(cs => cs.crewId === agent.serviceId);
     const isSocrates = agent.serviceId === 'seo_kbase';
     
-    let keyMetric = "Pending missions";
-    let keyMetricValue = String(crewSummary?.pendingCount || 0);
-    let whatChanged = crewSummary?.lastCompletedAt 
-      ? `Last completed: ${new Date(crewSummary.lastCompletedAt).toLocaleDateString()}`
-      : "No missions completed yet";
+    let keyMetric = crewSummary?.primaryMetric || "Pending missions";
+    let keyMetricValue = String(crewSummary?.primaryMetricValue ?? crewSummary?.pendingCount ?? 0);
+    
+    // Use emptyStateReason for "No Dead Ends" UX when crew has no data
+    let whatChanged = crewSummary?.emptyStateReason 
+      || (crewSummary?.lastCompletedAt 
+        ? `Last completed: ${new Date(crewSummary.lastCompletedAt).toLocaleDateString()}`
+        : "No missions completed yet");
     
     if (isSocrates && kbStatus) {
       keyMetric = "Knowledge entries";
@@ -674,12 +677,19 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
       whatChanged = kbStatus.configured ? "Knowledge base connected" : "Connect to SEO KBase worker";
     }
     
+    // Use real delta from API instead of hardcoded values
+    let delta = "—";
+    if (crewSummary?.deltaPercent !== null && crewSummary?.deltaPercent !== undefined) {
+      const sign = crewSummary.deltaPercent > 0 ? "+" : "";
+      delta = `${sign}${crewSummary.deltaPercent}%`;
+    }
+    
     return {
       ...agent,
       enabled: true,
       keyMetric,
       keyMetricValue,
-      delta: agent.score >= 70 ? "+5%" : agent.score >= 40 ? "-12%" : "-50%",
+      delta,
       whatChanged,
     };
   });

@@ -29,6 +29,12 @@ export interface CrewSummary {
   pendingCount: number;
   lastCompletedAt: string | null;
   status: 'looking_good' | 'doing_okay' | 'needs_attention';
+  primaryMetric?: string;
+  primaryMetricValue?: number;
+  deltaPercent?: number | null;
+  deltaLabel?: string;
+  hasNoData?: boolean;
+  emptyStateReason?: string | null;
 }
 
 export interface MissionsDashboard {

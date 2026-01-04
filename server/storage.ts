@@ -1198,17 +1198,23 @@ class DBStorage implements IStorage {
 
   async getRecentMissionCompletions(siteId: string, crewId: string, hours: number): Promise<AuditLog[]> {
     const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+    
+    // Base conditions for all mission completions
+    const baseConditions = [
+      eq(auditLogs.siteId, siteId),
+      eq(auditLogs.action, 'mission_completed'),
+      gte(auditLogs.createdAt, cutoffTime),
+    ];
+    
+    // Only add crew filter if not 'all'
+    if (crewId !== 'all') {
+      baseConditions.push(sql`${auditLogs.details}->>'crewId' = ${crewId}`);
+    }
+    
     return db
       .select()
       .from(auditLogs)
-      .where(
-        and(
-          eq(auditLogs.siteId, siteId),
-          eq(auditLogs.action, 'mission_completed'),
-          gte(auditLogs.createdAt, cutoffTime),
-          sql`${auditLogs.details}->>'crewId' = ${crewId}`
-        )
-      )
+      .where(and(...baseConditions))
       .orderBy(desc(auditLogs.createdAt));
   }
 

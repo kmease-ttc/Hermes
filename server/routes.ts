@@ -5342,6 +5342,28 @@ When answering:
         };
       });
       
+      // Get service run history for calculating per-crew metrics
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      
+      // Fetch service runs from last 14 days for delta calculation
+      const recentServiceRuns = await db.query.serviceRuns.findMany({
+        where: (runs, { gte, eq, and }) => and(
+          gte(runs.startedAt, twoWeeksAgo),
+          eq(runs.siteId, targetSiteId)
+        ),
+        orderBy: (runs, { desc }) => [desc(runs.startedAt)],
+      });
+      
+      // Fetch full 14-day mission completions for accurate delta calculation
+      const twoWeekHours = 14 * 24;
+      const allCompletionsFor14Days = await storage.getRecentMissionCompletions(
+        targetSiteId,
+        'all',
+        twoWeekHours
+      );
+      
       const crewSummaries = crewIds.map(crewId => {
         const crew = CREW[crewId];
         const crewMissions = getMissionsForCrew(crewId);
@@ -5349,6 +5371,14 @@ When answering:
           m => !completedMissionIds.has(m.missionId)
         );
         
+        // Use the 14-day completions for accurate delta calculation
+        const crewCompletionsAll = allCompletionsFor14Days.filter(log => {
+          const missionId = (log.details as any)?.missionId || (log.details as any)?.actionId;
+          const mission = missionId ? MISSION_REGISTRY[missionId] : null;
+          return mission?.crewId === crewId || (log.details as any)?.crewId === crewId;
+        });
+        
+        // Also filter for recent completions (for status/lastCompleted)
         const crewCompletions = allRecentCompletions.filter(log => {
           const missionId = (log.details as any)?.missionId || (log.details as any)?.actionId;
           const mission = missionId ? MISSION_REGISTRY[missionId] : null;
@@ -5367,12 +5397,70 @@ When answering:
           status = 'looking_good';
         }
         
+        // Calculate per-crew metrics with real deltas based on service runs
+        const crewServiceRuns = recentServiceRuns.filter(r => r.serviceId === crewId);
+        const thisWeekRuns = crewServiceRuns.filter(r => new Date(r.startedAt) >= oneWeekAgo);
+        const lastWeekRuns = crewServiceRuns.filter(r => {
+          const runDate = new Date(r.startedAt);
+          return runDate >= twoWeeksAgo && runDate < oneWeekAgo;
+        });
+        
+        const thisWeekSuccess = thisWeekRuns.filter(r => r.status === 'success').length;
+        const lastWeekSuccess = lastWeekRuns.filter(r => r.status === 'success').length;
+        
+        // Calculate success rate change or run count change
+        let deltaPercent: number | null = null;
+        let metricType: 'runs' | 'success_rate' | 'completions' = 'completions';
+        let metricValue = 0;
+        
+        if (thisWeekRuns.length > 0 || lastWeekRuns.length > 0) {
+          // Calculate percentage change in successful runs
+          if (lastWeekSuccess > 0) {
+            deltaPercent = Math.round(((thisWeekSuccess - lastWeekSuccess) / lastWeekSuccess) * 100);
+          } else if (thisWeekSuccess > 0) {
+            deltaPercent = 100; // All new this week
+          }
+          metricType = 'runs';
+          metricValue = thisWeekSuccess;
+        } else {
+          // Fall back to completed missions using 14-day window for accurate delta
+          const thisWeekCompletions = crewCompletionsAll.filter(c => 
+            new Date(c.createdAt) >= oneWeekAgo
+          ).length;
+          const lastWeekCompletions = crewCompletionsAll.filter(c => {
+            const cDate = new Date(c.createdAt);
+            return cDate >= twoWeeksAgo && cDate < oneWeekAgo;
+          }).length;
+          
+          if (lastWeekCompletions > 0) {
+            deltaPercent = Math.round(((thisWeekCompletions - lastWeekCompletions) / lastWeekCompletions) * 100);
+          } else if (thisWeekCompletions > 0) {
+            deltaPercent = 100;
+          }
+          // Use thisWeekCompletions for consistency with the delta calculation
+          metricValue = thisWeekCompletions;
+        }
+        
+        // Determine if crew needs setup or has no recent activity
+        const hasNoData = metricValue === 0 && deltaPercent === null;
+        const emptyStateReason = hasNoData 
+          ? (pendingForCrew.length > 0 ? 'Run missions to see metrics' : 'All caught up!')
+          : null;
+        
         return {
           crewId,
           nickname: crew.nickname,
           pendingCount: pendingForCrew.length,
           lastCompletedAt: lastCompleted?.createdAt || null,
           status,
+          // New fields for per-crew metrics
+          primaryMetric: metricType === 'runs' ? 'Successful runs' : 'Completed this week',
+          primaryMetricValue: metricValue,
+          deltaPercent,
+          deltaLabel: 'vs last week',
+          // Empty state metadata for "No Dead Ends" UX
+          hasNoData,
+          emptyStateReason,
         };
       });
       
