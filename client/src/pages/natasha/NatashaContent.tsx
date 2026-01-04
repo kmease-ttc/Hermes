@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -1301,6 +1302,7 @@ export default function NatashaContent() {
   const [addCompetitorOpen, setAddCompetitorOpen] = useState(false);
 
   const siteId = currentSite?.siteId || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'natasha' });
 
   const handleCompetitorAdded = async () => {
     await queryClient.invalidateQueries({ queryKey: ["user-competitors", siteId] });
@@ -1523,9 +1525,9 @@ export default function NatashaContent() {
       blockerCount: blockers,
       autoFixableCount: autoFixable,
       status: error ? "unavailable" : isLoading ? "loading" : "ready",
-      performanceScore: marketSov,
+      performanceScore: unifiedScore ?? null,
     };
-  }, [data, summary, error, isLoading, marketSov]);
+  }, [data, summary, error, isLoading, unifiedScore]);
 
   // Convert competitive missions to MissionItem format - ALWAYS have at least one mission
   const missions: MissionItem[] = useMemo(() => {

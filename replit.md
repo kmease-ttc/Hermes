@@ -78,6 +78,19 @@ Detects drops using 7-day rolling averages and z-scores, generating ranked root 
 ### Mission Execution System
 A unified pipeline across 12 "crews" (e.g., popular, speedster, scotty) defined in `shared/missions/missionRegistry.ts`. Missions have impact, effort, autoFixable flags, and cooldowns.
 
+### Unified Crew Lineage System
+All crew identity, theming, integrations, and scores come from a single canonical source:
+- **Crew Registry**: `shared/registry.ts` defines CrewDefinition with theme tokens (primary, ring, bg, text, badge), primaryMetricId, and dependencies (required/optional integrations)
+- **Integration Registry**: `shared/integrations/registry.ts` defines IntegrationDefinition with ownership mapping for 10+ integrations
+- **CrewStatusService**: `server/services/crewStatus.ts` computes unified scores server-side with crew-specific formulas:
+  - Popular: Issue-based score (100 minus confidence-weighted penalties)
+  - Lookout: Keyword coverage (inTop10/totalKeywords * 100)
+  - Speedster: Core Web Vitals performance score
+  - Other crews: Mission-based formula (baseScore + completions + momentum)
+- **API Endpoints**: `GET /api/sites/:siteId/crew-status` and `GET /api/sites/:siteId/crew-status/:crewId`
+- **Frontend Hook**: `useCrewStatus` hook fetches from crew-status API for consistent scores
+- **Rule**: All crew pages consume scores via useCrewStatus; no client-side score computation allowed
+
 ### Gold Standard Worker Blueprint
 All microservice workers adhere to a blueprint defining required endpoints (`/health`, `/smoke-test`, `/capabilities`, `/run`), a standard JSON response shape, API key authentication (`x-api-key` or `Authorization: Bearer`), `X-Request-Id` correlation, and API key fingerprint diagnostics for verification.
 

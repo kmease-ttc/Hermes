@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCrewMember } from "@/config/agents";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   CrewDashboardShell,
@@ -403,6 +404,7 @@ export default function ScottyContent() {
   const crew = getCrewMember("crawl_render");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'scotty' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
 
@@ -613,7 +615,7 @@ export default function ScottyContent() {
         blockerCount: criticalCount,
         autoFixableCount: fixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: health.crawlHealthPercent,
+        performanceScore: unifiedScore ?? null,
       };
     }
     if (warningCount > 0) {
@@ -625,7 +627,7 @@ export default function ScottyContent() {
         blockerCount: 0,
         autoFixableCount: fixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: health.crawlHealthPercent,
+        performanceScore: unifiedScore ?? null,
       };
     }
     return {
@@ -636,9 +638,9 @@ export default function ScottyContent() {
       blockerCount: 0,
       autoFixableCount: 0,
       status: isLoading ? "loading" : "ready",
-      performanceScore: health.crawlHealthPercent,
+      performanceScore: unifiedScore ?? null,
     };
-  }, [criticalCount, warningCount, fixableCount, health.crawlHealthPercent, isLoading]);
+  }, [criticalCount, warningCount, fixableCount, unifiedScore, isLoading]);
 
   const missions: MissionItem[] = useMemo(() => {
     const items: MissionItem[] = [];

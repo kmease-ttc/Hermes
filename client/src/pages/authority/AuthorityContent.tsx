@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import { getCrewMember } from "@/config/agents";
 import {
@@ -550,6 +551,8 @@ function OverallScoreCard({ benchmarks }: { benchmarks: IndustryBenchmark[] }) {
 
 export default function AuthorityContent() {
   const { currentSite } = useSiteContext();
+  const siteId = currentSite?.siteId || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'beacon' });
   const [selectedIndustry, setSelectedIndustry] = useState('healthcare');
   const [isAskingAuthority, setIsAskingAuthority] = useState(false);
 
@@ -651,9 +654,9 @@ export default function AuthorityContent() {
       priorityCount: averageCount,
       autoFixableCount: 0,
       status: isLoading ? "loading" as const : "ready" as const,
-      performanceScore: avgPercentile ? Math.round(avgPercentile) : null,
+      performanceScore: unifiedScore ?? null,
     };
-  }, [benchmarks, isLoading]);
+  }, [benchmarks, isLoading, unifiedScore]);
 
   const kpis: KpiDescriptor[] = useMemo(() => [
     {

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCrewMember } from "@/config/agents";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   CrewDashboardShell,
@@ -503,6 +504,8 @@ function DualLineChart({ data, dataKey1, dataKey2, label1, label2, color1, color
 export default function SentinelContent() {
   const crew = getCrewMember("content_decay");
   const { activeSite } = useSiteContext();
+  const siteId = activeSite?.siteId || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'sentinel' });
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"findings" | "trends">("findings");
 
@@ -649,7 +652,7 @@ export default function SentinelContent() {
         blockerCount: criticalCount,
         autoFixableCount: fixableCount,
         status: isLoading ? ("loading" as const) : ("ready" as const),
-        performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+        performanceScore: unifiedScore ?? null,
       };
     }
     if (warningCount > 0) {
@@ -661,7 +664,7 @@ export default function SentinelContent() {
         blockerCount: 0,
         autoFixableCount: fixableCount,
         status: isLoading ? ("loading" as const) : ("ready" as const),
-        performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+        performanceScore: unifiedScore ?? null,
       };
     }
     return {
@@ -672,9 +675,9 @@ export default function SentinelContent() {
       blockerCount: 0,
       autoFixableCount: 0,
       status: isLoading ? ("loading" as const) : ("ready" as const),
-      performanceScore: 100 - (metrics.avgDecaySeverity ?? 0),
+      performanceScore: unifiedScore ?? null,
     };
-  }, [criticalCount, warningCount, mildCount, fixableCount, metrics.avgDecaySeverity, isLoading]);
+  }, [criticalCount, warningCount, mildCount, fixableCount, unifiedScore, isLoading]);
 
   const missionPrompt: MissionPromptConfig = {
     label: "Ask Sentinel",

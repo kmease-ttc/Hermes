@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { getCrewMember } from "@/config/agents";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   CrewDashboardShell,
@@ -845,6 +846,7 @@ export default function AtlasContent() {
   const crew = getCrewMember("ai_optimization");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'atlas' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
   const [, navigate] = useLocation();
@@ -1080,7 +1082,7 @@ export default function AtlasContent() {
         blockerCount: criticalCount,
         autoFixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: metrics.aiVisibilityScore,
+        performanceScore: unifiedScore ?? null,
       };
     }
     if (warningCount > 0) {
@@ -1092,7 +1094,7 @@ export default function AtlasContent() {
         blockerCount: 0,
         autoFixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: metrics.aiVisibilityScore,
+        performanceScore: unifiedScore ?? null,
       };
     }
     return {
@@ -1103,9 +1105,9 @@ export default function AtlasContent() {
       blockerCount: 0,
       autoFixableCount: 0,
       status: isLoading ? "loading" : "ready",
-      performanceScore: metrics.aiVisibilityScore,
+      performanceScore: unifiedScore ?? null,
     };
-  }, [criticalCount, warningCount, autoFixableCount, metrics.aiVisibilityScore, isLoading]);
+  }, [criticalCount, warningCount, autoFixableCount, unifiedScore, isLoading]);
 
   const missions: MissionItem[] = useMemo(() => [
     {

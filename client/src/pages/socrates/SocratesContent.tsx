@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { getCrewMember } from "@/config/agents";
@@ -532,6 +533,7 @@ export function SocratesContent() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
   const siteId = currentSite?.siteId || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'socrates' });
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isAskingSocrates, setIsAskingSocrates] = useState(false);
@@ -683,7 +685,7 @@ export function SocratesContent() {
     blockerCount: !data?.configured ? 1 : 0,
     autoFixableCount: data?.recommendationsCount || 0,
     status: isLoading ? "loading" : "ready",
-    performanceScore: data?.totalLearnings ? Math.min(100, data.totalLearnings * 5) : null,
+    performanceScore: unifiedScore ?? null,
   };
 
   const missions: MissionItem[] = useMemo(() => {

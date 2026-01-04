@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { getCrewMember } from "@/config/agents";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   CrewDashboardShell,
@@ -344,6 +345,7 @@ function getStatusBadge(status: DraperAction["status"]) {
 export default function DraperContent() {
   const { currentSite } = useSiteContext();
   const siteId = currentSite?.id || 1;
+  const { score: unifiedScore } = useCrewStatus({ siteId: String(siteId), crewId: 'draper' });
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const agent = getCrewMember("google_ads_connector");
@@ -577,6 +579,7 @@ export default function DraperContent() {
     blockerCount: 0,
     autoFixableCount: pendingCount,
     status: snapshotLoading ? "loading" : "ready",
+    performanceScore: unifiedScore ?? null,
   };
 
   const kpis = [

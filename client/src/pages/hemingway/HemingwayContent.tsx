@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { getCrewMember } from "@/config/agents";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { toast } from "sonner";
 import {
   CrewDashboardShell,
@@ -738,6 +739,7 @@ export default function HemingwayContent() {
   const crew = getCrewMember("content_generator");
   const { activeSite } = useSiteContext();
   const siteId = activeSite?.id || "default";
+  const { score: unifiedScore } = useCrewStatus({ siteId, crewId: 'hemingway' });
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);
@@ -955,7 +957,7 @@ export default function HemingwayContent() {
         blockerCount: 1,
         autoFixableCount: 0,
         status: isLoading ? "loading" : "ready",
-        performanceScore: 0,
+        performanceScore: unifiedScore ?? null,
       };
     }
     if (criticalCount > 0) {
@@ -967,7 +969,7 @@ export default function HemingwayContent() {
         blockerCount: criticalCount,
         autoFixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: metrics.contentQualityScore,
+        performanceScore: unifiedScore ?? null,
       };
     }
     if (warningCount > 0) {
@@ -979,7 +981,7 @@ export default function HemingwayContent() {
         blockerCount: 0,
         autoFixableCount,
         status: isLoading ? "loading" : "ready",
-        performanceScore: metrics.contentQualityScore,
+        performanceScore: unifiedScore ?? null,
       };
     }
     return {
@@ -990,9 +992,9 @@ export default function HemingwayContent() {
       blockerCount: 0,
       autoFixableCount: 0,
       status: isLoading ? "loading" : "ready",
-      performanceScore: metrics.contentQualityScore,
+      performanceScore: unifiedScore ?? null,
     };
-  }, [criticalCount, warningCount, autoFixableCount, metrics.contentQualityScore, isLoading, meta, isPreviewMode]);
+  }, [criticalCount, warningCount, autoFixableCount, unifiedScore, isLoading, meta, isPreviewMode]);
 
   const missions: MissionItem[] = useMemo(() => [
     {
