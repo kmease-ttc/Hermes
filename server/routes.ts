@@ -5211,7 +5211,13 @@ When answering:
             : { status: 'empty', owner: null, reason_code: 'NO_DATA', message: 'No data available', actions: [] };
         }
         
-        // Decision tree for GA4-dependent metrics
+        // If we have data, show it regardless of current token status
+        // (Token may need refresh, but historical data is still valid)
+        if (actualValue !== null) {
+          return { status: 'ok', owner: 'popular', reason_code: null, message: null, actions: [] };
+        }
+        
+        // Decision tree for GA4-dependent metrics when data is missing
         if (!popularHired) {
           return {
             status: 'needs_setup',
@@ -5242,6 +5248,7 @@ When answering:
           };
         }
         
+        // Popular is configured, GA4 is connected, but no data yet
         if (actualValue === null) {
           return {
             status: 'empty',
