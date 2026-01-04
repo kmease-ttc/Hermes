@@ -1,0 +1,180 @@
+Upgrade all crew “Metrics” sections to use charts/graphs wherever the metric changes over time or has multiple dimensions. Only show a single number when it’s truly static or single-point. Use the existing analytics/charting package everywhere (no bespoke per-page implementations).
+
+1. Rule of thumb (when to chart vs number)
+   A) Use a chart if the metric is:
+
+* Time-series (daily/weekly/monthly values)
+* Multi-dimensional (by page, keyword, device, country, channel, severity, etc.)
+* A distribution (Top N, buckets, share of total)
+* A funnel (steps drop-off)
+* A correlation/scatter (impact vs effort, latency vs conversions, etc.)
+
+B) Use a single number only if:
+
+* It’s a single snapshot with no meaningful trend window
+* There’s no secondary dimension worth visualizing
+* It’s a simple current-state boolean/flag (connected/disconnected)
+
+2. Standard chart types (mapped to metric shapes)
+   Time series
+
+* Line chart: sessions, clicks, impressions, conversions, CWV pass rate, errors over time
+* Area chart (optional): volume metrics (traffic) when you want “weight”
+* Dual-axis line: sessions + conversions, clicks + impressions, LCP + INP
+
+Composition / share
+
+* Pie/Donut: traffic by channel, clicks by device, issues by category
+* Stacked bar: issues by severity over time, keywords by rank bucket over time
+
+Distributions
+
+* Histogram/bar: LCP bucket counts, rank buckets (#1–3, #4–10, #11–20, etc.)
+* Top-N bar: top pages by traffic loss, top keywords by movement
+
+Funnel
+
+* Funnel chart: view → click → lead → conversion (where data exists)
+
+Status / score
+
+* Gauge/Progress: score (0–100), CWV pass rate, index coverage %
+* Bullet chart: current vs target vs baseline
+
+3. A shared “Metric Visualization” system (prevents regressions)
+   Create a single renderer that decides how to visualize any metric:
+
+MetricSpec (shared type)
+{
+id: string
+label: string
+unit: "percent"|"count"|"ms"|"usd"|...
+shape: "single"|"timeseries"|"categorical"|"distribution"|"funnel"|"table"
+preferredViz: "number"|"line"|"bar"|"stackedBar"|"donut"|"gauge"|"table"
+dimensions?: string[]            // e.g. ["date"], ["device"], ["channel"]
+series?: string[]                // e.g. ["sessions","conversions"]
+thresholds?: { good, warn, bad } // optional for coloring/badges
+dataSource: { crewId, endpoint, params }
+}
+
+Then implement: <MetricWidget spec={MetricSpec} data={MetricData} crewId={...} />
+
+MetricWidget chooses:
+
+* number card if shape=single
+* line chart if shape=timeseries
+* donut if shape=categorical with small category count
+* stacked bar if categorical over time
+* table if high-cardinality (top pages/keywords)
+
+4. Per-crew “default dashboards” (what to chart first)
+   Popular (Analytics & Signals)
+
+* Line: sessions over time (7/30/90d toggle)
+* Line: conversions over time
+* Line: bounce rate over time
+* Stacked bar: sessions by channel over time
+* Bar: top landing pages by traffic change
+
+Lookout (SERP Tracking / Rankings)
+
+* Line: avg position over time
+* Stacked bar: keyword rank buckets over time (#1–3/#4–10/#11–20/#21–50/#51+)
+* Bar: top movers (up/down)
+
+Speedster (Performance)
+
+* Line: CWV pass rate over time
+* Line: LCP/INP/CLS trends
+* Distribution: LCP buckets histogram
+
+Sentinel (Indexing / Crawl)
+
+* Line: indexed pages over time
+* Line: crawl errors over time
+* Donut/bar: error types distribution
+
+Hemingway (Content)
+
+* Line: content score/decay over time
+* Bar: pages with biggest decay
+* Donut: content issues by type
+
+Beacon (Authority)
+
+* Line: referring domains over time
+* Bar: new/lost links
+* Donut: link types (if available)
+
+Scotty (Technical SEO)
+
+* Line: critical issues count over time
+* Donut: issue categories
+* Table: top failing pages
+
+Atlas (AI Optimization / Platform health)
+
+* Line: overall health score over time
+* Line: job success rate over time
+* Donut: failures by subsystem
+
+Draper (Ads)
+
+* Line: spend over time
+* Line: conversions over time
+* Bar: campaigns by CPA/ROAS (if available)
+
+Socrates (Knowledge Base)
+
+* Line: learnings created over time
+* Donut: learnings by category/tag
+* Table: most recent learnings
+
+5. Data + API requirements
+   To power charts, endpoints must return structured series, not just “current value”.
+
+Standard chart response (shared)
+{
+meta: { status, actions, updatedAt },
+data: {
+points: [{ t: "YYYY-MM-DD", v: number, ...optionalSeries }],
+series?: [{ key:"sessions", label:"Sessions" }, ...],
+breakdown?: [{ key:"Organic", v:123 }, ...],
+rows?: [{ ... }] // for tables
+}
+}
+
+Add a “window” param everywhere:
+
+* ?window=7d|30d|90d
+* optional granularity: day|week
+
+6. UI behavior (UX)
+
+* Charts should load from cache (SWR) and never blank out if prior data exists.
+* If data missing: show actionable state (Configure owner crew/integration), not empty chart.
+* Provide a consistent “window switcher” (7d/30d/90d) at least for Popular/Lookout/Speedster.
+
+7. Implementation order (fast wins)
+
+8. Popular Key Metrics: convert Sessions/Users/Clicks/Impressions/Bounce/Conversion to:
+
+   * number + small sparkline line (mini-chart) using existing analytics package
+
+9. Lookout: rank buckets stacked bar + avg position line
+
+10. Speedster: CWV pass rate line + LCP/INP line
+    Then roll out to Sentinel/Hemingway/Beacon.
+
+11. Acceptance criteria
+
+* Any metric that changes over time shows at least a line/sparkline by default.
+* Multi-dimensional metrics use donut/stacked bar/top-N bar instead of a single number.
+* Single numbers remain only for true one-off metrics.
+* The charting approach is consistent and centralized (MetricSpec + MetricWidget), so new crews/metrics automatically get the right visualization.
+
+Deliverable
+
+* Add MetricSpec + MetricWidget renderer using the existing analytics package.
+* Update Popular/Lookout/Speedster metrics sections to chart-first.
+* Add at least one regression test that ensures a timeseries metric renders a chart (not a plain number).

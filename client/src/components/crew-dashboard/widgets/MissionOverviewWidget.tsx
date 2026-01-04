@@ -318,8 +318,7 @@ export function MissionOverviewWidget({
   const visibleMissions = pendingMissions.slice(0, maxActions);
   const hasMoreMissions = pendingMissions.length > maxActions;
 
-  const openCount = pendingMissions.length;
-  const scoreValue = status.pendingCount ?? openCount;
+  const openCount = status.missions?.open ?? status.pendingCount ?? pendingMissions.length;
   const blockerCount = blockers.length;
 
   return (
@@ -384,29 +383,46 @@ export function MissionOverviewWidget({
             </div>
 
             <div className="flex items-center gap-4 py-3 px-4 rounded-lg bg-background/40 border border-border/30 mb-4">
-              <div className="flex items-center gap-2">
-                <div 
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center ring-2",
-                    scoreValue === 0 
-                      ? "bg-semantic-success-soft ring-semantic-success/40" 
-                      : scoreValue <= 2 
-                      ? "bg-semantic-info-soft ring-semantic-info/40"
-                      : "bg-gold-soft ring-gold/40"
-                  )}
-                >
-                  <span className={cn(
-                    "text-lg font-bold leading-none",
-                    scoreValue === 0 
-                      ? "text-semantic-success" 
-                      : scoreValue <= 2 
-                      ? "text-semantic-info"
-                      : "text-gold"
-                  )}>
-                    {scoreValue}
-                  </span>
-                </div>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center ring-2",
+                          openCount === 0 
+                            ? "bg-semantic-success-soft ring-semantic-success/40" 
+                            : openCount <= 2 
+                            ? "bg-semantic-info-soft ring-semantic-info/40"
+                            : "bg-gold-soft ring-gold/40"
+                        )}
+                      >
+                        <Target className={cn(
+                          "w-4 h-4 mr-0.5",
+                          openCount === 0 
+                            ? "text-semantic-success" 
+                            : openCount <= 2 
+                            ? "text-semantic-info"
+                            : "text-gold"
+                        )} />
+                        <span className={cn(
+                          "text-lg font-bold leading-none",
+                          openCount === 0 
+                            ? "text-semantic-success" 
+                            : openCount <= 2 
+                            ? "text-semantic-info"
+                            : "text-gold"
+                        )}>
+                          {openCount}
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Open missions are tasks you need to complete</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 text-sm">
@@ -417,7 +433,7 @@ export function MissionOverviewWidget({
               </div>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground shrink-0">
-                <span><strong className="text-foreground">{openCount}</strong> missions</span>
+                <span><strong className="text-foreground">{openCount}</strong> open</span>
                 {blockerCount > 0 && (
                   <span className="text-gold"><strong>{blockerCount}</strong> blockers</span>
                 )}

@@ -5648,7 +5648,7 @@ When answering:
       }
       
       // Fetch unified crew scores from CrewStatusService for consistency with crew pages
-      let crewStatusMap: Record<string, { score: number; status: string }> = {};
+      let crewStatusMap: Record<string, { score: { value: number | null; status: 'ok' | 'unknown'; updatedAt: string }; status: string }> = {};
       try {
         const allCrewStatuses = await computeAllCrewStatuses(targetSiteId, 7);
         for (const cs of allCrewStatuses) {
@@ -5741,24 +5741,41 @@ When answering:
           ? (pendingForCrew.length > 0 ? 'Run missions to see metrics' : 'All caught up!')
           : null;
         
-        // Score = pending mission count (new semantics: missions that need attention)
-        const score = pendingForCrew.length;
+        // Get the cached score from CrewStatusService if available
+        const cachedStatus = crewStatusMap[crewId];
+        const scoreData = cachedStatus?.score ?? { value: null, status: 'unknown' as const, updatedAt: new Date().toISOString() };
+        
+        // Missions data
+        const thisWeekCompletions = crewCompletionsAll.filter(c => 
+          new Date(c.createdAt) >= oneWeekAgo
+        ).length;
         
         return {
           crewId,
           nickname: crew.nickname,
-          pendingCount: pendingForCrew.length,
+          // Score = 0-100 health rating (separate from missions)
+          score: scoreData,
+          // Missions data (open count is PRIMARY display for mission-related UI)
+          missions: {
+            open: pendingForCrew.length,
+            total: crewMissions.length,
+            completed: crewMissions.length - pendingForCrew.length,
+            completedThisWeek: thisWeekCompletions,
+            highPriority: pendingForCrew.filter(m => m.impact === 'high').length,
+            autoFixable: pendingForCrew.filter(m => m.autoFixable).length,
+          },
           lastCompletedAt: lastCompleted?.createdAt || null,
           status,
-          score, // Score = pending mission count
-          // New fields for per-crew metrics
-          primaryMetric: 'Open missions',
-          primaryMetricValue: pendingForCrew.length,
-          deltaPercent: null,
-          deltaLabel: pendingForCrew.length === 0 ? 'All clear' : 'needs attention',
+          // Primary metric for display
+          primaryMetric: scoreData.value !== null ? 'Health Score' : 'Completion Rate',
+          primaryMetricValue: scoreData.value,
+          deltaPercent,
+          deltaLabel: scoreData.value !== null
+            ? (scoreData.value >= 80 ? 'Healthy' : scoreData.value >= 50 ? 'Needs work' : 'Critical')
+            : 'Not enough data',
           // Empty state metadata for "No Dead Ends" UX
-          hasNoData: pendingForCrew.length === 0,
-          emptyStateReason: pendingForCrew.length === 0 ? 'All caught up!' : null,
+          hasNoData: scoreData.value === null,
+          emptyStateReason: scoreData.value === null ? 'Run diagnostics to see health score' : null,
         };
       });
       

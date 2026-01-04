@@ -1,0 +1,107 @@
+Update scoring + missions semantics (final): Missions = how many tasks you need to do. Score = how well you’re doing in that category. Make them visually distinct everywhere, and ensure the “mission symbol” always appears anywhere missions exist.
+
+1. Definitions (single source of truth)
+   A) Missions
+
+* Missions = count of actionable items that require attention for a given scope.
+* Displayed as: OPEN MISSIONS (pending + blocked + needs_setup + error)
+* Optional secondary: total missions (including completed) shown as “open / total”.
+
+B) Score
+
+* Score = a 0–100 rating for that crew/category (health/performance/compliance).
+* Must be computed consistently across the app (dashboard + crew page + mission control).
+* Score should never be replaced by mission count.
+
+2. Data model (API contract)
+   Every crew status response must include BOTH:
+
+CrewStatus:
+{
+crewId,
+score: { value: number|null, status: "ok"|"unknown", updatedAt },
+missions: { open: number, total: number, completedThisWeek: number },
+primaryMetric: {...},
+readiness: {...}
+}
+
+Rules:
+
+* If score cannot be computed: score.value = null and show “—” with a tooltip “Not enough data yet”.
+* Missions.open must always be present (0 is valid).
+
+3. UI rules (what shows where)
+   A) Dashboard Crew Summary card
+
+* Show Score as the main number (top-right pill)
+* Show Missions as a secondary indicator using the mission icon + count
+
+  * Example: 🎯 5 (or whatever mission icon you’re using)
+* If missions.open > 0: show mission icon in an “active” state (highlighted)
+* If missions.open == 0: show mission icon muted
+
+B) Crew page header
+
+* Score pill remains “Score 58” (or “Score —”)
+* Missions indicator appears next to it: mission icon + open count
+
+C) Missions panel on a crew page
+
+* Gold circle = missions.open (NOT score)
+* The header text “X missions” = missions.open (same source)
+
+D) Mission Control page
+
+* Gold circle at top = total open missions across all crews (sum of missions.open across crews)
+* Each mission line item shows its crew icon + crew color + mission icon
+
+4. “Mission symbol” rule (your requirement)
+   Any time missions exist anywhere, the mission symbol must appear.
+   Implementation:
+
+* Create a single reusable component: <MissionBadge open={n} />
+
+  * always renders the mission icon
+  * renders the number
+  * applies crew theme accents if provided
+    Use this component in:
+* dashboard crew cards
+* crew header
+* missions widget header
+* mission control summary
+
+No page should hand-roll mission UI.
+
+5. Fix existing regressions caused by the earlier semantic change
+   It looks like we started swapping score to be missions.pending. Revert that:
+
+* CrewStatusService should compute:
+
+  * score.value using the scoring formula (0–100)
+  * missions.open using mission state counts
+* Ensure no endpoint overwrites score.value with missions.open.
+
+6. Tooltips + copy (to prevent confusion)
+
+* Score pill tooltip: “Score measures how healthy this area is (0–100).”
+* Missions badge tooltip: “Open missions are tasks you need to complete.”
+
+7. Acceptance criteria
+
+* Score and Missions are both visible on:
+
+  * Dashboard Crew Summary cards
+  * Each crew page header
+  * Missions panel
+* Gold mission circle always matches missions.open (crew page) and sum(open) (mission control).
+* Score remains a stable rating and does not change just because missions were created.
+* The mission icon appears anywhere an open mission count is shown (no exceptions).
+
+Deliverable
+
+* One PR that:
+
+  1. restores Score as 0–100 rating in CrewStatusService
+  2. adds missions.open everywhere via shared <MissionBadge />
+  3. updates dashboard + crew headers + mission widgets to show both score and missions
+  4. adds one regression test: score != missions.open unless by coincidence, and both fields exist in API response

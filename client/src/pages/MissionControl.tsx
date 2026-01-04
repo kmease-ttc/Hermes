@@ -671,7 +671,9 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
                   </TooltipProvider>
                 )}
               </div>
-              <span className="text-lg font-bold" style={{ color: crew.color }}>{agent.score}</span>
+              <span className="text-lg font-bold" style={{ color: crew.color }}>
+                {agent.score !== null ? agent.score : '—'}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground truncate">{crew.role}</p>
             {crew.shortDescription && (
@@ -680,7 +682,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
             <div className="w-full h-1.5 rounded-full bg-muted mt-1 overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all"
-                style={{ width: `${agent.score}%`, backgroundColor: crew.color }}
+                style={{ width: `${agent.score ?? 0}%`, backgroundColor: crew.color }}
               />
             </div>
           </div>
@@ -718,7 +720,7 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
 }
 
 function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: { 
-  agents: Array<{ serviceId: string; score: number; status: 'good' | 'watch' | 'bad' }>; 
+  agents: Array<{ serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' }>; 
   totalAgents: number;
   crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null }>;
   kbStatus?: { totalLearnings?: number; configured?: boolean; status?: string };
@@ -1030,12 +1032,17 @@ export default function MissionControl() {
     const crewSummary = dashboard?.crewSummaries?.find((cs: any) => cs.crewId === crewId);
     
     // Use server-provided score for consistency with crew pages (single source of truth)
-    const score = crewSummary?.score ?? 0;
+    // Score is now an object { value: number | null, status, updatedAt }
+    const scoreValue = crewSummary?.score?.value ?? null;
+    const missionsOpen = crewSummary?.missions?.open ?? 0;
     
     return {
       serviceId,
-      score,
-      status: score >= 70 ? 'good' as const : score >= 40 ? 'watch' as const : 'bad' as const,
+      score: scoreValue,
+      missionsOpen,
+      status: scoreValue !== null 
+        ? (scoreValue >= 70 ? 'good' as const : scoreValue >= 40 ? 'watch' as const : 'bad' as const)
+        : (missionsOpen === 0 ? 'good' as const : missionsOpen <= 2 ? 'watch' as const : 'bad' as const),
     };
   });
 

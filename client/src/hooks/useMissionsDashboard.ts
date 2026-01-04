@@ -23,15 +23,30 @@ export interface DashboardRecentlyCompleted {
   summary: string;
 }
 
+export interface ScoreData {
+  value: number | null;
+  status: 'ok' | 'unknown';
+  updatedAt: string;
+}
+
+export interface MissionsData {
+  open: number;
+  total: number;
+  completed: number;
+  completedThisWeek: number;
+  highPriority: number;
+  autoFixable: number;
+}
+
 export interface CrewSummary {
   crewId: string;
   nickname: string;
-  score: number;
-  pendingCount: number;
+  score: ScoreData;
+  missions: MissionsData;
   lastCompletedAt: string | null;
   status: 'looking_good' | 'doing_okay' | 'needs_attention';
   primaryMetric?: string;
-  primaryMetricValue?: number;
+  primaryMetricValue?: number | null;
   deltaPercent?: number | null;
   deltaLabel?: string;
   hasNoData?: boolean;

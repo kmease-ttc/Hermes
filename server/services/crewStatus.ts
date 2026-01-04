@@ -12,11 +12,18 @@ export type CrewTier = "looking_good" | "doing_okay" | "needs_attention";
 export type CrewStatusValue = "looking_good" | "doing_okay" | "needs_attention";
 
 export interface MissionsData {
+  open: number;
   total: number;
   completed: number;
-  pending: number;
+  completedThisWeek: number;
   highPriority: number;
   autoFixable: number;
+}
+
+export interface ScoreData {
+  value: number | null;
+  status: "ok" | "unknown";
+  updatedAt: string;
 }
 
 export interface PrimaryMetricData {
@@ -36,7 +43,7 @@ export interface ReadinessData {
 export interface CrewStatus {
   crewId: string;
   siteId: string;
-  score: number;
+  score: ScoreData;
   status: CrewStatusValue;
   tier: CrewTier;
   missions: MissionsData;
@@ -137,10 +144,7 @@ async function computeMissionsData(
   crewId: string,
   siteId: string,
   timeWindowDays: number
-): Promise<{
-  missions: MissionsData;
-  metricValue: number;
-}> {
+): Promise<MissionsData> {
   const now = new Date();
   const oneWeekAgo = new Date(now);
   oneWeekAgo.setDate(oneWeekAgo.getDate() - timeWindowDays);
@@ -171,20 +175,19 @@ async function computeMissionsData(
   ).length;
   
   return {
-    missions: {
-      total: allMissions.length,
-      completed: completedMissionIds.size,
-      pending: pendingMissions.length,
-      highPriority: highPriorityCount,
-      autoFixable: autoFixableCount,
-    },
-    metricValue: thisWeekCompletions,
+    open: pendingMissions.length,
+    total: allMissions.length,
+    completed: completedMissionIds.size,
+    completedThisWeek: thisWeekCompletions,
+    highPriority: highPriorityCount,
+    autoFixable: autoFixableCount,
   };
 }
 
-function determineStatusFromPending(pending: number): CrewStatusValue {
-  if (pending === 0) return "looking_good";
-  if (pending <= 2) return "doing_okay";
+function determineStatusFromScore(score: number | null): CrewStatusValue {
+  if (score === null) return "needs_attention";
+  if (score >= 80) return "looking_good";
+  if (score >= 50) return "doing_okay";
   return "needs_attention";
 }
 
@@ -196,27 +199,29 @@ export async function computeCrewStatus(
   options: ComputeCrewStatusOptions
 ): Promise<CrewStatus> {
   const { siteId, crewId, timeWindowDays = 7 } = options;
+  const now = new Date().toISOString();
   
   const crewDef = CREW[crewId as CrewId];
   if (!crewDef) {
     throw new Error(`Unknown crew: ${crewId}`);
   }
   
-  let score: number;
-  let status: CrewStatusValue;
+  let scoreValue: number | null = null;
+  let scoreStatus: "ok" | "unknown" = "unknown";
   let missions: MissionsData = {
+    open: 0,
     total: 0,
     completed: 0,
-    pending: 0,
+    completedThisWeek: 0,
     highPriority: 0,
     autoFixable: 0,
   };
   let primaryMetric: PrimaryMetricData = {
     label: "Score",
     value: null,
-    unit: "score",
+    unit: "/ 100",
     deltaPercent: null,
-    deltaLabel: "vs last week",
+    deltaLabel: "Not enough data yet",
   };
   let readiness: ReadinessData = {
     isReady: true,
@@ -224,34 +229,34 @@ export async function computeCrewStatus(
     setupHint: null,
   };
   
-  const missionResult = await computeMissionsData(crewId, siteId, timeWindowDays);
-  missions = missionResult.missions;
-  
-  score = missions.pending;
-  status = determineStatusFromPending(missions.pending);
-  
-  primaryMetric = {
-    label: "Open missions",
-    value: missions.pending,
-    unit: missions.pending === 1 ? "mission" : "missions",
-    deltaPercent: null,
-    deltaLabel: missions.pending === 0 ? "All clear" : "needs attention",
-  };
+  missions = await computeMissionsData(crewId, siteId, timeWindowDays);
   
   if (crewId === "popular") {
     const issueResult = await computePopularCrewScore(siteId, timeWindowDays);
+    scoreValue = issueResult.score;
+    scoreStatus = "ok";
     const activeIssues = issueResult.issues.filter(i => i.status !== "resolved");
-    if (activeIssues.length > 0) {
-      primaryMetric.deltaLabel = `${activeIssues.length} active issues`;
-    }
+    primaryMetric = {
+      label: "Health Score",
+      value: scoreValue,
+      unit: "/ 100",
+      deltaPercent: null,
+      deltaLabel: activeIssues.length > 0 ? `${activeIssues.length} active issues` : "No issues",
+    };
     
   } else if (crewId === "lookout") {
     const result = await computeLookoutCrewScore();
     if (result.totalKeywords > 0) {
-      primaryMetric.deltaLabel = `${result.inTop10} of ${result.totalKeywords} in Top 10`;
-    }
-    
-    if (result.totalKeywords === 0) {
+      scoreValue = result.score;
+      scoreStatus = "ok";
+      primaryMetric = {
+        label: "Ranking Coverage",
+        value: scoreValue,
+        unit: "/ 100",
+        deltaPercent: null,
+        deltaLabel: `${result.inTop10} of ${result.totalKeywords} in Top 10`,
+      };
+    } else {
       readiness = {
         isReady: false,
         missingDependencies: ["serp_api"],
@@ -262,10 +267,16 @@ export async function computeCrewStatus(
   } else if (crewId === "speedster") {
     const result = await computeSpeedsterCrewScore(siteId);
     if (result.performanceScore !== null) {
-      primaryMetric.deltaLabel = `Performance: ${result.performanceScore}/100`;
-    }
-    
-    if (result.performanceScore === null) {
+      scoreValue = result.performanceScore;
+      scoreStatus = "ok";
+      primaryMetric = {
+        label: "Performance Score",
+        value: scoreValue,
+        unit: "/ 100",
+        deltaPercent: null,
+        deltaLabel: scoreValue >= 90 ? "Excellent" : scoreValue >= 50 ? "Needs work" : "Poor",
+      };
+    } else {
       readiness = {
         isReady: false,
         missingDependencies: ["pagespeed"],
@@ -274,7 +285,18 @@ export async function computeCrewStatus(
     }
     
   } else {
-    if (missions.total === 0 && missionResult.metricValue === 0) {
+    if (missions.completed > 0 || missions.completedThisWeek > 0) {
+      const completionRatio = missions.total > 0 ? missions.completed / missions.total : 0;
+      scoreValue = Math.round(completionRatio * 100);
+      scoreStatus = "ok";
+      primaryMetric = {
+        label: "Completion Rate",
+        value: scoreValue,
+        unit: "/ 100",
+        deltaPercent: null,
+        deltaLabel: `${missions.completed} of ${missions.total} complete`,
+      };
+    } else if (missions.total === 0) {
       readiness = {
         isReady: false,
         missingDependencies: crewDef.dependencies.required,
@@ -283,7 +305,14 @@ export async function computeCrewStatus(
     }
   }
   
+  const status = determineStatusFromScore(scoreValue);
   const tier = determineTierFromStatus(status);
+  
+  const score: ScoreData = {
+    value: scoreValue,
+    status: scoreStatus,
+    updatedAt: now,
+  };
   
   return {
     crewId,
@@ -294,7 +323,7 @@ export async function computeCrewStatus(
     missions,
     primaryMetric,
     readiness,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
   };
 }
 
@@ -303,6 +332,7 @@ export async function computeAllCrewStatuses(
   timeWindowDays: number = 7
 ): Promise<CrewStatus[]> {
   const crewIds = Object.keys(CREW).filter(id => id !== "major_tom");
+  const now = new Date().toISOString();
   
   const statuses = await Promise.all(
     crewIds.map(crewId => 
@@ -312,13 +342,13 @@ export async function computeAllCrewStatuses(
           return {
             crewId,
             siteId,
-            score: 0,
+            score: { value: null, status: "unknown" as const, updatedAt: now },
             status: "needs_attention" as CrewStatusValue,
             tier: "needs_attention" as CrewTier,
-            missions: { total: 0, completed: 0, pending: 0, highPriority: 0, autoFixable: 0 },
+            missions: { open: 0, total: 0, completed: 0, completedThisWeek: 0, highPriority: 0, autoFixable: 0 },
             primaryMetric: { label: "Error", value: null, unit: "", deltaPercent: null, deltaLabel: "" },
             readiness: { isReady: false, missingDependencies: [], setupHint: "Error loading status" },
-            updatedAt: new Date().toISOString(),
+            updatedAt: now,
           } as CrewStatus;
         })
     )

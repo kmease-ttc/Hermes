@@ -57,7 +57,9 @@ export interface MissionStatusState {
   missingIntegrations?: number;
   autoFixableCount: number;
   status?: WidgetState;
-  performanceScore?: number | null;
+  score?: { value: number | null; status: 'ok' | 'unknown' };
+  missions?: { open: number; total: number; completedThisWeek: number };
+  pendingCount?: number;
 }
 
 export interface InspectorTab {
