@@ -352,9 +352,23 @@ export function CrewDashboardShell({
 
       {/* 5. KPIs Strip - only show when there are KPIs and no custom metrics */}
       {!customMetrics && kpis && kpis.length > 0 && (
-        <Card className="bg-card/60 backdrop-blur-sm border-border">
+        <Card 
+          className="bg-card/60 backdrop-blur-sm"
+          style={{ 
+            borderColor: crewTheme ? "var(--crew-ring)" : undefined,
+          }}
+        >
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Key Metrics</CardTitle>
+            <CardTitle 
+              className="text-lg flex items-center gap-2"
+              style={{ color: crewTheme ? "var(--crew-text)" : undefined }}
+            >
+              <span 
+                className="w-1 h-5 rounded-full"
+                style={{ backgroundColor: crewTheme ? "var(--crew-primary)" : accentColor }}
+              />
+              Key Metrics
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <KpiStripWidget kpis={kpis} state={kpiState} onRetry={onRefresh} />

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { TrendingUp, TrendingDown, Minus, AlertCircle, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOptionalCrewTheme } from "@/components/crew/CrewPageLayout";
 import type { KpiDescriptor, WidgetState } from "../types";
 
 interface KpiStripWidgetProps {
@@ -18,8 +19,10 @@ interface KpiStripWidgetProps {
 }
 
 function KpiCard({ kpi }: { kpi: KpiDescriptor }) {
+  const crewTheme = useOptionalCrewTheme();
   const isLoading = kpi.status === "loading";
   const isUnavailable = kpi.status === "unavailable";
+  const hasValue = kpi.value !== null && kpi.value !== undefined && kpi.value !== "—";
 
   const getDeltaIcon = () => {
     if (kpi.delta === undefined || kpi.delta === null) return null;
@@ -37,9 +40,20 @@ function KpiCard({ kpi }: { kpi: KpiDescriptor }) {
     return isPositive ? "text-semantic-success" : "text-semantic-danger";
   };
 
+  const themedStyles = crewTheme && hasValue && !isUnavailable ? {
+    borderColor: "var(--crew-ring)",
+    boxShadow: "0 0 12px -4px var(--crew-ring)",
+  } : {};
+
+  const iconColor = crewTheme && hasValue ? "var(--crew-text)" : undefined;
+
   return (
     <div
-      className="flex flex-col gap-1 p-4 rounded-xl bg-card/40 border border-border min-w-[140px]"
+      className={cn(
+        "flex flex-col gap-1 p-4 rounded-xl bg-card/40 border min-w-[140px] transition-all duration-200",
+        crewTheme && hasValue ? "hover:shadow-[0_0_16px_-3px_var(--crew-ring)]" : "border-border"
+      )}
+      style={themedStyles}
       data-testid={`kpi-${kpi.id}`}
     >
       <div className="flex items-center justify-between">
@@ -68,7 +82,11 @@ function KpiCard({ kpi }: { kpi: KpiDescriptor }) {
       ) : (
         <>
           <div className="flex items-baseline gap-1">
-            {kpi.icon && <span className="mr-1">{kpi.icon}</span>}
+            {kpi.icon && (
+              <span className="mr-1" style={{ color: iconColor }}>
+                {kpi.icon}
+              </span>
+            )}
             <span className="text-xl font-bold text-foreground">
               {kpi.value ?? "—"}
             </span>
