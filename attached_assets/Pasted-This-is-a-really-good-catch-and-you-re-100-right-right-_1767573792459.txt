@@ -1,0 +1,298 @@
+This is a really good catch, and you’re 100% right — right now the UI is **violating its own semantics** in multiple places. The confusion you’re feeling is exactly what a user would feel.
+
+I’m going to lock this down into a **clean, unambiguous contract** and then give you **very specific fixes** for Hemingway (and by extension every crew), without blowing up what already works.
+
+---
+
+## The core problem (clearly stated)
+
+Right now, **three different numbers are being mixed up**:
+
+1. **Score** (how well the crew thinks you’re doing)
+2. **Open missions** (how many things you need to do)
+3. **Completion rate / operational stats** (how much work the agent has done)
+
+These are bleeding into each other across:
+
+* Dashboard cards
+* Crew headers
+* Mission Control
+* Crew-specific mission panels
+
+That’s why you’re seeing:
+
+* Hemingway showing **“2” as a score** (but that’s actually completion rate)
+* A banner saying **“72 open missions”**
+* A missions panel saying **“3 open”**
+* A dashboard card showing a different number again
+
+This is not a data problem — it’s a **presentation contract problem**.
+
+---
+
+## Final, locked definitions (no more ambiguity)
+
+### 1. Score (per crew)
+
+**What it is**
+
+> A meaningful, domain-specific rating chosen by that crew to represent overall quality / health.
+
+**Rules**
+
+* One number
+* Stable
+* Comparable over time
+* NOT derived from mission count
+* NOT completion rate
+
+**Where it appears**
+
+* Crew header (top bar)
+* Dashboard crew card
+
+**Never appears**
+
+* Inside mission circles
+* As a replacement for mission counts
+
+---
+
+### 2. Missions (per crew)
+
+**What it is**
+
+> How many actionable things are currently open that you need to do.
+
+**Rules**
+
+* This is a count
+* This is what the gold mission circle always means
+* This is what Mission Control aggregates
+
+**Where it appears**
+
+* Gold mission circle
+* Mission Control summary
+* Crew mission panel header
+
+---
+
+### 3. Operational stats (completion rate, processed items, etc.)
+
+**What it is**
+
+> How much work the agent has done.
+
+**Rules**
+
+* Informational only
+* Never shown as “Score”
+* Never shown as “Missions”
+
+---
+
+## Hemingway: the correct interpretation (your example)
+
+Hemingway already has **excellent candidate scores** on the page:
+
+* Content Quality Score → **72**
+* Readability Grade → 9.2
+* E-E-A-T Coverage → 68%
+
+### ✅ Decision (recommended and simple)
+
+**Hemingway Score = Content Quality Score**
+
+Why:
+
+* It’s already there
+* It’s intuitive
+* It’s stable
+* It matches the crew’s purpose
+
+So:
+
+* **Hemingway score = 72**
+* NOT 2
+* NOT completion rate
+* NOT missions
+
+---
+
+## What each Hemingway number should be
+
+### On the Hemingway crew page
+
+**Top bar**
+
+* `Score: 72` ✅ (Content Quality Score)
+* `Open missions: 3` ✅ (mission badge)
+
+**Missions panel**
+
+* Gold circle: `3`
+* Text: “3 open”
+
+**Metrics section**
+
+* Shows:
+
+  * Content Quality Score (72)
+  * Readability Grade (9.2)
+  * Pages Needing Improvement (7)
+  * E-E-A-T Coverage (68%)
+
+All good here already.
+
+---
+
+### On Mission Control (this is broken right now)
+
+#### Header that says “72 open”
+
+This is the biggest source of confusion.
+
+You have **two valid choices**, but you must pick one and enforce it:
+
+### Option A (recommended)
+
+**Mission Control top number = total open missions across all crews**
+
+If that’s the case:
+
+* The number **must equal the sum of all crew mission counts**
+* If Hemingway has 3, Popular has 1, Lookout has 2 → total = 6
+* “72” is invalid unless there are literally 72 missions
+
+If you choose this:
+
+* Rename label to: **“Total open missions”**
+* Gold circle = total missions
+* Never reuse that number elsewhere
+
+### Option B (less ideal)
+
+**Mission Control top number = current crew score**
+
+If this is what “72” is:
+
+* It must be labeled **Score**
+* It must visually match the crew score pill
+* It must NOT say “open”
+
+Right now it says **“72 open”**, which is semantically wrong in both models.
+
+---
+
+## Dashboard crew cards (also broken)
+
+For **Hemingway** on the dashboard:
+
+### What it should show
+
+* **Score: 72**
+* Mission badge: `3`
+
+### What it should NOT show
+
+* “Score: 2”
+* Completion rate masquerading as score
+
+---
+
+## Concrete implementation rules (so this never regresses again)
+
+### 1. Every crew defines its score source
+
+Add this to your crew registry:
+
+```ts
+scoreMetric: {
+  id: "content_quality_score",
+  label: "Content Quality Score",
+  source: "metrics.contentQualityScore"
+}
+```
+
+Popular might use:
+
+* Health score
+  Lookout:
+* Avg position score
+  Speedster:
+* CWV pass rate score
+  Socrates:
+* Knowledge coverage score
+
+No page decides this locally.
+
+---
+
+### 2. Mission counts come from one place
+
+One function:
+
+```ts
+getOpenMissionCount(siteId, crewId)
+```
+
+Used by:
+
+* Dashboard
+* Crew header
+* Mission Control
+* Missions panel
+
+Never recomputed in UI.
+
+---
+
+### 3. Gold circle rule (absolute)
+
+> **Gold circle always = mission count**
+
+No exceptions.
+No score ever goes inside it.
+
+---
+
+### 4. Labels must match semantics
+
+* If it’s a score → label it “Score”
+* If it’s missions → label it “Open missions”
+* Never reuse “open” next to a score
+
+---
+
+## Minimal changes to satisfy your preference (right now)
+
+You said:
+
+> *“My preference right now is that if there's a score, we can leave it up at the top inside the Hemingway bar. And then we just need to pull one of these numbers off the page and put it on the home page.”*
+
+So do this **immediately**:
+
+1. Set **Hemingway score = Content Quality Score (72)** everywhere
+2. Remove completion rate from score slot entirely
+3. On the dashboard:
+
+   * Show `Score: 72`
+   * Show mission badge `3`
+4. Fix Mission Control header:
+
+   * Either show total missions (correct number)
+   * Or relabel it as Score (but don’t say “open”)
+
+That alone will eliminate 90% of the confusion.
+
+---
+
+## One-line invariant to enforce in code reviews
+
+> **Scores measure quality. Missions measure work. Gold circles are missions. Scores never say “open”.**
+
+If you want, next step I can:
+
+* Write the exact `CrewScoreSelector` mapping for all crews, or
+* Help you decide the **best score metric per crew** so they’re all equally meaningful.

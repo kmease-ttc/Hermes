@@ -208,6 +208,12 @@ export interface CrewDependencies {
   optional: string[];
 }
 
+export interface CrewScoreMetric {
+  id: string;
+  label: string;
+  source: string;
+}
+
 export interface CrewDefinition {
   crewId: string;
   nickname: string;
@@ -218,6 +224,7 @@ export interface CrewDefinition {
   theme: CrewTheme;
   primaryMetricId: MetricKey | null;
   dependencies: CrewDependencies;
+  scoreMetric: CrewScoreMetric | null;
 }
 
 function deriveTheme(color: string): CrewTheme {
@@ -245,6 +252,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#14B8A6'),
     primaryMetricId: 'ga4.sessions',
     dependencies: { required: ['ga4', 'gsc'], optional: [] },
+    scoreMetric: { id: 'health_score', label: 'Health Score', source: 'issues' },
   },
   speedster: {
     crewId: 'speedster',
@@ -256,6 +264,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#10B981'),
     primaryMetricId: 'vitals.performance_score',
     dependencies: { required: ['pagespeed'], optional: [] },
+    scoreMetric: { id: 'cwv_pass_rate', label: 'CWV Pass Rate', source: 'pagespeed' },
   },
   lookout: {
     crewId: 'lookout',
@@ -267,6 +276,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#EC4899'),
     primaryMetricId: 'serp.keywords_top10',
     dependencies: { required: ['serp_api'], optional: ['gsc'] },
+    scoreMetric: { id: 'ranking_coverage', label: 'Ranking Coverage', source: 'serp' },
   },
   scotty: {
     crewId: 'scotty',
@@ -278,6 +288,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#F97316'),
     primaryMetricId: 'tech.errors',
     dependencies: { required: ['crawler'], optional: ['gsc'] },
+    scoreMetric: { id: 'technical_health', label: 'Technical Health', source: 'crawler' },
   },
   beacon: {
     crewId: 'beacon',
@@ -289,6 +300,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#F59E0B'),
     primaryMetricId: 'links.domain_authority',
     dependencies: { required: ['backlink_api'], optional: [] },
+    scoreMetric: { id: 'domain_authority', label: 'Domain Authority', source: 'backlinks' },
   },
   sentinel: {
     crewId: 'sentinel',
@@ -300,6 +312,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#6366F1'),
     primaryMetricId: 'content.decay_signals',
     dependencies: { required: ['ga4'], optional: ['gsc'] },
+    scoreMetric: { id: 'content_freshness', label: 'Content Freshness', source: 'decay' },
   },
   natasha: {
     crewId: 'natasha',
@@ -311,6 +324,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#A855F7'),
     primaryMetricId: 'competitive.gaps',
     dependencies: { required: ['serp_api'], optional: ['backlink_api'] },
+    scoreMetric: { id: 'competitive_position', label: 'Competitive Position', source: 'competitive' },
   },
   draper: {
     crewId: 'draper',
@@ -322,6 +336,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#FB7185'),
     primaryMetricId: 'ads.conversions',
     dependencies: { required: ['google_ads'], optional: ['ga4'] },
+    scoreMetric: { id: 'roas', label: 'ROAS', source: 'google_ads' },
   },
   hemingway: {
     crewId: 'hemingway',
@@ -333,6 +348,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#0EA5E9'),
     primaryMetricId: null,
     dependencies: { required: ['openai'], optional: ['seo_kbase'] },
+    scoreMetric: { id: 'content_quality_score', label: 'Content Quality Score', source: 'hemingway' },
   },
   socrates: {
     crewId: 'socrates',
@@ -344,6 +360,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#84CC16'),
     primaryMetricId: 'kb.insights_written',
     dependencies: { required: ['kbase_api'], optional: [] },
+    scoreMetric: { id: 'knowledge_coverage', label: 'Knowledge Coverage', source: 'kbase' },
   },
   atlas: {
     crewId: 'atlas',
@@ -355,6 +372,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#D946EF'),
     primaryMetricId: 'ai.coverage_score',
     dependencies: { required: ['openai'], optional: ['crawler', 'seo_kbase'] },
+    scoreMetric: { id: 'ai_coverage_score', label: 'AI Coverage Score', source: 'ai_optimization' },
   },
   major_tom: {
     crewId: 'major_tom',
@@ -366,6 +384,7 @@ export const CREW: Record<string, CrewDefinition> = {
     theme: deriveTheme('#4F46E5'),
     primaryMetricId: null,
     dependencies: { required: [], optional: [] },
+    scoreMetric: null,
   },
 } as const;
 

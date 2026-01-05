@@ -140,6 +140,36 @@ async function computeSpeedsterCrewScore(siteId: string): Promise<{
   return { score: 50, performanceScore: null };
 }
 
+async function computeHemingwayCrewScore(siteId: string): Promise<{
+  score: number | null;
+  contentQualityScore: number | null;
+}> {
+  const snapshots = await storage.getAgentSnapshots("hemingway", siteId, 1);
+  
+  if (snapshots.length === 0) {
+    return { score: null, contentQualityScore: null };
+  }
+  
+  const latestSnapshot = snapshots[0];
+  const metricsJson = latestSnapshot.metricsJson as Record<string, any> | null;
+  
+  let contentQualityScore: number | null = null;
+  
+  if (metricsJson) {
+    contentQualityScore = 
+      metricsJson.contentQualityScore ??
+      metricsJson.content_quality_score ??
+      metricsJson["content.quality_score"] ??
+      null;
+  }
+  
+  if (contentQualityScore !== null && typeof contentQualityScore === "number") {
+    return { score: Math.round(contentQualityScore), contentQualityScore };
+  }
+  
+  return { score: null, contentQualityScore: null };
+}
+
 async function computeMissionsData(
   crewId: string,
   siteId: string,
@@ -284,19 +314,50 @@ export async function computeCrewStatus(
       };
     }
     
-  } else {
-    if (missions.completed > 0 || missions.completedThisWeek > 0) {
-      const completionRatio = missions.total > 0 ? missions.completed / missions.total : 0;
-      scoreValue = Math.round(completionRatio * 100);
+  } else if (crewId === "hemingway") {
+    const result = await computeHemingwayCrewScore(siteId);
+    if (result.contentQualityScore !== null) {
+      scoreValue = result.contentQualityScore;
       scoreStatus = "ok";
       primaryMetric = {
-        label: "Completion Rate",
+        label: "Content Quality Score",
         value: scoreValue,
         unit: "/ 100",
         deltaPercent: null,
-        deltaLabel: `${missions.completed} of ${missions.total} complete`,
+        deltaLabel: scoreValue >= 80 ? "Excellent" : scoreValue >= 60 ? "Good" : "Needs work",
       };
-    } else if (missions.total === 0) {
+    } else {
+      readiness = {
+        isReady: false,
+        missingDependencies: crewDef.dependencies.required,
+        setupHint: "Run a content analysis to get quality metrics",
+      };
+    }
+    
+  } else {
+    const scoreMetric = crewDef.scoreMetric;
+    if (scoreMetric) {
+      const snapshots = await storage.getAgentSnapshots(crewId, siteId, 1);
+      if (snapshots.length > 0) {
+        const metricsJson = snapshots[0].metricsJson as Record<string, any> | null;
+        if (metricsJson) {
+          const metricValue = metricsJson[scoreMetric.id] ?? metricsJson[scoreMetric.label] ?? null;
+          if (metricValue !== null && typeof metricValue === "number") {
+            scoreValue = Math.round(metricValue);
+            scoreStatus = "ok";
+            primaryMetric = {
+              label: scoreMetric.label,
+              value: scoreValue,
+              unit: "/ 100",
+              deltaPercent: null,
+              deltaLabel: scoreValue >= 80 ? "Excellent" : scoreValue >= 50 ? "Doing okay" : "Needs attention",
+            };
+          }
+        }
+      }
+    }
+    
+    if (scoreValue === null && missions.total === 0) {
       readiness = {
         isReady: false,
         missingDependencies: crewDef.dependencies.required,
