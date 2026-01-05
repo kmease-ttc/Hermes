@@ -154,12 +154,60 @@ async function collectReportData(options: ClientReportOptions): Promise<ReportDa
     impact: (s as any).impact || "Medium",
   })).slice(0, 10);
 
-  const benchmarkData = benchmarks.slice(0, 10).map(b => ({
-    metric: b.metricKey || "Unknown",
-    siteValue: null,
-    industryAvg: b.p50 || null,
-    status: "at" as const,
-  }));
+  // Calculate date range for scaling
+  const startDateParsed = options.dateRange?.startDate 
+    ? new Date(options.dateRange.startDate) 
+    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const endDateParsed = options.dateRange?.endDate 
+    ? new Date(options.dateRange.endDate) 
+    : new Date();
+  const daysInRange = Math.max(1, Math.ceil((endDateParsed.getTime() - startDateParsed.getTime()) / (1000 * 60 * 60 * 24)));
+  const scaleFactor = 30 / daysInRange;
+
+  // Build fresh metrics from GA4 and GSC data (scaled to monthly for fair comparison)
+  const freshMetrics: Record<string, number | null> = {
+    sessions: totalSessions > 0 ? Math.round(totalSessions * scaleFactor) : null,
+    clicks: totalClicks > 0 ? Math.round(totalClicks * scaleFactor) : null,
+    impressions: totalImpressions > 0 ? Math.round(totalImpressions * scaleFactor) : null,
+    organic_ctr: avgCtr,
+    avg_position: avgPosition,
+    bounce_rate: avgBounceRate,
+    conversion_rate: null,
+  };
+
+  // Metrics where lower is better
+  const lowerIsBetter = ['avg_position', 'bounce_rate', 'lcp', 'cls', 'inp'];
+
+  // Build benchmark comparison with real site values and computed status
+  const benchmarkData = benchmarks.slice(0, 10).map(b => {
+    const metricKey = b.metricKey || "Unknown";
+    const siteValue = freshMetrics[metricKey] ?? null;
+    const industryAvg = b.p50 || null;
+    const isLowerBetter = lowerIsBetter.includes(metricKey);
+    
+    // Determine status based on comparison with industry p50
+    let status: "above" | "below" | "at" = "at";
+    if (siteValue !== null && industryAvg !== null) {
+      if (isLowerBetter) {
+        // For metrics like avg_position, bounce_rate - lower is better
+        if (siteValue < industryAvg * 0.9) status = "above";
+        else if (siteValue > industryAvg * 1.1) status = "below";
+        else status = "at";
+      } else {
+        // For metrics like sessions, clicks, CTR - higher is better
+        if (siteValue > industryAvg * 1.1) status = "above";
+        else if (siteValue < industryAvg * 0.9) status = "below";
+        else status = "at";
+      }
+    }
+    
+    return {
+      metric: metricKey,
+      siteValue,
+      industryAvg,
+      status,
+    };
+  });
 
   return {
     site: {
