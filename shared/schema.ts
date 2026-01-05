@@ -2486,6 +2486,137 @@ export const insertFreeReportSchema = createInsertSchema(freeReports).omit({
 export type InsertFreeReport = z.infer<typeof insertFreeReportSchema>;
 export type FreeReport = typeof freeReports.$inferSelect;
 
+// ============================================================
+// CHANGE GOVERNANCE SYSTEM
+// ============================================================
+
+// Change status enum values
+export type ChangeStatus = 'proposed' | 'queued' | 'applied' | 'rolled_back' | 'skipped';
+export type ChangeType = 'content' | 'technical' | 'performance' | 'config';
+export type ChangeScope = 'single_page' | 'template' | 'sitewide';
+export type RiskLevel = 'low' | 'medium' | 'high';
+export type ChangeTrigger = 'scheduled_run' | 'manual' | 'alert';
+
+// Central Change Log - tracks all proposed/applied/rolled-back changes
+export const changes = pgTable("changes", {
+  id: serial("id").primaryKey(),
+  changeId: text("change_id").notNull().unique(), // UUID
+  websiteId: text("website_id").notNull(), // References sites.siteId
+  agentId: text("agent_id").notNull(), // e.g., "crawl", "performance", "keywords", "content"
+  changeType: text("change_type").notNull(), // content|technical|performance|config
+  scope: text("scope").notNull(), // single_page|template|sitewide
+  affectedUrls: jsonb("affected_urls").$type<string[]>(),
+  description: text("description").notNull(), // plain-English
+  reason: text("reason"), // why recommended
+  trigger: text("trigger").notNull(), // scheduled_run|manual|alert
+  confidenceScore: real("confidence_score"), // 0..1
+  riskLevel: text("risk_level").default("medium").notNull(), // low|medium|high
+  knowledgePass: boolean("knowledge_pass"),
+  policyPass: boolean("policy_pass"),
+  conflictsDetected: boolean("conflicts_detected"),
+  cadencePass: boolean("cadence_pass"),
+  cadenceBlockReason: text("cadence_block_reason"),
+  status: text("status").default("proposed").notNull(), // proposed|queued|applied|rolled_back|skipped
+  skipReason: text("skip_reason"),
+  deployWindowId: text("deploy_window_id"),
+  metricsBefore: jsonb("metrics_before").$type<Record<string, unknown>>(),
+  metricsAfter: jsonb("metrics_after").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  queuedAt: timestamp("queued_at"),
+  appliedAt: timestamp("applied_at"),
+  rolledBackAt: timestamp("rolled_back_at"),
+});
+
+export const insertChangeSchema = createInsertSchema(changes).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertChange = z.infer<typeof insertChangeSchema>;
+export type Change = typeof changes.$inferSelect;
+
+// Deploy Windows - batched deployments
+export const deployWindows = pgTable("deploy_windows", {
+  id: serial("id").primaryKey(),
+  deployWindowId: text("deploy_window_id").notNull().unique(), // UUID
+  websiteId: text("website_id").notNull(),
+  theme: text("theme"), // e.g. "Technical Cleanup"
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  status: text("status").default("scheduled").notNull(), // scheduled|executed|rolled_back|canceled
+  executedAt: timestamp("executed_at"),
+  metricsBefore: jsonb("metrics_before").$type<Record<string, unknown>>(),
+  metricsAfter: jsonb("metrics_after").$type<Record<string, unknown>>(),
+  regressionFlagged: boolean("regression_flagged").default(false),
+  regressionReasons: jsonb("regression_reasons").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDeployWindowSchema = createInsertSchema(deployWindows).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDeployWindow = z.infer<typeof insertDeployWindowSchema>;
+export type DeployWindow = typeof deployWindows.$inferSelect;
+
+// Knowledge Base Rules - validation rules for changes
+export const kbRules = pgTable("kb_rules", {
+  id: serial("id").primaryKey(),
+  ruleId: text("rule_id").notNull().unique(),
+  version: integer("version").default(1).notNull(),
+  category: text("category").notNull(), // cadence|content|technical|indexing|performance|compliance
+  description: text("description").notNull(),
+  severity: text("severity").default("medium").notNull(), // low|medium|high
+  action: text("action").default("warn").notNull(), // allow|warn|block
+  conditions: jsonb("conditions").$type<{
+    change_type?: string;
+    scope?: string;
+    website_industry?: string;
+    url_pattern?: string;
+  }>(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertKbRuleSchema = createInsertSchema(kbRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertKbRule = z.infer<typeof insertKbRuleSchema>;
+export type KbRule = typeof kbRules.$inferSelect;
+
+// Website cadence settings (extend sites table or add separate)
+export const websiteCadenceSettings = pgTable("website_cadence_settings", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull().unique(),
+  maxDeploysPerWeek: integer("max_deploys_per_week").default(2).notNull(),
+  cooldowns: jsonb("cooldowns").$type<{
+    content_refresh_days: number;
+    title_meta_days: number;
+    template_layout_days: number;
+    technical_indexing_days: number;
+    performance_days: number;
+  }>().default({
+    content_refresh_days: 7,
+    title_meta_days: 14,
+    template_layout_days: 21,
+    technical_indexing_days: 14,
+    performance_days: 7,
+  }),
+  stabilizationModeUntil: timestamp("stabilization_mode_until"),
+  stabilizationReason: text("stabilization_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWebsiteCadenceSettingsSchema = createInsertSchema(websiteCadenceSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertWebsiteCadenceSettings = z.infer<typeof insertWebsiteCadenceSettingsSchema>;
+export type WebsiteCadenceSettings = typeof websiteCadenceSettings.$inferSelect;
+
 // Free Report JSON types for strong typing
 export interface FreeReportSummary {
   health_score: number;
