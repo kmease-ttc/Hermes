@@ -58,6 +58,27 @@ All overlay/pullout UI must use opaque surfaces for readability:
 - **Scheduler**: node-cron for daily automated runs
 - **Logging**: Custom structured logger
 
+### Authentication System
+Email/password authentication with PostgreSQL session store:
+- **Session Store**: connect-pg-simple with `user_sessions` table
+- **Password Hashing**: PBKDF2 with 100,000 iterations (OWASP recommended)
+- **Cookie Settings**: HttpOnly, SameSite=lax, secure in production, 30-day expiry
+- **Users Table**: `users` with email, passwordHash, role, plan, addons, defaultWebsiteId
+
+**Auth Routes**:
+- `POST /api/auth/login` - Email/password login, returns session user
+- `POST /api/auth/logout` - Destroy session and clear cookie
+- `GET /api/auth/session` - Get current session user or `{authenticated: false}`
+- `POST /api/auth/register` - Create new account (for testing/initial setup)
+- `POST /api/websites/select` - Set active website in session
+
+**Frontend Auth Flow**:
+- `AuthProvider` wraps app, fetches session on mount
+- `useAuth()` hook provides login/logout/selectWebsite methods
+- `AppShell` component wraps `/app/*` routes with navigation
+- Route guards: unauthenticated → /login, no website → /app/select-site
+- `ProtectedRoute` wrapper renders pages inside AppShell
+
 ### Data Layer
 - **Database**: PostgreSQL
 - **ORM**: Drizzle ORM with Zod schema validation
