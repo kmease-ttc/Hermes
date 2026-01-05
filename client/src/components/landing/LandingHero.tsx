@@ -52,11 +52,14 @@ export function LandingHero() {
   return (
     <section className="px-5 md:px-6 pt-12 pb-8 md:pt-20 md:pb-16">
       <div className="max-w-2xl mx-auto text-center">
-        <h1 className="text-4xl md:text-6xl font-bold text-foreground tracking-tight mb-4">
-          SEO on Autopilot
+        <p className="text-sm text-muted-foreground mb-4">
+          Built for people who don't want to think about SEO
+        </p>
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight mb-4 leading-tight">
+          Get a complete SEO action plan from your website — no setup required.
         </h1>
-        <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
-          Run a free scan to see what's hurting your traffic — and what to fix first.
+        <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+          Enter your website URL and Arclo automatically scans it for technical issues, keyword opportunities, and competitor gaps — then turns it into a clear, prioritized plan.
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 max-w-xl mx-auto mb-3">
@@ -82,7 +85,7 @@ export function LandingHero() {
                 Scanning…
               </>
             ) : (
-              "Run Free Scan"
+              "Free Health Check"
             )}
           </Button>
         </form>
@@ -92,7 +95,7 @@ export function LandingHero() {
         )}
         
         <p className="text-sm text-muted-foreground">
-          No signup required • Takes ~60 seconds
+          No logins • No integrations • Takes ~60 seconds
         </p>
       </div>
     </section>

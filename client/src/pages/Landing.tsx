@@ -4,6 +4,8 @@ import {
   TrustRow,
   BenefitCards,
   ReportPreview,
+  AISpecialists,
+  HowItWorks,
   ThreeWaysCards,
   FounderNote,
 } from "@/components/landing";
@@ -15,6 +17,8 @@ export default function Landing() {
       <TrustRow />
       <BenefitCards />
       <ReportPreview />
+      <AISpecialists />
+      <HowItWorks />
       <ThreeWaysCards />
       <FounderNote />
     </MarketingLayout>
