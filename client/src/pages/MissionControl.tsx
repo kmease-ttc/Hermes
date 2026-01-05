@@ -508,11 +508,71 @@ function MetricCardsRow() {
 }
 
 
-function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' | 'neutral'; keyMetric: string; keyMetricValue: string; delta: string; whatChanged: string }; enabled?: boolean }) {
+function AgentSummaryCard({ agent, enabled = true, needsConfig = false }: { agent: { serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' | 'neutral'; keyMetric: string; keyMetricValue: string; delta: string; whatChanged: string }; enabled?: boolean; needsConfig?: boolean }) {
   const crew = getCrewMember(agent.serviceId);
   
   const tintedGlassStyles = getTintedGlassStyles(crew.color);
   const crewBadgeStyles = getCrewBadgeStyles(crew.color);
+
+  if (needsConfig) {
+    return (
+      <Card 
+        className="transition-all backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col relative"
+        style={tintedGlassStyles}
+        data-testid={`card-agent-${agent.serviceId}`}
+      >
+        <CardContent className="p-4 flex flex-col h-full">
+          <div className="flex items-start gap-3 mb-4">
+            {crew.avatar ? (
+              <img 
+                src={crew.avatar} 
+                alt={crew.nickname}
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2"
+                style={{ boxShadow: `0 0 8px ${crew.color}40`, borderColor: crew.color }}
+              />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                style={crewBadgeStyles}
+              >
+                {crew.nickname.slice(0, 2)}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-base" style={{ color: crew.color }}>{crew.nickname}</h4>
+                <Badge variant="outline" className="text-xs border-semantic-warning text-semantic-warning">
+                  <Settings className="w-3 h-3 mr-1" />
+                  Setup Required
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{crew.role}</p>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
+            <Settings className="w-8 h-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-1">Configuration needed</p>
+            <p className="text-xs text-muted-foreground/70">Connect your accounts to enable {crew.nickname}</p>
+          </div>
+          
+          <div className="mt-auto pt-3 border-t border-border">
+            <Link href={ROUTES.INTEGRATIONS}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs border-primary/50 text-primary hover:bg-primary/10"
+                data-testid={`button-configure-${agent.serviceId}`}
+              >
+                <Settings className="w-3 h-3 mr-1.5" />
+                Configure Integration
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleHireCrew = () => {
     window.location.href = ROUTES.CREW;
@@ -718,10 +778,11 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
   );
 }
 
-function AgentSummaryGrid({ agents, crewSummaries, kbStatus }: { 
+function AgentSummaryGrid({ agents, crewSummaries, kbStatus, agentStatus }: { 
   agents: Array<{ serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' }>; 
   crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null }>;
   kbStatus?: { totalLearnings?: number; configured?: boolean; status?: string };
+  agentStatus?: Record<string, { health: string; needsConfig: boolean; lastRun: string | null }>;
 }) {
   const enabledCount = agents.length;
   
@@ -729,6 +790,7 @@ function AgentSummaryGrid({ agents, crewSummaries, kbStatus }: {
     const crewId = SERVICE_TO_CREW[agent.serviceId] || agent.serviceId;
     const crewSummary = crewSummaries?.find((cs: any) => cs.crewId === crewId);
     const isSocrates = agent.serviceId === 'seo_kbase';
+    const needsConfig = agentStatus?.[agent.serviceId]?.needsConfig ?? false;
     
     let keyMetric = crewSummary?.primaryMetric || "Pending missions";
     let keyMetricValue = String(crewSummary?.primaryMetricValue ?? crewSummary?.missions?.open ?? 0);
@@ -760,6 +822,7 @@ function AgentSummaryGrid({ agents, crewSummaries, kbStatus }: {
       delta,
       whatChanged,
       missionsOpen,
+      needsConfig,
     };
   });
 
@@ -794,7 +857,7 @@ function AgentSummaryGrid({ agents, crewSummaries, kbStatus }: {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {enabledAgentData.map((agent) => (
-            <AgentSummaryCard key={agent.serviceId} agent={agent} enabled={true} />
+            <AgentSummaryCard key={agent.serviceId} agent={agent} enabled={true} needsConfig={agent.needsConfig} />
           ))}
         </div>
       )}
@@ -1319,6 +1382,7 @@ export default function MissionControl() {
           agents={userAgents} 
           crewSummaries={dashboard?.crewSummaries}
           kbStatus={kbStatus}
+          agentStatus={agentStatus}
         />
 
         <SocratesMemoryCard />
