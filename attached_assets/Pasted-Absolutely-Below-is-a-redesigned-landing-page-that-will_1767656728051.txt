@@ -1,0 +1,252 @@
+Absolutely. Below is a redesigned landing page that will feel lighter, convert better on mobile, and set you up cleanly for the free report funnel — plus explicit implementation instructions your dev team can follow.
+
+⸻
+
+Redesigned Landing Page Goals
+	1.	Reduce cognitive load above the fold
+	2.	Get more users to enter URL + click
+	3.	Add trust without heaviness
+	4.	Make it obvious there’s a free report and a path to autopilot
+	5.	Keep the page fast (no bloat)
+
+⸻
+
+New Page Structure (Mobile-first)
+
+Above the fold (Hero)
+
+Header
+	•	Left: Arclo logo + wordmark
+	•	Right: “Log in” (secondary)
+
+Hero content
+	•	H1: short outcome
+	•	One sentence subheadline
+	•	URL input + CTA
+	•	One line microcopy that reduces friction
+
+Trust row (tiny, 3 items)
+	•	“No credit card”
+	•	“30–60 seconds”
+	•	“Private by default”
+
+Copy (use this)
+
+H1: SEO on Autopilot
+Sub: Run a free scan to see what’s hurting your traffic — and what to fix first.
+Input placeholder: Enter your website (example.com)
+Button: Run Free Scan
+Microcopy: No signup required • Takes ~60 seconds
+
+⸻
+
+Section 2: What you get (3 cards)
+
+Three simple cards with plain-English outcomes.
+
+Card 1: Diagnosis
+	•	“Top issues holding back traffic”
+
+Card 2: Prioritized Fixes
+	•	“What to fix first, and why”
+
+Card 3: Competitive Snapshot
+	•	“Who’s outranking you and where”
+
+Keep each card to 1 line title + 1 line description.
+
+⸻
+
+Section 3: “Show me” (Report Preview)
+
+A lightweight “report preview” panel (static mock is fine for v1).
+
+Left: screenshot/mock
+Right: bullets:
+	•	SEO Health Score
+	•	Top 3 Issues
+	•	Keyword opportunities
+	•	Technical + speed flags
+
+Add a small note:
+	•	“This is a sample preview — your report will be specific to your site.”
+
+⸻
+
+Section 4: The 3 ways to use Arclo (simple choices)
+
+This section makes monetization feel natural without pushing pricing yet.
+
+DIY (Free)
+	•	“Get the report + hand the plan to your dev.”
+
+Autopilot (Recommended)
+	•	“Arclo monitors and deploys fixes safely.”
+
+Done-for-you
+	•	“We can build/host/manage your site if needed.”
+
+Each card has a single CTA:
+	•	DIY: “See what’s included”
+	•	Autopilot: “How Autopilot works”
+	•	Done-for-you: “Talk to us”
+
+No pricing displayed on homepage (keep it for deploy moment).
+
+⸻
+
+Section 5: Founder trust line (short)
+
+One tight paragraph. No wall of text.
+
+Copy:
+Arclo was built after replacing multiple SEO agencies for a real medical practice. We turned the workflow that increased leads and reduced costs into automation — so you can focus on your business, not SEO.
+
+⸻
+
+Footer
+	•	Privacy, Terms
+	•	Contact
+	•	Copyright
+
+⸻
+
+Interaction Rules
+
+URL input behavior
+	•	Accept example.com, www.example.com, https://example.com
+	•	Normalize to https://
+	•	On submit:
+	•	Show inline progress state on the button (“Scanning…”)
+	•	Route to scan status / preview page
+
+Hero CTA should remain visible
+	•	On mobile, keep the hero compact enough that the input + button are visible without scroll.
+
+⸻
+
+Performance / “Feels Heavy” Fixes
+
+Your current page feels heavy mainly because of text density, but also make sure the dev team implements:
+	1.	Do not load app dashboard code on /
+	•	Landing page bundle should be minimal
+	2.	Use static sections
+	•	No heavy animation libs
+	3.	Avoid large background effects
+	•	Keep gradients but no particle effects
+	4.	Preload only critical fonts
+	•	Use system fonts or 1 webfont max
+
+⸻
+
+Dev Team Implementation Instructions (Explicit)
+
+1) Routing / app separation
+	•	/ = new marketing landing page (public)
+	•	/login = auth
+	•	/app/* = mission control (authenticated)
+	•	/scan/* and /report/free/* = funnel pages (public/read-only)
+
+Critical: do not mount the entire app shell on /.
+
+⸻
+
+2) Components to build
+
+Create these components (or equivalent):
+	•	LandingHero
+	•	TrustRow
+	•	BenefitCards
+	•	ReportPreview
+	•	ThreeWaysCards
+	•	FounderNote
+	•	LandingFooter
+
+Each should be a small, presentational component.
+
+⸻
+
+3) Page layout specs
+
+Spacing
+	•	Mobile padding: 20–24px
+	•	Section spacing: 32–48px
+	•	Max width on desktop: 1040–1120px
+
+Typography
+	•	H1: 36–44px mobile, 56–64px desktop
+	•	Subheadline: 16–18px mobile, 18–20px desktop
+	•	Keep line-length tight (no paragraph wider than ~60–70 chars per line)
+
+Button / input
+	•	Input height: 48–52px
+	•	Button height: match input
+	•	URL field + CTA stacked on mobile, inline on desktop
+
+⸻
+
+4) Copy implementation (do not improvise v1)
+
+Hardcode v1 copy exactly as above so we can A/B test later.
+
+⸻
+
+5) CTA wiring
+
+Hero CTA calls existing scan kickoff:
+	•	POST /api/scan with normalized URL
+	•	On success:
+	•	route to /scan/preview/:scanId (or your current equivalent)
+	•	Show errors inline:
+	•	“Please enter a valid website.”
+
+Track these events:
+	•	landing_cta_click
+	•	scan_started
+	•	scan_error
+
+⸻
+
+6) Accessibility requirements
+	•	Input has a label (can be visually hidden)
+	•	Button has proper focus states
+	•	Color contrast meets WCAG AA
+	•	All sections navigable by keyboard
+
+⸻
+
+7) Acceptance criteria
+
+Landing page is approved when:
+	•	On iPhone-sized screen, user sees:
+	•	H1, subheadline, input, button without scrolling
+	•	Page loads fast and does not feel like the full app
+	•	Copy is short and scannable (no big paragraph above fold)
+	•	CTA triggers scan successfully
+
+⸻
+
+Suggested Page Copy (Dev can paste this)
+
+Hero
+SEO on Autopilot
+Run a free scan to see what’s hurting your traffic — and what to fix first.
+[Enter your website (example.com)] [Run Free Scan]
+No signup required • Takes ~60 seconds
+
+Benefits
+Diagnosis — Top issues holding back traffic
+Prioritized fixes — What to fix first, and why
+Competitive snapshot — Who’s outranking you and where
+
+Three ways
+DIY (Free) — Get the report + a plan for your dev
+Autopilot — Arclo monitors and deploys fixes safely
+Done-for-you — We can build/host/manage your site if needed
+
+Founder note
+Arclo was built after replacing multiple SEO agencies for a real medical practice. We turned the workflow that increased leads and reduced costs into automation — so you can focus on your business, not SEO.
+
+⸻
+
+If you want, I can also write a second variant that’s even more aggressive (more “anti-agency”) for A/B testing — but the above is the clean conversion-focused redesign that will immediately reduce the “heavy and wordy” feel.
