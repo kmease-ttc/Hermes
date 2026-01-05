@@ -4346,6 +4346,48 @@ Format your response as JSON with these keys:
     }
   });
 
+  // Generate professional DOCX client report
+  app.post("/api/export/client-report", async (req, res) => {
+    try {
+      const { generateClientReport } = await import("./services/clientReportGenerator");
+      
+      const {
+        siteId = "default",
+        sections = {
+          executiveSummary: true,
+          technicalSeo: true,
+          keywordRanking: true,
+          trafficAnalysis: true,
+          benchmarks: true,
+        },
+        dateRange,
+      } = req.body;
+
+      const buffer = await generateClientReport({
+        siteId,
+        sections,
+        dateRange,
+      });
+
+      const site = await storage.getSiteById(siteId);
+      const siteName = site?.displayName?.replace(/[^a-zA-Z0-9]/g, "_") || siteId;
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = `${siteName}_SEO_Report_${dateStr}.docx`;
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error: any) {
+      logger.error("API", "Failed to generate client report", { error: error.message });
+      res.status(500).json({ 
+        error: error.message,
+        code: "REPORT_GENERATION_FAILED",
+        hint: "Check that the site has data available for the report.",
+      });
+    }
+  });
+
   // Get real recommendations with provenance data
   app.get("/api/missions/recommendations", async (req, res) => {
     try {

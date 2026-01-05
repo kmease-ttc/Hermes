@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation } from "@tanstack/react-query";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { 
@@ -20,7 +21,8 @@ import {
   Sparkles,
   AlertTriangle,
   RefreshCw,
-  HelpCircle
+  HelpCircle,
+  FileDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,14 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
   const [noUiChanges, setNoUiChanges] = useState(true);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const [reportSections, setReportSections] = useState({
+    executiveSummary: true,
+    technicalSeo: true,
+    keywordRanking: true,
+    trafficAnalysis: true,
+    benchmarks: true,
+  });
 
   const [exportError, setExportError] = useState<{
     code: string;
@@ -118,6 +128,82 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
         });
       }
       toast.error("Export failed", { description: error.message });
+    },
+  });
+
+  const generateReportExport = useMutation({
+    mutationFn: async () => {
+      setExportError(null);
+      const requestId = `rep_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      
+      const response = await fetch("/api/export/client-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          siteId: currentSite?.siteId || "default",
+          sections: reportSections,
+        }),
+      });
+      
+      if (!response.ok) {
+        let errorData: any = null;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            errorData = await response.json();
+          } catch {
+            errorData = null;
+          }
+        }
+        
+        throw {
+          code: errorData?.code || `HTTP_${response.status}`,
+          message: errorData?.error || errorData?.message || `Request failed with status ${response.status}`,
+          hint: errorData?.hint || "Try again or check if site has data available.",
+          requestId,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = `SEO_Report_${new Date().toISOString().split("T")[0]}.docx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      return { blob, filename };
+    },
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Client Report downloaded successfully");
+      onOpenChange(false);
+    },
+    onError: (error: any) => {
+      if (error.code) {
+        setExportError(error);
+      } else {
+        setExportError({
+          code: "UNKNOWN_ERROR",
+          message: error.message || "Failed to generate report",
+          hint: "Try again or check if site has data available.",
+          requestId: `rep_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      toast.error("Report export failed", { description: error.message });
     },
   });
 
@@ -225,33 +311,107 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
                   <RadioGroupItem value="fix-pack" id="fix-pack" data-testid="radio-fix-pack" />
                   <Label htmlFor="fix-pack" className="flex items-center gap-2 cursor-pointer">
                     <Sparkles className="w-4 h-4 text-gold" />
-                    Replit Fix Pack
-                    <Badge className="bg-primary/10 text-primary text-xs">Recommended</Badge>
+                    Developer Fix Pack
+                    <Badge className="bg-muted text-muted-foreground text-xs">.md</Badge>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 opacity-50">
-                  <RadioGroupItem value="report" id="report" disabled data-testid="radio-report" />
-                  <Label htmlFor="report" className="cursor-not-allowed">
-                    Executive Report (Coming Soon)
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="report" id="report" data-testid="radio-report" />
+                  <Label htmlFor="report" className="flex items-center gap-2 cursor-pointer">
+                    <FileDown className="w-4 h-4 text-primary" />
+                    Client Report
+                    <Badge className="bg-primary/10 text-primary text-xs">.docx</Badge>
                   </Label>
                 </div>
               </RadioGroup>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Scope</Label>
-              <RadioGroup value={scope} onValueChange={(v) => setScope(v as any)} className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="top3" id="top3" data-testid="radio-top3" />
-                  <Label htmlFor="top3" className="cursor-pointer">This week's priorities (Top 3)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="full" id="full" data-testid="radio-full" />
-                  <Label htmlFor="full" className="cursor-pointer">Include all agent next steps</Label>
-                </div>
-              </RadioGroup>
-            </div>
+            {exportType === "fix-pack" && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Scope</Label>
+                <RadioGroup value={scope} onValueChange={(v) => setScope(v as any)} className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="top3" id="top3" data-testid="radio-top3" />
+                    <Label htmlFor="top3" className="cursor-pointer">This week's priorities (Top 3)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="full" id="full" data-testid="radio-full" />
+                    <Label htmlFor="full" className="cursor-pointer">Include all agent next steps</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
 
+            {exportType === "report" && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Report Sections</Label>
+                <p className="text-xs text-muted-foreground">Select which sections to include in your client report.</p>
+                <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-4 space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="section-exec"
+                      checked={reportSections.executiveSummary}
+                      onCheckedChange={(checked) => setReportSections(s => ({ ...s, executiveSummary: !!checked }))}
+                      data-testid="checkbox-exec-summary"
+                    />
+                    <Label htmlFor="section-exec" className="cursor-pointer text-sm">
+                      Executive Summary
+                      <span className="text-xs text-muted-foreground ml-2">Overview, metrics, health status</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="section-tech"
+                      checked={reportSections.technicalSeo}
+                      onCheckedChange={(checked) => setReportSections(s => ({ ...s, technicalSeo: !!checked }))}
+                      data-testid="checkbox-tech-seo"
+                    />
+                    <Label htmlFor="section-tech" className="cursor-pointer text-sm">
+                      Technical SEO
+                      <span className="text-xs text-muted-foreground ml-2">Issues, fixes, recommendations</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="section-keywords"
+                      checked={reportSections.keywordRanking}
+                      onCheckedChange={(checked) => setReportSections(s => ({ ...s, keywordRanking: !!checked }))}
+                      data-testid="checkbox-keywords"
+                    />
+                    <Label htmlFor="section-keywords" className="cursor-pointer text-sm">
+                      Keyword Rankings
+                      <span className="text-xs text-muted-foreground ml-2">Positions, strategies, optimization</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="section-traffic"
+                      checked={reportSections.trafficAnalysis}
+                      onCheckedChange={(checked) => setReportSections(s => ({ ...s, trafficAnalysis: !!checked }))}
+                      data-testid="checkbox-traffic"
+                    />
+                    <Label htmlFor="section-traffic" className="cursor-pointer text-sm">
+                      Traffic Analysis
+                      <span className="text-xs text-muted-foreground ml-2">Sessions, clicks, CTR, trends</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="section-benchmarks"
+                      checked={reportSections.benchmarks}
+                      onCheckedChange={(checked) => setReportSections(s => ({ ...s, benchmarks: !!checked }))}
+                      data-testid="checkbox-benchmarks"
+                    />
+                    <Label htmlFor="section-benchmarks" className="cursor-pointer text-sm">
+                      Industry Benchmarks
+                      <span className="text-xs text-muted-foreground ml-2">Comparisons with industry averages</span>
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {exportType === "fix-pack" && (
             <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-4 space-y-4">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Shield className="w-4 h-4 text-semantic-success" />
@@ -313,20 +473,29 @@ export function ExportFixPackModal({ open, onOpenChange }: ExportFixPackModalPro
                 />
               </div>
             </div>
+            )}
 
             <Button
-              onClick={() => generateExport.mutate()}
-              disabled={generateExport.isPending}
+              onClick={() => {
+                if (exportType === "report") {
+                  generateReportExport.mutate();
+                } else {
+                  generateExport.mutate();
+                }
+              }}
+              disabled={generateExport.isPending || generateReportExport.isPending}
               variant="purple"
               className="w-full rounded-xl"
               data-testid="button-generate"
             >
-              {generateExport.isPending ? (
+              {(generateExport.isPending || generateReportExport.isPending) ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : exportType === "report" ? (
+                <FileDown className="w-4 h-4 mr-2" />
               ) : (
                 <Package className="w-4 h-4 mr-2" />
               )}
-              Generate Export
+              {exportType === "report" ? "Download Report" : "Generate Export"}
             </Button>
           </div>
         ) : (
