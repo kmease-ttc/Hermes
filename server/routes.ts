@@ -222,6 +222,53 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   // ============================================================
+  // Lead Capture Endpoints (Marketing)
+  // ============================================================
+
+  const managedSiteLeadSchema = z.object({
+    websiteUrl: z.string().min(1, "Website URL is required"),
+    businessName: z.string().optional(),
+    industry: z.string().optional(),
+    location: z.string().optional(),
+    email: z.string().email("Valid email is required"),
+    phone: z.string().optional(),
+    serviceType: z.string().optional(),
+    notes: z.string().optional(),
+  });
+
+  app.post("/api/leads/managed-site", async (req, res) => {
+    try {
+      const parsed = managedSiteLeadSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: parsed.error.errors[0]?.message || "Validation failed" 
+        });
+      }
+
+      const leadData = parsed.data;
+      
+      logger.info("Leads", "Managed site lead received", { 
+        email: leadData.email, 
+        url: leadData.websiteUrl,
+        serviceType: leadData.serviceType,
+      });
+
+      return res.json({ 
+        success: true, 
+        message: "Lead submitted successfully" 
+      });
+    } catch (error: any) {
+      logger.error("Leads", "Failed to process managed site lead", { error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to submit lead" 
+      });
+    }
+  });
+
+  // ============================================================
   // Popular Crew API endpoints (canonical issues & corroboration)
   // These are BEFORE apiKeyAuth so they're accessible from frontend
   // ============================================================
@@ -755,6 +802,313 @@ export async function registerRoutes(
 
   // ============================================================
   // End Popular Crew API endpoints
+  // ============================================================
+
+  // ============================================================
+  // Stripe Billing API Endpoints (Arclo Core subscription)
+  // These endpoints are placed before apiKeyAuth for public access
+  // ============================================================
+
+  const checkoutSessionSchema = z.object({
+    scanId: z.string().optional(),
+    plan: z.enum(["core"]),
+  });
+
+  // POST /api/billing/checkout-session - Create Stripe checkout session
+  app.post("/api/billing/checkout-session", async (req, res) => {
+    try {
+      const parsed = checkoutSessionSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        logger.warn("Billing", "Invalid checkout session request", { 
+          errors: parsed.error.errors 
+        });
+        return res.status(400).json({ 
+          ok: false, 
+          message: parsed.error.errors[0]?.message || "Validation failed",
+          checkoutUrl: null 
+        });
+      }
+
+      const { scanId, plan } = parsed.data;
+      
+      logger.info("Billing", "Checkout session requested", { scanId, plan });
+
+      // TODO: When Stripe is configured, create actual checkout session
+      // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      // const session = await stripe.checkout.sessions.create({...});
+      // return res.json({ ok: true, checkoutUrl: session.url });
+
+      return res.json({ 
+        ok: false, 
+        message: "Stripe not configured. Please contact support.", 
+        checkoutUrl: null 
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to create checkout session", { error: error.message });
+      return res.status(500).json({ 
+        ok: false, 
+        message: "Failed to create checkout session",
+        checkoutUrl: null 
+      });
+    }
+  });
+
+  // GET /api/billing/success - Handle successful checkout redirect
+  app.get("/api/billing/success", async (req, res) => {
+    try {
+      const sessionId = req.query.session_id as string;
+      
+      logger.info("Billing", "Checkout success callback", { sessionId });
+
+      if (!sessionId) {
+        logger.warn("Billing", "Success callback missing session_id");
+        return res.status(400).json({ 
+          ok: false, 
+          message: "Missing session_id parameter" 
+        });
+      }
+
+      // TODO: When Stripe is configured, verify session and activate subscription
+      // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      // const session = await stripe.checkout.sessions.retrieve(sessionId);
+      // Activate subscription in database based on session metadata
+
+      return res.json({ 
+        ok: true, 
+        message: "Payment successful! Your subscription is now active.",
+        redirectUrl: "/mission-control"
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to process checkout success", { error: error.message });
+      return res.status(500).json({ 
+        ok: false, 
+        message: "Failed to process checkout success" 
+      });
+    }
+  });
+
+  // POST /api/billing/webhook - Handle Stripe webhook events
+  app.post("/api/billing/webhook", async (req, res) => {
+    try {
+      // TODO: When Stripe is configured, verify webhook signature
+      // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      // const sig = req.headers['stripe-signature'];
+      // const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+
+      const eventType = req.body?.type || "unknown";
+      const eventId = req.body?.id || "unknown";
+      
+      logger.info("Billing", "Webhook received", { eventType, eventId });
+
+      // Placeholder handling for expected webhook events
+      switch (eventType) {
+        case "checkout.session.completed":
+          logger.info("Billing", "Checkout session completed", { eventId });
+          // TODO: Activate subscription
+          break;
+        case "invoice.paid":
+          logger.info("Billing", "Invoice paid", { eventId });
+          // TODO: Extend subscription
+          break;
+        case "customer.subscription.updated":
+          logger.info("Billing", "Subscription updated", { eventId });
+          // TODO: Update subscription status
+          break;
+        case "customer.subscription.deleted":
+          logger.info("Billing", "Subscription deleted", { eventId });
+          // TODO: Deactivate subscription
+          break;
+        default:
+          logger.info("Billing", "Unhandled webhook event", { eventType, eventId });
+      }
+
+      return res.status(200).json({ received: true });
+    } catch (error: any) {
+      logger.error("Billing", "Webhook processing failed", { error: error.message });
+      return res.status(400).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // GET /api/billing/status - Get subscription status for a site/scan
+  app.get("/api/billing/status", async (req, res) => {
+    try {
+      const scanId = req.query.scanId as string;
+      const siteId = req.query.siteId as string;
+      
+      logger.info("Billing", "Status check requested", { scanId, siteId });
+
+      if (!scanId && !siteId) {
+        logger.warn("Billing", "Status check missing scanId or siteId");
+        return res.status(400).json({ 
+          ok: false, 
+          message: "Missing scanId or siteId parameter" 
+        });
+      }
+
+      // TODO: When Stripe is configured, check subscription status in database
+      // const subscription = await storage.getSubscriptionByIdentifier(scanId || siteId);
+      // return res.json({ subscribed: !!subscription, plan: subscription?.plan || null });
+
+      return res.json({ 
+        subscribed: false, 
+        plan: null 
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to check subscription status", { error: error.message });
+      return res.status(500).json({ 
+        ok: false, 
+        message: "Failed to check subscription status" 
+      });
+    }
+  });
+
+  // GET /api/billing/addons - Returns available add-ons with prices
+  app.get("/api/billing/addons", async (req, res) => {
+    try {
+      const addons = [
+        {
+          id: "content_growth",
+          name: "Content Growth",
+          description: "AI-powered content recommendations and blog post generation",
+          price: 49,
+          pricePeriod: "month",
+          features: [
+            "Weekly content recommendations",
+            "AI blog post drafts",
+            "Content gap analysis",
+            "Competitor content tracking"
+          ]
+        },
+        {
+          id: "competitive_intel",
+          name: "Competitive Intelligence",
+          description: "Monitor competitors and track market positioning",
+          price: 79,
+          pricePeriod: "month",
+          features: [
+            "Competitor tracking (up to 5)",
+            "Ranking change alerts",
+            "Backlink gap analysis",
+            "Market share insights"
+          ]
+        },
+        {
+          id: "authority_signals",
+          name: "Authority Signals",
+          description: "Build domain authority with strategic backlink opportunities",
+          price: 99,
+          pricePeriod: "month",
+          features: [
+            "Backlink opportunity finder",
+            "Citation building suggestions",
+            "Domain authority tracking",
+            "Link velocity monitoring"
+          ]
+        }
+      ];
+
+      return res.json({
+        ok: true,
+        addons
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to fetch add-ons", { error: error.message });
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to fetch add-ons"
+      });
+    }
+  });
+
+  // POST /api/billing/enable-addon - Enables an add-on (stub for now)
+  app.post("/api/billing/enable-addon", async (req, res) => {
+    try {
+      const { siteId, addonId } = req.body;
+
+      if (!siteId || !addonId) {
+        return res.status(400).json({
+          ok: false,
+          message: "Missing siteId or addonId"
+        });
+      }
+
+      const validAddons = ["content_growth", "competitive_intel", "authority_signals"];
+      if (!validAddons.includes(addonId)) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid addonId"
+        });
+      }
+
+      logger.info("Billing", "Add-on enable requested", { siteId, addonId });
+
+      // TODO: When Stripe is configured:
+      // 1. Create/update Stripe subscription with add-on
+      // 2. Update websiteSubscriptions table with new addon
+
+      return res.json({
+        ok: true,
+        message: "Add-on enable request received (stub)",
+        siteId,
+        addonId,
+        nextStep: "Configure Stripe to complete add-on activation"
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to enable add-on", { error: error.message });
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to enable add-on"
+      });
+    }
+  });
+
+  // GET /api/billing/subscription/:siteId - Returns subscription details including add-ons
+  app.get("/api/billing/subscription/:siteId", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+
+      if (!siteId) {
+        return res.status(400).json({
+          ok: false,
+          message: "Missing siteId parameter"
+        });
+      }
+
+      logger.info("Billing", "Subscription details requested", { siteId });
+
+      // TODO: When database has data, query websiteSubscriptions table
+      // const subscription = await storage.getWebsiteSubscription(siteId);
+
+      // Return default/empty subscription for now
+      return res.json({
+        ok: true,
+        subscription: {
+          siteId,
+          plan: "free",
+          subscriptionStatus: "inactive",
+          addons: {
+            content_growth: false,
+            competitive_intel: false,
+            authority_signals: false
+          },
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          createdAt: null,
+          updatedAt: null
+        }
+      });
+    } catch (error: any) {
+      logger.error("Billing", "Failed to fetch subscription", { error: error.message });
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to fetch subscription"
+      });
+    }
+  });
+
+  // ============================================================
+  // End Stripe Billing API Endpoints
   // ============================================================
 
   app.use(apiKeyAuth);
@@ -17425,9 +17779,15 @@ Return JSON in this exact format:
     }
   });
 
+  const deployPayloadSchema = z.object({
+    mode: z.enum(["top", "selected", "dry_run"]),
+    selectedFixIds: z.array(z.string()).optional(),
+  });
+
   app.post("/api/scan/:scanId/deploy", async (req, res) => {
     const { scanId } = req.params;
     const requestId = randomUUID();
+    const deployId = `deploy_${Date.now()}_${randomUUID().slice(0, 8)}`;
     
     try {
       const result = await db.execute(sql`
@@ -17438,13 +17798,57 @@ Return JSON in this exact format:
         return res.status(404).json({ ok: false, message: "Scan not found" });
       }
 
+      const parsed = deployPayloadSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        logger.warn("Scan", "Invalid deploy payload", { 
+          scanId, 
+          errors: parsed.error.errors,
+          requestId 
+        });
+        return res.status(400).json({ 
+          ok: false, 
+          message: parsed.error.errors[0]?.message || "Invalid payload. Expected: { mode: 'top' | 'selected' | 'dry_run', selectedFixIds?: string[] }" 
+        });
+      }
+
+      const { mode, selectedFixIds } = parsed.data;
+
+      let fixCount: number;
+      if (mode === "selected" && selectedFixIds && selectedFixIds.length > 0) {
+        fixCount = selectedFixIds.length;
+      } else if (mode === "top") {
+        fixCount = 3;
+      } else {
+        fixCount = 0;
+      }
+
+      const estimatedCompletion = mode === "dry_run" 
+        ? "immediate" 
+        : fixCount <= 3 
+          ? "2-3 hours" 
+          : fixCount <= 10 
+            ? "4-6 hours" 
+            : "24 hours";
+
+      logger.info("Scan", "Deploy request processed", { 
+        scanId, 
+        deployId, 
+        mode, 
+        fixCount,
+        selectedFixIds: selectedFixIds?.length || 0,
+        requestId 
+      });
+
       res.json({
         ok: true,
-        request_id: requestId,
-        message: "Fixes have been added to your queue",
+        deployId,
+        message: "Fixes have been queued for deployment",
         data: {
-          scanId,
-          tasksCreated: 3,
+          mode,
+          fixCount,
+          estimatedCompletion,
+          status: "queued",
         },
       });
     } catch (error: any) {

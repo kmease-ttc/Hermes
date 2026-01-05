@@ -40,6 +40,7 @@ import Signup from "@/pages/Signup";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Report from "@/pages/Report";
+import ManagedSite from "@/pages/ManagedSite";
 import { ROUTES, buildRoute, resolveAgentSlug } from "@shared/routes";
 import { useRoute } from "wouter";
 import { useEffect } from "react";
@@ -92,6 +93,7 @@ function Router() {
       <Route path={ROUTES.TERMS} component={Terms} />
       <Route path={ROUTES.PRIVACY} component={Privacy} />
       <Route path={ROUTES.REPORT} component={Report} />
+      <Route path={ROUTES.MANAGED_SITE} component={ManagedSite} />
       
       {/* ============================================ */}
       {/* APP ROUTES - Authenticated application pages */}

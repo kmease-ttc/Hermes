@@ -2380,3 +2380,29 @@ export const insertCoreWebVitalsDailySchema = createInsertSchema(coreWebVitalsDa
 });
 export type InsertCoreWebVitalsDaily = z.infer<typeof insertCoreWebVitalsDailySchema>;
 export type CoreWebVitalsDaily = typeof coreWebVitalsDaily.$inferSelect;
+
+// =============================================================================
+// WEBSITE SUBSCRIPTIONS & ADD-ONS
+// Tracks website subscriptions and add-on features for Arclo monetization
+// =============================================================================
+
+export const websiteSubscriptions = pgTable("website_subscriptions", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  scanId: text("scan_id"), // Optional link to original scan
+  plan: text("plan").default("free"), // free, core
+  subscriptionStatus: text("subscription_status").default("inactive"), // inactive, active, past_due, canceled
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  addons: jsonb("addons").default({}), // { content_growth: boolean, competitive_intel: boolean, authority_signals: boolean }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWebsiteSubscriptionSchema = createInsertSchema(websiteSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertWebsiteSubscription = z.infer<typeof insertWebsiteSubscriptionSchema>;
+export type WebsiteSubscription = typeof websiteSubscriptions.$inferSelect;

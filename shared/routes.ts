@@ -34,6 +34,7 @@ export const ROUTES = {
   REPORT: "/report/:scanId",
   HOW_IT_WORKS: "/how-it-works",
   USE_CASES: "/use-cases",
+  MANAGED_SITE: "/managed-site",
   
   // App core pages (authenticated)
   HOME: "/app",
@@ -198,6 +199,7 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.SIGNUP,
   ROUTES.HOW_IT_WORKS,
   ROUTES.USE_CASES,
+  ROUTES.MANAGED_SITE,
   
   // App routes
   ROUTES.HOME,
@@ -313,6 +315,7 @@ export function isMarketingRoute(path: string): boolean {
     ROUTES.SIGNUP,
     ROUTES.HOW_IT_WORKS,
     ROUTES.USE_CASES,
+    ROUTES.MANAGED_SITE,
     ROUTES.TERMS,
     ROUTES.PRIVACY,
   ];
