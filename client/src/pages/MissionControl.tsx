@@ -717,13 +717,11 @@ function AgentSummaryCard({ agent, enabled = true }: { agent: { serviceId: strin
   );
 }
 
-function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: { 
+function AgentSummaryGrid({ agents, crewSummaries, kbStatus }: { 
   agents: Array<{ serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' }>; 
-  totalAgents: number;
   crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null }>;
   kbStatus?: { totalLearnings?: number; configured?: boolean; status?: string };
 }) {
-  const enabledIds = new Set(agents.map(a => a.serviceId));
   const enabledCount = agents.length;
   
   const enabledAgentData = agents.map(agent => {
@@ -764,28 +762,12 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
     };
   });
 
-  const disabledAgentData = USER_FACING_AGENTS
-    .filter(id => !enabledIds.has(id))
-    .map(serviceId => ({
-      serviceId,
-      score: null,
-      missionsOpen: 0,
-      status: 'neutral' as const,
-      enabled: false,
-      keyMetric: "Not hired",
-      keyMetricValue: "—",
-      delta: "—",
-      whatChanged: "Hire to enable missions and insights",
-    }));
-
-  const allAgentData = [...enabledAgentData, ...disabledAgentData];
-
   return (
     <div data-testid="agent-summary-grid">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-foreground">Crew Summary</h2>
-          <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">{enabledCount} of {totalAgents} hired</Badge>
+          <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">{enabledCount} hired</Badge>
         </div>
         <Link href={ROUTES.CREW}>
           <Button variant="outline" size="sm" className="text-xs border-dashed border-primary/50 text-primary hover:bg-primary/5">
@@ -794,11 +776,27 @@ function AgentSummaryGrid({ agents, totalAgents, crewSummaries, kbStatus }: {
           </Button>
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {allAgentData.map((agent) => (
-          <AgentSummaryCard key={agent.serviceId} agent={agent} enabled={agent.enabled} />
-        ))}
-      </div>
+      {enabledAgentData.length === 0 ? (
+        <Card className="p-8 text-center bg-card/50 border-dashed">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No Crew Members Hired</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Hire crew members to start monitoring your site and receiving actionable insights.
+          </p>
+          <Link href={ROUTES.CREW}>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Users className="w-4 h-4 mr-2" />
+              Hire Crew
+            </Button>
+          </Link>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {enabledAgentData.map((agent) => (
+            <AgentSummaryCard key={agent.serviceId} agent={agent} enabled={true} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -941,6 +939,13 @@ function ConsolidatedMissionWidget({
   );
 }
 
+interface CrewStateResponse {
+  siteId: string;
+  enabledAgents: string[];
+  agentStatus: Record<string, { health: string; needsConfig: boolean; lastRun: string | null }>;
+  totalEnabled: number;
+}
+
 export default function MissionControl() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
@@ -951,6 +956,16 @@ export default function MissionControl() {
 
   const { dashboard, isLoading: dashboardLoading, isRefreshing: dashboardRefreshing, executeAll, refetch } = useMissionsDashboard({
     siteId: currentSite?.siteId,
+  });
+
+  const { data: crewState } = useQuery<CrewStateResponse>({
+    queryKey: ["/api/crew/state", currentSite?.siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/crew/state?siteId=${currentSite?.siteId || "default"}`);
+      if (!res.ok) throw new Error("Failed to fetch crew state");
+      return res.json();
+    },
+    enabled: !!currentSite,
   });
 
   const handleReviewMission = (mission: any) => {
@@ -1030,25 +1045,30 @@ export default function MissionControl() {
     staleTime: 60000,
   });
 
-  const userAgents = USER_FACING_AGENTS.map((serviceId, index) => {
-    // Map service_id to crew_id for lookup in crewSummaries
-    const crewId = SERVICE_TO_CREW[serviceId] || serviceId;
-    const crewSummary = dashboard?.crewSummaries?.find((cs: any) => cs.crewId === crewId);
-    
-    // Use server-provided score for consistency with crew pages (single source of truth)
-    // Score is now an object { value: number | null, status, updatedAt }
-    const scoreValue = crewSummary?.score?.value ?? null;
-    const missionsOpen = crewSummary?.missions?.open ?? 0;
-    
-    return {
-      serviceId,
-      score: scoreValue,
-      missionsOpen,
-      status: scoreValue !== null 
-        ? (scoreValue >= 70 ? 'good' as const : scoreValue >= 40 ? 'watch' as const : 'bad' as const)
-        : (missionsOpen === 0 ? 'good' as const : missionsOpen <= 2 ? 'watch' as const : 'bad' as const),
-    };
-  });
+  // Filter to only show hired (enabled) crew members
+  const enabledAgentIds = new Set(crewState?.enabledAgents || []);
+  
+  const userAgents = USER_FACING_AGENTS
+    .filter(serviceId => enabledAgentIds.has(serviceId))
+    .map((serviceId, index) => {
+      // Map service_id to crew_id for lookup in crewSummaries
+      const crewId = SERVICE_TO_CREW[serviceId] || serviceId;
+      const crewSummary = dashboard?.crewSummaries?.find((cs: any) => cs.crewId === crewId);
+      
+      // Use server-provided score for consistency with crew pages (single source of truth)
+      // Score is now an object { value: number | null, status, updatedAt }
+      const scoreValue = crewSummary?.score?.value ?? null;
+      const missionsOpen = crewSummary?.missions?.open ?? 0;
+      
+      return {
+        serviceId,
+        score: scoreValue,
+        missionsOpen,
+        status: scoreValue !== null 
+          ? (scoreValue >= 70 ? 'good' as const : scoreValue >= 40 ? 'watch' as const : 'bad' as const)
+          : (missionsOpen === 0 ? 'good' as const : missionsOpen <= 2 ? 'watch' as const : 'bad' as const),
+      };
+    });
 
   // Fetch real recommendations from API
   const { data: recommendationsData, isLoading: isLoadingRecommendations } = useQuery({
@@ -1310,7 +1330,6 @@ export default function MissionControl() {
 
         <AgentSummaryGrid 
           agents={userAgents} 
-          totalAgents={USER_FACING_AGENTS.length}
           crewSummaries={dashboard?.crewSummaries}
           kbStatus={kbStatus}
         />
