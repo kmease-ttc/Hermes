@@ -40,6 +40,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { useHiredCrews } from "@/hooks/useHiredCrews";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import logoImage from "@assets/image_1766866825580.png";
@@ -57,6 +58,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [newSiteUrl, setNewSiteUrl] = useState("");
   
   const { sites, selectedSite, setSelectedSiteId, currentSite } = useSiteContext();
+  const { hiredCrewIds, isLoading: crewLoading } = useHiredCrews();
   const queryClient = useQueryClient();
 
   const addSiteMutation = useMutation({
@@ -104,7 +106,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: ROUTES.HELP, label: "Help", icon: HelpCircle },
   ];
   
-  const crewMembers = USER_FACING_AGENTS.map(id => AGENTS[id]).filter(Boolean);
+  const allCrewMembers = USER_FACING_AGENTS.map(id => AGENTS[id]).filter(Boolean);
+  const hiredCrewMembers = allCrewMembers.filter(member => hiredCrewIds.includes(member.service_id));
 
   const activeSite = currentSite || selectedSite;
   const siteInitials = activeSite?.displayName?.slice(0, 2).toUpperCase() || "??";
@@ -244,7 +247,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
-              {crewMembers.map((member) => {
+              {hiredCrewMembers.map((member) => {
                 const agentRoute = buildRoute.agent(member.service_id);
                 const isActive = location === agentRoute;
                 return (
@@ -274,7 +277,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 );
               })}
               
-              {/* Add more crew link */}
+              {/* Hire Crew link */}
               <Link href={ROUTES.CREW}>
                 <div 
                   className={cn(
@@ -283,10 +286,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       ? "bg-primary/10 text-primary border-primary" 
                       : "text-primary/70 hover:text-primary"
                   )}
-                  data-testid="link-nav-add-more-crew"
+                  data-testid="link-nav-hire-crew"
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="truncate">Hire more crew</span>
+                  <span className="truncate">{hiredCrewMembers.length > 0 ? "Hire more crew" : "Hire Crew"}</span>
                 </div>
               </Link>
             </CollapsibleContent>
