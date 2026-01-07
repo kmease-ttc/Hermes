@@ -192,6 +192,9 @@ import {
   freeReports,
   type FreeReport,
   type InsertFreeReport,
+  verificationTokens,
+  type VerificationToken,
+  type InsertVerificationToken,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -3330,6 +3333,62 @@ class DBStorage implements IStorage {
     // For now, return all sites. In a multi-tenant setup, this would filter by user ownership
     const allSites = await db.select({ siteId: sites.siteId }).from(sites);
     return allSites.map(s => s.siteId);
+  }
+
+  // Verification Tokens
+  async createVerificationToken(data: InsertVerificationToken): Promise<VerificationToken> {
+    const [result] = await db
+      .insert(verificationTokens)
+      .values(data)
+      .returning();
+    return result;
+  }
+
+  async getVerificationToken(token: string, purpose: string): Promise<VerificationToken | null> {
+    const [result] = await db
+      .select()
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.token, token),
+          eq(verificationTokens.purpose, purpose),
+          isNull(verificationTokens.consumedAt)
+        )
+      )
+      .limit(1);
+    return result || null;
+  }
+
+  async consumeVerificationToken(tokenId: number): Promise<void> {
+    await db
+      .update(verificationTokens)
+      .set({ consumedAt: new Date() })
+      .where(eq(verificationTokens.id, tokenId));
+  }
+
+  async deleteUserVerificationTokens(userId: number, purpose: string): Promise<void> {
+    await db
+      .delete(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.userId, userId),
+          eq(verificationTokens.purpose, purpose)
+        )
+      );
+  }
+
+  async verifyUser(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({ verifiedAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 }
 

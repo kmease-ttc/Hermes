@@ -36,10 +36,29 @@ export const users = pgTable("users", {
     competitive_intel?: boolean;
     authority_signals?: boolean;
   }>(),
+  verifiedAt: timestamp("verified_at"), // null = unverified, timestamp = verified
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Verification and password reset tokens
+export const verificationTokens = pgTable("verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(), // UUID token
+  purpose: text("purpose").notNull(), // 'verify_email' | 'reset_password'
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"), // null = unused, timestamp = used
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertVerificationTokenSchema = createInsertSchema(verificationTokens).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertVerificationToken = z.infer<typeof insertVerificationTokenSchema>;
+export type VerificationToken = typeof verificationTokens.$inferSelect;
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
