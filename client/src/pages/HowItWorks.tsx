@@ -1,9 +1,9 @@
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { IconBadge } from "@/components/marketing/IconBadge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
-import { Search, Target, Rocket, ArrowRight, CheckCircle2, Zap, Clock, Shield } from "lucide-react";
+import { SearchCheck, Target, Rocket, ArrowRight, CheckCircle2, Zap, Clock, Shield } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -47,20 +47,16 @@ export default function HowItWorks() {
                   </li>
                 </ul>
               </div>
-              <Card className="bg-white border border-[#CBD5E1]">
-                <CardContent className="p-8 flex items-center justify-center">
-                  <Search className="w-32 h-32 text-[#15803D]/30" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-center p-8">
+                <IconBadge icon={SearchCheck} size="lg" />
+              </div>
             </div>
 
             {/* Step 2 */}
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              <Card className="bg-white border border-[#CBD5E1] md:order-1">
-                <CardContent className="p-8 flex items-center justify-center">
-                  <Target className="w-32 h-32 text-[#15803D]/30" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-center p-8 md:order-1">
+                <IconBadge icon={Target} size="lg" />
+              </div>
               <div className="md:order-2">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-[#15803D] flex items-center justify-center text-white font-bold text-xl">
@@ -115,11 +111,9 @@ export default function HowItWorks() {
                   </li>
                 </ul>
               </div>
-              <Card className="bg-white border border-[#CBD5E1]">
-                <CardContent className="p-8 flex items-center justify-center">
-                  <Rocket className="w-32 h-32 text-[#15803D]/30" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-center p-8">
+                <IconBadge icon={Rocket} size="lg" />
+              </div>
             </div>
           </div>
 
