@@ -12,6 +12,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showResendLink, setShowResendLink] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, authenticated } = useAuth();
   const [, navigate] = useLocation();
@@ -25,6 +26,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShowResendLink(false);
     setLoading(true);
 
     const result = await login(email, password);
@@ -33,6 +35,9 @@ export default function Login() {
       navigate("/app/dashboard");
     } else {
       setError(result.error || "Login failed");
+      if (result.error?.includes("verify your email")) {
+        setShowResendLink(true);
+      }
       setLoading(false);
     }
   };
@@ -56,7 +61,17 @@ export default function Login() {
             {error && (
               <Alert variant="destructive" className="bg-red-900/50 border-red-800">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error}
+                  {showResendLink && (
+                    <>
+                      {" "}
+                      <a href="/resend-verification" className="underline hover:text-red-300">
+                        Resend verification email
+                      </a>
+                    </>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
             
@@ -111,12 +126,19 @@ export default function Login() {
               )}
             </Button>
             
-            <p className="text-sm text-gray-400 text-center">
-              Need an account?{" "}
-              <a href="/signup" className="text-amber-500 hover:text-amber-400 underline">
-                Contact us
-              </a>
-            </p>
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-gray-400">
+                Need an account?{" "}
+                <a href="/signup" className="text-amber-500 hover:text-amber-400 underline">
+                  Create one
+                </a>
+              </p>
+              <p className="text-sm text-gray-400">
+                <a href="/forgot-password" className="text-gray-500 hover:text-gray-400 underline">
+                  Forgot your password?
+                </a>
+              </p>
+            </div>
           </CardFooter>
         </form>
       </Card>

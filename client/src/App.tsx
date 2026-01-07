@@ -40,6 +40,10 @@ import Landing from "@/pages/Landing";
 import ScanPreview from "@/pages/ScanPreview";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
+import VerifyEmail from "@/pages/VerifyEmail";
+import ResendVerification from "@/pages/ResendVerification";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Report from "@/pages/Report";
@@ -100,8 +104,12 @@ function Router() {
       {/* ============================================ */}
       <Route path={ROUTES.LANDING} component={Landing} />
       <Route path={ROUTES.LOGIN} component={Login} />
-      <Route path={ROUTES.SCAN_PREVIEW} component={ScanPreview} />
       <Route path={ROUTES.SIGNUP} component={Signup} />
+      <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
+      <Route path={ROUTES.RESEND_VERIFICATION} component={ResendVerification} />
+      <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
+      <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
+      <Route path={ROUTES.SCAN_PREVIEW} component={ScanPreview} />
       <Route path={ROUTES.HOW_IT_WORKS} component={HowItWorks} />
       <Route path={ROUTES.USE_CASES} component={UseCases} />
       <Route path={ROUTES.TERMS} component={Terms} />
