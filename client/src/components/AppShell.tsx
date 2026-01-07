@@ -18,6 +18,7 @@ import {
   Award,
   HelpCircle
 } from "lucide-react";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -94,11 +95,8 @@ export default function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen flex bg-gray-900">
       <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
         <div className="h-16 flex items-center px-4 border-b border-gray-700">
-          <Link href="/app/dashboard" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
-            <span className="text-white font-semibold text-lg">Arclo</span>
+          <Link href="/app/dashboard" className="flex items-center">
+            <img src={arcloLogo} alt="Arclo" className="h-10 w-auto" />
           </Link>
         </div>
 
