@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { AlertCircle, Loader2, LogIn } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -50,9 +51,7 @@ export default function Login() {
           <Card className="bg-card border-border">
             <CardHeader className="space-y-1 text-center">
               <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">A</span>
-                </div>
+                <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
               </div>
               <CardTitle className="text-2xl font-bold">Welcome to Arclo</CardTitle>
               <CardDescription>

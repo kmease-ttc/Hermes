@@ -1,0 +1,333 @@
+Absolutely. Below is a clean, comprehensive list of Playwright QA use cases based on everything you’ve built so far. This is written so it can be used as:
+	•	a QA plan
+	•	a backlog for automated tests
+	•	direct input to your dev / agent implementing Playwright
+
+This is what to test, not code yet.
+
+⸻
+
+Playwright QA Use Cases for Arclo
+
+1. Core Funnel & Site Generation (Highest Priority)
+
+1.1 Generate Free Site (Anonymous)
+
+Goal: Ensure the core value proposition never breaks.
+	•	Load landing page
+	•	Click “Generate Free Site”
+	•	Fill required fields
+	•	Optionally fill phone/email
+	•	Submit
+	•	Assert:
+	•	preview page loads
+	•	no console errors
+	•	preview URL renders content
+	•	CTA “Publish My Site” exists
+
+Fail if:
+	•	generation stalls
+	•	blank preview
+	•	JS errors
+	•	missing CTA
+
+⸻
+
+1.2 Optional Contact Info Injection
+
+Goal: Ensure optional fields improve output without blocking.
+	•	Generate site with phone/email
+	•	Assert:
+	•	phone/email appear in header/footer/contact section
+	•	Generate site without phone/email
+	•	Assert:
+	•	no placeholder contact info shown
+	•	generic CTA text used
+
+⸻
+
+2. Preview → Publish Gate
+
+2.1 Publish Requires Account
+	•	From preview
+	•	Click “Publish My Site”
+	•	Assert:
+	•	redirected to signup/login
+	•	site draft preserved after auth
+
+⸻
+
+2.2 Account Creation Flow
+	•	Create account
+	•	Assert:
+	•	redirected to launch checklist
+	•	generated site attached to user
+	•	no loss of data
+
+⸻
+
+3. Launch Checklist & Setup Services
+
+3.1 Launch Checklist Rendering
+	•	Assert checklist steps exist
+	•	Assert:
+	•	required vs recommended separation
+	•	correct order of steps
+	•	progress indicator renders
+
+⸻
+
+3.2 Assisted Setup CTA Visibility
+	•	Assert:
+	•	“Have Arclo do this for me” appears on GSC + GA steps
+	•	correct pricing displayed
+
+⸻
+
+4. Domain Flow (Greenfield)
+
+4.1 Domain Ownership Prompt
+	•	Assert:
+	•	“Do you already own a domain?” step renders
+	•	“No, help me get one” default selected
+
+⸻
+
+4.2 Domain Search
+	•	Enter domain query
+	•	Assert:
+	•	availability results returned
+	•	pricing visible
+	•	selection possible
+
+(Mock API for Porkbun in CI)
+
+⸻
+
+4.3 Checkout Integrity
+	•	Proceed to checkout
+	•	Assert line items:
+	•	base plan
+	•	add-ons
+	•	domain cost
+	•	managed setup fee
+	•	Assert totals calculate correctly
+
+⸻
+
+5. Publish & Go Live
+
+5.1 Publish Flow
+	•	Complete required steps
+	•	Click publish
+	•	Assert:
+	•	success screen
+	•	domain status shows “propagating” or “live”
+	•	redirect to dashboard
+
+⸻
+
+6. Dashboard Core UX
+
+6.1 Dashboard Loads
+	•	Assert:
+	•	site card renders
+	•	domain visible
+	•	health indicator visible
+	•	onboarding panel visible (if not activated)
+
+⸻
+
+6.2 Activation State
+	•	Assert:
+	•	activation milestones update correctly
+	•	onboarding panel hides after activation
+
+⸻
+
+7. Services & Upsells
+
+7.1 Available vs Active Services
+	•	Assert:
+	•	base plan shown as active
+	•	inactive services listed under “Available”
+	•	prerequisites respected
+
+⸻
+
+7.2 Subscribe to Add-On
+	•	Click “Subscribe”
+	•	Assert:
+	•	subscription created
+	•	service moves to “Active”
+	•	activity created
+	•	“What’s Next” updates
+
+(Mock billing if needed)
+
+⸻
+
+8. Change Requests (Unlimited Updates)
+
+8.1 Request Intake
+	•	Click “Request a change”
+	•	Submit text
+	•	Assert:
+	•	request created
+	•	status = queued
+	•	activity logged
+
+⸻
+
+8.2 One Active Request Enforcement
+	•	Submit request
+	•	Attempt second request
+	•	Assert:
+	•	blocked with correct message
+
+⸻
+
+8.3 Request Completion Flow (Admin)
+	•	Mark request in progress
+	•	Mark completed
+	•	Assert:
+	•	user sees completion
+	•	summary shown
+	•	request button unlocked
+
+⸻
+
+9. Activity System
+
+9.1 Activity Feed
+	•	Assert:
+	•	activities render in correct order
+	•	titles and descriptions populated
+	•	timestamps visible
+
+⸻
+
+9.2 Failed Activity Visibility
+	•	Simulate failure
+	•	Assert:
+	•	activity marked failed
+	•	visible to user
+	•	calm copy shown
+
+⸻
+
+10. Site Health & Monitoring
+
+10.1 Health Indicator
+	•	Assert:
+	•	healthy site shows green
+	•	simulated failure shows warning or issue state
+
+⸻
+
+10.2 Health Issue Activity
+	•	Trigger health failure
+	•	Assert:
+	•	activity created
+	•	notification shown
+
+⸻
+
+11. Before / After Gallery
+
+11.1 Screenshot Capture
+	•	Assert:
+	•	screenshot captured on generation
+	•	screenshot captured after change request
+
+⸻
+
+11.2 Evolution View
+	•	Assert:
+	•	before/after renders
+	•	captions present
+	•	timeline order correct
+
+⸻
+
+12. Referrals & Sharing
+
+12.1 Share Site
+	•	Click “Share my site”
+	•	Assert:
+	•	link copied
+	•	public link loads read-only view
+
+⸻
+
+12.2 Referral Link
+	•	Generate referral link
+	•	Visit link
+	•	Generate site
+	•	Assert:
+	•	referral recorded
+
+⸻
+
+13. Internal Notifications
+
+13.1 Site Creation Email
+	•	Generate site
+	•	Assert:
+	•	internal email triggered (mock)
+	•	includes business name + preview URL
+
+⸻
+
+14. Regression & Safety
+
+14.1 Console Error Guard
+
+Global rule:
+	•	Fail any test if:
+	•	uncaught exception
+	•	severe console error
+
+⸻
+
+14.2 Performance Guard (Basic)
+	•	Assert:
+	•	preview loads under X seconds
+	•	dashboard loads under X seconds
+
+⸻
+
+Test Execution Strategy (Important)
+
+Tier 1: Must-Run on Every Deploy
+	•	Site generation
+	•	Preview
+	•	Publish gate
+	•	Dashboard load
+
+Tier 2: Nightly
+	•	Domain flow
+	•	Services
+	•	Change requests
+	•	Activity system
+
+Tier 3: Weekly
+	•	Health checks
+	•	Before/after
+	•	Referrals
+
+⸻
+
+Why This QA Plan Is Strong
+	•	Protects revenue paths
+	•	Protects trust promises
+	•	Matches your actual product architecture
+	•	Scales with automation + manual ops
+	•	Prevents silent breakage
+
+If you want next, I can:
+	•	Turn this into a Playwright folder structure
+	•	Write one full end-to-end test as a template
+	•	Generate a qa-summary.md auto-writer
+
+Just tell me which one.

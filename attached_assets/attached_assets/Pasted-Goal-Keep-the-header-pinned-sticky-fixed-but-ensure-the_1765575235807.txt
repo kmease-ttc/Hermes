@@ -1,0 +1,89 @@
+Goal
+
+Keep the header pinned (sticky/fixed), but ensure the page content always starts below it. No overlap. No hidden text/buttons.
+
+⸻
+
+What to change
+
+1) Decide one approach and use it everywhere
+
+Pick either:
+
+Option A (recommended): Sticky header
+	•	Header stays in normal document flow.
+	•	Uses position: sticky; top: 0;
+	•	This usually avoids overlap problems automatically.
+
+Option B: Fixed header
+	•	Header uses position: fixed; top: 0; left: 0; right: 0;
+	•	Requires adding a top offset to the page content.
+
+If you already have fixed, it’s fine — just do the offset correctly.
+
+⸻
+
+2) If using a fixed header, add a global top offset
+
+Requirement
+
+All pages must have a consistent offset equal to the header height.
+
+Implementation rules:
+	•	Define a single header height variable (desktop + mobile if different).
+	•	Apply it to the main page container:
+	•	padding-top: HEADER_HEIGHT;
+	•	Do this once at the layout level, not per-page hacks.
+
+Must be responsive
+
+If header is taller on mobile, the padding must match the mobile height too.
+
+⸻
+
+3) Don’t guess header height—measure it
+
+If header height can change (responsive nav, banners, etc.), don’t hardcode.
+
+Requirement:
+	•	On load and on resize, measure the header’s actual rendered height.
+	•	Set a CSS variable like --header-h to that number.
+	•	Use padding-top: var(--header-h) on the main content wrapper.
+
+This prevents overlap forever, even if you tweak the header later.
+
+⸻
+
+4) Specific QA checks
+
+After implementation, verify on:
+	•	Desktop + mobile widths
+	•	Results/Preview page (where it currently overlaps)
+	•	Pricing page
+	•	Dashboard
+
+Acceptance criteria:
+	•	The stepper (“Scan / Preview / Customize / Publish”) is fully visible without being hidden by the header.
+	•	The top of the preview cards is visible.
+	•	No content is obscured when the page loads at scroll position 0.
+	•	Scrolling does not cause layout jumps.
+
+⸻
+
+Prompt for your agent (copy/paste)
+
+PROMPT: Fix Header Overlap While Keeping It Pinned
+
+We need the header to remain pinned, but it currently overlaps/blocks the top of the page content (especially on Results/Preview pages). Fix this globally.
+
+Requirements:
+	1.	Keep the header pinned (sticky or fixed is fine).
+	2.	Ensure page content never sits underneath the header.
+	3.	Implement a global solution (layout-level), not page-specific hacks.
+	4.	If using a fixed header, add a top padding/margin to the main content wrapper equal to the actual header height.
+	5.	Header height must be responsive; measure it and store it in a CSS variable (e.g., –header-h), then apply padding-top: var(–header-h).
+	6.	Verify on desktop and mobile that the stepper and top-of-page content are fully visible with no overlap.
+
+Deliver:
+	•	Summary of what was causing overlap
+	•	Confirmation that Results/Preview page no longer has content hidden under the header

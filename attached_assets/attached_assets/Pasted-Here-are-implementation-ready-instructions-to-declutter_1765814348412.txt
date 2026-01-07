@@ -1,0 +1,78 @@
+Here are implementation-ready instructions to declutter the hero by simplifying the value props, tightening the copy, and reducing visual noise while keeping conversion strong.
+	1.	Rewrite the hero messaging (new simplified value props)
+
+	•	Replace the current long headline with a single clear outcome + audience:
+	•	H1: Automated websites + SEO that keep bringing you customers
+	•	Subhead: Launch a modern site in minutes. We continuously fix SEO and publish improvements so your business shows up on Google—without you doing the work.
+	•	Replace the 4 long bullets with 3 short “proof-style” value props (max 6–8 words each):
+	•	Launch fast
+	•	SEO improves every week
+	•	Monitoring + alerts included
+	•	Add a single “How it works” one-liner under those (optional but recommended):
+	•	“Generate your site → we optimize it weekly → you get leads.”
+
+	2.	Reduce the hero content density (layout rules)
+
+	•	Left column must contain only:
+	•	H1
+	•	1 short subhead (1–2 lines)
+	•	3 short value props (not paragraphs)
+	•	Primary CTA + secondary CTA
+	•	One compact trust row (either “Trusted by 50+ businesses” OR the avatar row, not both)
+	•	Remove the extra paragraph under the bullets (“Arclo builds your website…”) from the hero. Move it below the fold into a “Why Arclo” section.
+
+	3.	Simplify CTAs
+
+	•	Keep two CTAs max:
+	•	Primary button: “Generate My Free Site”
+	•	Secondary link: “See it in action”
+	•	Remove the mini footnotes row under CTAs OR reduce to one line max:
+	•	Keep: “No credit card required • Cancel anytime”
+	•	Remove: “Your site improves daily” (it repeats the value prop)
+
+	4.	Tame the right-side visual (reduce “sticker” clutter)
+
+	•	On the hero mock/screenshot, show at most 2 callouts (not 4):
+	•	Keep: “SEO fixes applied” and “New content published”
+	•	Remove: “Calls and form fills tracked” and “Pages optimized for keywords” (these can live below the fold)
+	•	Ensure callouts don’t overlap each other or the primary focal area of the mock.
+	•	Reduce callout prominence:
+	•	Lower opacity slightly, reduce padding, and reduce font size.
+	•	Remove checkmark icons if present; keep text only.
+
+	5.	Spacing + typography constraints (to enforce “clean”)
+
+	•	Max width for left column text: ~560px.
+	•	H1 line count: 2–3 lines max on desktop.
+	•	Subhead line count: 2 lines max on desktop.
+	•	Value props: one line each, consistent height.
+	•	Add more whitespace:
+	•	Increase vertical gap between H1/subhead and value props.
+	•	Increase gap between value props and CTAs.
+
+	6.	Replace “Built for…” chips (move below fold)
+
+	•	Those chips add clutter in the hero.
+	•	Move the “Built for service businesses like…” chip row to the next section below the hero as a horizontal scroller or simple list.
+
+	7.	Exact copy to implement (paste-ready)
+
+	•	H1: Automated websites + SEO that keep bringing you customers
+	•	Subhead: Launch a modern site in minutes. We continuously fix SEO and publish improvements so you show up on Google—without lifting a finger.
+	•	Value props (3):
+	•	Launch fast
+	•	SEO improves every week
+	•	Monitoring + alerts included
+	•	CTA:
+	•	Primary: Generate My Free Site
+	•	Secondary: See it in action
+	•	Trust row (pick one):
+	•	Option A: Trusted by 50+ businesses
+	•	Option B: Avatar row + “Trusted by 50+ businesses” (but remove any other trust elements)
+
+Acceptance checklist (what “done” looks like)
+	•	Hero has 1 headline, 1 subhead, 3 short props, 2 CTAs, 1 trust row.
+	•	No paragraphs in the hero besides the subhead.
+	•	Right-side mock has max 2 callouts.
+	•	Chips moved below the fold.
+	•	The hero feels breathable on desktop and doesn’t require scrolling to see CTAs.

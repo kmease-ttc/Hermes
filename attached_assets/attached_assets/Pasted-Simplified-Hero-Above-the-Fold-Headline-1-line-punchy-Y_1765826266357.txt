@@ -1,0 +1,88 @@
+Simplified Hero (Above the Fold)
+
+Headline (1 line, punchy)
+
+Your Website. Fully Automated. Always Improving.
+
+Subheadline (1 short sentence)
+
+Arclo builds, optimizes, and maintains your website so customers can find and contact you — without you thinking about SEO.
+
+Primary CTA
+
+Generate My Free Site
+
+Secondary (optional, small text under CTA)
+
+No credit card • Live in under 60 seconds
+
+⸻
+
+What to REMOVE from the Hero
+
+Move all of this below the fold into a “How It Works” or “What You Get” section:
+	•	Bullet points explaining:
+	•	60-second setup
+	•	SEO issues fixed automatically
+	•	Weekly content updates
+	•	Monitoring and alerts
+	•	The explanatory paragraph starting with
+“Arclo builds your website, writes your content…”
+
+These are good details — they just don’t belong in the hero.
+
+⸻
+
+Why This Works Better
+	•	One idea: automation
+	•	One outcome: customers find and contact you
+	•	One action: generate site
+
+The image already shows:
+	•	SEO issues fixed
+	•	Pages optimized
+	•	Content published
+	•	Calls tracked
+
+So the copy doesn’t need to repeat it.
+
+⸻
+
+Optional Variations (If You Want to A/B Test)
+
+Slightly more benefit-led
+
+A Website That Runs Itself
+
+Subheadline:
+Arclo automatically builds and improves your site so you get more calls and leads — without hiring an SEO agency.
+
+⸻
+
+Even shorter (very strong)
+
+A Website That Works for You
+
+Subheadline:
+Built, optimized, and updated automatically.
+
+⸻
+
+Dev / Designer Instructions (Clean Handoff)
+	•	Limit hero copy to:
+	•	1 headline
+	•	1 subheadline
+	•	1 primary CTA
+	•	Max hero text height: ~4 lines total
+	•	Move feature bullets to first section below the fold
+	•	Keep current image + UI callouts (they’re doing the selling)
+	•	Ensure headline is the only H1 on the page
+
+⸻
+
+If you want, next I can:
+	•	Rewrite the section immediately below the hero so it flows cleanly
+	•	Tighten the value props into 3 scannable cards
+	•	Align hero messaging more tightly to small business search intent
+
+But this alone will make the page feel instantly calmer and more confident.

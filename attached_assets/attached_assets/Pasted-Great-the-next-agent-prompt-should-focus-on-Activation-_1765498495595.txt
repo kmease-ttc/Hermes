@@ -1,0 +1,224 @@
+Great — the next agent prompt should focus on Activation & Onboarding.
+
+Right now you have:
+	•	a solid funnel
+	•	services + upsells
+	•	activity + trust
+	•	QA + safety
+
+What you don’t yet have is a system that ensures:
+	•	new users understand what to do
+	•	they don’t feel overwhelmed
+	•	they actually reach “aha” fast
+	•	they don’t churn after publish
+
+So the next workstream is:
+
+👉 Activation: Guided Onboarding, Empty States, and Education
+
+This directly impacts conversion, retention, and support load.
+
+⸻
+
+NEXT WORKSTREAM: Guided Onboarding & Activation
+
+Agent Prompt
+
+Objective
+
+Implement a guided onboarding and education layer that:
+	•	helps users complete the right steps in the right order
+	•	explains what Arclo is doing for them
+	•	reduces confusion around SEO/analytics concepts
+	•	increases completion of key activation milestones
+	•	lowers early churn
+
+This work should feel calm, helpful, and confidence-building — not salesy.
+
+⸻
+
+PART 1 — Define Activation Milestones (Required)
+
+Create a clear activation model per site.
+
+Activation Milestones
+
+A site is considered “activated” when:
+	1.	Site generated
+	2.	Site previewed
+	3.	Site published
+	4.	Domain live
+	5.	At least one ongoing service active
+	6.	First activity completed successfully
+
+Store:
+	•	activation_stage per site
+	•	activated_at timestamp when completed
+
+These milestones drive onboarding, nudges, and empty states.
+
+⸻
+
+PART 2 — Guided Onboarding Panel (Critical)
+
+Add an Onboarding Panel to Dashboard
+
+Display a collapsible panel at the top of the site dashboard:
+
+Title:
+“Let’s get your site fully live”
+
+Show:
+	•	3–5 recommended next steps (not all steps)
+	•	Progress indicator
+	•	Clear CTA per step
+
+Example steps:
+	•	Publish your site
+	•	Choose primary services
+	•	Connect your domain
+	•	Turn on weekly improvements
+
+Each step must link directly to the correct screen.
+
+⸻
+
+PART 3 — Contextual Empty States (High Impact)
+
+Replace all “blank” or passive sections with guided empty states.
+
+Required Empty States
+	1.	No active services
+Copy:
+“Your site is live, but nothing is running yet.”
+
+CTA:
+“Turn on weekly improvements”
+	2.	No activities yet
+Copy:
+“Once Arclo starts working on your site, you’ll see updates here.”
+
+CTA:
+“Start with Technical SEO”
+	3.	No analytics connected
+Copy:
+“We can’t measure performance yet.”
+
+CTA:
+“Have Arclo connect Analytics for you”
+
+⸻
+
+PART 4 — Inline Education (Plain Language Only)
+
+Add “What is this?” Tooltips
+
+For concepts like:
+	•	Google Search Console
+	•	Analytics
+	•	Technical SEO
+	•	Structured data
+	•	Location pages
+
+Rules:
+	•	One sentence max
+	•	No jargon
+	•	Outcome-focused
+
+Example:
+“Technical SEO helps search engines understand and rank your site.”
+
+⸻
+
+PART 5 — First-Week Guidance System
+
+Create a “First 7 Days” Experience
+
+For newly published sites:
+	•	Highlight only the most important actions
+	•	Defer advanced features
+	•	Reduce cognitive load
+
+Show a simple checklist:
+	•	Your site is live
+	•	We’re optimizing it
+	•	Here’s what happens next
+
+Include reassurance copy:
+“You don’t need to do everything at once.”
+
+⸻
+
+PART 6 — Onboarding Nudges & Reminders
+
+In-App Nudges
+
+Trigger reminders when:
+	•	A required step is skipped for 48+ hours
+	•	Site is published but no services active
+	•	Analytics not connected after publish
+
+Tone:
+Helpful, not urgent.
+
+⸻
+
+Email Nudges (Lightweight)
+
+Send:
+	•	“Your site is live — here’s what happens next”
+	•	“Arclo made its first improvement”
+	•	“Want us to handle setup for you?”
+
+No more than:
+	•	1–2 emails in first week
+
+⸻
+
+PART 7 — Admin Controls (Minimal)
+
+Add internal flags:
+	•	enable/disable onboarding panel
+	•	mark steps as optional/hidden
+	•	override activation stage
+
+This allows iteration without redeploys.
+
+⸻
+
+Definition of Done
+	•	New users know exactly what to do next
+	•	Users reach “site live + service running” faster
+	•	Empty states guide action
+	•	Confusion around SEO/analytics is reduced
+	•	Support questions drop
+
+⸻
+
+Why this is the right next step
+
+You’ve built:
+	•	a machine
+	•	a service layer
+	•	trust and safety
+
+Now you need to ensure users:
+	•	understand it
+	•	feel guided
+	•	don’t bounce
+
+This work turns Arclo into:
+
+“A calm, guided website partner”
+
+instead of:
+
+“A powerful but overwhelming platform.”
+
+⸻
+
+After this, the next two logical workstreams will be:
+	1.	Pricing & packaging optimization (conversion)
+	2.	Agency / reseller mode (expansion)
+
+When you’re ready, I’ll write either prompt.

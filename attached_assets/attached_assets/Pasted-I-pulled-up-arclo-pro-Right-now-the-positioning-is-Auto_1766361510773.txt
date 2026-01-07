@@ -1,0 +1,195 @@
+I pulled up arclo.pro. Right now the positioning is “Automated Websites & SEO for Small Businesses” with the lead promise “Get a professional website built in under 60 seconds,” and the page renders a JS-only experience (“Please enable JavaScript to use Arclo.”).  ￼
+
+If you want to pivot to “free analysis → autopilot,” you can keep the website generator, but it can’t be the hero anymore. Here’s a clean repack + developer instructions.
+
+Repackage ArcClo Pro
+	1.	New primary value prop (above the fold)
+Replace “build a website in 60 seconds” with:
+
+Free Google Health Check for your business
+Find exactly what’s blocking you from ranking in Google, and get a prioritized fix plan in minutes.
+
+Primary CTA: Run Free Health Check
+Secondary CTA: Generate a website (move this under Tools)
+
+Why: The health check creates the instant “aha” for people who don’t know SEO, and it works whether they have a website already or not.
+	2.	Keep it broad, but use “presets” to feel specific
+Don’t pick one vertical publicly. Instead:
+
+	•	Let the user pick a business type during the health check: Healthcare, Home Services (HVAC/plumbing/electrical), Legal, Dental, Med Spa, Property Management, Other
+	•	That choice only changes the keyword groups and page template recommendations, not your entire product.
+
+This keeps you broad while still delivering the “this feels custom” effect that made your AustinRegen report hit.
+	3.	Move Website Generator to Tools
+Navigation:
+
+	•	Free Health Check (primary)
+	•	Product (Autopilot)
+	•	Examples
+	•	Pricing
+	•	Tools (Website Generator, maybe “Local SEO Landing Page Builder,” etc.)
+	•	Login
+
+	4.	Fix the marketing-site crawlability immediately
+Your current landing content is basically a JS gate. That’s bad for trust and for your own SEO. At minimum, make the marketing pages server-rendered / statically generated so Google can crawl them without requiring JS.  ￼
+
+Developer instructions
+
+A. Information architecture + routes
+Marketing (public, crawlable)
+	•	/ (new hero: Free Health Check)
+	•	/health-check (landing + start)
+	•	/health-check/result/:report_id (shareable report page, no login required unless you want gating)
+	•	/product (Autopilot explained: monitor → diagnose → recommend → safe apply)
+	•	/pricing
+	•	/examples (real screenshots/case studies; no JS-only placeholder)
+	•	/tools (hub)
+	•	/tools/website-generator (existing flow)
+	•	/legal/privacy, /legal/terms
+
+App (authenticated)
+	•	/app (dashboard)
+	•	/app/sites
+	•	/app/sites/:id/reports
+	•	/app/sites/:id/integrations (GSC/GA4)
+	•	/app/sites/:id/settings (safe mode, approve rules)
+	•	/app/billing
+
+B. “Free Health Check” flow (the productized version of your email)
+Step 1: Input
+	•	URL
+	•	Business type preset (optional but recommended)
+	•	City/Service area (optional; attempt to infer but allow override)
+	•	Email (optional for delivery; don’t require upfront if you want max conversions)
+
+Step 2: Run jobs (async)
+Kick off these workers (minimum viable):
+	•	Crawl & Render (technical findings + render check)
+	•	Lightweight keyword/SERP snapshot (small set, per preset)
+	•	Competitor snapshot (recurring domains from SERPs)
+
+Step 3: Output report with an “aha moment”
+Top section (3 cards):
+	•	Coverage Score (0–100)
+	•	Rank Eligibility Score (0–100)
+	•	Top 3 blockers (plain English)
+
+Then sections:
+	•	What’s working (1–3 bullets)
+	•	What’s holding you back (prioritized list)
+	•	Keyword targets + current visibility buckets
+	•	Technical findings (counts + top examples)
+	•	30/60/90 plan (templated, prescriptive)
+	•	CTA: Turn on Autopilot
+
+C. Scoring model (simple, explainable)
+Coverage Score
+	•	Define 6–10 keyword groups per preset (service + condition/problem terms for clinics; service + city for trades)
+	•	Score based on whether your crawl finds an intent-aligned page (URL/title/H1/content match)
+
+Rank Eligibility Score
+Start at 100 and subtract penalties:
+	•	Internal 4xx
+	•	Noindex/canonical anomalies on money pages
+	•	Render failures / blank main content
+	•	Image bloat / CWV risk signals (even basic “images >100kb” counts)
+	•	Title/H1 issues on priority pages
+
+D. Data model and APIs (so it plugs into your existing services)
+Tables (or collections):
+	•	sites (id, url, preset, city, created_at)
+	•	health_check_reports (id, site_id, status, created_at, summary_json, report_markdown, share_token)
+	•	findings (report_id, service_name, severity, category, count, examples_json)
+	•	jobs (id, report_id, service_name, status, started_at, ended_at, error)
+
+Endpoints:
+	•	POST /api/health-check/run { url, preset, city, email? } -> { report_id }
+	•	GET /api/health-check/status/:report_id
+	•	GET /api/health-check/report/:report_id (public if share_token valid)
+	•	POST /api/health-check/email/:report_id
+
+E. Autopilot conversion path (what happens after the report)
+When user clicks “Turn on Autopilot”:
+	•	Create account (magic link is fine)
+	•	Connect GSC/GA4 (OAuth)
+	•	Pick safe mode:
+	•	Recommend-only (default)
+	•	Apply via PR (requires GitHub connection)
+	•	CMS publish (later)
+	•	Start daily monitoring schedule (orchestrator)
+
+F. Critical: make marketing pages SSR/SSG
+Implementation requirement:
+	•	The marketing site must render meaningful HTML without JS for /, /health-check, /product, /pricing, /examples.
+	•	The interactive widgets can hydrate after, but the core copy + CTAs must be in the initial HTML. Your current “enable JavaScript” gate is exactly what you don’t want on the sales site.  ￼
+
+Replit implementation prompt (copy/paste)
+
+Build the ArcClo Pro pivot to “Free Google Health Check → Autopilot” while keeping the Website Generator under Tools.
+	1.	Marketing site changes (must be crawlable)
+
+	•	Convert marketing routes to SSR/SSG so pages render full HTML without requiring JS:
+	•	/ (new hero: Free Google Health Check)
+	•	/health-check
+	•	/product
+	•	/pricing
+	•	/examples
+	•	/tools
+	•	/tools/website-generator (existing)
+	•	Update homepage copy:
+	•	H1: “Free Google Health Check for your business”
+	•	Subhead: “See what’s blocking you from ranking and get a prioritized fix plan in minutes.”
+	•	Primary CTA: “Run Free Health Check”
+	•	Secondary CTA (in Tools area): “Generate a website”
+	•	Navigation order: Health Check, Product, Examples, Pricing, Tools, Login
+
+	2.	Health Check flow (public, no login required to run)
+UI routes:
+
+	•	/health-check (form)
+	•	/health-check/running/:report_id (progress)
+	•	/health-check/result/:report_id (report, shareable)
+
+Form fields:
+	•	website URL (required)
+	•	business preset (optional): Healthcare, Home Services, Legal, Dental, Med Spa, Property Management, Other
+	•	city/service area (optional)
+	•	email (optional; used to send the report)
+
+Backend:
+	•	POST /api/health-check/run -> returns report_id
+	•	Queue async jobs:
+	•	Crawl & Render worker (technical findings + render visibility)
+	•	SERP/keyword snapshot worker (small keyword set by preset)
+	•	Competitor snapshot worker (top recurring domains)
+	•	GET /api/health-check/status/:report_id for polling
+	•	GET /api/health-check/report/:report_id (protected by share_token for public access)
+	•	POST /api/health-check/email/:report_id to send via Notifications service
+
+Data model:
+	•	sites, health_check_reports, findings, jobs as described above.
+
+Report output (must match the “AustinRegen style”):
+Top cards:
+	•	Coverage Score (0–100)
+	•	Rank Eligibility Score (0–100)
+	•	Top 3 blockers (plain-English)
+
+Sections:
+	•	What’s working
+	•	What’s holding you back (prioritized)
+	•	Keyword targets table (keyword, current bucket, recommended page)
+	•	Technical findings summary (counts + top examples)
+	•	30/60/90-day plan (templated, prescriptive)
+Primary CTA: “Turn on Autopilot” -> account creation + connect GSC/GA4
+
+Scoring:
+	•	Coverage Score based on intent-aligned pages found for preset keyword groups
+	•	Rank Eligibility Score: start 100 minus weighted penalties (4xx, noindex/canonical anomalies, render failures, heavy images/perf risks, title/H1 issues)
+
+	3.	Keep Website Generator but reposition
+
+	•	Move the generator entry point under /tools and link it as secondary CTAs only.
+	•	Do not lead with “website in 60 seconds” on the homepage.
+
+If you want, paste what your current site generator flow URL is inside the app (the internal route), and I’ll map it cleanly into /tools/website-generator with the right CTAs and tracking events.

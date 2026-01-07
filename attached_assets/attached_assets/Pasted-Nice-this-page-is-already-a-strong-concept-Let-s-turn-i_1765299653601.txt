@@ -1,0 +1,241 @@
+Nice, this page is already a strong concept. Let’s turn it into the “product explainer” that matches the new home style and feels as premium as the hero.
+
+I’ll break it into three things you can hand straight to your dev:
+
+1. Layout & design tweaks
+2. Copy structure for each accordion item
+3. Concrete implementation instructions
+
+---
+
+## 1. Layout & Design Tweaks
+
+### Hero block (“The Complete Engine”)
+
+Keep the overall structure, but align it to the home style:
+
+* Wrap in the shared `Section` component (`variant="light"`).
+
+* Use:
+
+  * Overline: `Overline>What We Do</Overline>`
+  * Title: `SectionTitle>The Complete Engine</SectionTitle>`
+  * Subtitle: one tighter sentence:
+
+    > We don’t just build websites. We build autonomous growth machines. Here’s everything Arclo does for you automatically.
+
+* Add a subtle AI-glow behind the accordion card stack:
+
+```tsx
+<div className="pointer-events-none absolute inset-x-0 top-32 h-64 bg-[radial-gradient(circle_at_center,_rgba(79,70,229,0.12),_transparent_70%)] opacity-70 blur-2xl" />
+```
+
+### Accordion card stack
+
+Right now it’s functional but a little “admin-y”. Make each accordion row feel like a premium module:
+
+* Wrap the whole accordion in a `Card`:
+
+```tsx
+<Card className="relative mt-10 divide-y divide-slate-100">
+  {/* accordion items */}
+</Card>
+```
+
+* Accordion header row style:
+
+```tsx
+<button
+  className="
+    w-full flex items-center justify-between
+    px-6 py-5 md:px-8 md:py-6
+    text-left
+    hover:bg-slate-50/80
+    transition-colors
+  "
+>
+  <div className="flex items-center gap-3">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-600">
+      A
+    </span>
+    <div>
+      <p className="text-sm font-semibold text-slate-900">
+        Website Generation
+      </p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        Beautiful, conversion-ready sites built in seconds.
+      </p>
+    </div>
+  </div>
+  <ChevronIcon className="h-4 w-4 text-slate-400 transition-transform data-[open=true]:rotate-180" />
+</button>
+```
+
+* Expanded panel body:
+
+```tsx
+<div className="px-6 pb-5 md:px-8 md:pb-6 text-sm text-slate-600 grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+  <ul className="space-y-2">
+    {/* bullets */}
+  </ul>
+  <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4 text-xs text-slate-500">
+    {/* mini visual or “At a glance” summary */}
+  </div>
+</div>
+```
+
+The “ready to automate all of this?” banner already fits your new style; just make sure it uses the shared `Card` + `primary Button` components.
+
+---
+
+## 2. Suggested Copy for Each Accordion Item
+
+You can tweak the wording, but this gives you a solid starting point that leans into “done-for-you automation.”
+
+### A. Website Generation
+
+**Short subtext (in header):**
+“Your entire site, generated in seconds.”
+
+**Body bullets:**
+
+* Full multi-page site built from your business name, niche, and location
+* Modern layout, responsive on desktop and mobile
+* Clear calls-to-action and lead capture baked in
+* Local SEO structure (home, services, location pages) generated automatically
+
+**At a glance box:**
+“Time to first live site: usually under 5 minutes.”
+
+---
+
+### B. Keyword Intelligence & Content Strategy
+
+**Subtext:**
+“Your keyword universe, mapped automatically.”
+
+**Bullets:**
+
+* Keyword discovery based on real search data for your city and services
+* Grouped into clusters for services, location, FAQs, and blog topics
+* Difficulty vs. opportunity scoring so you target what you can realistically win
+* Content calendar outline created for you (no spreadsheets required)
+
+**At a glance:**
+“Hundreds of keyword opportunities identified and organized for you.”
+
+---
+
+### C. Daily Autonomous SEO Optimization
+
+**Subtext:**
+“Technical, content, and on-page SEO—fixed every day.”
+
+**Bullets:**
+
+* Daily crawl checks for broken links, slow pages, and indexing issues
+* Automatic fixes for metadata, alt tags, internal links, and canonical tags
+* Continuous on-page tweaks based on live search and ranking behavior
+* SEO health score you never have to maintain manually
+
+**At a glance:**
+“Sites improved daily with 30+ automated checks and fixes.”
+
+---
+
+### D. Google Search Console Integration
+
+**Subtext:**
+“Uses your real search data, not guesses.”
+
+**Bullets:**
+
+* One-click connection to your existing Search Console property
+* Query and page performance pulled in automatically
+* Alerts when important pages drop, spike, or get new impressions
+* Uses real query data to refine your keyword and content plan
+
+**At a glance:**
+“Every adjustment Arclo makes is informed by live Google data.”
+
+---
+
+### E. Weekly “SEO Wave” Optimization
+
+**Subtext:**
+“Bigger improvements in scheduled waves.”
+
+**Bullets:**
+
+* Weekly “wave” jobs that bundle higher-impact changes
+* Fresh internal links added to pages that are starting to rank
+* Structured data updates (schema) rolled out in batches
+* Optional new content pushes scheduled automatically
+
+**At a glance:**
+“A weekly rhythm of improvements, like having an SEO team run sprints for you.”
+
+---
+
+### F. Image Intelligence
+
+**Subtext:**
+“Smart images that load fast and rank better.”
+
+**Bullets:**
+
+* Automatic image compression and next-gen formats where supported
+* Alt text generated based on page content and keywords
+* Consistent aspect ratios for a polished, professional look
+* Optional stock/AI-sourced images aligned to your brand and niche
+
+**At a glance:**
+“25+ high-quality images selected, optimized, and tagged without you lifting a finger.”
+
+---
+
+## 3. Dev Instructions for This Page
+
+You can give your developer this block:
+
+1. **Wrap `/what-we-do` in the global `AppLayout` and use the `Section` component** for:
+
+   * Hero (The Complete Engine) – `variant="light"`
+   * Accordion section (same section, below hero text)
+   * CTA banner (use `Card` + primary/secondary buttons)
+
+2. **Replace any ad hoc typography with shared components**:
+
+   * `<Overline>What We Do</Overline>`
+   * `<SectionTitle>The Complete Engine</SectionTitle>`
+   * `<SectionSubtitle>…</SectionSubtitle>`
+
+3. **Refactor the accordion into a reusable `EngineAccordion` component**:
+
+   * Use a `Card` wrapper for the whole stack.
+   * Each item uses:
+
+     * Letter badge (A–F) chip on the left.
+     * Title + one-line subtext in the header.
+     * Expand/collapse chevron icon on the right.
+   * Use your existing accordion logic (or Headless UI) but apply the new classes.
+
+4. **Implement the two-column expanded body**:
+
+   * Left: `<ul>` of bullets using the copy above.
+   * Right: a neutral info panel saying “At a glance” with one short stat or phrase.
+   * On mobile, stack these columns (grid → `grid-cols-1`).
+
+5. **Update the “Ready to automate all of this?” banner**:
+
+   * Use the shared `Card` primitive.
+   * Center text and CTA.
+   * Use the `primary` gradient button pattern already used in the hero.
+
+6. **Ensure consistency with the design system**:
+
+   * No raw hex colors; use theme tokens.
+   * Same radii (`rounded-3xl`) and shadows (`shadow-soft` or `shadow-hero`) as the home page.
+   * Same button component, focus states, and hover interactions as elsewhere.
+
+If you’d like, next step I can help you write the actual bullet content for each accordion item in JSX so the dev can copy-paste it into the component.

@@ -1,0 +1,196 @@
+Below is a **ready-to-implement “About” page brief** for your developer, written to make you look **experienced, credible, and uniquely qualified** to build Arclo.
+It pulls directly from your resume  and positions you as a **multi-startup founder with deep enterprise SaaS + AI + product leadership experience.**
+
+You can paste this entire brief into Replit for your dev, exactly as-is.
+
+---
+
+# ✅ **Arclo — About Page Requirements (Developer/Designer Instructions)**
+
+## 🎯 **Purpose of the Page**
+
+The About page must instantly communicate:
+
+* **Authority:** Kevin has led large teams and massive enterprise products.
+* **Credibility:** 15+ years in SaaS, AI, cybersecurity, cloud, support, and product.
+* **Reputation:** Has delivered $300M+ revenue impact and scaled global orgs.
+* **Startup Experience:** Built multiple companies, including Lucky Thunder, The Farm, and Arclo.
+* **Real-world Expertise:** Deep understanding of local businesses because he *operates them*.
+
+This page should make visitors think:
+
+**“This founder knows exactly what he’s doing — I trust this product.”**
+
+---
+
+# 🧱 **1. Page Structure**
+
+## **Section 1 — Hero "Founder Snapshot"**
+
+Large, clean, premium layout.
+Left: professional portrait (or placeholder for now).
+Right: concise founder intro.
+
+### **Headline**
+
+```
+Built by a Founder Who’s Spent 15+ Years Shipping Enterprise Software and Scaling Real Businesses.
+```
+
+### **Subheadline**
+
+(Short, powerful summary pulled from resume)
+
+```
+Kevin Mease is a Vice President of Products and multi-startup founder with over 15 years of experience leading global SaaS, AI, cybersecurity, and cloud teams. He has overseen organizations of 500+ people, delivered $300M+ in product revenue impact, and built automation systems used by enterprises worldwide.
+```
+
+
+
+**CTA (optional):** “Connect on LinkedIn”
+
+---
+
+## **Section 2 — “Why Arclo Exists”**
+
+Explain the *motivation*:
+
+```
+After building products at scale for MRI Software, MicroStrategy, Rimini Street, Jobvite, Amazon, and multiple startups, Kevin noticed the same problem across every business he encountered:
+
+Small businesses are forced to pay thousands for websites, SEO agencies, and technical services — and still end up with outdated, under-optimized sites.
+
+Arclo was created to fix that. One platform that builds your website, writes your content, fixes your SEO, and improves every day — automatically.
+```
+
+---
+
+## **Section 3 — Founder Credentials (Split-Grid or Icon List)**
+
+### **Enterprise & Leadership Achievements**
+
+* Vice President of Products at MRI Software
+* Chief Product Officer at Rimini Street
+* EVP & GM at MicroStrategy
+* Led global cross-functional teams of **500+ employees**
+* Managed **$300M+ in recurring revenue**
+* Delivered AI, cybersecurity, and enterprise automation products
+
+
+---
+
+### **Startup & SMB Experience**
+
+* CEO, Lucky Thunder Property Group (STR management + real estate)
+* Founder, The Farm Texas (hospitality + glamping)
+* Founder, Arclo
+* Past experience in Seattle/West Coast startup ecosystem
+* Deep hands-on knowledge of **what local businesses need to grow**
+
+---
+
+### **Product & Technical Expertise**
+
+* SaaS Product Strategy & Roadmaps
+* AI Automation & Cloud Transformation
+* Cybersecurity & Zero Trust Architecture
+* Enterprise Architecture & Developer Platforms
+* GTM Strategy, Enablement, and Revenue Growth
+* Data-driven product optimization
+
+
+---
+
+## **Section 4 — Timeline of Companies Worked At**
+
+Horizontal timeline with logos:
+
+Amazon → Jobvite → PipelineDeals → MicroStrategy → Rimini Street → MRI Software → Lucky Thunder → Arclo
+
+Use light grayscale logos (developer can source simple SVGs).
+
+---
+
+## **Section 5 — “Why You Can Trust Arclo” (Credibility Anchors)**
+
+### Add a 3-column grid:
+
+**Column 1 — Proven Technology Leader**
+
+```
+Built enterprise systems used by Fortune 500 companies, government agencies, and global organizations across industries.
+```
+
+**Column 2 — Deep Local Business Understanding**
+
+```
+Operates real-world businesses — clinics, rentals, hospitality — giving firsthand insight into the needs of SMBs.
+```
+
+**Column 3 — AI & Automation Expertise**
+
+```
+Launched AI-driven workflows, automation platforms, and cloud-native tools across large-scale product ecosystems.
+```
+
+
+
+---
+
+## **Section 6 — Founder Philosophy (Short Block)**
+
+```
+Great software should remove effort, not add to it.
+
+Arclo is built on one core belief: small businesses shouldn’t need agencies, developers, SEO consultants, or marketing retainers to succeed online. Automation should handle the complexity so owners can focus on what actually matters — running their business.
+```
+
+---
+
+## **Section 7 — Optional Personal Note (Humanizing Element)**
+
+Use a simple paragraph:
+
+```
+Kevin lives in Austin, Texas, with his family and runs several small businesses alongside Arclo. He is passionate about building tools that give entrepreneurs more freedom, more time, and more control over their success.
+```
+
+---
+
+# 🎨 **2. Visual Direction for the About Page**
+
+Tell your developer/designer:
+
+* Keep the **dark navy** theme consistent with the homepage.
+* Use **large typography**, generous spacing, and premium layout.
+* Break content into **digestible blocks**, not long paragraphs.
+* Use **subtle indigo glows** and soft gradients for section headers.
+* Add a **founder portrait** with rounded corners and a soft shadow.
+* Include **iconography** to break up text (teams, revenue, AI, automation).
+
+---
+
+# 🧩 **3. Implementation Requirements**
+
+### File:
+
+`client/src/pages/About.tsx`
+
+### Use existing components:
+
+* Section wrapper
+* Heading components
+* Grid layout utilities
+
+### Add metadata:
+
+```
+<title>About Arclo | Built by Real Product Leaders</title>
+<meta name="description" content="Arclo is led by Kevin Mease, a VP of Products and multi-startup founder with 15+ years of experience in enterprise SaaS, AI, cybersecurity, and cloud architecture." />
+```
+
+---
+
+# 👌 Want me to write the **exact JSX/Tailwind About Page component** ready to paste into your codebase?
+
+If yes, I will generate a fully-coded About.tsx file matching this entire spec.

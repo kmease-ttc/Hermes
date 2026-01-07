@@ -1,0 +1,210 @@
+Architecture overview for Arclo (for dev review)
+
+Product summary
+
+Arclo is a “done-for-you” SEO website engine:
+	•	Marketing site collects leads and explains pricing.
+	•	Users request a site → system auto-generates a preview → user claims account → chooses plan → connects domain.
+	•	Once live, a background engine continually runs SEO tasks (crawls, content, SERP checks) and sends updates and reports.
+
+We want:
+	•	Thin web app (auth + dashboard + API).
+	•	Heavy work done by background jobs and external hosting (RedBullit/Replit).
+	•	One subscription per site, multi-tenant, easy to scale.
+
+High-level components
+	1.	Marketing site
+
+	•	Purpose: Landing pages, sales copy, pricing, “Generate My Website” form.
+	•	Stack: whatever is already in place (likely React/Next).
+	•	Behavior:
+	•	Calls /api/intake on the App when user submits “Generate My Website”.
+	•	Does not manage auth, sessions, or jobs.
+	•	Config: uses APP_BASE_URL to talk to the App.
+
+	2.	App (Control Panel + API)
+
+	•	Purpose:
+	•	Public API for intake from marketing site.
+	•	Auth, sessions, and user accounts.
+	•	Site management (preview view, plans, settings).
+	•	Dashboard (traffic, rankings, last actions) in later phases.
+	•	Likely stack: Node/Express/TS (or similar) for backend + React/SPA for UI.
+	•	Responsibilities:
+	•	Intake: create User, Site, Job records.
+	•	Auth: password-based login via magic-link claim flow.
+	•	Ownership/security: only site owner can see/manage a site.
+	•	Plan selection + payment (Stripe) in next phase.
+	•	Exposes APIs used by front-end and worker.
+
+	3.	Worker (background jobs)
+
+	•	Purpose:
+	•	Poll Job table and execute asynchronous tasks.
+	•	Keep heavy work out of web request/response cycle.
+	•	Runs as a separate process.
+	•	Responsibilities (now and future):
+	•	generate_preview_site: build preview site and set preview_url.
+	•	go_live: handle post-DNS deployment to production domain.
+	•	daily_maintenance: fetch SERP + analytics, minor updates.
+	•	weekly_wave: run Screaming Frog wrapper, generate/publish blogs.
+	•	send_daily_email: digest traffic + actions for the day.
+	•	Uses same DB as App, but only touches Job and relevant domain tables.
+
+	4.	Preview/live sites (RedBullit/Replit)
+
+	•	Purpose:
+	•	Host the actual customer-facing websites.
+	•	Separation:
+	•	App/Worker store metadata and URLs, but the site itself is deployed to RedBullit/Replit.
+	•	Two main URLs per site:
+	•	preview_url: temporary or subdomain-based URL to review before paying.
+	•	live_url: final custom domain once DNS is connected and go-live job runs.
+
+Data model (core entities)
+
+Already implemented or planned:
+	•	User
+	•	email, password_hash, status (invited/active), created_at
+	•	Site
+	•	user_id (nullable until claim), business_name, city, niche
+	•	status: preview_pending | preview_ready | live_pending_dns | live
+	•	preview_url, live_url, created_at
+	•	Job
+	•	type (generate_preview_site, go_live, daily_maintenance, weekly_wave, etc.)
+	•	payload_json, status (queued/running/done/error)
+	•	run_after, created_at, updated_at
+	•	MagicLink
+	•	user_id, site_id, token, expires_at, used_at, created_at
+	•	Session
+	•	user_id, token, created_at, expires_at
+
+Planned for later phases:
+	•	Subscription
+	•	user_id, site_id, plan (starter/pro/agency), stripe_customer_id, stripe_subscription_id, status
+	•	Keyword
+	•	site_id, term, target_url, priority, cluster_id
+	•	Metric
+	•	site_id, date, sessions, clicks, impressions, etc. (GA4/Search Console)
+	•	optional: per keyword metrics
+	•	Action
+	•	site_id, keyword_id (nullable), type (blog_post_published, meta_title_updated, crawl_completed, etc.)
+	•	details (JSON), created_at
+
+End-to-end lifecycle (happy path)
+	1.	Lead → Preview
+
+	•	User fills “Generate My Website” on marketing site.
+	•	Marketing site POSTs to /api/intake with email, business name, city, niche, flags.
+	•	App:
+	•	Upserts User (status=invited, no password).
+	•	Creates Site (status=preview_pending).
+	•	Creates Job(type=generate_preview_site, payload={siteId}).
+	•	Worker picks up generate_preview_site:
+	•	Calls website engine to build site.
+	•	Deploys to RedBullit to get preview_url.
+	•	Updates Site: preview_url + status=preview_ready.
+	•	(Later) creates magic link + sends email.
+
+	2.	Preview → Account claim
+
+	•	For now: admin calls /api/debug/send-magic-link, which logs /claim?token=….
+	•	User clicks link:
+	•	GET /api/claim/validate?token=… returns email, site info.
+	•	Front-end /claim route shows password form.
+	•	POST /api/claim/complete:
+	•	Validates token.
+	•	Sets password_hash, status=active.
+	•	Assigns Site.user_id.
+	•	Marks magic link used.
+	•	Creates Session, sets cookie.
+	•	Returns redirect to /sites/:id/preview.
+
+	3.	Preview page → Plan selection
+
+	•	/sites/:id/preview (protected by auth and ownership) fetches site data.
+	•	Shows:
+	•	Preview (via iframe or link to preview_url).
+	•	Starter/Pro plan cards.
+	•	Clicking plan:
+	•	POST /api/sites/:id/plan to record selection.
+	•	Next phase: redirects to Stripe Checkout.
+
+	4.	Plan → Payment → Go live
+
+	•	After Stripe webhook confirms payment:
+	•	App creates/updates Subscription, marks status=active.
+	•	Site status becomes live_pending_dns.
+	•	User sees “Connect your domain” page:
+	•	Instructions to update DNS records.
+	•	Once DNS is set:
+	•	Worker runs go_live job:
+	•	Deploys to live domain, updates Site.live_url, status=live.
+
+	5.	Ongoing automation
+
+	•	Each live site has daily/weekly schedules.
+	•	Worker:
+	•	daily_maintenance:
+	•	SERP API: update Keyword rankings.
+	•	GA4/Search Console: update Metrics.
+	•	Possibly small on-page tweaks.
+	•	weekly_wave:
+	•	Screaming Frog crawl → issues → updates.
+	•	Topic map refresh via Blog Architect.
+	•	Blog generation and publishing.
+	•	Creates Action records documenting changes.
+	•	Dashboard (future):
+	•	Uses Keyword, Metric, Action to show:
+	•	Traffic trends.
+	•	Top keywords and rank changes.
+	•	“Last action taken” per keyword.
+
+Key design principles
+	•	Thin App:
+	•	The App handles auth, data, and HTTP only.
+	•	No heavy crawling, SEO analysis, or content generation in request/response.
+	•	Worker-first heavy operations:
+	•	All “expensive” operations (site generation, crawls, blogging, reporting emails) are jobs in the Job table.
+	•	Worker can scale horizontally if needed (multiple workers picking jobs).
+	•	Externalized websites:
+	•	Customer sites (preview and live) live outside the App, on RedBullit/Replit.
+	•	App and Worker only manage deployments and store URLs.
+	•	Eventual consistency:
+	•	Intake → job → preview is asynchronous.
+	•	Users expect an email when things are ready; no synchronous long waits.
+	•	Minimal coupling:
+	•	Marketing site only talks to the App via REST.
+	•	App and Worker share DB and optional internal RPC if needed later.
+
+Questions for developer feedback
+	1.	Stack and patterns
+
+	•	Are you comfortable with Node/Express/TS + React for the App, and Node/TS for Worker?
+	•	Do you prefer a specific ORM (Prisma, Drizzle, etc.) for the shared DB?
+	•	Any reason to switch from SQLite to Postgres sooner rather than later?
+
+	2.	Job queue approach
+
+	•	Is a simple DB-backed Job table + polling loop sufficient initially, or do you strongly prefer a dedicated queue (BullMQ, RabbitMQ, etc.) from the start?
+	•	How would you structure retry logic and error handling for repeated failing jobs?
+
+	3.	Security and auth
+
+	•	Any concerns with cookie-based Session table + magic-link flow for v1?
+	•	Would you rather use JWTs for the SPA instead of cookie sessions given our stack?
+
+	4.	Deployment and environments
+
+	•	How do you want to structure staging vs prod for:
+	•	App
+	•	Worker
+	•	Preview/live sites (Replit/RedBullit)?
+	•	Any shared config or secrets approach you recommend (e.g. environment variables via a single store)?
+
+	5.	Scaling / boundaries
+
+	•	Do you see any bottlenecks in this architecture if we get to hundreds of sites?
+	•	Any changes you’d recommend now to make it easier to scale later (e.g. separate read/write DBs, background job sharding, etc.)?
+
+This is the “step back” architecture picture as it stands now. The idea is to keep the app as light as possible, push all SEO/automation into the worker layer, and treat the hosted websites as external artifacts controlled via URLs and deployments.

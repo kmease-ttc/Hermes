@@ -1,0 +1,203 @@
+The next highest-leverage thing to work on is:
+
+👉 Lifecycle + Trust: “Show me what you did and why it matters”
+
+Right now, you’re building a powerful machine, but users will still churn if they don’t see value accumulating and trust that things are actually happening.
+
+You already have the beginnings of this with “What’s Next” and “Recently Completed” — the next step is to formalize this into a real activity + notification system that:
+	•	reinforces value
+	•	reduces support questions
+	•	drives upsells naturally
+	•	makes Arclo feel like a managed service, not a tool
+
+This should come before deeper SEO features, more automations, or agency workflows.
+
+⸻
+
+NEXT WORKSTREAM: Activity, Notifications, and Trust Layer
+
+Agent Prompt
+
+Objective
+
+Implement a unified Activity + Notification system that shows:
+	•	what Arclo is doing
+	•	what changed on the site
+	•	what value it created
+	•	what’s coming next
+	•	when the user should care
+
+This system must power:
+	•	“Recently Completed”
+	•	“What’s Next”
+	•	Email notifications
+	•	In-app notifications
+	•	Upsell triggers
+
+⸻
+
+PART 1 — Formalize the Activity Model (Required)
+
+Create an activities table
+
+Fields:
+	•	id
+	•	site_id
+	•	service_key
+	•	activity_type (setup | seo | content | performance | visibility | system)
+	•	title
+	•	description
+	•	impact_summary (plain language outcome)
+	•	status (scheduled | running | completed | failed)
+	•	started_at
+	•	completed_at
+	•	metadata (json)
+	•	visible_to_user (bool)
+
+Rules
+	•	Every automated or manual action must create an activity
+	•	Activities power UI, email, and notifications
+	•	No “silent work”
+
+⸻
+
+PART 2 — Upgrade “Recently Completed” (Required)
+
+Replace static cards with activity-driven feed
+
+Each completed activity card must show:
+	•	What was done
+	•	Why it matters
+	•	When it happened
+	•	Optional “Learn more” expandable detail
+
+Example:
+“Published new location page for San Marcos”
+Impact: “Helps your business appear in more local searches”
+
+Design requirements
+	•	Strong contrast
+	•	Consistent icons
+	•	Matches Arclo visual language (purple accent, clean cards)
+
+⸻
+
+PART 3 — Upgrade “What’s Next” into a Timeline
+
+Change from list → timeline / queue
+
+Each upcoming activity shows:
+	•	Service responsible
+	•	Scheduled timing (“Next week”, “In 3 days”)
+	•	Whether it’s included or locked
+
+Locked items must show:
+	•	“Available with Blog Automation”
+	•	CTA: Subscribe
+
+⸻
+
+PART 4 — Add Notification System (Critical)
+
+In-App Notifications
+
+Create a notification bell with:
+	•	New completed activities
+	•	Setup tasks requiring user input
+	•	Domain / DNS status updates
+	•	Publishing confirmation
+
+Email Notifications (Phase 1)
+
+Send emails for:
+	•	Site published
+	•	Setup completed (GSC / GA)
+	•	Weekly “Here’s what Arclo did for you”
+	•	Monthly summary
+
+Emails must:
+	•	Be plain-language
+	•	Show concrete actions
+	•	Reinforce value
+	•	Link back to dashboard
+
+⸻
+
+PART 5 — Weekly Value Summary (Big Retention Win)
+
+Create a weekly digest job
+
+Once per week per site:
+	•	Aggregate completed activities
+	•	Generate a summary:
+	•	“3 improvements made”
+	•	“2 new pages published”
+	•	“Performance optimized”
+
+Display this:
+	•	In dashboard
+	•	Via email
+
+This summary should implicitly upsell by showing:
+	•	what’s active
+	•	what’s missing
+	•	what could be added
+
+⸻
+
+PART 6 — Tie Activities to Upsells (Important)
+
+Rules:
+	•	If an activity is from an inactive service:
+	•	show it as “Available”
+	•	add CTA
+	•	If a user clicks “Subscribe”:
+	•	unlock future activities immediately
+	•	show them appear in “What’s Next”
+
+This makes upsells feel like turning on value, not buying features.
+
+⸻
+
+PART 7 — Admin / Internal View (Lightweight)
+
+Add an internal admin view:
+	•	filter activities by site
+	•	mark manual activities complete
+	•	add internal notes
+	•	retry failed activities
+
+This supports early-stage manual execution without breaking UX.
+
+⸻
+
+Definition of Done
+	•	Every action produces an activity
+	•	Dashboard clearly shows progress and value
+	•	Users receive clear signals that Arclo is working
+	•	Upsells are naturally embedded
+	•	Support questions decrease
+
+⸻
+
+Why this is the right next step
+	•	You already have generation
+	•	You already have services
+	•	You already have pricing
+	•	What you don’t yet have is confidence + momentum
+
+This layer turns Arclo from:
+
+“Cool AI site builder”
+
+into:
+
+“My website team that works every week”
+
+⸻
+
+If you want, after this we should do either:
+	1.	Pricing page + packaging rewrite (conversion), or
+	2.	QA + Playwright automation tied to activities (quality at scale)
+
+Say which one you want next and I’ll write that prompt.

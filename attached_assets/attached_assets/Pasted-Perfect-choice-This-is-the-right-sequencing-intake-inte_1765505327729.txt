@@ -1,0 +1,234 @@
+Perfect choice. This is the right sequencing — intake + internal workflow is what turns the “unlimited updates” promise into something operationally sane.
+
+Below is the next agent prompt, written so it can be handed directly to your Replit agent or dev with no extra explanation.
+
+⸻
+
+NEXT WORKSTREAM: Update Request Intake & Internal Workflow
+
+Agent Prompt
+
+Objective
+
+Implement a simple, controlled request intake and execution workflow that allows customers to request website changes and allows Arclo (internal users) to process, track, and complete those requests efficiently.
+
+This system must:
+	•	support the “unlimited updates” promise
+	•	prevent abuse or overload
+	•	clearly show status to customers
+	•	give internal operators a clean, focused work queue
+
+Do NOT build a full ticketing system.
+
+⸻
+
+PART 1 — Customer Request Intake (Required)
+
+Entry Point
+
+Add a primary button in the site dashboard:
+
+“Request a change”
+
+Visible when:
+	•	Site is published
+	•	User has Managed Updates or Unlimited Updates
+
+⸻
+
+Request Form (Minimal)
+
+Fields:
+	•	Free-text input (required):
+“What would you like to change?”
+	•	Optional dropdown:
+	•	Page / Section (Homepage, Services, About, Other)
+	•	Optional URL reference field
+	•	Optional file upload (images/logos only)
+
+Rules:
+	•	No rich text editor
+	•	No previews
+	•	Keep friction low
+
+⸻
+
+Submission Rules
+	•	Unlimited Updates plan:
+	•	Allow one active request at a time
+	•	If one exists, disable button with message:
+“You have a request in progress. You can submit another once it’s complete.”
+	•	Base plan:
+	•	Allow submission
+	•	Display note:
+“Requests are handled on a best-effort basis.”
+
+⸻
+
+After Submit
+	•	Create a change_request record
+	•	Status = queued
+	•	Create an activity:
+“Change request received”
+
+Redirect user to request status view.
+
+⸻
+
+PART 2 — Request Status (Customer View)
+
+Request Status Page
+
+For each request, show:
+	•	Submitted date
+	•	Current status:
+	•	queued
+	•	in progress
+	•	completed
+	•	Short status message:
+	•	“We’re reviewing your request”
+	•	“We’re working on it”
+	•	“Your update is live”
+
+Completion State
+
+When completed:
+	•	Show summary of what was changed
+	•	Optional link to updated page
+	•	Activity entry added:
+“Homepage updated with new service copy”
+
+⸻
+
+PART 3 — Internal Workflow View (Critical)
+
+Internal Dashboard: “Change Requests”
+
+Create an internal-only view listing all requests.
+
+Columns:
+	•	Site name
+	•	Domain
+	•	Plan type (Managed / Unlimited)
+	•	Request summary
+	•	Status
+	•	Submitted at
+	•	Assigned to (optional)
+
+Default sort:
+	•	Unlimited Updates first
+	•	Oldest first
+
+⸻
+
+Request Detail View
+
+Clicking a request opens:
+
+Show:
+	•	Full request text
+	•	Page/URL reference
+	•	Uploaded assets
+	•	Site link
+	•	Active services on the site
+
+Internal controls:
+	•	Change status:
+	•	queued → in progress → completed
+	•	Internal notes (not visible to customer)
+	•	Completion summary (visible to customer)
+
+⸻
+
+PART 4 — Completion Behavior (Required)
+
+When a request is marked completed:
+
+System must:
+	•	Update request status
+	•	Record completion timestamp
+	•	Generate activity entry
+	•	Notify customer (in-app + optional email)
+	•	Unlock “Request a change” for Unlimited plans
+
+⸻
+
+PART 5 — Notifications
+
+In-App
+	•	Request received
+	•	Request started
+	•	Request completed
+
+Email (Phase 1 – Optional)
+	•	Only send email on completion
+Subject:
+“Your website update is live”
+
+Keep copy short and reassuring.
+
+⸻
+
+PART 6 — Guardrails (Very Important)
+	•	No SLA countdown timers
+	•	No public backlog size
+	•	No ability for customers to stack requests
+	•	No “urgent” flags
+	•	No custom scope negotiation UI
+
+This keeps the promise powerful but safe.
+
+⸻
+
+PART 7 — Data Model (Required)
+
+Create change_requests table:
+
+Fields:
+	•	id
+	•	site_id
+	•	user_id
+	•	plan_type
+	•	request_text
+	•	page_reference
+	•	status
+	•	internal_notes
+	•	completion_summary
+	•	created_at
+	•	started_at
+	•	completed_at
+
+⸻
+
+Definition of Done
+	•	Customers can request changes easily
+	•	Status is always visible
+	•	Internal team has a clear work queue
+	•	Unlimited promise is enforced cleanly
+	•	Completed work feeds the activity system
+
+⸻
+
+Why This Matters
+
+This is the operational backbone of your customization promise.
+
+Without this:
+	•	“Unlimited updates” becomes chaos
+With this:
+	•	It becomes a competitive moat
+
+⸻
+
+Next (after this)
+
+Once this is live, the next obvious workstream is:
+
+👉 Before / After Gallery & Proof of Customization
+
+This visually proves:
+	•	sites evolve
+	•	customization is real
+	•	Arclo is not a static builder
+
+When you’re ready, say the word and I’ll write that prompt.

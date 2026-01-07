@@ -1,0 +1,157 @@
+Absolutely. Below is a clean, single agent prompt that covers both requirements without over-complicating the flow.
+
+This is written so your agent/dev can implement it directly.
+
+⸻
+
+NEXT WORKSTREAM: Lead Capture, Notifications & Optional Contact Info
+
+Agent Prompt
+
+Objective
+
+Add lightweight lead visibility and optional contact capture during site creation, without increasing friction or harming conversion.
+
+Specifically:
+	1.	Send Kevin an email every time a site is created
+	2.	Allow users to optionally add phone/email during site generation
+	3.	Use that contact info to improve the generated site
+	4.	Do not make any of this feel required or heavy
+
+⸻
+
+PART 1 — Internal Notification on Site Creation (Required)
+
+Behavior
+
+Every time a user completes “Generate Free Site”, send an internal notification email.
+
+Recipient
+
+Kevin.mease@gmail.com
+
+Trigger
+	•	Fire immediately after a site is successfully generated (preview created)
+	•	Do NOT wait for account creation or payment
+
+Email Contents
+
+Plain text or simple HTML is fine.
+
+Include:
+	•	Business name
+	•	Industry
+	•	City / service area
+	•	Preview URL
+	•	Timestamp
+	•	Whether contact info was provided (yes/no)
+
+Example subject:
+“New site generated — {{business_name}}”
+
+This email is internal only and should not be configurable in the UI yet.
+
+⸻
+
+PART 2 — Optional Contact Info During Site Creation (Required)
+
+Placement
+
+On the Generate Free Site form, add an Optional section below the required fields.
+
+Label clearly:
+“Optional (helps improve your site)”
+
+Fields
+	•	Phone number (optional)
+	•	Email address (optional)
+
+Rules:
+	•	Do NOT require either field
+	•	Do NOT block generation if empty
+	•	Do NOT validate aggressively (basic format only)
+
+⸻
+
+PART 3 — How Contact Info Is Used (Critical)
+
+If phone/email is provided:
+	1.	Automatically include it in the generated site:
+	•	Header or hero section (subtle)
+	•	Contact section
+	•	Footer
+	2.	Use it consistently:
+	•	Same phone/email everywhere
+	•	No placeholders if provided
+
+If NOT provided:
+	•	Generate site without contact info
+	•	Use generic CTA text like:
+“Contact us” / “Get a quote”
+	•	No fake phone numbers or emails
+
+⸻
+
+PART 4 — Data Storage
+
+Store contact info at the site level, not user level.
+
+Fields:
+	•	site.phone (nullable)
+	•	site.email (nullable)
+	•	site.contact_source = user_provided | not_provided
+
+This allows:
+	•	later edits
+	•	future setup services
+	•	analytics integrations
+
+⸻
+
+PART 5 — UX Rules (Very Important)
+	•	Never frame contact info as required
+	•	Never slow down generation
+	•	Never add extra steps
+	•	Never prompt twice
+
+Tone examples:
+	•	“Optional”
+	•	“You can add this later”
+	•	“Helps customers contact you”
+
+⸻
+
+PART 6 — Future-Proofing (Do Not Implement Yet)
+
+Just design for these later capabilities:
+	•	Editing contact info post-generation
+	•	Adding call tracking numbers
+	•	Contact form routing
+	•	SMS/email notifications
+
+No need to build them now.
+
+⸻
+
+Definition of Done
+	•	Kevin receives an email for every site generated
+	•	Users can optionally add phone/email during creation
+	•	Generated sites look better when contact info is provided
+	•	No impact to conversion or speed
+	•	No extra cognitive load
+
+⸻
+
+Why This Matters
+	•	You get real-time visibility into demand
+	•	You can spot patterns early (industry, city, quality)
+	•	Sites instantly feel more “real” and trustworthy
+	•	You don’t sacrifice funnel speed
+
+⸻
+
+If you want next, the most logical follow-ups are:
+	1.	Simple CRM / lead list view for generated sites, or
+	2.	Contact form + routing (email/SMS) setup service
+
+Say which one and I’ll write that prompt.

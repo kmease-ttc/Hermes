@@ -1,0 +1,201 @@
+Here’s a clean spec you can hand straight to your dev / Replit agent.
+
+Goal:
+	1.	Stop using ad-hoc colors and stock logos.
+	2.	Use a curated “flat color” library (like the screenshot) for every site.
+	3.	Generate a simple, custom logo via prompt using the customer’s info.
+	4.	Standardize button styles so everything looks like one product.
+
+No code, just behavior + rules.
+
+⸻
+
+1. Overall Design Goals
+
+For every generated site:
+	1.	Colors come from a fixed palette library (similar to the “flat colors” sets in the screenshot), never random RGB.
+	2.	Buttons have a consistent, premium look across all sites.
+	3.	The logo is AI-generated for that business, not a generic stock/star/placeholder.
+	4.	The hero section always looks intentional:
+	•	clear contrast
+	•	beautiful color combo
+	•	logo + buttons that match the palette.
+
+⸻
+
+2. Color Palette Library (Replace Existing Color Logic)
+
+2.1 Palette Structure
+
+Create a library of palettes. Each palette should contain at least:
+	•	primary – used for main buttons and key accents
+	•	secondary – used for secondary buttons, highlights
+	•	accent – used sparingly for badges, icons, small highlights
+	•	bg_light – main light background
+	•	bg_dark – hero / dark sections, or used as overlay
+	•	text_on_light – near-black or deep gray
+	•	text_on_dark – off-white
+
+Think of each row in the screenshot (4–6 swatches) as one palette. Map those swatches into this structure.
+
+2.2 Palette Library Source & Style
+	•	Build a library of 20–30 palettes inspired by “flat color” sets like the screenshot:
+	•	No neon
+	•	No muddy low-contrast combos
+	•	All palettes must look good in flat UI (not just illustration).
+	•	Every palette must be tested once in a sample hero layout before being accepted into the library.
+
+2.3 Palette Selection Rules
+
+The generator should only use palettes from this library.
+
+Use basic industry → palette mapping:
+	•	Trades (plumbing, HVAC, electricians, roofers):
+	•	Blue/teal/indigo + neutral gray palettes
+	•	Medical / wellness / dental:
+	•	Teal/green + light neutral palettes (“fresh/clean”)
+	•	Corporate / B2B / software:
+	•	Indigo, navy, slate palettes
+	•	Creative / interiors / design:
+	•	Purple/gold, mocha/sand, or more colorful combos
+	•	Landscaping / outdoor / farm:
+	•	Forest green + sage, earthy palettes
+
+If the industry is unknown, pick from a small “safe default” subset (e.g., 3–4 modern indigo/blue palettes).
+
+2.4 Usage Rules
+	•	Hero background uses bg_dark + optional subtle gradient overlay, not aggressive colored filters over the photo.
+	•	Main page backgrounds use bg_light.
+	•	Body text on light sections uses text_on_light; on dark sections uses text_on_dark.
+	•	Never overlay a strong tinted color over hero photos that makes faces or office scenes look green/purple (like the MRI screenshot). Keep photos mostly natural; use a subtle dark gradient only for readability.
+
+2.5 Contrast & Accessibility
+
+Before marking a preview as “ready,” automatically check:
+	•	Primary button text vs button background meets AA contrast.
+	•	Hero headline vs background meets AA contrast.
+	•	Do not accept palettes/usage where white text sits on mid-tone colors that are too light.
+
+If contrast fails, either:
+	•	Darken the overlay on the hero, or
+	•	Switch text color to text_on_light or text_on_dark accordingly, or
+	•	Pick a different palette.
+
+⸻
+
+3. Button Design System
+
+Standardize buttons across all generated sites.
+
+3.1 Primary Buttons
+	•	Background: primary from palette
+	•	Text: text_on_dark (usually white/off-white)
+	•	Shape: pill/rounded rectangle (10–12px corner radius)
+	•	Size:
+	•	Height: visually ~44–52px
+	•	Padding: generous (e.g., 14–16px vertical, 20–24px horizontal)
+	•	Style:
+	•	Slight shadow (soft, not heavy)
+	•	Flat or very subtle gradient within the palette (no glossy 3D look)
+	•	Hover:
+	•	Slightly darker or lighter shade of primary
+	•	Slight increase in shadow or subtle scale (1.02x)
+	•	Disabled/secondary state: be clearly different (muted, less shadow).
+
+3.2 Secondary Buttons (e.g., “Call Now”)
+	•	Background: bg_light or transparent
+	•	Border: 1–2px primary
+	•	Text: primary
+	•	Same corner radius and padding as primary
+	•	Icon on left (phone, mail, etc.) with consistent size and spacing
+	•	Hover: fill with a very light tint of the primary color, or slightly darken border.
+
+3.3 Button Placement Rules
+	•	In hero:
+	•	Primary action first (e.g., “Get Started”, “Get a Quote”)
+	•	Secondary “Call Now” button second
+	•	Maintain at least 16–24px vertical spacing between text and buttons.
+	•	On mobile, stack buttons full-width with 8–12px vertical gap.
+
+⸻
+
+4. Logo Generation (No More Stock Logos)
+
+The current logo (“star”, generic icons, etc.) must be replaced with a prompt-based, business-specific logo.
+
+4.1 Inputs for Logo Generation
+
+When a project is created, collect or infer:
+	•	Business name (required)
+	•	Industry / category (HVAC, dentist, florist, plumber, etc.)
+	•	Brand feel if available (friendly, premium, playful, serious)
+	•	Palette’s primary & secondary colors
+
+If the customer gives a website URL and we can extract an existing logo, that can be used as a reference, but if not, we must generate a new one.
+
+4.2 Logo Generation Behavior
+	•	Generate at least one logo per customer using the AI image model.
+	•	Logo style:
+	•	Simple, flat, modern
+	•	Icon + wordmark (text)
+	•	Icon not overly literal clipart; more of a symbolic or geometric metaphor
+	•	No 3D, no photo, no complex gradients
+	•	Uses the selected palette’s colors (primary / secondary)
+	•	Avoid:
+	•	Default “star” or generic shapes used across sites
+	•	Harsh outlines or neon colors
+	•	Overly detailed illustrations
+
+4.3 Prompt Guidelines (for internal use)
+
+When calling the model, construct a prompt like:
+
+“Design a simple, modern flat logo for a business named {BusinessName}.
+Industry: {Industry description}.
+Style: clean, minimal, professional, suitable for a website header.
+Use a flat icon plus the business name as a wordmark.
+Use these brand colors: {PrimaryColor}, {SecondaryColor}.
+Avoid 3D effects, gradients, photos, and detailed scenes.
+No text inside the icon, only shapes.”
+
+The system can store both:
+	•	A horizontal logo (icon + text) for the navbar
+	•	A square icon for favicon and mobile
+
+4.4 Fallbacks
+	•	If logo generation fails, retry once.
+	•	If it still fails:
+	•	Use a text-only wordmark styled with the palette (e.g., business name in a nice typeface, colored with primary), but this should be rare.
+	•	Do not fall back to the old generic stock icon set.
+
+4.5 Preview Quality Gate
+
+A site must not be marked “Preview Ready” unless:
+	•	A logo image is present (generated or high-quality extracted) OR a clean text wordmark is in place.
+	•	The logo’s colors do not clash with the overall palette (prefer using palette colors).
+
+⸻
+
+5. QA / Acceptance Criteria
+
+Before a generated site is shown to users:
+	1.	Colors:
+	•	All colors used come from a palette in the library.
+	•	Hero background, buttons, badges, and text adhere to the palette structure.
+	•	No strange color overlays (like green tinting the office photo).
+	2.	Buttons:
+	•	Primary and secondary buttons match the system described above.
+	•	“Call Now” always appears styled as a secondary button with icon.
+	•	On both desktop and mobile, buttons are large enough and readable.
+	3.	Logo:
+	•	The navbar contains a logo that clearly references the business name.
+	•	The logo does not look like a random star or generic placeholder.
+	•	The logo color coordinates with the palette.
+	4.	Overall feel:
+	•	If you screen-shot the hero, it should look like a real, professionally designed site for that business, not a template with mismatched colors and random icon.
+
+⸻
+
+You can give this entire spec to your dev/agent as:
+
+“New design system for generated sites — implement palette library, button system, and prompt-based logo generation exactly as described, and enforce the preview quality checks before we ever show ‘Preview Ready’.”

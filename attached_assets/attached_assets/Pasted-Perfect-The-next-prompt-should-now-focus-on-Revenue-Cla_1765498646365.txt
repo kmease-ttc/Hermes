@@ -1,0 +1,212 @@
+Perfect. The next prompt should now focus on Revenue Clarity & Conversion.
+
+At this stage, Arclo is functionally strong. The remaining risk is confusion at the moment of purchase. Pricing, packaging, and add-ons must feel:
+	•	obvious
+	•	fair
+	•	easy to say yes to
+	•	easy to upgrade later
+
+So the next workstream is:
+
+👉 Pricing, Packaging, and Monetization UX
+
+This is about turning interest into money without friction.
+
+⸻
+
+NEXT WORKSTREAM: Pricing, Packaging & Monetization
+
+Agent Prompt
+
+Objective
+
+Redesign Arclo’s pricing and packaging system so that:
+	•	users understand what they’re paying for
+	•	the base plan feels like a no-brainer
+	•	add-ons feel modular and valuable
+	•	upgrades feel like “turning on outcomes,” not buying complexity
+	•	pricing is consistent across marketing, checkout, and dashboard
+
+This work should not change core functionality — only how it’s presented, bundled, and sold.
+
+⸻
+
+PART 1 — Define the Pricing Model (Required)
+
+Base Plan (Mandatory)
+
+Implement a single required base plan:
+
+Starter Website Platform
+Includes:
+	•	Website hosting
+	•	Ongoing site updates
+	•	Core maintenance
+	•	Basic performance monitoring
+	•	Activity + reporting dashboard
+
+Price target:
+	•	~$99/month (configurable)
+
+Rules:
+	•	Exactly one base plan must be active per site
+	•	No site can exist without a base plan after publish
+
+⸻
+
+PART 2 — Modular Add-Ons (Critical)
+
+Add-Ons Are the Primary Upsell Mechanism
+
+All advanced value must live in add-ons, not bundles.
+
+Implement add-ons as independent services with:
+	•	clear outcome-based names
+	•	plain-language descriptions
+	•	transparent pricing
+	•	immediate activation
+
+Examples:
+	•	Weekly Website Improvements
+	•	Blog Writing
+	•	Location Page Expansion
+	•	Technical SEO
+	•	Google Visibility Monitoring
+	•	Rank Tracking
+
+Each add-on must:
+	•	map to one or more background services
+	•	surface activities in the dashboard
+	•	appear in “Available Services” when inactive
+
+⸻
+
+PART 3 — Pricing Page Redesign (Marketing Site)
+
+Requirements
+
+Redesign the pricing page to show:
+	1.	Base Plan (centered, emphasized)
+	2.	Add-Ons (below, modular)
+	3.	Example configurations (“Most customers choose…”)
+
+Rules
+	•	No jargon
+	•	No feature grids
+	•	No SEO terminology without explanation
+	•	Focus on outcomes
+
+Example:
+“Show up on Google in more cities”
+instead of
+“Programmatic location pages”
+
+⸻
+
+PART 4 — Checkout Experience (Critical)
+
+Checkout Must Match Pricing Page Exactly
+
+Ensure:
+	•	same names
+	•	same prices
+	•	same descriptions
+
+Checkout flow:
+	1.	Base plan (required)
+	2.	Add-ons (checkboxes)
+	3.	Domain (if applicable)
+	4.	Setup assistance (optional)
+
+Display:
+	•	monthly total
+	•	annual items clearly labeled
+	•	no surprises
+
+⸻
+
+PART 5 — In-Product Upsell UX
+
+Rules for Upsells
+
+Upsells should appear:
+	•	in “Available Services”
+	•	in “What’s Next”
+	•	contextually after milestones
+
+Never:
+	•	interrupt primary workflows
+	•	block required actions
+	•	use popups
+
+Tone:
+Helpful, optional, outcome-focused.
+
+⸻
+
+PART 6 — Service Comparison & Transparency
+
+Add “What You’re Missing” View
+
+When a user has:
+	•	base plan only
+
+Show a lightweight comparison:
+	•	what’s active
+	•	what’s available
+	•	what outcomes they could unlock
+
+No pressure language.
+
+⸻
+
+PART 7 — Pricing Governance (Internal)
+
+Add config-driven pricing:
+	•	prices editable without redeploy
+	•	ability to:
+	•	hide services
+	•	change copy
+	•	A/B pricing later
+
+Include feature flags for:
+	•	early-user discounts
+	•	bundles
+	•	promotions
+
+⸻
+
+Definition of Done
+	•	Pricing is simple and obvious
+	•	Users understand what they’re buying
+	•	Add-ons feel optional but valuable
+	•	Checkout matches expectations
+	•	Revenue opportunities are visible everywhere without being pushy
+
+⸻
+
+Why this is the right next step
+
+You’ve already built:
+	•	value
+	•	trust
+	•	guidance
+	•	safety
+
+Now you need to capture that value cleanly.
+
+This work ensures Arclo feels:
+
+“Worth it, easy to understand, and fair”
+
+instead of:
+
+“Powerful but confusing.”
+
+⸻
+
+After this, the next two workstreams would be:
+	1.	Agency / multi-site mode
+	2.	Growth loops (referrals, examples, SEO for Arclo itself)
+
+When ready, I’ll write either prompt.

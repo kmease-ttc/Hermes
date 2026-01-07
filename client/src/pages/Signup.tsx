@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { buildRoute, ROUTES } from "@shared/routes";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -78,9 +79,7 @@ export default function Signup() {
             <Card className="bg-card border-border">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                    <Mail className="w-6 h-6 text-white" />
-                  </div>
+                  <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
                 </div>
                 <CardTitle className="text-2xl">Check your email</CardTitle>
                 <CardDescription>
@@ -121,6 +120,9 @@ export default function Signup() {
         <div className="max-w-md mx-auto">
           <Card className="bg-card border-border">
             <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
+              </div>
               <CardTitle className="text-2xl">Create Your Free Account</CardTitle>
               <CardDescription>
                 {scanId 

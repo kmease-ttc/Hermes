@@ -1,0 +1,189 @@
+Here is a single, production-ready prompt you can hand directly to your Replit agent to finish the /blog (Resources) page properly.
+
+This prompt assumes:
+	•	You want Arclo to rank
+	•	You already prefer plain-language outcomes, not SEO jargon
+	•	The agent can create content + metadata + images
+	•	The agent can edit existing blog entries and add new ones
+
+No code, just instructions.
+
+⸻
+
+PROMPT: Finish and Optimize the Arclo Blog / Resources Page for SEO & Conversion
+
+You are completing the Arclo blog/resources page at /blog.
+
+Your goals are:
+	1.	Publish high-quality blog posts that help Arclo rank in Google.
+	2.	Apply blog SEO best practices automatically (without exposing jargon to readers).
+	3.	Add relevant images to each blog.
+	4.	Ensure blogs are internally linked and support Arclo’s core keyword strategy.
+	5.	Make the blog useful for small business owners, not SEO experts.
+
+⸻
+
+1. Blog Content Requirements
+
+Audience
+	•	Local business owners (HVAC, plumbing, bakery, med spa, etc.)
+	•	Non-technical
+	•	They care about:
+	•	more customers
+	•	showing up on Google
+	•	having their website “handled”
+
+Tone
+	•	Clear
+	•	Helpful
+	•	Practical
+	•	No SEO jargon unless explained simply
+	•	Never assume the reader knows marketing terms
+
+⸻
+
+2. Keyword Strategy (Internal Only – Do NOT Expose Jargon to Readers)
+
+Internally, Arclo needs to rank for keywords related to:
+	•	AI website builder
+	•	Done-for-you websites
+	•	Local business SEO
+	•	Getting found on Google
+	•	Service + city pages
+	•	Small business websites
+	•	Website optimization
+	•	AI marketing for local businesses
+
+Agent Instructions
+	1.	Generate or reuse Arclo’s top ~100 target keywords, grouped into clusters.
+	2.	For each blog post:
+	•	Select 1 primary keyword
+	•	Select 3–4 supporting keywords from the same cluster
+	3.	Each blog post must clearly cover at least 4 relevant keywords from Arclo’s overall strategy.
+	4.	Keywords must be woven naturally into the content — do not keyword-stuff.
+
+⸻
+
+3. Blog Structure (Must Follow This Exactly)
+
+Each blog post must include:
+	1.	SEO Title (H1)
+	•	Clear benefit
+	•	Plain language
+	•	Includes the primary keyword naturally
+	2.	Intro Section
+	•	2–3 short paragraphs
+	•	Explain the problem the business owner has
+	•	Preview how the post helps
+	3.	Body Sections
+	•	Use H2 and H3 headings
+	•	Break content into scannable sections
+	•	Each section should answer a real business question
+	4.	Internal Links
+	•	Link to:
+	•	At least 2 other Arclo blog posts
+	•	At least 1 Arclo product or pricing page
+	•	Anchor text must be natural (not “click here”).
+	5.	Conclusion
+	•	Summarize key takeaways
+	•	Reinforce that Arclo handles this automatically
+	6.	Metadata
+	•	Meta title (≤ 60 characters)
+	•	Meta description (≤ 155 characters)
+	•	URL slug optimized for the primary keyword
+	7.	Tags
+	•	3–6 tags per post
+	•	Tags should match keyword clusters (e.g., “local SEO”, “small business websites”, “AI marketing”)
+
+⸻
+
+4. Images for Each Blog Post
+
+Image Requirements
+	•	Each blog post must have:
+	1.	Featured image (hero image) at the top
+	2.	Optional 1–2 supporting images inside the post
+
+Image Generation Rules
+	•	Images must:
+	•	Match the topic of the blog
+	•	Look professional and modern
+	•	Be relevant to local businesses
+	•	Avoid:
+	•	Generic office photos
+	•	Random stock imagery
+	•	Abstract tech visuals that don’t relate to small businesses
+
+Image Prompt Guidelines
+
+For each blog, generate images using prompts like:
+
+“Create a clean, professional blog header image illustrating {blog topic} for small business owners.
+Style: modern, friendly, real-world business setting.
+Avoid generic corporate offices.
+No text in the image.”
+
+Image SEO
+	•	Add descriptive alt text for every image
+	•	Alt text should describe the image and relate to the blog topic
+
+⸻
+
+5. Cross-Linking Rules (Critical for Ranking)
+
+Across the entire blog section:
+	1.	Every blog post must:
+	•	Link out to at least 2 other blog posts
+	•	Receive links from at least 2 other blog posts
+	2.	Create a hub-and-spoke structure:
+	•	Core posts (e.g., “How to Get Found on Google as a Local Business”)
+	•	Supporting posts that link back to the core post
+	3.	Ensure no blog post is orphaned.
+
+⸻
+
+6. Blog Topics to Cover Immediately
+
+Ensure the current and newly written blogs cover topics like:
+	•	How small businesses get found on Google
+	•	Why service and location pages matter
+	•	Why outdated websites stop customers from calling
+	•	How AI can manage a website automatically
+	•	Common website mistakes local businesses make
+	•	How Arclo replaces agencies and DIY website tools
+
+If any of these themes are missing, create new posts to cover them.
+
+⸻
+
+7. Publishing & Quality Checks
+
+Before marking the blog page “done”:
+	•	Confirm every blog has:
+	•	H1, H2s, internal links, images, tags
+	•	Confirm each blog targets at least 4 Arclo keywords
+	•	Confirm no blog uses unexplained SEO jargon
+	•	Confirm images match the topic
+	•	Confirm cross-linking is complete
+
+⸻
+
+8. Final Output
+
+When complete:
+	•	The /blog page should feel like a real resource center, not placeholder content
+	•	A small business owner should feel helped
+	•	Google should clearly understand:
+	•	What Arclo does
+	•	Who it’s for
+	•	Why it’s authoritative in this space
+
+⸻
+
+If you want next, I can:
+	•	Generate the first 5 blog posts fully written
+	•	Generate the 100-keyword cluster list explicitly
+	•	Design a blog publishing cadence (weekly/monthly)
+	•	Create a pillar page + supporting posts map
+
+Just tell me what to do next.

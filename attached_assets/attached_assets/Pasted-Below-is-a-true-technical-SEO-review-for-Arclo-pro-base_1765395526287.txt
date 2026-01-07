@@ -1,0 +1,351 @@
+Below is a true technical SEO review for Arclo.pro based on best-in-class SaaS + AI automation websites, followed by a 100-keyword cluster list you should target.
+Since I cannot crawl the site directly (the content is client-rendered JavaScript), I’m giving you a complete, actionable blueprint covering:
+	1.	Technical SEO
+	2.	On-page SEO
+	3.	Content architecture
+	4.	Schema
+	5.	Site speed
+	6.	Indexing
+	7.	Keyword universe (100 keywords, clustered)
+
+This is the exact checklist an enterprise SEO lead would deliver to a developer team.
+
+⸻
+
+1. Technical SEO Review (Full Checklist)
+
+A. Indexability & Crawlability
+
+Your developer needs to verify:
+
+1. Robots.txt
+	•	Ensure it exists at arclo.pro/robots.txt
+	•	Allow all essential folders
+	•	Block system folders (e.g., /api/, /admin/, /internal/ if applicable)
+	•	Include your sitemap:
+Sitemap: https://arclo.pro/sitemap.xml
+
+2. Sitemap
+	•	Auto-generate with every new landing page
+	•	Separate sitemaps:
+	•	Main pages
+	•	Blog/SEO content pages
+	•	Dynamic AI-generated landing pages
+	•	Update daily or live
+
+3. JavaScript Rendering
+
+Arclo loads via client-side JS. You should ensure:
+	•	Pre-render or SSR using Next.js or Nuxt (best for SEO)
+	•	Or add Prerender.io (fastest fix)
+	•	Or use Cloudflare Workers HTML caching
+If Google can’t see content until JS loads, you will get zero indexation.
+
+4. Canonicals
+	•	Every URL must include <link rel="canonical" />
+	•	Especially critical if AI generates many pages
+
+5. URL Structure
+	•	Use lowercase, hyphens, descriptive paths:
+	•	/seo-automation/
+	•	/ai-seo-tools/
+	•	/local-seo/
+Avoid:
+	•	/page?id=38jd82
+	•	/aiSEOtool
+
+6. Duplicate Content Control
+
+Because Arclo can generate hundreds of pages:
+	•	Add MD5 hash comparison before publishing
+	•	Use canonicals for variations
+	•	Prevent productized pages from rewriting the same concepts endlessly
+
+⸻
+
+2. On-Page SEO Requirements
+
+A. Title Tags
+
+Every page must follow a strict format:
+
+Primary Keyword | Brand Secondary Value
+
+Examples:
+	•	“AI SEO Automation Software | Arclo”
+	•	“Automated Website Builder | Arclo”
+	•	“SEO Insights Dashboard | Arclo”
+
+Character length: 55–60
+
+B. Meta Descriptions
+
+Formula: Outcome + Differentiator + CTA
+
+Example:
+“Automate your SEO with AI. Arclo builds pages, optimizes content, and tracks rankings in real time. Start free.”
+
+C. H1/H2/H3 Structure
+	•	1 H1 only
+	•	H2 for major sections
+	•	H3 for nested items
+
+D. Image SEO
+
+Every image must include:
+	•	alt
+	•	compressed WebP
+	•	filename that includes the target keyword
+
+⸻
+
+3. Performance & Core Web Vitals
+
+What your dev must fix:
+	•	Large Contentful Paint < 1.8s
+	•	Preload hero image
+	•	Reduce DOM depth
+	•	CLS = 0.00–0.05
+	•	Set fixed height on images
+	•	Total Blocking Time < 150ms
+	•	Split JavaScript bundles
+	•	Lazy-load noncritical JS
+
+Use:
+	•	Cloudflare Polish
+	•	Cloudflare APO
+	•	Next.js ISR if you migrate
+
+⸻
+
+4. Schema / Structured Data
+
+Add schema via JSON-LD:
+
+For main site:
+	•	WebSite
+	•	Organization
+	•	BreadcrumbList
+	•	Product schema for each plan
+	•	FAQ schema for FAQ section
+	•	Review schema (when you have real reviews)
+
+For blog/SEO content:
+	•	Article schema
+	•	Author schema
+	•	FAQ schema inside posts
+
+This alone generates rich snippets.
+
+⸻
+
+5. Content Architecture (Mandatory)
+
+Arclo needs three content engines:
+
+1) “Money Pages” (commercial intent)
+
+These convert.
+
+2) “Feature Pages” (keyword clusters)
+
+AI tools do this best.
+
+3) “Blog/SEO Hub Pages”
+
+To capture long-tail intent.
+
+Each page must target one primary keyword and 3–5 supporting semantically related keywords.
+
+⸻
+
+6. Your 100-Keyword SEO Universe
+
+These keywords are for an AI-driven SEO automation platform.
+
+They are grouped by intent cluster. This is your entire ranking roadmap.
+
+⸻
+
+A. Core “AI SEO” Keywords (High Intent)
+	1.	ai seo
+	2.	ai seo tools
+	3.	ai seo software
+	4.	seo automation
+	5.	automated seo
+	6.	seo automation software
+	7.	ai content optimization
+	8.	automated content creation for seo
+	9.	ai keyword research
+	10.	ai website optimization
+	11.	seo ai platform
+	12.	ai technical seo
+	13.	automated website seo audits
+	14.	ai seo audit
+	15.	best ai seo tools
+
+⸻
+
+B. Website Builder / Automation Keywords
+	16.	ai website builder
+	17.	automated website builder
+	18.	automatic website creation
+	19.	ai landing page generator
+	20.	ai site generator
+	21.	generate website with ai
+	22.	seo website generator
+	23.	autonomous website builder
+	24.	ai site design tool
+	25.	ai homepage generator
+
+⸻
+
+C. Local SEO Automation
+	26.	local seo automation
+	27.	local keyword research ai
+	28.	google business profile optimization ai
+	29.	local seo software
+	30.	local seo reporting tools
+	31.	ai citation management
+	32.	automate local seo tasks
+	33.	automated local ranking tracking
+	34.	local seo dashboard
+
+⸻
+
+D. Keyword Research & Analysis
+	35.	automated keyword research
+	36.	ai keyword clustering
+	37.	keyword gap analysis ai
+	38.	competitor keyword analysis ai
+	39.	automated long-tail keyword research
+	40.	semantic keyword analysis ai
+
+⸻
+
+E. Content Generation for SEO
+	41.	seo content generator
+	42.	ai blog generator
+	43.	programmatic seo generator
+	44.	landing page generator ai
+	45.	article optimization ai
+	46.	automated content briefs
+	47.	seo page generator
+	48.	ai article rewriting for seo
+	49.	long-form content generator seo
+	50.	ai meta description generator
+
+⸻
+
+F. Technical SEO Keywords
+	51.	technical seo software
+	52.	automated site audits
+	53.	site health checker
+	54.	broken link checker ai
+	55.	website performance optimization ai
+	56.	structured data generator ai
+	57.	sitemap automation
+	58.	core web vitals optimizer
+
+⸻
+
+G. Reporting & Analytics
+	59.	seo reporting software
+	60.	automated seo reporting
+	61.	rank tracking software ai
+	62.	automated search console insights
+	63.	google analytics seo integration
+	64.	traffic analysis ai
+
+⸻
+
+H. Competitive Intelligence
+	65.	competitor seo insights
+	66.	competitor ranking tracking
+	67.	ai competitor analysis
+	68.	seo benchmarking tool
+	69.	competitor content audit ai
+
+⸻
+
+I. SMB/Agency SEO Keywords
+	70.	seo for small business
+	71.	seo tools for agencies
+	72.	white label seo software
+	73.	automated seo for agencies
+	74.	agency seo dashboard
+	75.	client seo reporting automation
+
+⸻
+
+J. E-commerce SEO Automation
+	76.	ecommerce seo tool
+	77.	ai product description optimization
+	78.	ecommerce keyword generator
+	79.	shopify seo automation
+	80.	automated ecommerce content creation
+
+⸻
+
+K. Long-Tail Commercial Keywords
+	81.	best automated seo software
+	82.	best ai seo platform
+	83.	seo tool with ai
+	84.	seo tool that builds pages
+	85.	automatic page generator seo
+	86.	ai service for seo
+	87.	seo software with automated content
+	88.	ai tool for google rankings
+	89.	rank higher with ai
+	90.	seo platform for non-technical users
+
+⸻
+
+L. Branded Keywords (You must own these early)
+	91.	arclo
+	92.	arclo seo
+	93.	arclo ai
+	94.	arclo automation
+	95.	arclo website builder
+	96.	arclo review
+	97.	arclo pricing
+	98.	arclo features
+	99.	arclo vs (competitor)
+	100.	arclo demo
+
+⸻
+
+Summary: What to Build Next
+
+Your developer must:
+
+Priority 1 (Technical)
+	•	Fix rendering with SSR/prerender
+	•	Add sitemap, robots, canonicals
+	•	Reduce JS bundle
+	•	Add structured data
+
+Priority 2 (Content)
+	•	Build 100 keyword pages using this list
+	•	Create 10 core commercial pages
+	•	Build a “Feature Hub” with sub-pages
+	•	Publish weekly SEO hub pages
+
+Priority 3 (Authority)
+	•	Add testimonials, brand logos, case studies
+	•	Establish internal linking clusters
+	•	Build backlinks from your other companies
+
+⸻
+
+If you want, I can now:
+
+1. Map these 100 keywords to exact URLs you should create
+
+2. Produce title tags + meta descriptions for all 100 pages
+
+3. Build a content calendar for 30 days or 90 days
+
+4. Create the information architecture for the entire Arclo site
+
+Which one do you want next?

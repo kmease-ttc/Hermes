@@ -1,0 +1,90 @@
+1. Identify the pages that need to be crawlable
+
+Make a list of all the marketing/SEO‑friendly routes for each site (e.g. /services/anxiety‑treatment, /locations/orlando, /blog/…, etc.).
+
+Exclude dashboard or app pages that are meant for logged‑in users and shouldn’t be indexed.
+
+2. Implement static HTML generation (prerendering or SSG)
+
+Option A – Static Site Generation (preferred long‑term)
+If feasible, migrate the marketing pages of each site to a framework with built‑in SSG/SSR (e.g. Next.js, Remix). Use getStaticProps/getStaticPaths (Next.js) or equivalent to output static HTML for each route at build time.
+
+Option B – Puppeteer prerender (quick fix across existing Vite/React projects)
+For each site:
+
+Install Puppeteer (if not already):
+
+npm install puppeteer
+
+
+Create a prerender script that:
+
+Launches Puppeteer.
+
+Navigates to each route in your list.
+
+Waits for the page to fully render (use a flag like window.__PRERENDER_READY__ to signal completion).
+
+Saves the resulting HTML to a dist/prerendered/<route>/index.html file.
+
+Run the prerender script during your build/deploy pipeline.
+
+node scripts/prerender-puppeteer.js
+
+
+Serve the prerendered HTML to bots:
+
+Add middleware (e.g. in Express) that checks the User-Agent for common bots (Googlebot, Bingbot, Screaming Frog) and serves the prerendered HTML if it exists.
+
+For normal users, fall back to your SPA so interactivity remains unchanged.
+
+3. Inject canonical tags correctly
+
+For each page in your route list, ensure a <link rel="canonical" href="https://<domain>/<route>" /> tag is present in the prerendered HTML.
+
+When using Puppeteer prerender, generate these tags in your React head components before the prerender script runs.
+
+If you migrate to Next.js, use the <Head> component to define the canonical tag per page.
+
+4. Verify internal links are present in HTML
+
+Make sure the prerendered pages include links to other important pages (in header, footer, or body). This ensures crawlers discover the entire site graph.
+
+Avoid reliance on client‑side navigation for discovery; the links must be in the initial HTML.
+
+5. Handle “Soft 404s” and status codes
+
+When serving prerendered pages, return proper HTTP 200 status codes for real pages and 404 for missing pages.
+
+Do not return a generic index.html for unknown routes (this creates soft 404s).
+
+6. Regenerate prerendered pages after any content change
+
+Any time content or routes change, run the prerender script again before deploying.
+
+Automate this regeneration in your CI/CD pipeline.
+
+7. Test with Screaming Frog and cURL
+
+After implementing prerendering/SSG:
+
+Run Screaming Frog in spider mode (HTML rendering) on each domain and confirm it discovers all routes without 404s.
+
+For spot checks, run:
+
+curl -A "Googlebot" https://<domain>/<route> | head -n 40
+
+
+and verify real content and canonical tags are present.
+
+8. Apply these steps to Arclo‑generated sites
+
+Update the Arclo generator to include prerendering or SSG for client websites it produces.
+
+Ensure the generator outputs proper canonical tags and serves HTML to bots as described above.
+
+Provide a deployment script that runs the prerender step for each new site.
+
+Why this solves the problem
+
+By generating and serving static HTML for all SEO‑relevant routes, you eliminate the crawler “empty shell” issue inherent in client‑only SPAs. Canonical tags prevent duplicate‑content confusion, and real internal links let search engines discover the whole site. Implementing this across your sites—and in Arclo’s site generator—ensures consistent crawlability and indexing without relying on sitemaps as a fallback.

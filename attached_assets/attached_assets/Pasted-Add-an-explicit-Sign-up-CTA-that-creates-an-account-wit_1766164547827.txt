@@ -1,0 +1,81 @@
+Add an explicit “Sign up” CTA that creates an account without forcing the “Generate My Free Site / ROI estimate” flow.
+
+Implementation (Replit prompt)
+
+Goal
+Users should be able to:
+
+1. Click “Generate My Free Site” (existing primary path) and go into the site/ROI flow exactly as-is.
+2. Click “Sign up” (new path) and create an account with no site creation required.
+
+UX changes
+
+1. Header nav
+
+* Add a “Sign up” link/button in the top nav (next to “Sign in”).
+* Behavior:
+
+  * If logged out: route to account-only signup.
+  * If logged in: route to dashboard (or no-op / hide).
+
+2. Hero / above-the-fold
+
+* Keep “Generate My Free Site” as the primary CTA.
+* Add a secondary CTA text link/button: “Just sign up” (or “Create account”) that routes to account-only signup.
+* Optional microcopy under buttons: “No credit card required.”
+
+Routing
+You already added an account-only path as part of /get-started (“Just Create Account”). Reuse it so we don’t fork logic.
+
+Option A (preferred): Direct route to account-only signup
+
+* Header “Sign up” → /signup?mode=account (or /get-started?path=account then auto-forward)
+* Hero “Just sign up” → same route.
+
+Option B: Route to /get-started
+
+* Header “Sign up” → /get-started with the “Just Create Account” option preselected or highlighted
+* Slightly more clicks, but consistent with your existing selector page.
+
+Frontend implementation details
+
+1. Add nav item
+
+* Update your header component to include:
+
+  * “Sign up” (visible when logged out)
+  * “Sign in” (existing)
+* Styling: if you already have a primary gradient button for “Generate My Free Site”, make “Sign up” a simple button (outline) or plain link so it doesn’t compete.
+
+2. Add hero secondary CTA
+
+* Under the primary CTA, add “Just sign up” as a secondary action.
+* It should route to the account-only signup route (same as header).
+
+3. Ensure account-only signup doesn’t create a site
+
+* Confirm the signup flow for the account-only mode:
+
+  * Creates user + session
+  * Sets onboarding_path = “account_only” (or similar)
+  * Does not create a site
+  * Redirects to dashboard empty state (which already prompts “Ready to build your website?”)
+
+4. Analytics tracking (quick win)
+   Track clicks separately so you can measure intent:
+
+* event: cta_generate_free_site_clicked
+* event: cta_signup_only_clicked (include source: “header” vs “hero”)
+
+Copy suggestions
+
+* Header: “Sign up”
+* Hero secondary: “Just sign up”
+* Signup page title: “Create your account”
+* Description: “You can build your website whenever you’re ready.”
+
+Acceptance criteria
+
+* “Generate My Free Site” works exactly like today.
+* “Sign up” (header + hero) creates an account without requiring site/ROI flow.
+* After signup-only, user lands in dashboard empty state with the two buttons (“Create Your Website” and “Browse Examples”).

@@ -1,0 +1,309 @@
+Here’s something you can paste straight into a ticket / doc for your dev.
+
+---
+
+## 0. High-level goals
+
+We’re upgrading the site generator so:
+
+* The preview site looks like a real, modern marketing site (LuckyThunder-style), not a basic gradient landing page.
+* User setup is still simple, but we collect slightly richer info.
+* We have a standard nav on generated sites.
+* We support images (upload or AI placeholder).
+* We give clear messaging that if they like the preview, Arclo will keep building it out.
+
+Everything below is what needs to change.
+
+---
+
+## 1. Onboarding form changes (/start flow)
+
+### 1.1 Step 1 – Business basics
+
+Add/update fields:
+
+* Business name (required)
+* Business type (existing dropdown, keep)
+* City / service area (existing field, keep)
+* Existing website (optional, keep)
+* **Business description (optional)**
+
+  * Textarea: “Describe your business in 1–3 sentences.”
+
+Logic:
+
+* If description is blank, generate one with AI using business name, business type, and city.
+
+  * Prompt:
+    “Write a friendly, 2–3 sentence description for a [business_type] called [business_name] in [city]. Focus on local service, reliability, and trust.”
+
+### 1.2 Step 2 – Brand & Images
+
+Add/update fields:
+
+* Brand style (radio buttons):
+
+  * Clean & modern
+  * Warm & friendly
+  * Bold & high-contrast
+* Color theme (3–4 swatches; see theme tokens below)
+* Logo upload (existing; keep)
+* **Hero image upload (optional)**
+* **Additional images upload (optional; multiple)**
+
+Data:
+
+* Store description, brand style, selected theme, and image references in whatever “site generation input” object we pass into the worker.
+
+---
+
+## 2. Theme system (curated palettes)
+
+Introduce a simple theme system to avoid harsh colors.
+
+Create a `themes.ts` (or similar) with 4–6 palettes, e.g.:
+
+* `indigoSky`
+
+  * primary: `#4F46E5`
+  * accent: `#0EA5E9`
+  * bg: `#F3F4F6`
+* `tealEmerald`
+
+  * primary: `#0F766E`
+  * accent: `#10B981`
+  * bg: `#F1F5F9`
+* `navyGold`
+
+  * primary: `#0F172A`
+  * accent: `#F59E0B`
+  * bg: `#F9FAFB`
+* `plumPink`
+
+  * primary: `#7C3AED`
+  * accent: `#EC4899`
+  * bg: `#F8FAFC`
+
+Mapping logic:
+
+* Based on brand style + business type, pick a theme (e.g. trades → tealEmerald, clinics → plumPink, etc.).
+* Use theme variables for:
+
+  * hero gradient overlay
+  * CTA buttons
+  * section headings
+  * borders / chips
+  * not for big flat neon backgrounds.
+
+---
+
+## 3. v2 homepage layout for generated sites
+
+Replace the simple gradient hero with a proper multi-section layout.
+
+Template structure (single-page scroll for now):
+
+1. **Standard Nav (see section 4)**
+2. **Hero section (above the fold)**
+3. Trust / highlight strip
+4. Services section
+5. About / Why Choose Us section
+6. Service areas / locations list
+7. Contact / CTA section
+8. Footer
+
+### 3.1 Hero section
+
+Layout:
+
+* Background: hero image (see section 5) with dark overlay using theme primary.
+* Left column:
+
+  * H1 (derived from inputs), e.g.
+    “[City] [Service] You Can Count On”
+  * Subheadline: use the business description (or AI version), max 2–3 lines.
+  * Primary CTA button:
+
+    * For trades: “Get a Free Quote”
+    * For clinics: “Book an Appointment”
+  * Secondary CTA link/button: “View Services”.
+* Right column (optional, if it fits the layout):
+
+  * 2–3 “pill” badges:
+
+    * “Licensed & Insured”
+    * “Local & Trusted”
+    * “Fast Response” / “Same-Day Service”
+
+### 3.2 Trust / highlight strip
+
+Just under hero: narrow strip with icons + labels (3–4 items), e.g.:
+
+* “Up-front pricing”
+* “Emergency service”
+* “5-star reviews”
+
+### 3.3 Services section
+
+Use business type to seed service cards.
+
+* Title: “Our Services”
+* 3–6 cards with:
+
+  * service name
+  * 1-line description
+
+If we have an industry preset (plumbing, HVAC, etc.), use a static set + AI to rewrite blurbs. Otherwise have AI infer 3–4 services from the description.
+
+### 3.4 About / Why Choose Us
+
+* Title: “Why Choose [Business Name]” or “About Us”
+* One short paragraph from description
+* 3 bullets AI-generated, focusing on:
+
+  * reliability
+  * quality
+  * local expertise / customer service
+
+### 3.5 Service areas
+
+* Title: “Proudly Serving”
+* List of city / neighborhood names from input (if user gave multiple, or derive nearby from city if we have that logic later).
+
+### 3.6 Contact / CTA
+
+* Big block with clear CTA:
+
+  * Headline: “Ready to Get Started?”
+  * Buttons: “Call Now” (if phone provided, mailto:tel link) and “Request a Free Quote”.
+* Placeholder contact form if we don’t have real form integration yet.
+
+---
+
+## 4. Standard nav for generated sites
+
+Every generated site should have a consistent nav at the top of the page.
+
+Layout:
+
+* Left:
+
+  * Logo (use uploaded logo if available; fallback to text-based initials)
+  * Business name text
+
+* Right nav items (scroll anchors):
+
+  * Home
+  * Services
+  * About
+  * Areas Served
+  * Contact
+
+Implementation notes:
+
+* Use in-page anchor links (e.g. `#hero`, `#services`, `#about`, `#areas`, `#contact`).
+* Sticky nav on scroll if possible.
+* Use theme primary for active item / underline.
+* Keep nav height compact and modern (similar style to your Arclo marketing header, but simplified).
+
+---
+
+## 5. Images logic
+
+We need to fill hero and at least 1–2 other sections with meaningful images.
+
+Priority order:
+
+1. If user uploads a hero image → use that in hero.
+2. Else if user uploads any images → pick the widest / highest-res as hero, others in Services/About.
+3. Else → auto-generate images using AI based on business type + description.
+
+AI prompt for hero:
+
+> “Ultra-realistic, modern website hero photo of [business_type] work in [city]. Clean, bright, professional, landscape orientation. No text.”
+
+Generate at least:
+
+* 1 hero image
+* 1–2 secondary images (e.g. “team at work”, “happy customer”, “truck / storefront”).
+
+Styling:
+
+* Always apply a dark overlay in CSS so text is readable:
+
+  ```css
+  background:
+    linear-gradient(to bottom right, rgba(15,23,42,0.78), rgba(15,23,42,0.6)),
+    url('/path/to/hero.jpg') center/cover no-repeat;
+  ```
+
+* Secondary images can be cards or background images in services/about sections.
+
+---
+
+## 6. Text/copy generation details
+
+Use the new description + business type to drive better text:
+
+* Business tagline / hero H1:
+
+  * Template: “[City] [ServiceType] You Can Count On”
+  * ServiceType derived from business type (e.g. plumbing → “Plumbing Services”).
+
+* Subheadline:
+
+  * From description directly (trim to ~180 characters).
+
+* Services:
+
+  * If we have industry presets, use them; else ask AI:
+    “Based on this description, list 4 key services this business likely offers as short bullet phrases.”
+
+* About bullets:
+
+  * AI prompt:
+    “Based on this description, write 3 short bullet points on why a customer should choose this company (each < 12 words).”
+
+Make sure copy is:
+
+* sentence case
+* no all-caps
+* short and scannable.
+
+---
+
+## 7. Preview page messaging: “We’ll keep building it out”
+
+On the preview page (right panel “What Arclo did for you already”), add another section under the checklist:
+
+Text block:
+
+* Heading: “Like this preview? We’ll keep building it out for you.”
+* Bullets:
+
+  * “We’ll add more service and location pages.”
+  * “We’ll keep tuning your SEO every day.”
+  * “We’ll watch for issues and fix them automatically.”
+
+And above the “Claim Your Website” button, add a one-liner:
+
+> “If you like what you see, claim it and Arclo will keep improving this site for you automatically.”
+
+No change to button label; keep “Claim Your Website”.
+
+---
+
+## 8. Implementation checklist (for you to track)
+
+1. Update `/start` step 1 with description field + AI fallback.
+2. Update `/start` step 2 with brand style, theme selection, hero/extra image uploading.
+3. Implement theme tokens and selection logic.
+4. Implement v2 homepage template for generated sites (hero, nav, sections).
+5. Implement image pipeline (upload + AI fallback).
+6. Wire new copy generation logic (H1, subheadline, services, about bullets).
+7. Update preview page to use the new template and show new messaging about ongoing improvements.
+8. Confirm generated site has a standard nav and looks modern on desktop and mobile.
+
+If your dev builds to this spec, we’ll get from “basic gradient site” to “this looks like LuckyThunder quality” while still keeping the flow relatively simple for the user.
+
+Once they’ve made a first pass, send me screenshots or a link and I can tighten copy, spacing, and section order.

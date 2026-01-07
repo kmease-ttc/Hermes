@@ -1,0 +1,193 @@
+Next, you should do two things in parallel: (1) lock the “service model” into code so upsells actually work, and (2) add the first 2–3 automated setup flows that remove the biggest friction (Search Console + Analytics + Domain).
+
+Here are the exact next-step instructions to give the agent.
+
+⸻
+
+Next Step Instructions — Make Services Real + Implement First Setup Flows
+
+Objective
+
+Turn the “Available Services” list into a working subscription system, and implement the first real “done-for-you” setup flows so you can sell them immediately.
+
+This work should result in:
+	•	A real service catalog in the database
+	•	Per-site entitlements (what’s active vs available)
+	•	A purchase/subscribe action that changes what runs + what displays
+	•	First “assisted setup” workflow that is operational (even if partially manual behind the scenes)
+
+⸻
+
+PART A — Build the Service Catalog + Entitlements (Required)
+
+1) Create Data Model
+
+Create tables (or collections) to support services:
+	1.	services
+
+	•	id
+	•	key (string, unique, e.g. gsc_setup, ga4_setup, blog_monthly)
+	•	name
+	•	description_short
+	•	description_long
+	•	category (setup | seo | content | visibility | conversion)
+	•	billing_type (one_time | monthly | yearly)
+	•	price_cents
+	•	is_active (bool)
+	•	sort_order (int)
+	•	prerequisites (json array of service keys)
+	•	default_frequency (json: { cadence: weekly/monthly, etc. })
+
+	2.	site_service_subscriptions
+
+	•	id
+	•	site_id
+	•	service_key
+	•	status (active | canceled | pending | trial)
+	•	start_date
+	•	end_date (nullable)
+	•	billing_provider (stripe)
+	•	billing_id (nullable)
+	•	metadata (json)
+
+	3.	site_tasks
+
+	•	id
+	•	site_id
+	•	service_key
+	•	task_key
+	•	status (queued | running | completed | failed | blocked)
+	•	scheduled_for
+	•	completed_at
+	•	output_summary
+	•	output_metadata (json)
+
+2) Seed Initial Services
+
+Seed at minimum these services with real pricing:
+
+Setup (one-time):
+	•	launch_setup_assist — $149 one-time (bundle: GSC + GA4 + verification + sitemap submit)
+	•	gsc_setup — $79 one-time
+	•	ga4_setup — $79 one-time
+	•	domain_purchase_setup — $24/year managed domain setup (paired with domain cost pass-through)
+
+Ongoing (monthly):
+	•	technical_seo — $49/mo
+	•	blog_monthly — $99/mo (4 posts/month)
+	•	location_pages — $79/mo
+	•	rank_tracking — $19/mo
+
+(These can be adjusted later; implement as config.)
+
+3) Entitlement Logic
+
+Implement backend logic:
+	•	“Active Services” = all subscriptions where status=active for that site
+	•	“Available Services” = all services not active + eligible (prerequisites satisfied)
+	•	If prerequisites not met, show locked state with text: “Requires X”
+
+⸻
+
+PART B — Wire the UI to Real Subscribe/Add Actions (Required)
+
+1) Service Cards
+
+Each service card in “Available Services” must have:
+	•	price
+	•	billing type
+	•	CTA:
+	•	“Add” for one-time
+	•	“Subscribe” for monthly/yearly
+
+2) Clicking CTA
+
+On click:
+	•	Create checkout session (Stripe) OR create a “pending” record if Stripe isn’t wired yet
+	•	On success:
+	•	create site_service_subscriptions record status=active
+	•	generate initial site_tasks entries for that service (if applicable)
+	•	refresh UI so it moves from “Available” to “Active”
+
+3) For now, if Stripe is not ready
+
+Implement a temporary “Manual purchase mode” behind an admin flag:
+	•	Clicking “Add” creates subscription as pending
+	•	UI shows: “We’ll email you to complete setup”
+	•	Still creates a task checklist for internal execution
+
+⸻
+
+PART C — Implement the First “Assisted Setup” Flow (GSC + GA4)
+
+1) Add “Assisted Setup” CTA
+
+On the Launch Checklist steps:
+	•	“Connect Google Search Console”
+	•	“Connect Analytics”
+Add button:
+	•	“Have Arclo do this for me”
+
+Clicking it should:
+	•	add launch_setup_assist (bundle) OR add the specific service
+	•	open checkout (or set pending in manual mode)
+	•	create tasks with required inputs
+
+2) Required Inputs Collection UI
+
+Add a small modal form for the setup tasks:
+
+For Google Search Console:
+	•	Google account email they want to use for ownership (or “use Arclo-managed account”)
+	•	Confirmation checkbox: “I authorize Arclo to set this up for my business”
+
+For GA4:
+	•	Same Google account email
+	•	If they already have GA4: property ID (optional)
+
+3) Task Execution (Phase 1)
+
+Phase 1 can be partially manual, but must be structured:
+	•	Create site_tasks:
+	•	gsc_create_property
+	•	gsc_verify_domain
+	•	gsc_submit_sitemap
+	•	ga4_create_property
+	•	ga4_install_tag
+	•	ga4_verify_events
+
+Add an internal admin view to mark each task complete and store notes.
+
+⸻
+
+PART D — Improve “Publish” Flow Tie-in (Small but Important)
+
+1) Make “Publish your website” depend on required launch steps only
+
+Required:
+	•	business info
+	•	primary services
+	•	service areas
+	•	domain connected
+
+Not required:
+	•	GSC
+	•	Analytics
+
+2) After publish, show next recommended actions
+
+If not connected:
+	•	show “Recommended: Connect GSC” + “Have Arclo do it for $79”
+
+⸻
+
+Definition of Done
+	•	Service catalog exists + seeded
+	•	Active vs Available services show correctly per site
+	•	Subscribing adds entitlements and changes UI immediately
+	•	Assisted setup creates structured tasks and captures required inputs
+	•	Launch checklist uses the new logic and stays clean
+
+⸻
+
+If you want a tighter version of these instructions that exactly matches your current stack (Next.js? Prisma? Supabase? Postgres?), paste your tech choices and I’ll rewrite it in the same conventions your agent/dev is using.

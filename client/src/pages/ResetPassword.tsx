@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { AlertCircle, Loader2, KeyRound, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -69,9 +70,7 @@ export default function ResetPassword() {
             <Card className="bg-card border-border">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center">
-                    <AlertCircle className="w-6 h-6 text-white" />
-                  </div>
+                  <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
                 </div>
                 <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
                 <CardDescription>
@@ -107,9 +106,7 @@ export default function ResetPassword() {
             <Card className="bg-card border-border">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  </div>
+                  <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
                 </div>
                 <CardTitle className="text-2xl">Password Reset!</CardTitle>
                 <CardDescription>
@@ -144,9 +141,7 @@ export default function ResetPassword() {
           <Card className="bg-card border-border">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                  <KeyRound className="w-6 h-6 text-white" />
-                </div>
+                <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
               </div>
               <CardTitle className="text-2xl">Set New Password</CardTitle>
               <CardDescription>

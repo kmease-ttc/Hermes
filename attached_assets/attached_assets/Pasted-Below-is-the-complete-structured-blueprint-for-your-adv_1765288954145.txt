@@ -1,0 +1,386 @@
+Below is the complete, structured blueprint for your advertising site AND your Redpl.it/Replit generation prompt.
+This gives you:
+	1.	A product name (strong options, narrowed to 3)
+	2.	A complete site architecture (page-by-page)
+	3.	Exact copy sections for each page
+	4.	Visual guidelines + trust-factor placement
+	5.	A “Things We Do” master list (optimized for Screaming Frog, SEO, content, and automation features)
+	6.	A final reusable prompt you can paste into Replit to generate the site.
+
+This is a fully thought-through SaaS brand, not a rough sketch — the kind you can build on immediately.
+
+⸻
+
+NAME OPTIONS (CURATED FOR BRANDING, DOMAIN, SEO)
+
+These are based on:
+• “Autonomous”
+• “Self-healing SEO”
+• “Automatic site generation”
+• “AI webmaster”
+
+Top 3 Names — Choose One
+
+1. RankCraft
+
+Clean, memorable, craft = building something automatically.
+
+2. SitePilot
+
+Communicates that the system “flies the plane” for you.
+
+3. AutoSite Engine
+
+Literal but strong — automatic site + engine behind it.
+
+(Once you reply with which one you want, I’ll tailor messaging and code.)
+
+⸻
+
+SITE ARCHITECTURE (FULL ADVERTISING SITE)
+
+This is the entire structure you need to implement.
+
+⸻
+
+PAGE 1 — Home
+
+Hero Section
+
+Headline:
+Your Website. Fully Built. Fully Optimized. Automatically.
+
+Sub-headline:
+We generate your entire website, create your keyword strategy, source your photos, and optimize every page every day — no SEO agency required.
+
+CTA:
+Generate My Free Website
+
+Secondary CTA:
+See How It Works
+
+Hero Image Requirements:
+	•	Clean SaaS dashboard mockup with charts rising
+	•	Code-like automation queues
+	•	“Issues fixed: 24 today”
+	•	“New keywords: +12”
+
+Trust Factors Below Hero:
+	•	“No credit card required”
+	•	“Fixes hundreds of SEO issues automatically”
+	•	“Used by service businesses across the U.S.”
+
+⸻
+
+Section: How It Works
+
+Step cards:
+
+Step 1: Tell us your business type & location
+Step 2: Upload photos OR use auto-generated stock & AI images
+Step 3: We generate your full website instantly
+Step 4: Activate autonomous optimization
+Step 5: Your site improves itself daily
+
+Visual:
+	•	Icon-based row
+	•	Light animation showing a site being built
+
+⸻
+
+Section: Features Overview
+
+Short, high-impact cards:
+
+Instant Website Builder
+
+A clean, conversion-optimized site generated in seconds for your business.
+
+Autonomous SEO Engine
+
+Daily technical, content, and ranking improvements based on Google and Screaming Frog data.
+
+Keyword Intelligence (Top 100 System)
+
+We generate a full list of the keywords your business needs to rank for — instantly.
+
+Automated Landing Page Generation
+
+One keyword → one optimized page with schema, internal links, metadata, content blocks, and calls to action.
+
+Blog Best Practices Engine
+
+AI-written blog posts structured with canonical tags, internal links, and metadata aligned to your keyword map.
+
+Stock Photo Integration
+
+Don’t have photos? We source 25+ ultra-relevant images automatically OR generate AI images.
+
+⸻
+
+Section: Social Proof / Trust
+
+Placeholder until you have real results:
+	•	“+300% increase in inbound calls”
+	•	“+120% more organic traffic”
+	•	“84 SEO issues automatically fixed in week one”
+
+Include placeholder review cards.
+
+⸻
+
+Section: Pricing Cards
+
+Starter, Pro, Agency.
+
+⸻
+
+Section: Coming Soon
+
+Ads Automation
+Social Media Automation (Alkay)
+Reputation Management
+Google Business Profile Automation
+
+⸻
+
+Footer
+
+Standard SaaS footer with support email.
+
+⸻
+
+PAGE 2 — What We Do
+
+This is your “Everything We Do” robust list.
+You can use it for marketing AND for feeding into your logic engine.
+
+⸻
+
+THE THINGS WE DO (MASTER LIST)
+
+This is the exhaustive, authoritative list you requested.
+
+⸻
+
+A. Website Generation
+	•	Build full website based on business description
+	•	Generate 25+ relevant stock/AI photos automatically
+	•	Create homepage, service pages, about page, contact page
+	•	Add local schema and business profile metadata
+	•	Set up mobile-responsive layout
+	•	Add conversion-optimized structure (CTAs, forms, trust badges)
+
+⸻
+
+B. Keyword Intelligence & Content Strategy
+	•	Generate top 100 keywords tailored to the business + city
+	•	Cluster keywords by intent (buyer, local, long-tail)
+	•	Generate LSI keywords for SEO density
+	•	Identify competitor gaps
+	•	Build landing pages per keyword
+	•	Create internal linking maps
+	•	Build canonical structures
+	•	Build blog calendar
+	•	Generate SEO blog content with best practices baked in
+	•	Generate metadata for every page
+	•	Detect keyword cannibalization and fix automatically
+
+⸻
+
+C. Daily Autonomous SEO Optimization
+
+Technical SEO (Screaming Frog API + Internal Engine)
+	•	Fix broken links
+	•	Update or create missing H1/H2/H3 tags
+	•	Rewrite meta titles and descriptions
+	•	Fix duplicated titles
+	•	Add missing alt tags
+	•	Improve URL structure
+	•	Detect thin content and expand it
+	•	Fix pagination
+	•	Correct canonical tags
+	•	Remove redirect chains
+	•	Fix orphan pages
+	•	Improve page speed and compress images
+	•	Remove unused CSS/JS
+	•	Generate structured data (FAQ, HowTo, LocalBusiness)
+	•	Detect broken schema
+	•	Add accessibility improvements
+
+Google Search Console Integration
+	•	Fix indexation issues
+	•	Fix 404s & soft 404s
+	•	Submit new sitemaps
+	•	Monitor impressions vs clicks
+	•	Improve CTR with automated metadata rewrites
+	•	Notify and fix coverage issues
+
+⸻
+
+D. Weekly “SEO Wave” Optimization
+	•	SERP position tracking
+	•	Competitor keyword updates
+	•	New landing page suggestions
+	•	Automatic internal linking refresh
+	•	Rebuild low-performing pages
+	•	Auto-optimize blogs
+	•	Page-level content rewrites
+	•	Backlink alerts
+	•	Create new schema entities
+
+⸻
+
+E. Image Intelligence
+	•	Auto-select 25+ stock photos
+	•	Optional AI-generated brand photos
+	•	Auto-crop, resize, compress
+	•	Automatic alt-text creation
+
+⸻
+
+F. Social Media (Coming Soon)
+	•	Auto-generate branded social posts
+	•	Connect to Alkay for scheduled posting
+	•	Auto-create promotional graphics
+	•	Repurpose blog posts into social content
+
+⸻
+
+G. Ads (Coming Soon)
+	•	Single keyword ad groups
+	•	Matching landing pages
+	•	Automated budget suggestions
+	•	Heatmap of best-performing keywords
+	•	Weekly ad improvement wave
+
+⸻
+
+PAGE 3 — Generate Your Website
+
+Form fields:
+	•	Business name
+	•	City & state
+	•	Type of business
+	•	Description of business
+	•	Services offered
+	•	Upload photos OR choose: auto-stock / AI-generated
+	•	Contact details
+
+Button: Generate My Website
+
+Below:
+“This takes 30 seconds and requires no credit card.”
+
+⸻
+
+PAGE 4 — Pricing
+
+Cards with features expanded.
+
+⸻
+
+PAGE 5 — About
+
+Short, credible, founder-focused story (you can remain anonymous if you want).
+
+⸻
+
+VISUAL STYLE
+
+You want:
+	•	Light mode default
+	•	Blue/indigo SaaS tones
+	•	Soft card edges
+	•	Large headline text
+	•	Clean sans-serif (Inter or Manrope)
+	•	Minimalist dashboard visuals
+	•	High-trust UX elements (SSL badge, “no credit card required,” privacy statement)
+
+I’ll generate your Replit prompt with these defaults.
+
+⸻
+
+THE PROMPT YOU WILL USE IN REPLIT
+
+Below is the single master prompt you can paste directly into Redpl.it/Replit to generate the entire advertising site.
+
+⸻
+
+REPLIT / REDBLOOD MASTER GENERATION PROMPT
+
+START OF PROMPT
+Build a full marketing website for a SaaS platform called [INSERT NAME HERE]. The product automatically builds websites, generates keyword strategies, creates 25+ stock or AI images, and performs ongoing autonomous SEO optimization using APIs like Screaming Frog, Google Search Console, and a content engine.
+
+Follow these rules:
+
+Design System:
+	•	Light mode
+	•	Colors: Indigo #4F46E5 (primary), Blue 600, Gray 100 background, White cards
+	•	Font: Inter
+	•	Rounded corners, large comfortable spacing
+	•	Minimalist SaaS aesthetic with clean dashboard mockups
+
+Site Structure:
+	1.	Home
+	2.	What We Do
+	3.	Generate Your Website
+	4.	Pricing
+	5.	About
+	6.	Footer (global)
+
+Home Page Content:
+Headline: “Your Website. Fully Built. Fully Optimized. Automatically.”
+Sub-headline: “We generate your entire website, source your photos, create your keyword strategy, and optimize every page every day — no SEO agency required.”
+Primary CTA: “Generate My Free Website”
+Secondary CTA: “See How It Works”
+Hero Image Placeholder: SaaS dashboard mockup
+Add trust badges: “No credit card required”, “Fixes SEO issues automatically”, “Used by small businesses nationwide”
+
+Sections:
+	•	How It Works (5 steps)
+	•	Features Overview (Instant Website Builder, Autonomous SEO Engine, Keyword Intelligence, Landing Page Generator, Blog Engine, Stock Photos)
+	•	Social Proof Section with placeholder stats
+	•	Pricing Teaser
+	•	Coming Soon section (Ads + Social Automation)
+
+What We Do Page:
+Include the full master list of features exactly as defined above. Each section should be in expandable cards (accordion style).
+
+Generate Your Website Page:
+Form fields: business name, city, state, business type, description, services, photo upload OR checkbox for auto-stock images, contact info. Submit button labeled “Generate My Website.”
+
+Pricing Page:
+Starter ($149/mo), Pro ($299/mo), Agency ($99/site/month). Include feature comparisons and a “coming soon” section.
+
+About Page:
+Short story about autonomous SEO innovation (placeholder text).
+
+Footer:
+Links, privacy policy, terms, and a support email placeholder.
+
+SEO Best Practices:
+	•	H1 per page
+	•	Title & meta descriptions generated automatically
+	•	Schema: LocalBusiness on home, WebSite + Breadcrumbs everywhere
+	•	Clean URL structure
+	•	Accessible labels for all UI elements
+	•	Mobile-first responsive layout
+
+Trust Elements:
+Place trust elements on the home page, footer, and pricing page.
+
+END OF PROMPT
+
+⸻
+
+If you want, I’ll now produce:
+	•	The actual HTML/React/Tailwind code
+	•	Brand assets
+	•	Dashboard mockups
+	•	The onboarding flow
+	•	The backend folder structure
+	•	The keyword engine prompt
+	•	The SEO automation prompt library
+
+Just tell me which name you picked and I’ll finalize everything.

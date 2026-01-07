@@ -1,0 +1,156 @@
+Here’s a single prompt you can paste into your Replit agent to diagnose, troubleshoot, and fix the “Building Your Site” job that’s hanging (140–160+ seconds and never resolves). It’s written to be human readable and to drive the agent to a real root cause + patch, not just guesses.
+
+⸻
+
+PROMPT: Diagnose and Fix “Building Your Site” Jobs Hanging in Production
+
+We have a production issue: the “Building Your Site” screen stalls indefinitely (e.g., 140–160+ seconds and never completes). This is blocking users from getting their preview.
+
+Your job: diagnose, troubleshoot, and resolve the issue end-to-end. Do not redesign UI. Focus on reliability.
+
+Context
+	•	The build pipeline includes generating content, generating images/logos (OpenAI gpt-image-1), uploading to cloud storage, saving site config, and deploying preview.
+	•	The UI shows step “Generating website content” and a timer that keeps rising.
+	•	The job appears stuck or never returns a terminal status.
+
+Output Requirements
+	1.	Identify the root cause(s) with evidence.
+	2.	Implement fixes that prevent indefinite hangs.
+	3.	Add safeguards/timeouts so a job can’t stall forever.
+	4.	Ensure the UI transitions to either success or a recoverable error state with retries.
+
+⸻
+
+Step 1 — Reproduce and Observe
+	1.	Reproduce the issue using the same production path that generates a site.
+	2.	Capture the full request chain:
+	•	Frontend request that starts the job (endpoint, payload)
+	•	Backend job id / site id created
+	•	Any worker queue item / background task info
+	3.	Confirm whether:
+	•	The backend is actually still working (slow) vs stuck (deadlocked)
+	•	The UI is polling and not receiving updates vs not polling correctly
+
+⸻
+
+Step 2 — Check Logging + Job State
+
+Add or inspect logs for these phases (do not rely on assumptions):
+	•	Job created
+	•	Content generation started
+	•	Content generation finished
+	•	Image generation started (hero)
+	•	Image generation finished
+	•	Logo generation started
+	•	Logo generation finished
+	•	Upload started/finished
+	•	Site config saved
+	•	Preview deploy started/finished
+	•	Job marked complete
+
+For every job run:
+	•	Log timestamps for each phase
+	•	Log jobId/siteId/buildId
+	•	Log any errors returned from OpenAI, storage, or deploy steps
+
+Goal: identify exactly where it hangs.
+
+⸻
+
+Step 3 — Identify the Hanging Point (Most Likely Causes)
+
+Systematically validate these (one by one):
+
+A) OpenAI call hanging / never returning
+	•	Is gpt-image-1 request timing out?
+	•	Are retries stacking?
+	•	Is the request waiting forever without a timeout?
+
+B) Cloud storage upload hanging
+	•	Is upload stuck (network, auth, size)?
+	•	Is the code awaiting an upload promise that never resolves?
+
+C) Deploy step hanging
+	•	Is the preview deployment step waiting on a callback that never arrives?
+	•	Are we waiting on an external process without timeout?
+
+D) Queue/worker issue
+	•	Are jobs being enqueued but not picked up?
+	•	Is there a worker crash/restart loop?
+	•	Is the worker running out of memory and silently failing?
+
+E) UI polling issue
+	•	Is the backend done but UI never sees completion?
+	•	Is polling endpoint returning stale status?
+	•	Is there caching or wrong jobId?
+
+⸻
+
+Step 4 — Add Hard Timeouts + Terminal States (Must Fix)
+
+No matter what the root cause is, implement these reliability rules:
+	1.	Every external call must have a timeout:
+
+	•	OpenAI calls
+	•	Upload calls
+	•	Deploy calls
+If a timeout hits, record a clear error and move to a terminal job state.
+
+	2.	The job must always end in one of:
+
+	•	success
+	•	failed (with reason)
+	•	partial_success (preview ready without images) if we choose to allow it
+
+	3.	The UI must never wait forever:
+
+	•	If job exceeds a maximum time (e.g., 90 seconds for content, 180 seconds overall), show:
+	•	“We’re still working on it”
+	•	A “Retry” button
+	•	And/or “Send me the preview link by email”
+	•	But the key: stop infinite spinning.
+
+⸻
+
+Step 5 — Retry Strategy (Make It Stable)
+
+Implement retry policy with backoff:
+	•	Only retry failed phases (don’t restart from zero if content already exists)
+	•	Limit retries (e.g., 2) and then fail gracefully
+	•	Record error messages for debugging
+
+If images/logos are the flaky part:
+	•	Allow preview to be generated with safe placeholders and then “Upgrade images in background” after preview is ready.
+	•	This prevents the entire job from failing due to image generation issues.
+
+(Important: do not revert to generic office images; use industry-safe fallback placeholders if needed.)
+
+⸻
+
+Step 6 — Verify Fix with Tests
+
+After changes:
+	1.	Run at least 5 end-to-end generations:
+	•	with user-uploaded images
+	•	without uploads
+	•	for at least 2 different industries
+	2.	Confirm:
+	•	No job stalls beyond max time
+	•	All failures are visible in logs and result in a recoverable UI
+	•	UI and backend statuses match
+	3.	Add a simple diagnostic admin view (if quick) that shows:
+	•	jobId, phase timestamps, last error
+
+⸻
+
+Step 7 — Deliverables
+
+When you’re done, provide:
+	•	Root cause summary (what was hanging and why)
+	•	The fix (what changed)
+	•	How we’ll prevent this from happening again (timeouts + terminal states + retries)
+	•	Confirmation that the UI now transitions correctly on success/failure
+
+⸻
+
+If you need to change architecture, keep it minimal and targeted. Prioritize reliability over perfection.

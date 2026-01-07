@@ -1,0 +1,325 @@
+Below is **the ideal onboarding workflow** for Arclo, designed specifically for:
+
+* **Your target market** → service businesses (plumbers, HVAC, roofers, clinics, attorneys)
+* **Your product promise** → *Autonomous SEO + Autonomous Website Operations*
+* **Your business goals** → fast conversion, low friction, quick “aha!” moment, high retention.
+
+This is the onboarding flow that will maximize activation, conversions, and trust.
+
+I've broken it into **UX flow**, **copy**, **dev requirements**, and **logic** so your developer can implement it directly.
+
+---
+
+# ⭐ **THE IDEAL ARclo ONBOARDING WORKFLOW**
+
+## **PHASE 1 — Pre-Onboarding (Before Create Site)**
+
+Goal: *Make the user feel like Arclo will do everything for them.*
+
+### **Step 1 — Hero CTA**
+
+User clicks: **“Generate My Free Site”**
+
+→ Sends them to `/start` onboarding.
+
+---
+
+## **PHASE 2 — Input Collection (1–2 minutes)**
+
+Goal: *Collect critical business info with minimum friction.*
+
+### **Step 2 — Business Info Form (Page 1)**
+
+Fields:
+
+1. **Business Name**
+2. **What kind of business are you?** *(dropdown with icons)*
+
+   * Plumbing
+   * HVAC
+   * Roofing
+   * Electrical
+   * Medical clinic
+   * Therapy / Counseling
+   * Law firm
+   * Auto repair
+   * Cleaning services
+   * “Other service business”
+3. **City & Service Area** *(multi-select)*
+4. **Your website (optional)**
+5. **Business email**
+
+CTA: **“Continue →”**
+
+**Dev requirements:**
+
+* Save to user record
+* Kick off basic “persona-based site template” selection
+* Pre-fill site with relevant sections
+
+---
+
+### **Step 3 — Branding Input (Page 2)**
+
+Fields:
+
+* Upload logo *(optional)*
+* Choose a color theme (3–4 options)
+* Choose a style:
+
+  * Clean & Modern
+  * Bold & High-Contrast
+  * Friendly & Soft
+  * Professional / Clinic
+
+CTA: **“Build My Website →”**
+
+**Dev requirements:**
+
+* Store brand variables
+* Apply them to generated site
+* Trigger async site generation job
+
+---
+
+## **PHASE 3 — Build Experience (The “Aha Moment”)**
+
+Goal: *Create excitement + confidence.*
+
+### **Step 4 — Loading Screen (30–60 seconds)**
+
+Show animations + messaging:
+
+* “Generating homepage…”
+* “Creating service pages…”
+* “Optimizing for SEO…”
+* “Setting up your site structure…”
+* “Preparing Google-friendly metadata…”
+* “Your site is almost ready.”
+
+CTA appears after completion: **“View Your Preview”**
+
+**Dev requirements:**
+
+* Use WebSockets or polling for job status
+* Show progress messages
+* Redirect to `/preview/:siteId` after job completes
+
+---
+
+## **PHASE 4 — Preview State (Before Claiming Site)**
+
+Goal: *Make them WANT to claim it.*
+
+### **Step 5 — Preview Page**
+
+Screen layout:
+
+Left side: Full preview of generated website
+Right side: Insight panel showing “What Arclo did for you already”
+
+Insights to list:
+
+* Created X SEO-optimized pages
+* Added service-area landing pages
+* Installed technical SEO foundation
+* Added schema / structured data
+* Set up internal link structure
+* Added contact + lead funnel
+* Resolved accessibility basics
+* Added conversion-driven CTAs
+
+**Huge CTA:**
+**“Claim Your Website →”**
+
+**Dev requirements:**
+
+* Preview mode served from temporary domain
+* Insights panel auto-populated from generation log
+* Grey banner indicating “This is a preview, not public yet”
+
+---
+
+## **PHASE 5 — Account Creation (Low Friction)**
+
+Goal: *Zero-email-friction signup that doesn’t feel like signup.*
+
+### **Step 6 — Claim Flow**
+
+When user clicks "Claim Your Website":
+
+Show a modal:
+
+**“Where do we send updates and your login link?”**
+
+Field: **Email**
+CTA: **“Send Login Link”**
+
+**Important:**
+NO password fields.
+NO account creation page.
+NO barriers.
+
+This is the correct pattern for this market.
+
+**Dev requirements:**
+
+* Magic link login using email token
+* Store site under user record when link is clicked
+
+---
+
+## **PHASE 6 — First-Time Dashboard (Activation)**
+
+Goal: *Drive the user to complete the checklist that connects their real world → site performance.*
+
+### **Step 7 — “Let’s get your site ready to launch” Checklist**
+
+Checklist items:
+
+1. **Confirm your business info**
+2. **Connect domain**
+3. **Connect Google Search Console**
+4. **Connect Analytics**
+5. **Choose your primary services**
+6. **Choose your service areas**
+7. **Publish your website**
+
+Each item:
+
+* Has a green success check when completed
+* Opens a modal or inline form
+* Reduces cognitive load
+
+**Dev requirements:**
+
+* Checklist stored in DB
+* Completion state reflected on dashboard home page
+* Quick modals for each item
+
+---
+
+## **PHASE 7 — Post-Onboarding (Retention)**
+
+Goal: *Make them feel the value every day.*
+
+### **Step 8 — Daily “Arclo Activity Feed”**
+
+On dashboard home:
+
+Section: **“What Arclo Did For You This Week”**
+
+Example items:
+
+* Fixed 3 SEO issues
+* Updated 2 service pages
+* Published 1 new location page
+* Improved load speed on homepage
+* Detected 12 keyword opportunities
+
+**Dev requirements:**
+
+* mock data for now
+* actual job logs later
+
+---
+
+### **Step 9 — Weekly Summary Email**
+
+Subject:
+**“Arclo Update: Here’s What We Improved This Week”**
+
+Sections:
+
+* Organic traffic trend
+* Calls / form submissions
+* SEO issues fixed
+* New content added
+* Recommendations (optional upsell)
+
+**Dev requirements:**
+
+* SendGrid template
+* Weekly cron invocation
+* Dynamic summary content (mock now, real later)
+
+---
+
+# 🎯 **FINAL ONBOARDING FLOW (Developer Summary)**
+
+Below is the exact implementation summary you can send your dev:
+
+---
+
+## **ARclo Onboarding Workflow (Developer Requirements)**
+
+### **Page 1 — Business Intake (`/start`)**
+
+* form: business name, category, location, website (optional), email
+* store in user session or temp record
+* CTA: Continue
+
+### **Page 2 — Branding Intake**
+
+* logo upload
+* theme selection (colors, vibes)
+* CTA: Build My Website → triggers job
+
+### **Page 3 — Build/Generation Progress (`/generating`)**
+
+* polling or WebSocket for job status
+* progress messages
+* auto-redirect on completion
+
+### **Page 4 — Preview Page (`/preview/:siteId`)**
+
+* left: rendered preview (temporary domain)
+* right: insights list from generation logs
+* CTA: Claim Your Website
+
+### **Account Claim Modal**
+
+* email field
+* send magic link
+* store claim and redirect after login
+
+### **Dashboard Onboarding Checklist (`/dashboard`)**
+
+Checklist items:
+
+1. confirm business info
+2. connect domain
+3. connect GSC
+4. connect GA
+5. services selection
+6. locations selection
+7. publish
+
+Persist progress in DB.
+
+### **Dashboard Daily Activity Feed**
+
+* JSON-driven list of automated improvements
+* show last 7 days
+
+### **Weekly Summary Email**
+
+* SendGrid template
+* triggered by cron
+* metrics + actions
+* CTA: View Dashboard
+
+---
+
+# If you want, I can now produce:
+
+🔥 Full UI wireframes for each onboarding page
+🔥 All copywriting for onboarding fields, modals, CTAs
+🔥 A Figma-style component spec for your dev
+🔥 The database schema for onboarding state
+🔥 Magic-link flows and validation logic
+🔥 Domain connection onboarding experience
+🔥 Google Search Console onboarding UX
+
+Just tell me:
+**Do you want wireframes, copy, or developer implementation first?**

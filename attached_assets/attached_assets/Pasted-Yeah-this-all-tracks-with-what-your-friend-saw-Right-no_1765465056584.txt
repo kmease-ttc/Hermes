@@ -1,0 +1,176 @@
+Yeah, this all tracks with what your friend saw. Right now Arclo is basically:
+	•	Ignoring user uploads
+	•	Sending kind of generic prompts to gpt-image-1
+	•	Accepting whatever it gets back (even if it’s an office for a bakery)
+	•	And not tying copy/images tightly to the business type
+
+So you end up with: nice layout, but “MRI Software” vibe for a cake shop.
+
+Below is a concrete plan you can hand to your dev / Replit agent to fix it.
+
+I’ll break it into 4 chunks:
+	1.	Image source priority (uploads vs AI vs fallback)
+	2.	How to actually use gpt-image-1 properly (with references + better prompts)
+	3.	Simple validation so you don’t get office photos for bakeries
+	4.	Copy alignment for sections like “Why Dee’s Bakes / Our Approach”
+
+No code, just behavior.
+
+⸻
+
+1. Change the image source priority
+
+Right now:
+AI image generation runs, uploads are ignored, and there’s no fallback.
+
+You want this hierarchy:
+	1.	User uploads (if present)
+	2.	AI-generated images using those uploads as references
+	3.	AI-generated images from text prompt only
+	4.	Curated stock / preset industry images (if the model fails or gives nonsense)
+
+Dev instructions
+
+For each site:
+	1.	When the user uploads images:
+	•	Store them with metadata:
+	•	kind: 'hero' | 'gallery' | 'logo_ref'
+	•	business_id
+	•	Show thumbnails in the UI so the user sees they’ve “registered”.
+	2.	When generating the hero image:
+	•	If there are any uploaded images tagged as hero/gallery:
+	•	Prefer those directly as the hero.
+	•	Optionally let AI “enhance” them, but they must not be ignored.
+	•	Only call gpt-image-1 when:
+	•	No user images exist, or
+	•	The user explicitly chooses “Use AI image instead”.
+	3.	If AI generation fails after 3 tries:
+	•	Do not fail the whole job.
+	•	Use a curated stock image from a small, high-quality library per industry (e.g., 5–10 handpicked images for “bakery”, “HVAC”, etc.).
+
+Result:
+User uploads are first-class, AI is second, and the site never ends up with a totally wrong office shot.
+
+⸻
+
+2. Fix how you call gpt-image-1
+
+Two big issues now:
+	•	Prompts are probably too generic (“nice hero image for a business”), so the model defaults to generic offices.
+	•	You’re not using the image-reference flow, so uploads never influence the result.
+
+Dev instructions
+
+For hero images:
+	1.	If user uploaded bakery images
+	•	Call gpt-image-1 with those uploads as references.
+	•	Prompt pattern should look like:
+“Create a wide hero image for a local {industry} business called {BusinessName}.
+Use the style and content of these reference images (cakes, pastries, bakery interior).
+Show a warm, inviting bakery with cakes, cupcakes, and pastries on display.
+No offices, no generic corporate interiors.
+Clean, commercial photography style, no text in the image.”
+	•	Important: explicitly forbid “office”, “conference room”, etc. in the prompt.
+	2.	If no uploads
+	•	Use a strong, industry-specific prompt:
+For bakery:
+“Create a hero image of a modern local bakery with cakes, cupcakes, pastries and a bright display case. No offices, no laptops, no people in suits. Clean, inviting, natural light.”
+
+For HVAC:
+“Show a clean home interior with HVAC vents, thermostat, and comfortable environment. No corporate offices.”
+
+And similar for each industry.
+	3.	Use correct aspect & composition
+	•	Make it clear you want a wide hero, not a square floating object:
+“Wide banner-style image with lots of space for text overlay.”
+	4.	Log failures
+	•	When gpt-image-1 returns something clearly off (see validation below), log the prompt + result so you can refine prompts later.
+
+For logos:
+	1.	Always prompt explicitly for “logo” (flat, vector-style, icon + wordmark), e.g.:
+“Design a simple flat logo icon for a bakery called Dee’s Bakes. Use a minimal cake or cupcake icon, no photo, no background scene, no text inside the icon.”
+	2.	Use business type in the prompt so you don’t get random stars everywhere.
+
+⸻
+
+3. Add simple validation so you don’t get “office for bakery”
+
+You don’t need perfect vision; just a cheap guardrail.
+
+Dev instructions
+	1.	After AI generates an image, run a quick classification step using a vision model:
+	•	Ask something like:
+“Is this image showing a {industry} context (e.g. cakes/bakery items for a bakery) or something unrelated like an office or generic room? Answer: ‘good’ or ‘bad’ and briefly why.”
+	2.	If the answer is “bad” or the description clearly mentions “office”, “desk”, “computers”, etc.:
+	•	Reject the image.
+	•	Retry image generation with a more explicit prompt (e.g., add “NOT an office, not desks, not computers.”).
+	•	After 2 failed attempts, fall back to curated stock for that industry.
+	3.	Only mark the site as Preview Ready if the hero image passes this check.
+
+Result:
+You will never show an office picture on a bakery landing page again.
+
+⸻
+
+4. Align section copy with the business type
+
+Your friend’s feedback on “Why Dee’s Bakes” and “Our Approach” being generic or unrelated is the same root cause: prompts aren’t grounded enough in the business type.
+
+Dev instructions
+	1.	When generating section copy, always feed in:
+	•	Business name
+	•	Business type/industry
+	•	City
+	•	Services list (if you’ve parsed or inferred it)
+	•	Any user-supplied description
+	2.	Prompt pattern for sections like “Why Dee’s Bakes”:
+“Write a short section titled ‘Why {BusinessName}’ for a {industry} in {city}.
+Speak to real customer concerns for this industry.
+For example, for a bakery focus on taste, freshness, custom orders, birthdays, weddings, and reliability.
+Avoid generic office language.
+Keep it 3–4 short sentences, friendly and clear.”
+	3.	Prompt pattern for “Our Approach”:
+“Write an ‘Our Approach’ section for a {industry}.
+Explain how they work with customers step by step.
+Use concrete details relevant to this industry (e.g. tastings, custom designs, delivery windows for a bakery).
+3–5 bullet points max.”
+	4.	Add a cheap validation step similar to images:
+	•	Ask a model:
+“Does this text clearly describe a {industry} business? Answer yes/no and explain.”
+	•	If “no”, regenerate with a stronger constraint.
+
+⸻
+
+5. Add more “services” to the image system (future-proofing)
+
+You mentioned wanting more services. Conceptually this means:
+	•	More image recipes per industry (hero, gallery, background textures, etc.).
+	•	More prompt templates tied to business types.
+	•	Possibly a second image provider as fallback (another OpenAI size/aspect variant, or another model in Replit) when gpt-image-1 is flaky.
+
+Dev instructions (short)
+	1.	For each supported industry, define:
+	•	1–2 hero prompt templates
+	•	3–5 gallery/background prompt templates
+	2.	For each template, hard-code “avoid” clauses:
+	•	No offices for trades/retail
+	•	No surgery for simple clinics, etc.
+	3.	Add a provider fallback:
+	•	If gpt-image-1 fails or returns off-topic images twice, switch to:
+	•	a different prompt variation, or
+	•	a small internal library of pre-approved images.
+
+⸻
+
+6. Summary you can paste to your dev
+
+	•	Treat user uploads as the first choice for hero and gallery images; only use AI when there are no uploads or when the user asks for AI.
+	•	When using gpt-image-1, always pass industry-specific prompts and, when possible, reference uploaded images so the output matches the business (e.g. cakes for bakeries).
+	•	Add a validation step: reject AI images that clearly show the wrong context (e.g. office for a bakery) and fall back to regeneration or a small curated stock library.
+	•	Update all copy prompts for sections like “Why {BusinessName}” so they explicitly mention the business type, services, and city; validate that the text actually describes that industry.
+	•	Do not mark a site as Preview Ready unless it has:
+	•	an industry-appropriate hero image,
+	•	a custom or AI-generated logo, and
+	•	section copy that matches the business type.
+
+If you want, next I can write the exact prompt templates you should use for 4–5 core industries (bakery, plumber, HVAC, dentist, med spa) for both hero images and section copy so your dev can just drop them in.

@@ -1,0 +1,232 @@
+Goal: in the “Preview Ready” screen, show the entire hero nicely inside the preview card instead of a chopped strip, without changing the actual generated site.
+
+Below is a concrete spec + code you can drop into the preview UI.
+
+⸻
+
+1. Treat the preview as a “mini desktop browser”
+
+Assume we’re rendering the preview in an <iframe>.
+
+// PreviewShell.tsx
+import { useRef } from "react";
+
+type Props = {
+  previewUrl: string;
+};
+
+export function PreviewShell({ previewUrl }: Props) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  return (
+    <div className="preview-shell">
+      <div className="preview-browser">
+        {/* fake browser bar (optional) */}
+        <div className="preview-browser-bar">
+          <div className="dot red" />
+          <div className="dot yellow" />
+          <div className="dot green" />
+          <span className="preview-title">Bobs AC</span>
+        </div>
+
+        {/* scaled viewport */}
+        <div className="preview-viewport">
+          <iframe
+            ref={iframeRef}
+            src={previewUrl}
+            title="Site preview"
+            className="preview-iframe"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+⸻
+
+2. Fix the cropping by scaling the page inside the card
+
+Set a “virtual” desktop size (e.g. 1440×900) and scale it down so the entire hero fits.
+
+/* Outer shell – removes huge white space and centers the card */
+.preview-shell {
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+}
+
+/* Card around the mini browser */
+.preview-browser {
+  border-radius: 24px;
+  background: #0b1120;
+  padding: 16px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  max-width: 100%;
+}
+
+/* Fake browser bar (optional) */
+.preview-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 14px;
+}
+
+.preview-browser-bar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  opacity: 0.7;
+}
+
+.preview-browser-bar .dot.red {
+  background: #f97373;
+}
+
+.preview-browser-bar .dot.yellow {
+  background: #facc15;
+}
+
+.preview-browser-bar .dot.green {
+  background: #4ade80;
+}
+
+.preview-browser-bar .preview-title {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+/* This is the key part: a fixed virtual viewport, scaled down */
+.preview-viewport {
+  /* “real” size of the site we’re pretending to show */
+  width: 1440px;
+  height: 900px;
+
+  /* scale it down to fit the card */
+  transform: scale(0.55);
+  transform-origin: top left;
+
+  /* size of the card after scaling (must match width*scale, height*scale) */
+  /* 1440 * 0.55 = 792, 900 * 0.55 = 495 */
+  width: 792px;
+  height: 495px;
+
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* The iframe should fill the virtual viewport */
+.preview-iframe {
+  width: 1440px;
+  height: 900px;
+  border: none;
+  display: block;
+}
+
+Result:
+	•	The site still renders at a normal desktop size inside the iframe.
+	•	The whole hero is visible in the preview because we scale the viewport down to ~55%.
+	•	No awkward cropping or huge empty white area under the frame.
+
+You can tweak:
+	•	1440x900 if you prefer a different “virtual screen”.
+	•	scale(0.55) and the derived width/height pairs to fit your design.
+
+⸻
+
+3. Make sure the preview card height is driven by the scaled viewport
+
+Right now the white space is probably because the outer container has a fixed tall height.
+Set the main content area to “auto” based on the preview content:
+
+.preview-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 0 48px;
+}
+
+.preview-page-main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+And wrap PreviewShell in something like:
+
+export function PreviewPage({ previewUrl }: { previewUrl: string }) {
+  return (
+    <div className="preview-page">
+      {/* top controls / status badges etc */}
+      {/* ... */}
+
+      <div className="preview-page-main">
+        <PreviewShell previewUrl={previewUrl} />
+      </div>
+
+      {/* "Open in new tab" button below */}
+    </div>
+  );
+}
+
+No fixed height on .preview-page-main; let the scaled preview define it.
+
+⸻
+
+4. Mobile behaviour
+
+On small screens, reduce the scale so it always fits:
+
+@media (max-width: 900px) {
+  .preview-viewport {
+    transform: scale(0.45);
+    transform-origin: top left;
+    width: calc(1440px * 0.45);
+    height: calc(900px * 0.45);
+  }
+}
+
+@media (max-width: 600px) {
+  .preview-viewport {
+    transform: scale(0.35);
+    width: calc(1440px * 0.35);
+    height: calc(900px * 0.35);
+  }
+}
+
+
+⸻
+
+5. Optional: center the hero inside the iframe
+
+If the hero has a lot of empty space above it, you can gently nudge the scroll position after the iframe loads (same-origin only):
+
+useEffect(() => {
+  const iframe = iframeRef.current;
+  if (!iframe) return;
+
+  iframe.onload = () => {
+    try {
+      const doc = iframe.contentWindow?.document;
+      if (!doc) return;
+
+      // Try to find a hero section, otherwise just nudge down a bit
+      const hero = doc.querySelector("[data-hero], main h1");
+      if (hero) {
+        (hero as HTMLElement).scrollIntoView({ block: "center" });
+      } else {
+        doc.documentElement.scrollTop = 120;
+        doc.body.scrollTop = 120;
+      }
+    } catch {
+      // ignore cross-origin issues
+    }
+  };
+}, []);
+
+With this in place, the preview card always shows a clean, miniaturized version of the full hero, instead of a truncated slice that makes the design look broken.

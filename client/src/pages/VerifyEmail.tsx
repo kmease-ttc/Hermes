@@ -4,6 +4,7 @@ import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function VerifyEmail() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -52,21 +53,7 @@ export default function VerifyEmail() {
           <Card className="bg-card border-border">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
-                {status === "loading" && (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                  </div>
-                )}
-                {status === "success" && (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  </div>
-                )}
-                {status === "error" && (
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center">
-                    <AlertCircle className="w-6 h-6 text-white" />
-                  </div>
-                )}
+                <img src={arcloLogo} alt="Arclo" className="h-16 w-auto" />
               </div>
               <CardTitle className="text-2xl">
                 {status === "loading" && "Verifying..."}

@@ -1,0 +1,271 @@
+Absolutely — **this is the right moment** to lock down your *marketing site foundation* before you begin account creation, auth flows, dashboards, payments, onboarding, etc.
+
+Below is **Phase 1: Full Marketing-Site Audit + Developer Task List**
+This ensures every page is present, clean, consistent with the design system, and ready for customer sign-ups.
+
+This is written **directly for your developer**, broken into:
+
+---
+
+# ✅ **Part 1 — Missing Pages (must add before product launch)**
+
+### **1. Privacy Policy (REQUIRED for all SaaS)**
+
+Route: `/privacy`
+Needs:
+
+* Full GDPR/CCPA compliance text
+* Your company name (Arclo, Inc.), address, contact email
+* Data usage (basic outline is fine for now)
+* Cookie policy line
+
+### **2. Terms of Service (REQUIRED)**
+
+Route: `/terms`
+Needs:
+
+* Liability sections
+* Acceptable use
+* Subscription terms
+* Cancellation/refund rules
+* AI-generated content disclaimer
+
+### **3. Contact Page (Strongly Recommended)**
+
+Route: `/contact`
+Should include:
+
+* Simple form (Name, Email, Message)
+* Email: `support@arclo.pro`
+* Optional Calendly embed
+
+### **4. FAQ Page**
+
+Route: `/faq`
+Sections:
+
+* Pricing
+* What’s automated?
+* How does SEO improve daily?
+* How many pages do I get?
+* Can I migrate from Wix/WordPress?
+* Does it support custom domains?
+* Does AI write content?
+
+### **5. 404 Page**
+
+Route: `/404`
+
+* Should match design system
+* Clear CTA: “Back to Home”
+
+---
+
+# ✅ **Part 2 — Existing Pages: What Needs Fixing / Improving**
+
+Below is a page-by-page audit.
+
+---
+
+# 🔧 **1. Home Page — Status: 90% done**
+
+Needs:
+
+* Final polish on spacing hierarchy (consistent section gaps).
+* Improve the hero image alignment slightly (mockup sits a bit low).
+* Add subtle transitions between sections (fade → fade).
+* Ensure CTA buttons use shared components across site.
+* Add trust anchors (e.g., “Built by a founder with 15+ years in enterprise software,” links to About Page).
+* Confirm mobile layout for hero tags (avoid overlap).
+
+---
+
+# 🔧 **2. What We Do Page — Status: 75% done**
+
+You've built the new **cluster map** + **vertical journey**, which is awesome.
+Remaining:
+
+### Must fix:
+
+* Align vertical timeline dots to the card edges (currently visually off by 2–4px).
+* Ensure each letter badge (A–F) uses same size, radii, spacing.
+* Add mini module icons for visual clarity (Website = browser icon, SEO = spark, Keywords = search bubble).
+* Add hover states for “Learn More” (icon shift, color change).
+* Add top summary grid (already spec’d earlier).
+
+### Strong recommendation:
+
+* On mobile, timeline should collapse into **stacked cards with no vertical line**.
+
+---
+
+# 🔧 **3. About Page — Status: ~60%**
+
+Problems we must fix:
+
+### **Hero layout**
+
+* Photo and headline alignment is slightly off-center (too much whitespace on left).
+* “Connect on LinkedIn” button needs consistent styling.
+
+### **Why Arclo Exists**
+
+* This section looks OK but needs:
+
+  * larger spacing
+  * consistent typography (use SectionTitle and SectionSubtitle components)
+  * add a subtle glow behind the quote line
+
+### **Career Journey UI (visually broken)**
+
+* Cards are too spaced out
+* Timeline line is misaligned
+* Dot on timeline is too saturated (purple vs brand indigo/blue)
+* Card radii not consistent with design system
+* Needs a soft glow behind cards
+* Should stack cleanly on mobile (right now horizontal scrolling feels awkward)
+
+**Fix:** Use the same pattern as the cluster map → centered layout → clean spacing → vertical timeline on mobile.
+
+### **Missing section: Founder Values / Principles**
+
+All great SaaS founders include a short values section:
+
+* “Automation First”
+* “Speed Over Complexity”
+* “Local Businesses Deserve Better Tools”
+* “Enterprise-Grade AI for Real People”
+
+This builds trust.
+
+---
+
+# 🔧 **4. Examples Page — Status: 90%**
+
+Needs:
+
+* Add hover overlay CTA for each example (“View Site ↗”).
+* Ensure category badges follow Pill component rules.
+* Add a short intro above grid:
+
+  * “See real sites built by Arclo — fully automated, SEO-optimized, and updated daily.”
+
+Optional:
+
+* Add pagination if you add more examples later.
+
+---
+
+# 🔧 **5. Pricing Page — Status: 85%**
+
+Clean it up:
+
+* Update pricing to recommended values (Starter $99, Pro $249, Agency $149/site).
+* Add an Annual billing toggle (“Save 2 months”—works great for conversion).
+* Add comparison table (Starter vs Pro vs Agency).
+* Highlight most popular tier more prominently (Pro card glow ring).
+* Ensure pricing cards use same glass + radii styling as features section.
+
+---
+
+# 🔧 **6. Roadmap Page — Status: ~90%**
+
+You fixed the glow alignment — looks much better.
+
+Remaining:
+
+* Make pill icons consistent (size & weight).
+* Add small top fade to blend into background better.
+* Increase spacing above/below section title.
+* Consider adding “ETA” labels (optional).
+
+---
+
+# 🔧 **7. Footer (global) — Status: 90%**
+
+Needs:
+
+* Ensure hover states match all site buttons/links.
+* Add privacy + terms (once created).
+* Add “© 2024 Arclo Inc.”
+* Possibly add small tagline:
+
+  * *The AI Website Engine*
+* Check mobile stacking.
+
+---
+
+# ✅ **Part 3 — Pages Your Developer Should Build NOW (Phase 1)**
+
+Here is the definitive list:
+
+### **REQUIRED (pre-launch)**
+
+* [ ] `/privacy`
+* [ ] `/terms`
+* [ ] `/contact`
+* [ ] `/faq`
+* [ ] `/404`
+
+### **EXISTING PAGES: polish + fixes**
+
+* [ ] Home → spacing, tags mobile behavior, trust anchors
+* [ ] What We Do → summary grid + timeline alignment + icons
+* [ ] About → restructure sections, fix timeline, fix hero layout
+* [ ] Examples → improve overlays + typography + intro
+* [ ] Pricing → new price points + annual toggle + comparison table
+* [ ] Roadmap → icon consistency + spacing refinements
+
+### **OPTIONAL (but recommended)**
+
+* [ ] `/blog` → even before posts, create a placeholder page
+* [ ] `/status` → uptime status placeholder (boosts professionalism)
+* [ ] `/legal/acceptable-use` → sometimes required for AI tools
+
+---
+
+# 🎯 **Part 4 — Developer Deliverables (Clear Checklist)**
+
+Give this directly to your developer:
+
+### **Global**
+
+* [ ] All pages wrapped in `AppLayout`
+* [ ] Reuse Section, Card, Pill, Button, Typography components
+* [ ] Remove inline styles; use design system tokens
+* [ ] Ensure mobile layouts for EVERY section
+
+### **Navigation**
+
+* [ ] Verify every header link has a real page
+* [ ] Add footer links (Privacy, Terms, Contact, FAQ, Examples, Pricing, etc.)
+
+### **UI Consistency**
+
+* [ ] All radii = `rounded-3xl`
+* [ ] All shadows = `shadow-soft` or `shadow-hero`
+* [ ] All cards use glass/blur styling
+* [ ] All icons same stroke weight
+* [ ] All CTAs use gradient button component
+
+---
+
+# ⭐ **If you want, I can now generate:**
+
+### ✔ The full Privacy Policy (tailored for Arclo + AI usage)
+
+### ✔ Terms of Service (SaaS-ready)
+
+### ✔ Contact page copy + layout
+
+### ✔ FAQ page copy + structure
+
+### ✔ Revised About page sections & proper layout
+
+### ✔ Module landing pages for each deep-dive
+
+Just tell me which one you want next:
+
+**“Generate Privacy Policy”**,
+**“Fix the About page sections”**,
+**“Generate FAQ page”**, etc.
