@@ -1,0 +1,141 @@
+You are a senior UX designer and product lead launching a new consumer startup in the SEO automation space.
+
+The product promise is simple and bold: **SEO runs automatically in the background. Users do not need to review reports, understand SEO, or make decisions.**
+
+Design a “How It Works” page that feels:
+
+* Calm
+* Modern
+* Trustworthy
+* Consumer-first (not SaaS-internal, not developer-facing)
+* Confident without being loud
+
+This is not a documentation page. It is a reassurance page.
+
+### Audience
+
+* Small business owners
+* Founders
+* Operators
+* Non-technical users who want results, not tools
+
+They are anxious about SEO and tired of dashboards. The design should *remove responsibility*, not add it.
+
+---
+
+### Visual Tone & Style
+
+* Light, airy, and high-contrast (no dark mode)
+* Generous white space
+* Large, readable typography
+* Minimal copy
+* Rounded cards and soft borders
+* One strong brand accent color (used sparingly)
+* Icons are simple, modern, outline-style, and consistent — never decorative
+
+The page should feel closer to a premium consumer service (like payroll automation or background monitoring) than a SaaS product walkthrough.
+
+---
+
+### Content Structure
+
+#### Hero Section
+
+Headline:
+**SEO that runs on autopilot**
+
+Subhead (one sentence only):
+Hermes finds issues, fixes them automatically, and keeps your site optimized — without you reviewing reports or making decisions.
+
+No paragraphs. No jargon. No explanation.
+
+---
+
+#### Primary Reassurance Callout (Visually Prominent)
+
+A full-width callout with subtle emphasis:
+
+**No work required**
+Hermes runs automatically in the background. You’ll only hear from us when something improves — or if action is needed.
+
+This block should visually anchor the page. It is the emotional core.
+
+---
+
+#### Outcome Cards (Not Steps)
+
+Replace any “step-by-step” flow with **three outcome-focused cards**, arranged horizontally.
+
+Each card contains:
+
+* A simple icon (above text)
+* A short headline
+* One supporting sentence
+
+Card 1:
+**We find what’s broken**
+Continuous scans catch technical issues, content gaps, and missed opportunities.
+
+Card 2:
+**We fix it automatically**
+Hermes applies proven fixes in the background — no approvals, no reviews required.
+
+Card 3:
+**Your traffic improves**
+Rankings and performance improve over time while you focus on your business.
+
+No bullets. No sub-paragraphs. Each card must be readable in under 2 seconds.
+
+---
+
+#### Responsibility Removal Section
+
+Explicitly remove cognitive load from the user.
+
+Headline:
+**You don’t need to review SEO reports**
+
+Body (2 lines max):
+Hermes generates reports for transparency, not decision-making. You can ignore them completely and let everything run automatically.
+
+This section is critical for consumer trust.
+
+---
+
+#### CTA Section
+
+Close with confidence, not urgency.
+
+Headline:
+**Want to be completely hands-off?**
+
+Primary CTA:
+**Fix my SEO automatically**
+
+Secondary (optional, de-emphasized):
+See what will change
+
+The CTA should feel safe, calm, and obvious — not salesy.
+
+---
+
+### Design Principles to Enforce
+
+* Headlines do the work; body copy reassures
+* One sentence per block max
+* Icons reinforce meaning, not decorate
+* No “how our system works” language
+* No implication that the user should learn SEO
+* The page should scan in 8–10 seconds and still feel complete
+
+---
+
+### Emotional Goal
+
+After scrolling this page, the user should feel:
+
+> “Oh. I don’t have to think about this anymore.”
+
+That feeling matters more than explaining anything.
+
+Design for relief, not curiosity.

@@ -93,7 +93,7 @@ export default function HowItWorks() {
 
           <div className="text-center bg-white border border-[#CBD5E1] rounded-xl p-10 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
             <h2 className="text-2xl font-bold text-[#020617] mb-6">
-              Want to be hands-off? One click does it.
+              Want to be completely hands-off?
             </h2>
             <Link href={ROUTES.LANDING}>
               <button 
