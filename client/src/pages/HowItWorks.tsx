@@ -11,8 +11,9 @@ export default function HowItWorks() {
         className="min-h-screen"
         style={{
           background: `
-            radial-gradient(1200px circle at 10% 0%, rgba(124, 58, 237, 0.06), transparent 40%),
-            radial-gradient(1200px circle at 90% 10%, rgba(6, 182, 212, 0.06), transparent 40%),
+            radial-gradient(1200px circle at 10% 0%, rgba(139, 92, 246, 0.06), transparent 40%),
+            radial-gradient(1200px circle at 90% 10%, rgba(236, 72, 153, 0.04), transparent 40%),
+            radial-gradient(800px circle at 50% 80%, rgba(245, 158, 11, 0.03), transparent 40%),
             #FFFFFF
           `
         }}
@@ -25,7 +26,7 @@ export default function HowItWorks() {
                 <span 
                   className="bg-clip-text text-transparent"
                   style={{
-                    backgroundImage: "linear-gradient(135deg, #7C3AED, #22C55E, #06B6D4)"
+                    backgroundImage: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
                   }}
                 >
                   autopilot
@@ -36,19 +37,10 @@ export default function HowItWorks() {
               </p>
             </div>
 
-            <div 
-              className="rounded-2xl p-8 mb-20"
-              style={{
-                background: "linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(6, 182, 212, 0.05))",
-                border: "2px solid rgba(34, 197, 94, 0.3)",
-              }}
-            >
+            <div className="bg-violet-50/60 border border-violet-200 rounded-2xl p-8 mb-20">
               <div className="flex items-center gap-5">
                 <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg, #22C55E, #16A34A)"
-                  }}
+                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400"
                 >
                   <CheckCircle2 className="w-7 h-7 text-white" />
                 </div>
@@ -129,13 +121,8 @@ export default function HowItWorks() {
               }}
             >
               <div className="flex items-start gap-5">
-                <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(220, 38, 38, 0.1))"
-                  }}
-                >
-                  <FileX className="w-7 h-7 text-[#7C3AED]" />
+                <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-100 via-pink-100 to-amber-50 border border-slate-200">
+                  <FileX className="w-7 h-7 text-violet-600" />
                 </div>
                 <div>
                   <h3 className="font-bold text-[#0F172A] text-xl mb-1">You don't need to review SEO reports</h3>
@@ -159,10 +146,7 @@ export default function HowItWorks() {
               </h2>
               <Link href={ROUTES.LANDING}>
                 <button 
-                  className="h-14 px-12 text-lg font-semibold rounded-xl text-white shadow-[0_12px_24px_rgba(34,197,94,0.3)] hover:shadow-[0_16px_32px_rgba(34,197,94,0.4)] hover:scale-[1.02] transition-all duration-200 flex items-center gap-3 mx-auto"
-                  style={{
-                    background: "linear-gradient(135deg, #22C55E, #16A34A)"
-                  }}
+                  className="inline-flex items-center justify-center h-14 px-12 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400 shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 gap-3 mx-auto focus:outline-none focus:ring-4 focus:ring-violet-200"
                   data-testid="button-fix-my-seo"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -171,13 +155,7 @@ export default function HowItWorks() {
               </Link>
               <Link href={ROUTES.FREE_REPORT}>
                 <button 
-                  className="mt-5 text-sm font-medium transition-colors"
-                  style={{
-                    background: "linear-gradient(135deg, #7C3AED, #06B6D4)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
+                  className="mt-5 text-violet-600 hover:text-pink-600 font-medium transition-colors"
                   data-testid="link-see-what-changes"
                 >
                   See what will change →
