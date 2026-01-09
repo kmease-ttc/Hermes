@@ -17963,11 +17963,20 @@ Return JSON in this exact format:
             }
           };
           
+          // Extract domain from URL for workers that need it
+          let targetDomain = normalizedUrl;
+          try {
+            const urlObj = new URL(normalizedUrl);
+            targetDomain = urlObj.hostname.replace(/^www\./, '');
+          } catch {
+            targetDomain = normalizedUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+          }
+
           const [crawlerResult, cwvResult, serpResult, competitiveResult, backlinkResult] = await Promise.allSettled([
             callWorker<CrawlerResponse>(
               crawlerConfig,
-              "/api/crawl",
-              { url: normalizedUrl, maxPages: 10 },
+              crawlerConfig.start_path || "/api/crawl/start",
+              { site_domain: targetDomain, url: normalizedUrl, depth: 2, limit: 20 },
               "Technical Crawler"
             ),
             callWorker<CWVResponse>(
@@ -17978,20 +17987,23 @@ Return JSON in this exact format:
             ),
             callWorker<any>(
               serpConfig,
-              "/api/serp/snapshot",
-              { url: normalizedUrl },
+              "/api/serp/summary",
+              { site_domain: targetDomain },
               "SERP Intel"
             ),
             callWorker<any>(
               competitiveConfig,
               "/run",
-              { url: normalizedUrl },
+              { 
+                target: { domain: targetDomain },
+                options: { max_competitors: 5 }
+              },
               "Competitive"
             ),
             callWorker<any>(
               backlinkConfig,
               "/backlinks/authority/refresh",
-              { url: normalizedUrl },
+              { domain: targetDomain },
               "Backlinks"
             ),
           ]);
