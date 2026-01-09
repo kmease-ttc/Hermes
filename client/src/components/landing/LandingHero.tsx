@@ -57,7 +57,7 @@ export function LandingHero() {
           Autonomous SEO for <span className="marketing-gradient-text">local businesses.</span>
         </h1>
         <p className="text-base md:text-lg text-slate-600 mb-8 max-w-lg mx-auto">
-          Get a professional website in 60 seconds. Arclo keeps your SEO and content improving automatically so more customers find and call you.
+          Start with a free website analysis. Arclo finds what's holding your site back and fixes it automatically — or generates a better one if needed.
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 max-w-xl mx-auto mb-3">
@@ -81,10 +81,10 @@ export function LandingHero() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating…
+                Analyzing…
               </>
             ) : (
-              "Generate My Site"
+              "Analyze My Website"
             )}
           </BrandButton>
         </form>
@@ -99,11 +99,11 @@ export function LandingHero() {
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
           <Link 
-            href={ROUTES.CREATE_SITE}
+            href={ROUTES.WEBSITE_GENERATOR}
             className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
-            data-testid="link-create-site"
+            data-testid="link-generate-site"
           >
-            No site? Create a free site →
+            No site? Generate a free one →
           </Link>
           <Link 
             href={ROUTES.EXAMPLES}

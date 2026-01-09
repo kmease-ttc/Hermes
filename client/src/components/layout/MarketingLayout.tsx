@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Search } from "lucide-react";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 interface MarketingLayoutProps {
@@ -40,18 +40,29 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 Log In
               </span>
             </Link>
-            <Link href={ROUTES.WEBSITE_GENERATOR}>
+            <Link href={ROUTES.WEBSITE_GENERATOR} className="hidden md:block">
+              <Button 
+                variant="outline"
+                size="sm" 
+                className="gap-2 font-medium border-violet-200 text-violet-700 hover:bg-violet-50"
+                data-testid="button-generate-site"
+              >
+                <Sparkles className="h-4 w-4" />
+                Generate My Site
+              </Button>
+            </Link>
+            <Link href={ROUTES.SCAN}>
               <Button 
                 size="sm" 
                 className="gap-2 text-white font-medium"
                 style={{
                   background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
                 }}
-                data-testid="button-generate-site"
+                data-testid="button-analyze-site"
               >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">Generate My Site</span>
-                <span className="sm:hidden">Generate</span>
+                <Search className="h-4 w-4" />
+                <span className="hidden sm:inline">Analyze My Website</span>
+                <span className="sm:hidden">Analyze</span>
               </Button>
             </Link>
           </nav>
