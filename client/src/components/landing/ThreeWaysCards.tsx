@@ -1,8 +1,8 @@
 import { Link } from "wouter";
 import { FileText, Zap, HeadphonesIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BrandButton } from "@/components/marketing/BrandButton";
 
 const WAYS = [
   {
@@ -61,24 +61,14 @@ export function ThreeWaysCards() {
                 </div>
                 <p className="text-sm text-slate-500 mb-6 flex-1">{way.description}</p>
                 <Link href={way.href}>
-                  {way.highlighted ? (
-                    <button 
-                      className="w-full h-9 px-4 text-sm font-semibold rounded-lg bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200"
-                      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
-                      data-testid={`button-${way.title.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      {way.cta}
-                    </button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full border-slate-200 text-slate-700 hover:bg-slate-50"
-                      data-testid={`button-${way.title.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      {way.cta}
-                    </Button>
-                  )}
+                  <BrandButton 
+                    variant={way.highlighted ? "primary" : "secondary"}
+                    size="sm"
+                    className="w-full"
+                    data-testid={`button-${way.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {way.cta}
+                  </BrandButton>
                 </Link>
               </CardContent>
             </Card>

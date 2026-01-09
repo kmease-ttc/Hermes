@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Wrench, Users, Gauge, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { BrandButton } from "@/components/marketing/BrandButton";
 
 const SPECIALISTS = [
   {
@@ -53,13 +53,9 @@ export function AISpecialists() {
         
         <div className="text-center mt-8">
           <Link href="/app/crew">
-            <button 
-              className="h-10 px-6 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200"
-              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
-              data-testid="button-staff-crew"
-            >
+            <BrandButton variant="primary" size="md" data-testid="button-staff-crew">
               Staff your AI crew
-            </button>
+            </BrandButton>
           </Link>
         </div>
       </div>

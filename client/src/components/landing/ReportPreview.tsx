@@ -1,6 +1,7 @@
 import { AlertTriangle, Target, Users, Sparkles, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { BrandButton } from "@/components/marketing/BrandButton";
 
 export function ReportPreview() {
   return (
@@ -65,21 +66,21 @@ export function ReportPreview() {
             
             <div className="pt-6 border-t border-slate-200">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button 
-                  className="h-12 px-8 text-base font-semibold rounded-xl bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
-                  style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
+                <BrandButton 
+                  variant="primary"
+                  size="md"
+                  icon={Sparkles}
                   data-testid="button-fix-it"
                 >
-                  <Sparkles className="h-5 w-5" />
                   Fix it
-                </button>
-                <button 
-                  className="h-10 px-6 text-sm text-slate-500 hover:text-slate-700 flex items-center gap-2 transition-colors"
+                </BrandButton>
+                <BrandButton 
+                  variant="link"
+                  icon={Eye}
                   data-testid="button-view-details"
                 >
-                  <Eye className="h-4 w-4" />
                   View details
-                </button>
+                </BrandButton>
               </div>
               <p className="text-center text-xs text-slate-400 mt-4">
                 Review changes before they go live, or let Arclo handle everything automatically.

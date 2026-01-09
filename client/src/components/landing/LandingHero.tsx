@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { BrandButton } from "@/components/marketing/BrandButton";
 
 export function LandingHero() {
   const [url, setUrl] = useState("");
@@ -73,12 +73,13 @@ export function LandingHero() {
             aria-label="Website URL"
             data-testid="input-url"
           />
-          <button 
-            type="submit" 
-            className="h-12 md:h-14 px-8 text-base font-semibold rounded-xl bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center whitespace-nowrap focus:outline-none focus:ring-4 focus:ring-violet-200"
-            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
+          <BrandButton 
+            variant="primary"
+            size="lg"
+            type="submit"
             disabled={loading}
             data-testid="button-scan"
+            className="whitespace-nowrap"
           >
             {loading ? (
               <>
@@ -88,7 +89,7 @@ export function LandingHero() {
             ) : (
               "Get Free SEO Action Plan"
             )}
-          </button>
+          </BrandButton>
         </form>
         
         {error && (
