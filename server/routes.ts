@@ -17888,6 +17888,9 @@ Return JSON in this exact format:
           
           const crawlerConfig = await resolveWorkerConfig("crawl_render");
           const cwvConfig = await resolveWorkerConfig("core_web_vitals");
+          const serpConfig = await resolveWorkerConfig("serp_intel");
+          const competitiveConfig = await resolveWorkerConfig("competitive_snapshot");
+          const backlinkConfig = await resolveWorkerConfig("backlink_authority");
           
           interface CrawlerPage {
             url: string;
@@ -17960,7 +17963,7 @@ Return JSON in this exact format:
             }
           };
           
-          const [crawlerResult, cwvResult] = await Promise.allSettled([
+          const [crawlerResult, cwvResult, serpResult, competitiveResult, backlinkResult] = await Promise.allSettled([
             callWorker<CrawlerResponse>(
               crawlerConfig,
               "/api/crawl",
@@ -17973,10 +17976,31 @@ Return JSON in this exact format:
               { url: normalizedUrl },
               "Core Web Vitals"
             ),
+            callWorker<any>(
+              serpConfig,
+              "/api/serp/snapshot",
+              { url: normalizedUrl },
+              "SERP Intel"
+            ),
+            callWorker<any>(
+              competitiveConfig,
+              "/run",
+              { url: normalizedUrl },
+              "Competitive"
+            ),
+            callWorker<any>(
+              backlinkConfig,
+              "/backlinks/authority/refresh",
+              { url: normalizedUrl },
+              "Backlinks"
+            ),
           ]);
           
           const crawlerData = crawlerResult.status === "fulfilled" ? crawlerResult.value : { ok: false, data: null, error: "Promise rejected" };
           const cwvData = cwvResult.status === "fulfilled" ? cwvResult.value : { ok: false, data: null, error: "Promise rejected" };
+          const serpData = serpResult.status === "fulfilled" ? serpResult.value : { ok: false, data: null, error: "Promise rejected" };
+          const competitiveData = competitiveResult.status === "fulfilled" ? competitiveResult.value : { ok: false, data: null, error: "Promise rejected" };
+          const backlinkData = backlinkResult.status === "fulfilled" ? backlinkResult.value : { ok: false, data: null, error: "Promise rejected" };
           
           interface Finding {
             id: string;
@@ -18117,14 +18141,140 @@ Return JSON in this exact format:
             });
           }
           
+          let serpScore = 50;
+          let authorityScore = 50;
+          let quickWinKeywords: any[] = [];
+          let decliningKeywords: any[] = [];
+          let topCompetitors: any[] = [];
+          let contentGaps: any[] = [];
+          let domainAuthority: number | null = null;
+          let referringDomains: number | null = null;
+          
+          if (serpData.ok && serpData.data) {
+            const serp = serpData.data;
+            
+            if (serp.keywords && Array.isArray(serp.keywords)) {
+              quickWinKeywords = serp.keywords.filter((kw: any) => 
+                kw.position >= 11 && kw.position <= 20
+              );
+              decliningKeywords = serp.keywords.filter((kw: any) => 
+                kw.change && kw.change < 0
+              );
+            }
+            
+            const avgPosition = serp.avgPosition || serp.average_position;
+            if (avgPosition) {
+              if (avgPosition <= 10) serpScore = 85;
+              else if (avgPosition <= 20) serpScore = 65;
+              else if (avgPosition <= 50) serpScore = 45;
+              else serpScore = 25;
+            }
+            
+            if (quickWinKeywords.length > 0) {
+              findings.push({
+                id: `finding_${findingIndex++}`,
+                title: "Quick Win Keywords Available",
+                severity: "medium",
+                impact: "High",
+                effort: "Low",
+                summary: `${quickWinKeywords.length} keyword${quickWinKeywords.length > 1 ? "s are" : " is"} ranking in positions 11-20. Small optimization could push them to page 1.`,
+              });
+            }
+            
+            if (decliningKeywords.length > 0) {
+              findings.push({
+                id: `finding_${findingIndex++}`,
+                title: "Declining Keyword Rankings",
+                severity: decliningKeywords.length > 5 ? "high" : "medium",
+                impact: "High",
+                effort: "Medium",
+                summary: `${decliningKeywords.length} keyword${decliningKeywords.length > 1 ? "s have" : " has"} fallen in rankings recently. Review and refresh content to recover positions.`,
+              });
+            }
+          }
+          
+          if (competitiveData.ok && competitiveData.data) {
+            const competitive = competitiveData.data;
+            
+            if (competitive.competitors && Array.isArray(competitive.competitors)) {
+              topCompetitors = competitive.competitors.slice(0, 5);
+            }
+            
+            if (competitive.contentGaps && Array.isArray(competitive.contentGaps)) {
+              contentGaps = competitive.contentGaps;
+              
+              if (contentGaps.length > 0) {
+                findings.push({
+                  id: `finding_${findingIndex++}`,
+                  title: "Content Gap Opportunities",
+                  severity: contentGaps.length > 10 ? "high" : "medium",
+                  impact: "High",
+                  effort: "High",
+                  summary: `${contentGaps.length} topic${contentGaps.length > 1 ? "s" : ""} your competitors rank for that you don't. Creating content for these could drive new traffic.`,
+                });
+              }
+            }
+            
+            const shareOfVoice = competitive.shareOfVoice || competitive.share_of_voice;
+            if (shareOfVoice !== undefined && shareOfVoice < 10) {
+              findings.push({
+                id: `finding_${findingIndex++}`,
+                title: "Low Share of Voice",
+                severity: shareOfVoice < 5 ? "high" : "medium",
+                impact: "High",
+                effort: "High",
+                summary: `Your share of voice is ${shareOfVoice.toFixed(1)}%. Competitors are capturing more visibility in your market.`,
+              });
+            }
+          }
+          
+          if (backlinkData.ok && backlinkData.data) {
+            const backlinks = backlinkData.data;
+            
+            domainAuthority = backlinks.domainAuthority || backlinks.domain_authority || backlinks.authority || null;
+            referringDomains = backlinks.referringDomains || backlinks.referring_domains || null;
+            
+            if (domainAuthority !== null) {
+              if (domainAuthority >= 60) authorityScore = 90;
+              else if (domainAuthority >= 40) authorityScore = 70;
+              else if (domainAuthority >= 20) authorityScore = 50;
+              else authorityScore = 30;
+            }
+            
+            if (domainAuthority !== null && domainAuthority < 30) {
+              findings.push({
+                id: `finding_${findingIndex++}`,
+                title: "Low Domain Authority",
+                severity: domainAuthority < 15 ? "high" : "medium",
+                impact: "High",
+                effort: "High",
+                summary: `Domain authority is ${domainAuthority}. Building quality backlinks would improve your ability to rank for competitive keywords.`,
+              });
+            }
+            
+            const lostBacklinks = backlinks.lostBacklinks || backlinks.lost_backlinks || backlinks.lost || 0;
+            if (lostBacklinks > 5) {
+              findings.push({
+                id: `finding_${findingIndex++}`,
+                title: "Recent Backlink Loss",
+                severity: lostBacklinks > 20 ? "high" : "medium",
+                impact: "Medium",
+                effort: "Medium",
+                summary: `${lostBacklinks} backlink${lostBacklinks > 1 ? "s were" : " was"} lost recently. Consider reaching out to recover or replace these links.`,
+              });
+            }
+          }
+          
           const totalPages = crawlerData.data?.pages?.length || 10;
           const technicalScore = Math.max(20, 100 - (technicalIssueCount * 5) - (brokenLinksCount * 10));
           const contentScore = Math.max(20, 100 - (missingMetaCount * 8) - (missingH1Count * 6) - (contentIssueCount * 3));
           
           const overallScore = Math.round(
-            technicalScore * 0.35 +
-            performanceScore * 0.35 +
-            contentScore * 0.30
+            technicalScore * 0.25 +
+            performanceScore * 0.25 +
+            contentScore * 0.20 +
+            serpScore * 0.15 +
+            authorityScore * 0.15
           );
           
           const scoreSummary = {
@@ -18132,6 +18282,8 @@ Return JSON in this exact format:
             technical: Math.min(100, Math.max(0, technicalScore)),
             content: Math.min(100, Math.max(0, contentScore)),
             performance: Math.min(100, Math.max(0, performanceScore)),
+            serp: Math.min(100, Math.max(0, serpScore)),
+            authority: Math.min(100, Math.max(0, authorityScore)),
           };
 
           logger.info("Scan", `Scan ${scanId} completed`, {
@@ -18139,6 +18291,9 @@ Return JSON in this exact format:
             scores: scoreSummary,
             crawlerOk: crawlerData.ok,
             cwvOk: cwvData.ok,
+            serpOk: serpData.ok,
+            competitiveOk: competitiveData.ok,
+            backlinkOk: backlinkData.ok,
           });
 
           logger.info("Analytics", "Free scan completed", { 
@@ -18149,11 +18304,30 @@ Return JSON in this exact format:
             overallScore: scoreSummary.overall,
           });
 
+          const fullReport = {
+            technical: crawlerData.data || null,
+            performance: cwvData.data || null,
+            serp: serpData.data || null,
+            competitive: competitiveData.data || null,
+            backlinks: backlinkData.data || null,
+            keywords: {
+              quickWins: quickWinKeywords,
+              declining: decliningKeywords,
+            },
+            competitors: topCompetitors,
+            contentGaps: contentGaps,
+            authority: {
+              domainAuthority,
+              referringDomains,
+            },
+          };
+
           await db.execute(sql`
             UPDATE scan_requests 
             SET status = 'preview_ready',
                 preview_findings = ${JSON.stringify(findings)}::jsonb,
                 score_summary = ${JSON.stringify(scoreSummary)}::jsonb,
+                full_report = ${JSON.stringify(fullReport)}::jsonb,
                 completed_at = NOW(),
                 updated_at = NOW()
             WHERE scan_id = ${scanId}
@@ -18261,7 +18435,7 @@ Return JSON in this exact format:
     const { scanId } = req.params;
     try {
       const result = await db.execute(sql`
-        SELECT scan_id, target_url, normalized_url, status, preview_findings, score_summary, email
+        SELECT scan_id, target_url, normalized_url, status, preview_findings, score_summary, full_report, email
         FROM scan_requests
         WHERE scan_id = ${scanId}
       `);
@@ -18277,7 +18451,15 @@ Return JSON in this exact format:
       }
 
       const allFindings = scan.preview_findings || [];
-      const scoreSummary = scan.score_summary || { overall: 0, technical: 0, content: 0, performance: 0 };
+      const scoreSummary = scan.score_summary || { 
+        overall: 0, 
+        technical: 0, 
+        content: 0, 
+        performance: 0,
+        serp: 50,
+        authority: 50,
+      };
+      const fullReport = scan.full_report || null;
       const isUnlocked = !!scan.email;
 
       const returnedFindings = isUnlocked 
@@ -18291,6 +18473,7 @@ Return JSON in this exact format:
         totalFindings: totalCount,
         targetUrl: scan.normalized_url || scan.target_url,
         unlocked: isUnlocked,
+        fullReport: isUnlocked ? fullReport : null,
       });
     } catch (error: any) {
       logger.error("Scan", `Failed to get full report for ${scanId}`, { error: error.message });
