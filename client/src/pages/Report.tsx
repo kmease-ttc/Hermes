@@ -68,7 +68,7 @@ function ScoreRing({ score, label, size = "lg" }: { score: number; label: string
             fill="none"
             stroke="currentColor"
             strokeWidth="8"
-            className="text-gray-700"
+            className="text-slate-200"
           />
           <circle
             cx="50"
@@ -84,7 +84,7 @@ function ScoreRing({ score, label, size = "lg" }: { score: number; label: string
         </svg>
         <span className={`${textClasses} font-bold ${color}`}>{score}</span>
       </div>
-      <span className="text-sm text-gray-400">{label}</span>
+      <span className="text-sm text-[var(--marketing-text-muted)]">{label}</span>
     </div>
   );
 }
@@ -121,10 +121,10 @@ function FindingCard({ finding, index }: { finding: Finding; index: number }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-400 text-sm">{finding.summary}</p>
+        <p className="text-[var(--marketing-text-muted)] text-sm">{finding.summary}</p>
         {finding.recommendation && (
-          <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
-            <p className="text-sm text-gray-300">
+          <div className="mt-3 p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]">
+            <p className="text-sm text-[var(--marketing-text-body)]">
               <strong>Recommendation:</strong> {finding.recommendation}
             </p>
           </div>
@@ -139,36 +139,36 @@ function EstimatedImpactPanel({ impact }: { impact: EstimatedImpact }) {
     <Card className="mb-8 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30" data-testid="impact-panel">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-red-400" />
-          <CardTitle className="text-xl text-red-400">Cost of Inaction</CardTitle>
+          <DollarSign className="w-5 h-5 text-red-500" />
+          <CardTitle className="text-xl text-red-600">Cost of Inaction</CardTitle>
         </div>
-        <CardDescription>Estimated monthly opportunity you're missing</CardDescription>
+        <CardDescription className="text-[var(--marketing-text-muted)]">Estimated monthly opportunity you're missing</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="text-center">
-            <MousePointer className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-            <div className="text-2xl font-bold text-white" data-testid="impact-traffic">
+            <MousePointer className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-traffic">
               {impact.monthlyTrafficOpportunity.toLocaleString()}
             </div>
-            <div className="text-sm text-gray-400">Monthly Traffic Opportunity</div>
+            <div className="text-sm text-[var(--marketing-text-muted)]">Monthly Traffic Opportunity</div>
           </div>
           <div className="text-center">
-            <Users className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-            <div className="text-2xl font-bold text-white" data-testid="impact-leads">
+            <Users className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-leads">
               {impact.estimatedLeadsRange.min} - {impact.estimatedLeadsRange.max}
             </div>
-            <div className="text-sm text-gray-400">Estimated Lost Leads</div>
+            <div className="text-sm text-[var(--marketing-text-muted)]">Estimated Lost Leads</div>
           </div>
           <div className="text-center">
-            <DollarSign className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-            <div className="text-2xl font-bold text-white" data-testid="impact-revenue">
+            <DollarSign className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-revenue">
               ${impact.estimatedRevenueRange.min.toLocaleString()} - ${impact.estimatedRevenueRange.max.toLocaleString()}
             </div>
-            <div className="text-sm text-gray-400">Estimated Revenue Range</div>
+            <div className="text-sm text-[var(--marketing-text-muted)]">Estimated Revenue Range</div>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-4 text-center">
+        <p className="text-xs text-[var(--marketing-text-subtle)] mt-4 text-center">
           * Estimates based on industry averages and detected issues. Actual results may vary.
         </p>
       </CardContent>
@@ -253,12 +253,12 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
   };
 
   return (
-    <Card className="mb-8 bg-gray-900/50 border-gray-800" data-testid="manual-instructions" id="manual-instructions">
+    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-md)]" data-testid="manual-instructions" id="manual-instructions">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#D4AF37]" />
-            <CardTitle className="text-xl">Implementation Plan (DIY)</CardTitle>
+            <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Implementation Plan (DIY)</CardTitle>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -281,12 +281,12 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
             </Button>
           </div>
         </div>
-        <CardDescription>Step-by-step instructions for your development team</CardDescription>
+        <CardDescription className="text-[var(--marketing-text-muted)]">Step-by-step instructions for your development team</CardDescription>
       </CardHeader>
       <CardContent>
         <Button
           variant="ghost"
-          className="w-full justify-between mb-4"
+          className="w-full justify-between mb-4 text-[var(--marketing-text-body)]"
           onClick={() => setExpanded(!expanded)}
           data-testid="btn-toggle-instructions"
         >
@@ -297,26 +297,26 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
         {expanded && (
           <div ref={contentRef} className="space-y-6" data-testid="instructions-content">
             {findings.map((finding, index) => (
-              <div key={finding.id} className="border border-gray-700 rounded-lg p-4">
+              <div key={finding.id} className="border border-[var(--marketing-border)] rounded-lg p-4 bg-[var(--marketing-bg-soft)]">
                 <div className="flex items-start gap-3 mb-3">
-                  <span className="text-lg font-bold text-gray-400">{index + 1}.</span>
+                  <span className="text-lg font-bold text-[var(--marketing-text-muted)]">{index + 1}.</span>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-white">{finding.title}</h4>
+                    <h4 className="font-semibold text-[var(--marketing-text-heading)]">{finding.title}</h4>
                     <div className="flex gap-2 mt-1">
                       <Badge 
                         variant="outline" 
                         className={`text-xs ${
-                          finding.severity === 'high' ? 'border-red-500/50 text-red-400' :
-                          finding.severity === 'medium' ? 'border-yellow-500/50 text-yellow-400' :
-                          'border-blue-500/50 text-blue-400'
+                          finding.severity === 'high' ? 'border-red-500/50 text-red-600' :
+                          finding.severity === 'medium' ? 'border-yellow-500/50 text-yellow-600' :
+                          'border-blue-500/50 text-blue-600'
                         }`}
                       >
                         Priority: {finding.severity.toUpperCase()}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-[var(--marketing-border)] text-[var(--marketing-text-muted)]">
                         Impact: {finding.impact}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-[var(--marketing-border)] text-[var(--marketing-text-muted)]">
                         Effort: {finding.effort}
                       </Badge>
                     </div>
@@ -325,13 +325,13 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
                 
                 <div className="ml-7 space-y-3">
                   <div>
-                    <h5 className="text-sm font-medium text-gray-300 mb-1">Summary</h5>
-                    <p className="text-sm text-gray-400">{finding.summary}</p>
+                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Summary</h5>
+                    <p className="text-sm text-[var(--marketing-text-muted)]">{finding.summary}</p>
                   </div>
                   
                   <div>
-                    <h5 className="text-sm font-medium text-gray-300 mb-1">Implementation Steps</h5>
-                    <ol className="text-sm text-gray-400 list-decimal ml-4 space-y-1">
+                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Implementation Steps</h5>
+                    <ol className="text-sm text-[var(--marketing-text-muted)] list-decimal ml-4 space-y-1">
                       {(finding.implementationSteps || [
                         `Identify all ${finding.affectedPages || 'affected'} pages with this issue`,
                         `Apply the recommended fix: ${finding.recommendation || finding.summary}`,
@@ -344,8 +344,8 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
                   </div>
                   
                   <div>
-                    <h5 className="text-sm font-medium text-gray-300 mb-1">Acceptance Criteria</h5>
-                    <p className="text-sm text-gray-400">
+                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Acceptance Criteria</h5>
+                    <p className="text-sm text-[var(--marketing-text-muted)]">
                       {finding.acceptanceCriteria || 'Issue no longer detected in subsequent scans. No negative impact on page performance.'}
                     </p>
                   </div>
@@ -431,8 +431,8 @@ export default function Report() {
       <MarketingLayout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
           <AlertTriangle className="w-12 h-12 text-red-500" />
-          <h1 className="text-2xl font-bold">Report Not Found</h1>
-          <p className="text-gray-400">This scan may have expired or doesn't exist.</p>
+          <h1 className="text-2xl font-bold text-[var(--marketing-text-heading)]">Report Not Found</h1>
+          <p className="text-[var(--marketing-text-muted)]">This scan may have expired or doesn't exist.</p>
           <Button onClick={() => navigate("/")} data-testid="btn-back-home">
             Start New Scan
           </Button>
@@ -460,21 +460,21 @@ export default function Report() {
       <div className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mb-4">
+            <Badge className="bg-green-500/20 text-green-600 border-green-500/30 mb-4">
               Full Report Unlocked
             </Badge>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="report-title">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-[var(--marketing-text-heading)]" data-testid="report-title">
               SEO Analysis Report
             </h1>
-            <p className="text-gray-400 text-lg" data-testid="report-url">
+            <p className="text-[var(--marketing-text-muted)] text-lg" data-testid="report-url">
               {targetUrl}
             </p>
           </div>
 
-          <Card className="mb-8 bg-gray-900/50 border-gray-800">
+          <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-md)]">
             <CardHeader>
-              <CardTitle className="text-xl">Health Scores</CardTitle>
-              <CardDescription>How your site performs across key SEO dimensions</CardDescription>
+              <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Health Scores</CardTitle>
+              <CardDescription className="text-[var(--marketing-text-muted)]">How your site performs across key SEO dimensions</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap justify-center gap-8">
@@ -490,15 +490,15 @@ export default function Report() {
 
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Issues Found ({findings.length})</h2>
+              <h2 className="text-xl font-semibold text-[var(--marketing-text-heading)]">Issues Found ({findings.length})</h2>
               <div className="flex gap-2">
-                <Badge variant="outline" className="border-red-500/50 text-red-400">
+                <Badge variant="outline" className="border-red-500/50 text-red-600">
                   {findings.filter(f => f.severity === "high").length} High
                 </Badge>
-                <Badge variant="outline" className="border-yellow-500/50 text-yellow-400">
+                <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">
                   {findings.filter(f => f.severity === "medium").length} Medium
                 </Badge>
-                <Badge variant="outline" className="border-blue-500/50 text-blue-400">
+                <Badge variant="outline" className="border-blue-500/50 text-blue-600">
                   {findings.filter(f => f.severity === "low").length} Low
                 </Badge>
               </div>
@@ -513,12 +513,12 @@ export default function Report() {
 
           {showManualInstructions && <ManualInstructionsSection findings={findings} />}
 
-          <Card className="bg-gradient-to-r from-[#D4AF37]/10 to-[#D4AF37]/5 border-[#D4AF37]/30">
+          <Card className="bg-gradient-to-r from-[#D4AF37]/10 to-[#D4AF37]/5 border-[#D4AF37]/30 shadow-[var(--marketing-shadow-md)]">
             <CardContent className="py-8">
               <div className="text-center">
                 <Rocket className="w-12 h-12 mx-auto mb-4 text-[#D4AF37]" />
-                <h3 className="text-2xl font-bold mb-2">Ready to Fix These Issues?</h3>
-                <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
+                <h3 className="text-2xl font-bold mb-2 text-[var(--marketing-text-heading)]">Ready to Fix These Issues?</h3>
+                <p className="text-[var(--marketing-text-muted)] mb-6 max-w-2xl mx-auto">
                   Choose how you'd like to proceed: implement fixes yourself, let Arclo handle it automatically, 
                   or have us build and manage your entire site.
                 </p>
@@ -547,25 +547,25 @@ export default function Report() {
           </Card>
 
           <div className="mt-8 grid md:grid-cols-3 gap-4">
-            <Card className="bg-gray-900/30 border-gray-800">
+            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
               <CardContent className="pt-6 text-center">
                 <Shield className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1">Safe Deployment</h4>
-                <p className="text-sm text-gray-400">All changes are reviewed and reversible</p>
+                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Safe Deployment</h4>
+                <p className="text-sm text-[var(--marketing-text-muted)]">All changes are reviewed and reversible</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/30 border-gray-800">
+            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
               <CardContent className="pt-6 text-center">
                 <TrendingUp className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1">Track Progress</h4>
-                <p className="text-sm text-gray-400">Monitor improvements over time</p>
+                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Track Progress</h4>
+                <p className="text-sm text-[var(--marketing-text-muted)]">Monitor improvements over time</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/30 border-gray-800">
+            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
               <CardContent className="pt-6 text-center">
                 <Download className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1">Export Reports</h4>
-                <p className="text-sm text-gray-400">Share with stakeholders</p>
+                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Export Reports</h4>
+                <p className="text-sm text-[var(--marketing-text-muted)]">Share with stakeholders</p>
               </CardContent>
             </Card>
           </div>
