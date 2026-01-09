@@ -5,6 +5,7 @@ import { TicketList } from "@/components/dashboard/TicketList";
 import { AskAI } from "@/components/dashboard/AskAI";
 import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
 import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
+import { ActivityLog } from "@/components/dashboard/ActivityLog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Download, AlertCircle, Activity, Shield, Search, ExternalLink } from "lucide-react";
@@ -505,6 +506,10 @@ export default function Dashboard() {
         <section className="space-y-4">
           <BenchmarkComparison />
           <KnowledgeBaseCard />
+        </section>
+
+        <section>
+          <ActivityLog />
         </section>
 
         <section>
