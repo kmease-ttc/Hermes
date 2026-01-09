@@ -54,14 +54,10 @@ export function LandingHero() {
     <section className="px-5 md:px-6 pt-12 pb-8 md:pt-20 md:pb-16">
       <div className="max-w-2xl mx-auto text-center">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-slate-950 tracking-tight mb-4 leading-tight">
-          Get a complete SEO action plan — <span className="marketing-gradient-text">no setup required.</span>
+          Autonomous SEO for <span className="marketing-gradient-text">local businesses.</span>
         </h1>
-        <p className="text-base md:text-lg text-slate-600 mb-6 max-w-lg mx-auto">
-          See exactly what's holding your site back and what to fix first.
-        </p>
-        
-        <p className="text-sm text-slate-500 mb-4">
-          Built for people who don't want to think about SEO
+        <p className="text-base md:text-lg text-slate-600 mb-8 max-w-lg mx-auto">
+          Get a professional website in 60 seconds. Arclo keeps your SEO and content improving automatically so more customers find and call you.
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 max-w-xl mx-auto mb-3">
@@ -85,10 +81,10 @@ export function LandingHero() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scanning…
+                Generating…
               </>
             ) : (
-              "Get Free SEO Action Plan"
+              "Generate My Site"
             )}
           </BrandButton>
         </form>
@@ -97,20 +93,26 @@ export function LandingHero() {
           <p className="text-sm text-red-600 mb-3" data-testid="text-error">{error}</p>
         )}
         
-        <p className="text-sm text-slate-400">
-          No logins • No integrations • Takes ~60 seconds
+        <p className="text-sm text-slate-500 mb-4">
+          No credit card required.
         </p>
         
-        <p className="text-sm text-slate-500 mt-4">
-          No site?{" "}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
           <Link 
             href={ROUTES.CREATE_SITE}
             className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
             data-testid="link-create-site"
           >
-            No problem. Create a free site →
+            No site? Create a free site →
           </Link>
-        </p>
+          <Link 
+            href={ROUTES.EXAMPLES}
+            className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
+            data-testid="link-see-examples"
+          >
+            See examples
+          </Link>
+        </div>
       </div>
     </section>
   );

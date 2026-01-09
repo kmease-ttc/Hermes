@@ -1,10 +1,11 @@
-import { Globe, CreditCard, Plug, Building2 } from "lucide-react";
+import { Building2, XCircle, Eye, Sparkles, Smartphone } from "lucide-react";
 
 const TRUST_ITEMS = [
-  { icon: Globe, text: "Works with any public website" },
-  { icon: CreditCard, text: "No credit card required" },
-  { icon: Plug, text: "No GA4 or Search Console needed" },
-  { icon: Building2, text: "Built for small & medium businesses" },
+  { icon: Building2, text: "Built for local service businesses" },
+  { icon: XCircle, text: "Cancel anytime" },
+  { icon: Eye, text: "Your changes logged and visible" },
+  { icon: Sparkles, text: "SEO best practices, automated" },
+  { icon: Smartphone, text: "Fast, mobile-friendly websites" },
 ];
 
 export function TrustRow() {
@@ -12,7 +13,7 @@ export function TrustRow() {
     <section className="px-5 md:px-6 py-6 border-y border-slate-200 bg-slate-50/50">
       <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-4 md:gap-8">
         {TRUST_ITEMS.map((item) => (
-          <div key={item.text} className="flex items-center gap-2 text-sm text-slate-600">
+          <div key={item.text} className="flex items-center gap-2 text-sm text-slate-600" data-testid={`trust-item-${item.text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}>
             <item.icon className="h-4 w-4 text-violet-500" />
             <span>{item.text}</span>
           </div>

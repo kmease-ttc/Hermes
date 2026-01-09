@@ -1,0 +1,278 @@
+Below are implementation instructions your dev team can execute now, using the current Arclo site design as-is (keep branding, colors, typography, layout style), but upgrading structure, clarity, trust, and conversion. This is written to be immediately actionable.
+
+GOAL
+Increase signup conversion by:
+	1.	Making the promise instantly understandable (website in 60 seconds + SEO runs itself)
+	2.	Making it believable (examples, transparency, proof)
+	3.	Reducing perceived risk (free preview, cancel anytime, activity log)
+	4.	Showing “what happens after signup” (simple workflow + cadence)
+
+PRIORITY ORDER (SHIP IN THIS SEQUENCE)
+Phase 0 (1–2 days): Homepage restructure + Examples gallery stub
+Phase 1 (2–4 days): “How it works” + comparison section + trust blocks
+Phase 2 (3–6 days): Dashboard “Activity Log” + simple reporting + approvals toggle (optional)
+Phase 3 (later): Agency checker lead magnet + deeper local SEO add-ons
+
+PHASE 0: HOMEPAGE RESTRUCTURE (NO REBRAND, USE CURRENT COMPONENTS)
+	1.	Hero section: tighten copy + clarify primary CTA
+
+	•	Keep existing hero layout and styling.
+	•	Update hero headline to emphasize autonomy first, speed second:
+H1: “Autonomous SEO for local businesses.”
+Subhead: “Get a professional website in 60 seconds. Arclo keeps your SEO and content improving automatically so more customers find and call you.”
+	•	Primary CTA button: “Generate My Site”
+	•	Secondary CTA text link: “See examples”
+	•	Add a one-line friction reducer directly under CTA: “No credit card required.”
+
+Acceptance criteria:
+	•	Above the fold includes H1, subhead, primary CTA, “no credit card” reassurance, and one trust line (next step).
+
+	2.	Add a “Trust strip” directly under hero (1 row, 3–5 items)
+
+	•	Use current design language (small icons optional, but don’t change aesthetic).
+	•	Items should be outcomes and risk reducers, not features:
+	•	“Built for local service businesses”
+	•	“Cancel anytime”
+	•	“Your changes logged and visible”
+	•	“SEO best practices, automated”
+	•	“Fast, mobile-friendly websites”
+
+Acceptance criteria:
+	•	Visible without scrolling too far (should be within first viewport on desktop).
+
+	3.	Insert “How it works” as a 3-step section (directly after trust strip)
+
+	•	Keep it extremely simple, 3 cards in a row.
+Card titles:
+	1.	“Answer 6 quick questions”
+	2.	“Arclo generates your site”
+	3.	“Arclo improves it every week”
+Card body copy should be 1 sentence each.
+	•	Add a small line under the 3 cards: “You can review major changes before they go live (optional).”
+
+Acceptance criteria:
+	•	This section should take <10 seconds to understand.
+	•	Includes a CTA at end: “Generate My Site”.
+
+	4.	Replace or rewrite the current feature bullets into “Benefits first” tiles
+
+	•	Use the same component style you already have for feature lists, but reword:
+	•	“More calls from Google”
+	•	“SEO and content handled for you”
+	•	“No tools, no reports, no guessing”
+	•	“See every update Arclo makes”
+	•	“Designed for your industry”
+	•	“Ongoing improvements (not a one-time site)”
+
+Acceptance criteria:
+	•	Each tile = 3–6 word headline + 1 sentence explanation.
+	•	No jargon (avoid “schema”, “meta tags”, “backlinks” on homepage).
+
+	5.	Add a “Who it’s for” section (keep your industries list, but make it scannable)
+
+	•	Keep the current industries list but convert to:
+	•	A grid with icons OR
+	•	Pills/badges in multiple columns
+	•	Add a short intro line: “Arclo is built for businesses that serve customers locally.”
+
+Acceptance criteria:
+	•	The section visually reads as “this is for me” in 2 seconds.
+
+	6.	Add a new homepage section: “Examples” preview (4 thumbnails)
+
+	•	Create a lightweight examples component now (even with placeholders).
+	•	Show 4 example website cards:
+	•	Plumbing
+	•	HVAC
+	•	Dental / Clinic
+	•	Landscaping
+Each card includes:
+	•	Screenshot (or placeholder)
+	•	Industry label
+	•	“View demo” link
+
+Implementation shortcut:
+	•	If you don’t have real screenshots yet, generate 4 demo sites internally and screenshot the homepages.
+
+Acceptance criteria:
+	•	Clicking any example opens a demo page (Phase 0 can be static /examples page).
+	•	Add “See all examples” link to /examples.
+
+	7.	Add a “Why Arclo vs tools vs agencies” comparison section (lightweight v1)
+
+	•	Don’t build a complex table yet. Use 3 columns with 4 rows of short text.
+Columns: “DIY Tools”, “SEO Agencies”, “Arclo”
+Rows:
+	•	Skill required
+	•	Time required
+	•	Transparency
+	•	Ongoing optimization
+
+Acceptance criteria:
+	•	This must be skimmable. Keep each cell to <8 words.
+
+	8.	Add a bottom CTA section (repeat conversion)
+
+	•	Header: “Ready to never think about SEO again?”
+	•	CTA: “Generate My Site”
+	•	Subtext: “Free preview. No credit card.”
+
+PHASE 0: NEW PAGE /examples (SHIP FAST)
+Route: /examples
+Purpose: credibility + clarity.
+
+Page structure:
+	1.	Header: “Real examples of Arclo-built sites”
+	2.	Grid of 8–12 example cards (start with 4 if needed)
+Each card:
+
+	•	Screenshot
+	•	Industry + City (can be fictional)
+	•	Buttons: “View demo” and “Generate my site like this”
+
+MVP for demos:
+	•	Demos can be static snapshots or live demo subdomains.
+	•	If live demos are too heavy now, use a modal with 3–5 screenshots per example.
+
+Acceptance criteria:
+	•	This page exists, is linked from nav and homepage, and looks consistent with your branding.
+
+PHASE 1: ADD TRUST + BELIEVABILITY (MINIMAL BACKEND)
+	1.	Add /how-it-works page (optional if homepage section is strong)
+Route: /how-it-works
+Content expands the 3 steps into a simple story.
+Include:
+
+	•	“What Arclo does automatically” (bulleted, plain English)
+	•	“What you control” (edits, approvals toggle)
+	•	“What results to expect” (set realistic expectations: “SEO is compounding; expect improvement over weeks, not hours.”)
+
+Acceptance criteria:
+	•	Must include screenshots of dashboard activity log (can be mock UI screenshot initially).
+
+	2.	Add /pricing page (even if single plan)
+Route: /pricing
+You can ship a single plan now:
+
+	•	Plan name: “Autopilot”
+	•	Price
+	•	Includes list (website, hosting, SEO, content updates)
+	•	FAQ block: cancel anytime, domain, support, trial/preview.
+
+Acceptance criteria:
+	•	Pricing is not hidden behind “contact us.”
+
+	3.	Add homepage testimonial slot (even if just 1–2)
+If you don’t have real customer testimonials yet:
+
+	•	Use “Founder note” block instead of fake testimonials:
+“We built Arclo after getting burned by agencies and overwhelmed by tools…”
+This builds trust without inventing testimonials.
+
+Acceptance criteria:
+	•	No fake social proof.
+
+PHASE 2: DASHBOARD SUPPORTS THE PROMISE (PRODUCT ALIGNMENT)
+Your website promise is “we do it for you” + “you can see what we did.”
+So the dashboard must show two things clearly: Progress + Work Done.
+	1.	Add “Activity Log” component to dashboard (must-have)
+Route: /app (or wherever your dashboard lives)
+Top layout:
+
+	•	3 KPI tiles:
+	•	“Google visibility” (impressions or a simplified score)
+	•	“Website traffic”
+	•	“Leads / calls” (even if manual tracking in v1)
+Below: Activity log feed
+
+Activity log items examples:
+	•	“Published a new service page: Water Heater Repair”
+	•	“Improved page speed on mobile”
+	•	“Updated page titles for ‘Emergency Plumber in Austin’”
+	•	“Published a new article: How to prevent pipe leaks in winter”
+Each entry includes:
+	•	Date
+	•	Action type label (Content / Technical / SEO)
+	•	“View” link to see what changed
+
+Acceptance criteria:
+	•	A user can answer “what did Arclo do for me this week?” in 10 seconds.
+
+	2.	Add “Autopilot level” toggle (optional but strong for trust)
+Settings:
+
+	•	Autopilot ON (default)
+	•	Autopilot ON + approve major changes
+	•	Autopilot OFF (manual approve)
+
+Major changes definition for v1:
+	•	Publishing new pages
+	•	Publishing blog posts
+	•	Large homepage content edits
+
+Acceptance criteria:
+	•	Default is simple. Don’t force choices in onboarding. Put this in settings.
+
+	3.	Add “Monthly summary” email (simple)
+Even without perfect metrics, send:
+
+	•	of actions completed
+	•	of new pages/posts
+	•	Basic traffic/search visibility delta (if integrated)
+This is retention fuel and reinforces value.
+
+Acceptance criteria:
+	•	Email sends automatically once per month.
+
+PHASE 3: LEAD MAGNET THAT DIRECTLY HITS THE “AGENCY TRUST” WEDGE
+Route: /agency-checker or /free-audit
+“Enter your website. We’ll scan it and tell you what’s being missed (and what Arclo fixes automatically).”
+Output:
+	•	Simple score + 6 prioritized issues
+	•	CTA: “Fix these automatically with Arclo”
+
+Acceptance criteria:
+	•	Collect email before showing full report (optional) OR show summary then ask for email for details.
+
+TECH/UX RULES (NON-NEGOTIABLE)
+	1.	No SEO jargon on marketing pages. Translate everything into outcomes.
+	2.	Every page has a primary CTA: “Generate My Site”.
+	3.	Proof beats claims: examples page + activity log are your “believability engine.”
+	4.	Keep pages short. Use scannable sections, cards, and short paragraphs.
+	5.	Mobile-first spacing: the ICP will often view on phones.
+
+NAVIGATION UPDATE (MATCH CURRENT DESIGN)
+Header nav should be:
+	•	Examples
+	•	How it works
+	•	Pricing
+	•	Login
+Primary CTA button always visible: “Generate My Site”
+
+FOOTER
+	•	Industries (link to /examples filtered if possible)
+	•	Company (About)
+	•	Legal (Privacy, Terms)
+	•	Contact
+
+MEASUREMENT (SET THIS UP NOW)
+Add event tracking for:
+	•	CTA clicks (Generate My Site)
+	•	Example demo views
+	•	Signup start / completion
+	•	Pricing page views
+	•	Login clicks
+	•	Scroll depth on homepage (optional)
+
+Acceptance criteria:
+	•	You can see conversion funnel: Landing → CTA → Generate flow → Signup.
+
+DEFINITION OF DONE (WHAT “BROUGHT TOGETHER” MEANS)
+When you ship Phase 0 + Phase 1, the site should:
+	•	Explain Arclo in 10 seconds
+	•	Prove it visually (examples)
+	•	Show how it works (3 steps)
+	•	Reduce trust friction (comparison + cancel anytime + transparency promise)
+	•	Drive one action repeatedly (Generate My Site)
+
+If you want, paste your current page sections (or share screenshots) and I’ll map these changes onto your exact existing component layout so your devs can implement without redesign debates.

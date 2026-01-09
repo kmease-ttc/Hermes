@@ -1,30 +1,36 @@
-import { Wrench, Target, Users, ListOrdered } from "lucide-react";
+import { Phone, Settings, Zap, Eye, Building2, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const BENEFITS = [
   {
-    icon: Wrench,
-    title: "Technical SEO Health",
-    description: "Finds crawl issues, metadata gaps, and structural problems that block rankings.",
-    example: '"12 pages missing meta descriptions."',
+    icon: Phone,
+    title: "More calls from Google",
+    description: "Show up when customers search for services in your area.",
   },
   {
-    icon: Target,
-    title: "Keyword Opportunities",
-    description: "Identifies the keywords your site should rank for based on your content and market.",
-    example: '"You should be visible for \'Austin landscaping services\'."',
+    icon: Settings,
+    title: "SEO and content handled for you",
+    description: "No learning curve. We do the work automatically.",
   },
   {
-    icon: Users,
-    title: "Competitor Gaps",
-    description: "Automatically discovers competitors and shows where they outperform you.",
-    example: '"Competitor X ranks for 18 keywords you don\'t."',
+    icon: Zap,
+    title: "No tools, no reports, no guessing",
+    description: "Just results. We handle the complexity.",
   },
   {
-    icon: ListOrdered,
-    title: "Priority Action Plan",
-    description: "A ranked list of fixes and opportunities based on impact.",
-    example: '"Fix page speed on /services for highest gain."',
+    icon: Eye,
+    title: "See every update Arclo makes",
+    description: "Full transparency with activity logs.",
+  },
+  {
+    icon: Building2,
+    title: "Designed for your industry",
+    description: "Templates and content built for local service businesses.",
+  },
+  {
+    icon: RefreshCw,
+    title: "Ongoing improvements (not a one-time site)",
+    description: "Your site gets better every week.",
   },
 ];
 
@@ -33,11 +39,11 @@ export function BenefitCards() {
     <section className="px-5 md:px-6 py-12 md:py-16">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-950 mb-10 tracking-tight">
-          What the Free Scan Includes
+          Why Local Businesses Choose Arclo
         </h2>
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {BENEFITS.map((benefit) => (
-            <Card key={benefit.title} className="bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1">
+            <Card key={benefit.title} className="bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1" data-testid={`benefit-card-${benefit.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}>
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-100 via-pink-100 to-amber-50 border border-slate-200 flex items-center justify-center shrink-0">
@@ -45,8 +51,7 @@ export function BenefitCards() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-slate-900 mb-2">{benefit.title}</h3>
-                    <p className="text-sm text-slate-500 mb-3">{benefit.description}</p>
-                    <p className="text-sm text-violet-600 italic">{benefit.example}</p>
+                    <p className="text-sm text-slate-500">{benefit.description}</p>
                   </div>
                 </div>
               </CardContent>
