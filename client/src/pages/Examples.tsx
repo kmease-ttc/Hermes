@@ -3,18 +3,16 @@ import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@shared/routes";
 import { BrandButton } from "@/components/marketing/BrandButton";
-import { 
-  Wrench, 
-  Wind, 
-  Stethoscope, 
-  Trees, 
-  Zap, 
-  Car, 
-  Home, 
-  Hammer,
-  ExternalLink,
-  Sparkles
-} from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
+
+import plumbingImage from "@assets/stock_images/plumber_working_resi_75235cbd.jpg";
+import hvacImage from "@assets/stock_images/hvac_technician_resi_dbd46315.jpg";
+import dentalImage from "@assets/stock_images/modern_dental_clinic_ea5e4f2e.jpg";
+import landscapingImage from "@assets/stock_images/landscaping_crew_res_b8e6beb2.jpg";
+import electricalImage from "@assets/stock_images/electrician_working__7518a220.jpg";
+import autoImage from "@assets/stock_images/auto_mechanic_car_re_47b1ee60.jpg";
+import roofingImage from "@assets/stock_images/roofing_contractor_r_61a938b1.jpg";
+import contractorImage from "@assets/stock_images/home_renovation_cont_f8087fe2.jpg";
 
 const EXAMPLES = [
   {
@@ -22,9 +20,8 @@ const EXAMPLES = [
     business: "Austin Pro Plumbers",
     industry: "Plumbing",
     city: "Austin, TX",
-    icon: Wrench,
-    color: "from-blue-500 to-blue-600",
-    bgColor: "bg-blue-50",
+    image: plumbingImage,
+    altText: "Plumbing service example website",
     services: ["Emergency repairs", "Water heater installation", "Drain cleaning"],
   },
   {
@@ -32,9 +29,8 @@ const EXAMPLES = [
     business: "Denver Climate Control",
     industry: "HVAC",
     city: "Denver, CO",
-    icon: Wind,
-    color: "from-orange-500 to-orange-600",
-    bgColor: "bg-orange-50",
+    image: hvacImage,
+    altText: "HVAC company website example",
     services: ["AC repair", "Furnace installation", "Duct cleaning"],
   },
   {
@@ -42,9 +38,8 @@ const EXAMPLES = [
     business: "Evergreen Family Dental",
     industry: "Dental Clinic",
     city: "Seattle, WA",
-    icon: Stethoscope,
-    color: "from-teal-500 to-teal-600",
-    bgColor: "bg-teal-50",
+    image: dentalImage,
+    altText: "Dental clinic website example",
     services: ["General dentistry", "Cosmetic procedures", "Emergency care"],
   },
   {
@@ -52,9 +47,8 @@ const EXAMPLES = [
     business: "Desert Bloom Landscaping",
     industry: "Landscaping",
     city: "Phoenix, AZ",
-    icon: Trees,
-    color: "from-green-500 to-green-600",
-    bgColor: "bg-green-50",
+    image: landscapingImage,
+    altText: "Landscaping business website example",
     services: ["Lawn care", "Irrigation", "Landscape design"],
   },
   {
@@ -62,9 +56,8 @@ const EXAMPLES = [
     business: "Bright Spark Electric",
     industry: "Electrical",
     city: "Portland, OR",
-    icon: Zap,
-    color: "from-yellow-500 to-yellow-600",
-    bgColor: "bg-yellow-50",
+    image: electricalImage,
+    altText: "Electrical service website example",
     services: ["Panel upgrades", "Lighting installation", "EV chargers"],
   },
   {
@@ -72,9 +65,8 @@ const EXAMPLES = [
     business: "Summit Auto Repair",
     industry: "Auto Repair",
     city: "Salt Lake City, UT",
-    icon: Car,
-    color: "from-red-500 to-red-600",
-    bgColor: "bg-red-50",
+    image: autoImage,
+    altText: "Auto repair shop website example",
     services: ["Brake service", "Oil changes", "Engine repair"],
   },
   {
@@ -82,9 +74,8 @@ const EXAMPLES = [
     business: "Skyline Roofing Co",
     industry: "Roofing",
     city: "Dallas, TX",
-    icon: Home,
-    color: "from-slate-500 to-slate-600",
-    bgColor: "bg-slate-100",
+    image: roofingImage,
+    altText: "Roofing company website example",
     services: ["Roof replacement", "Storm damage", "Inspections"],
   },
   {
@@ -92,9 +83,8 @@ const EXAMPLES = [
     business: "Premier Home Builders",
     industry: "General Contractor",
     city: "San Diego, CA",
-    icon: Hammer,
-    color: "from-amber-500 to-amber-600",
-    bgColor: "bg-amber-50",
+    image: contractorImage,
+    altText: "General contractor website example",
     services: ["Kitchen remodels", "Bathroom renovations", "Additions"],
   },
 ];
@@ -117,13 +107,17 @@ export default function Examples() {
             {EXAMPLES.map((example) => (
               <Card 
                 key={example.id}
-                className="bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 overflow-hidden"
+                className="bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden group"
                 data-testid={`card-example-${example.id}`}
               >
-                <div className={`h-36 ${example.bgColor} flex items-center justify-center relative`}>
-                  <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${example.color} flex items-center justify-center shadow-lg`}>
-                    <example.icon className="h-10 w-10 text-white" />
-                  </div>
+                <div className="relative h-44 overflow-hidden">
+                  <img 
+                    src={example.image}
+                    alt={example.altText}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 </div>
                 <CardContent className="p-5">
                   <h3 className="font-semibold text-slate-900 mb-1">{example.business}</h3>
