@@ -1,0 +1,72 @@
+/* Marketing Theme - Logo-aligned design tokens */
+
+:root {
+  /* Brand gradient colors (violet → pink → amber) */
+  --brand-violet: #8b5cf6;
+  --brand-pink: #ec4899;
+  --brand-amber: #f59e0b;
+  --brand-gradient: linear-gradient(90deg, var(--brand-violet), var(--brand-pink), var(--brand-amber));
+  --brand-gradient-135: linear-gradient(135deg, var(--brand-violet), var(--brand-pink), var(--brand-amber));
+  
+  /* Text colors */
+  --marketing-text: #020617;
+  --marketing-text-heading: #0f172a;
+  --marketing-text-body: #334155;
+  --marketing-text-muted: #64748b;
+  --marketing-text-subtle: #94a3b8;
+  
+  /* Surface colors */
+  --marketing-bg: #ffffff;
+  --marketing-bg-soft: #f8fafc;
+  --marketing-bg-muted: #f1f5f9;
+  
+  /* Border colors */
+  --marketing-border: #e2e8f0;
+  --marketing-border-light: #f1f5f9;
+  
+  /* Shadows */
+  --marketing-shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --marketing-shadow-md: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --marketing-shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.08);
+  --marketing-shadow-xl: 0 24px 48px rgba(15, 23, 42, 0.1);
+  --marketing-shadow-brand: 0 14px 30px rgba(139, 92, 246, 0.20);
+  --marketing-shadow-brand-hover: 0 18px 40px rgba(236, 72, 153, 0.22);
+}
+
+/* Hero wash background */
+.marketing-hero-wash {
+  background: 
+    radial-gradient(1200px circle at 10% 0%, rgba(139, 92, 246, 0.06), transparent 40%),
+    radial-gradient(1200px circle at 90% 10%, rgba(236, 72, 153, 0.04), transparent 40%),
+    radial-gradient(800px circle at 50% 80%, rgba(245, 158, 11, 0.03), transparent 40%),
+    #FFFFFF;
+}
+
+/* Gradient text utility */
+.marketing-gradient-text {
+  background: var(--brand-gradient-135);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card styling */
+.marketing-card {
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFC);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--marketing-shadow-lg);
+  border-radius: 1rem;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.marketing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--marketing-shadow-xl);
+}
+
+/* Icon badge styling (logo gradient tint) */
+.marketing-icon-badge {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.08), rgba(245, 158, 11, 0.06));
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.12);
+}

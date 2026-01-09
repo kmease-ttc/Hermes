@@ -1,0 +1,209 @@
+Here are implementation instructions to take the **exact look-and-feel of `/how-it-works`** (light background + logo gradient accents + premium cards + CTA styling) and apply it across the entire Hermes site **without rewriting every page by hand**.
+
+## 1) Establish a single source of truth: “Marketing Theme”
+
+Create a dedicated theme layer that every marketing page uses.
+
+### Create these files
+
+* `client/src/styles/marketingTheme.css` (or `marketingTheme.ts` if you prefer Tailwind tokens only)
+* `client/src/components/marketing/MarketingLayout.tsx`
+* `client/src/components/marketing/BrandButton.tsx`
+* `client/src/components/marketing/IconBadge.tsx` (you already have something like this—standardize it)
+
+## 2) Extract the How-It-Works styling into reusable tokens
+
+From `/how-it-works`, identify and centralize:
+
+### Colors (logo-aligned)
+
+* Brand gradient: violet → pink → amber
+* Text: slate 950/900/700/500
+* Surfaces: white / slate-50 / subtle radial wash
+* Borders: slate-200 / slate-100
+* Shadows: soft premium shadows (not heavy)
+
+### Define CSS variables (recommended)
+
+In `marketingTheme.css`:
+
+* `--bg: #ffffff`
+* `--bg-soft: #f8fafc`
+* `--text: #020617`
+* `--muted: #334155`
+* `--border: #e2e8f0`
+* `--brand-violet: #8b5cf6`
+* `--brand-pink: #ec4899`
+* `--brand-amber: #f59e0b`
+* `--brand-gradient: linear-gradient(90deg, var(--brand-violet), var(--brand-pink), var(--brand-amber))`
+
+And add the hero wash background you’re using on the page as a reusable class:
+
+* `.marketing-hero-wash { background: radial-gradient(...), radial-gradient(...), #fff; }`
+
+## 3) Build a MarketingLayout that wraps every marketing page
+
+`MarketingLayout.tsx` should:
+
+* Apply the global background wash + base typography
+* Render the top nav (same as `/how-it-works`)
+* Render a consistent footer (with the gradient top border)
+* Provide consistent section spacing
+
+### Requirements for MarketingLayout
+
+* Outer wrapper: `min-h-screen text-slate-900`
+* Background: the same wash as `/how-it-works`
+* Container width: consistent max width (`max-w-6xl` or whatever you use now)
+* Standard section spacing:
+
+  * Desktop: `py-20` for major sections
+  * Mobile: `py-14`
+* Default text styles:
+
+  * H1: `text-slate-950 tracking-tight`
+  * Body: `text-slate-700`
+  * Muted: `text-slate-500`
+
+## 4) Standardize navigation + footer site-wide (marketing pages)
+
+Make nav/footer shared components:
+
+* `client/src/components/marketing/MarketingNav.tsx`
+* `client/src/components/marketing/MarketingFooter.tsx`
+
+### Nav rules
+
+* Link default: `text-slate-700`
+* Hover: `text-slate-950`
+* Active link: underline or gradient text
+* Keep logo in same position and size everywhere
+
+### Footer rules
+
+* Keep dark footer if you want, but ALWAYS include:
+
+  * Gradient top border: 2px–3px using brand gradient
+  * Link hover uses brand color family
+
+## 5) Replace all marketing CTAs with a single BrandButton
+
+Create `BrandButton.tsx` with variants:
+
+* `primary`: gradient background (logo gradient), white text, text-shadow
+* `secondary`: white background, slate text, border
+* `link`: subtle text link
+
+Then replace all buttons on marketing pages with `<BrandButton variant="primary" />`.
+
+## 6) Standardize cards so every page has the same “premium” feel
+
+Create `MarketingCard.tsx` component that matches the How-It-Works cards:
+
+* Soft gradient fill
+* Very subtle border
+* Premium shadow
+* Hover: lift by 2–4px + slightly stronger shadow
+
+Use it for:
+
+* Feature grids
+* Use case tiles
+* Pricing blocks
+* Testimonials (if any)
+
+## 7) Apply the layout to every route
+
+Identify marketing routes (examples):
+
+* `/`
+* `/how-it-works`
+* `/use-cases`
+* `/pricing`
+* `/about`
+* `/contact`
+* `/login` (optional: usually consistent but slightly different)
+
+Wrap each marketing page component with `MarketingLayout`.
+
+### Example pattern
+
+```tsx
+export default function UseCasesPage() {
+  return (
+    <MarketingLayout>
+      ...page content...
+    </MarketingLayout>
+  );
+}
+```
+
+## 8) Keep dashboard styling separate
+
+Do NOT apply the marketing theme to:
+
+* `/dashboard`
+* `/app/*`
+* authenticated pages
+
+Instead:
+
+* Create `AppLayout.tsx` for dashboard
+* Ensure routing uses the correct layout per route group
+
+## 9) Make it impossible to drift (enforce consistency)
+
+Add a simple rule:
+
+* All marketing pages live under `client/src/pages/marketing/*`
+* All marketing components live under `client/src/components/marketing/*`
+* Marketing pages must use MarketingLayout
+
+Optionally add an ESLint rule or a code review checklist:
+
+* “No direct Tailwind gradient classes on pages — use BrandButton / tokens.”
+
+## 10) QA checklist after applying site-wide
+
+* Typography: H1/H2 sizes consistent across pages
+* Buttons: all CTAs use logo gradient
+* Links: consistent hover + active state
+* Background: same wash on every marketing page
+* Cards: consistent depth + border
+* Mobile: hero spacing doesn’t collapse, CTAs remain visible
+* Contrast: confirm the amber end of gradient still keeps button text readable
+
+---
+
+If you want this as a Replit build prompt for your dev agent, here it is:
+
+Implement a site-wide “Marketing Theme” based on the existing /how-it-works styling and apply it to all marketing pages.
+
+1. Create a centralized theme:
+
+* Add marketing theme tokens (CSS variables or Tailwind config) for: backgrounds, text colors, borders, shadows, and brand gradient matching the logo (violet→pink→amber).
+* Add reusable background wash class used on /how-it-works.
+
+2. Create shared marketing components:
+
+* MarketingLayout (wraps page with background wash + typography defaults)
+* MarketingNav (same nav styling as /how-it-works)
+* MarketingFooter (dark footer with a thin gradient top border matching the brand)
+* BrandButton (primary gradient CTA, secondary outline, link)
+* MarketingCard (premium card styling and hover lift)
+* Ensure IconBadge styling matches logo gradient and is reusable
+
+3. Apply MarketingLayout to all marketing routes:
+
+* Update all marketing pages to use MarketingLayout and replace existing buttons with BrandButton.
+* Replace feature tiles and blocks with MarketingCard where appropriate.
+
+4. Keep dashboard/app routes unaffected:
+
+* Ensure authenticated pages use AppLayout and do not inherit marketing theme classes.
+
+5. QA:
+
+* Verify typography, CTA consistency, nav/footer consistency, mobile responsiveness, and contrast of button text across gradient.
+
+If you paste (or tell me) your current routing structure (React Router? Next-like? server routes?), I can point to exactly where to apply the layout wrapper so it covers everything in one pass.
