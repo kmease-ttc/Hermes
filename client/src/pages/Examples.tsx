@@ -9,7 +9,7 @@ import { Sparkles, Search } from "lucide-react";
 import plumbingImage from "@assets/stock_images/plumber_technician_f_57ccd41e.jpg";
 import hvacImage from "@assets/stock_images/hvac_technician_outd_04a7ca51.jpg";
 import dentalImage from "@assets/stock_images/dental_clinic_recept_c8ab9c1d.jpg";
-import landscapingImage from "@assets/stock_images/landscaping_finished_f8836f6d.jpg";
+import landscapingImage from "@assets/stock_images/landscaper_man_worki_a76659ba.jpg";
 import electricalImage from "@assets/stock_images/electrician_technici_04bb3b5f.jpg";
 import autoImage from "@assets/stock_images/auto_mechanic_workin_63302503.jpg";
 import roofingImage from "@assets/stock_images/roofing_contractor_w_74b1758a.jpg";
