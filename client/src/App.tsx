@@ -46,6 +46,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
+import CreateSite from "@/pages/CreateSite";
 import Report from "@/pages/Report";
 import FreeReport from "@/pages/FreeReport";
 import ManagedSite from "@/pages/ManagedSite";
@@ -112,6 +113,7 @@ function Router() {
       <Route path={ROUTES.SCAN_PREVIEW} component={ScanPreview} />
       <Route path={ROUTES.HOW_IT_WORKS} component={HowItWorks} />
       <Route path={ROUTES.USE_CASES} component={UseCases} />
+      <Route path={ROUTES.CREATE_SITE} component={CreateSite} />
       <Route path={ROUTES.TERMS} component={Terms} />
       <Route path={ROUTES.PRIVACY} component={Privacy} />
       <Route path={ROUTES.REPORT} component={Report} />

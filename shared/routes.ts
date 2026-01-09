@@ -42,6 +42,7 @@ export const ROUTES = {
   HOW_IT_WORKS: "/how-it-works",
   USE_CASES: "/use-cases",
   MANAGED_SITE: "/managed-site",
+  CREATE_SITE: "/create-site",
   
   // App core pages (authenticated)
   HOME: "/app",

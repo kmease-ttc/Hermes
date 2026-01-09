@@ -2754,3 +2754,43 @@ export interface FreeReportMeta {
   };
   raw_metrics?: Record<string, unknown>;
 }
+
+// Generated Sites for "No site? No problem" feature
+export const generatedSites = pgTable("generated_sites", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull().unique(),
+  userId: integer("user_id").references(() => users.id),
+  businessName: text("business_name").notNull(),
+  businessCategory: text("business_category").notNull(),
+  city: text("city"),
+  state: text("state"),
+  phone: text("phone"),
+  email: text("email").notNull(),
+  description: text("description"),
+  services: text("services").array(),
+  brandPreference: text("brand_preference").default("modern"),
+  domainPreference: text("domain_preference").default("subdomain"),
+  customDomain: text("custom_domain"),
+  status: text("status").notNull().default("queued"),
+  publishedUrl: text("published_url"),
+  generatedPages: jsonb("generated_pages").$type<{
+    home?: { title: string; content: string };
+    services?: { title: string; content: string };
+    about?: { title: string; content: string };
+    contact?: { title: string; content: string };
+  }>(),
+  metadata: jsonb("metadata").$type<{
+    schema_markup?: Record<string, unknown>;
+    meta_tags?: Record<string, string>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertGeneratedSiteSchema = createInsertSchema(generatedSites).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGeneratedSite = z.infer<typeof insertGeneratedSiteSchema>;
+export type GeneratedSite = typeof generatedSites.$inferSelect;

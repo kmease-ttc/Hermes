@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { BrandButton } from "@/components/marketing/BrandButton";
+import { ROUTES } from "@shared/routes";
 
 export function LandingHero() {
   const [url, setUrl] = useState("");
@@ -98,6 +99,17 @@ export function LandingHero() {
         
         <p className="text-sm text-slate-400">
           No logins • No integrations • Takes ~60 seconds
+        </p>
+        
+        <p className="text-sm text-slate-500 mt-4">
+          No site?{" "}
+          <Link 
+            href={ROUTES.CREATE_SITE}
+            className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
+            data-testid="link-create-site"
+          >
+            No problem. Create a free site →
+          </Link>
         </p>
       </div>
     </section>

@@ -51,6 +51,8 @@ import {
   type CrewStatus 
 } from "./services/crewStatus";
 import governanceRoutes from './routes/governance';
+import { generatedSites } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -273,6 +275,117 @@ export async function registerRoutes(
       return res.status(500).json({ 
         success: false, 
         message: "Failed to submit lead" 
+      });
+    }
+  });
+
+  // ============================================================
+  // Generated Sites Endpoints ("No site? No problem" feature)
+  // ============================================================
+
+  const createGeneratedSiteSchema = z.object({
+    businessName: z.string().min(1, "Business name is required"),
+    businessCategory: z.string().min(1, "Business category is required"),
+    city: z.string().optional().nullable(),
+    state: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    email: z.string().email("Valid email is required"),
+    description: z.string().optional().nullable(),
+    services: z.array(z.string()).optional().nullable(),
+    brandPreference: z.string().optional().default("modern"),
+    domainPreference: z.string().optional().default("subdomain"),
+  });
+
+  function generateSlugFromBusinessName(businessName: string): string {
+    return businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50);
+  }
+
+  app.post("/api/generated-sites", async (req, res) => {
+    try {
+      const parsed = createGeneratedSiteSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: parsed.error.errors[0]?.message || "Validation failed" 
+        });
+      }
+
+      const data = parsed.data;
+      const siteId = randomUUID();
+      const slug = generateSlugFromBusinessName(data.businessName);
+      const publishedUrl = `https://${slug}.arclo.site`;
+
+      await db.insert(generatedSites).values({
+        siteId,
+        businessName: data.businessName,
+        businessCategory: data.businessCategory,
+        city: data.city,
+        state: data.state,
+        phone: data.phone,
+        email: data.email,
+        description: data.description,
+        services: data.services,
+        brandPreference: data.brandPreference,
+        domainPreference: data.domainPreference,
+        status: "queued",
+        publishedUrl,
+      });
+
+      logger.info("GeneratedSites", "New generated site created", { 
+        siteId, 
+        businessName: data.businessName,
+        email: data.email,
+      });
+
+      return res.json({ 
+        siteId, 
+        status: "queued", 
+        publishedUrl 
+      });
+    } catch (error: any) {
+      logger.error("GeneratedSites", "Failed to create generated site", { error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to create generated site" 
+      });
+    }
+  });
+
+  app.get("/api/generated-sites/:siteId", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      
+      if (!siteId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Site ID is required" 
+        });
+      }
+
+      const result = await db
+        .select()
+        .from(generatedSites)
+        .where(eq(generatedSites.siteId, siteId))
+        .limit(1);
+
+      if (result.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Generated site not found" 
+        });
+      }
+
+      return res.json(result[0]);
+    } catch (error: any) {
+      logger.error("GeneratedSites", "Failed to get generated site", { error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to get generated site" 
       });
     }
   });
