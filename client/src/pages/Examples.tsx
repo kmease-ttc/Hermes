@@ -7,11 +7,11 @@ import { BrandButton } from "@/components/marketing/BrandButton";
 import { Sparkles, Search } from "lucide-react";
 
 import plumbingImage from "@assets/generated_images/plumbing_hero_confident_plumber.png";
-import hvacImage from "@assets/generated_images/hvac_hero_thermostat_comfort.png";
+import hvacImage from "@assets/generated_images/hvac_thermostat_home_clean.png";
 import dentalImage from "@assets/generated_images/dental_hero_team_smiling.png";
 import landscapingImage from "@assets/generated_images/landscaping_hero_finished_yard.png";
 import electricalImage from "@assets/generated_images/electrician_hero_confident_pro.png";
-import autoImage from "@assets/generated_images/auto_mechanic_hero_confident.png";
+import autoImage from "@assets/generated_images/auto_mechanic_hero_clean.png";
 import roofingImage from "@assets/generated_images/roofing_hero_new_roof_home.png";
 import contractorImage from "@assets/generated_images/contractor_hero_renovation_done.png";
 
