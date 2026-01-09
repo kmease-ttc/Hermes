@@ -163,7 +163,7 @@ async function processGeneratePreviewSite(
   const content = await generateWebsiteContent(businessInfo);
 
   await updateJobProgress(jobId, 50, "Building static site bundle...");
-  const bundle = buildStaticSiteBundle({
+  const bundle = await buildStaticSiteBundle({
     businessName: site.businessName,
     content,
     colorTheme: site.colorTheme || "violet",
