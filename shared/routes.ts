@@ -41,6 +41,7 @@ export const ROUTES = {
   FREE_REPORT_SHARE: "/report/free/:reportId/share/:shareToken",
   HOW_IT_WORKS: "/how-it-works",
   USE_CASES: "/use-cases",
+  PRICING: "/pricing",
   MANAGED_SITE: "/managed-site",
   CREATE_SITE: "/create-site",
   WEBSITE_GENERATOR: "/tools/website-generator",
@@ -213,6 +214,7 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.SIGNUP,
   ROUTES.HOW_IT_WORKS,
   ROUTES.USE_CASES,
+  ROUTES.PRICING,
   ROUTES.MANAGED_SITE,
   
   // App routes
@@ -332,6 +334,7 @@ export function isMarketingRoute(path: string): boolean {
     ROUTES.SIGNUP,
     ROUTES.HOW_IT_WORKS,
     ROUTES.USE_CASES,
+    ROUTES.PRICING,
     ROUTES.MANAGED_SITE,
     ROUTES.TERMS,
     ROUTES.PRIVACY,

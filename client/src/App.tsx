@@ -46,6 +46,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
+import Pricing from "@/pages/Pricing";
 import CreateSite from "@/pages/CreateSite";
 import WebsiteGenerator from "@/pages/WebsiteGenerator";
 import SitePreview from "@/pages/SitePreview";
@@ -115,6 +116,7 @@ function Router() {
       <Route path={ROUTES.SCAN_PREVIEW} component={ScanPreview} />
       <Route path={ROUTES.HOW_IT_WORKS} component={HowItWorks} />
       <Route path={ROUTES.USE_CASES} component={UseCases} />
+      <Route path={ROUTES.PRICING} component={Pricing} />
       <Route path={ROUTES.CREATE_SITE} component={CreateSite} />
       <Route path={ROUTES.WEBSITE_GENERATOR} component={WebsiteGenerator} />
       <Route path={ROUTES.SITE_PREVIEW} component={SitePreview} />

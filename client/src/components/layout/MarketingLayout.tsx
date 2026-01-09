@@ -30,6 +30,11 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 Use Cases
               </span>
             </Link>
+            <Link href={ROUTES.PRICING} className="hidden md:block">
+              <span className="text-sm text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium" data-testid="link-pricing">
+                Pricing
+              </span>
+            </Link>
             <Link href="/login">
               <Button 
                 variant="ghost" 
@@ -70,6 +75,9 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 </Link>
                 <Link href={ROUTES.USE_CASES}>
                   <span className="text-sm text-[#CBD5E1] hover:text-white cursor-pointer">Use Cases</span>
+                </Link>
+                <Link href={ROUTES.PRICING}>
+                  <span className="text-sm text-[#CBD5E1] hover:text-white cursor-pointer">Pricing</span>
                 </Link>
               </div>
             </div>
