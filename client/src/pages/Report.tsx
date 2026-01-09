@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { 
   Loader2, CheckCircle2, AlertTriangle, Info, ArrowRight, Rocket, Download, Shield, Zap, TrendingUp,
-  DollarSign, Users, MousePointer, Copy, FileText, Printer, ChevronDown, ChevronUp
+  DollarSign, Users, MousePointer, Copy, FileText, Printer, ChevronDown, ChevronUp,
+  Target, Link2, BarChart2, ExternalLink, Trophy, ArrowDown, ArrowUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,6 +32,27 @@ interface ScoreSummary {
   technical: number;
   content: number;
   performance: number;
+  serp?: number;
+  authority?: number;
+}
+
+interface FullReport {
+  technical?: any;
+  performance?: any;
+  serp?: any;
+  competitive?: any;
+  backlinks?: any;
+  keywords?: {
+    quickWins?: Array<{ keyword: string; position: number; volume?: number }>;
+    declining?: Array<{ keyword: string; oldPosition: number; newPosition: number }>;
+  };
+  competitors?: Array<{ domain: string; shareOfVoice?: number; overlap?: number }>;
+  contentGaps?: Array<{ topic: string; priority: string }>;
+  authority?: {
+    domainAuthority?: number;
+    referringDomains?: number;
+    totalBacklinks?: number;
+  };
 }
 
 interface EstimatedImpact {
@@ -46,6 +68,7 @@ interface ReportData {
   targetUrl: string;
   unlocked: boolean;
   estimatedImpact?: EstimatedImpact;
+  fullReport?: FullReport;
 }
 
 function ScoreRing({ score, label, size = "lg" }: { score: number; label: string; size?: "sm" | "lg" }) {
@@ -359,6 +382,265 @@ ${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\
   );
 }
 
+function KeywordOpportunitiesSection({ fullReport }: { fullReport: FullReport }) {
+  const quickWins = fullReport.keywords?.quickWins || [];
+  const declining = fullReport.keywords?.declining || [];
+
+  if (quickWins.length === 0 && declining.length === 0) return null;
+
+  return (
+    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="keyword-opportunities">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-green-600" />
+          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Keyword Opportunities</CardTitle>
+        </div>
+        <CardDescription className="text-[var(--marketing-text-muted)]">Keywords with high potential for quick wins and those needing attention</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-2 gap-6">
+          {quickWins.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                <h4 className="font-semibold text-[var(--marketing-text-heading)]">Quick Win Keywords</h4>
+                <Badge className="bg-green-100 text-green-700 border-green-300 text-xs">Positions 11-20</Badge>
+              </div>
+              <div className="space-y-2">
+                {quickWins.slice(0, 5).map((kw, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
+                    data-testid={`quick-win-keyword-${idx}`}
+                  >
+                    <span className="font-medium text-[var(--marketing-text-body)]">{kw.keyword}</span>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="text-xs">
+                        Position: #{kw.position}
+                      </Badge>
+                      {kw.volume && (
+                        <span className="text-xs text-[var(--marketing-text-muted)]">
+                          {kw.volume.toLocaleString()} /mo
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {declining.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowDown className="w-4 h-4 text-red-500" />
+                <h4 className="font-semibold text-[var(--marketing-text-heading)]">Declining Keywords</h4>
+                <Badge className="bg-red-100 text-red-700 border-red-300 text-xs">Needs Attention</Badge>
+              </div>
+              <div className="space-y-2">
+                {declining.slice(0, 5).map((kw, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
+                    data-testid={`declining-keyword-${idx}`}
+                  >
+                    <span className="font-medium text-[var(--marketing-text-body)]">{kw.keyword}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-green-600">#{kw.oldPosition}</span>
+                      <ArrowDown className="w-3 h-3 text-red-500" />
+                      <span className="text-xs text-red-600 font-medium">#{kw.newPosition}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CompetitorAnalysisSection({ fullReport }: { fullReport: FullReport }) {
+  const competitors = fullReport.competitors || [];
+  const contentGaps = fullReport.contentGaps || [];
+
+  if (competitors.length === 0 && contentGaps.length === 0) return null;
+
+  const maxShareOfVoice = Math.max(...competitors.map(c => c.shareOfVoice || 0), 1);
+
+  return (
+    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="competitor-analysis">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <BarChart2 className="w-5 h-5 text-purple-600" />
+          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Competitor Analysis</CardTitle>
+        </div>
+        <CardDescription className="text-[var(--marketing-text-muted)]">How you compare to your top competitors</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-2 gap-6">
+          {competitors.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-[var(--marketing-text-heading)] mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-500" />
+                Top Competitors
+              </h4>
+              <div className="space-y-3">
+                {competitors.slice(0, 5).map((comp, idx) => (
+                  <div 
+                    key={idx} 
+                    className="p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
+                    data-testid={`competitor-${idx}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-[var(--marketing-text-body)]">{comp.domain}</span>
+                      {comp.shareOfVoice !== undefined && (
+                        <span className="text-sm text-[var(--marketing-text-muted)]">
+                          {comp.shareOfVoice}% share
+                        </span>
+                      )}
+                    </div>
+                    {comp.shareOfVoice !== undefined && (
+                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                          style={{ width: `${(comp.shareOfVoice / maxShareOfVoice) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                    {comp.overlap !== undefined && (
+                      <div className="mt-2 text-xs text-[var(--marketing-text-muted)]">
+                        Keyword overlap: {comp.overlap}%
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {contentGaps.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-[var(--marketing-text-heading)] mb-3 flex items-center gap-2">
+                <Target className="w-4 h-4 text-orange-500" />
+                Content Gaps
+              </h4>
+              <div className="space-y-2">
+                {contentGaps.slice(0, 5).map((gap, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
+                    data-testid={`content-gap-${idx}`}
+                  >
+                    <span className="text-[var(--marketing-text-body)]">{gap.topic}</span>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        gap.priority === 'high' ? 'border-red-500/50 text-red-600' :
+                        gap.priority === 'medium' ? 'border-yellow-500/50 text-yellow-600' :
+                        'border-blue-500/50 text-blue-600'
+                      }`}
+                    >
+                      {gap.priority} priority
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BacklinkProfileSection({ fullReport }: { fullReport: FullReport }) {
+  const authority = fullReport.authority;
+
+  if (!authority) return null;
+
+  const { domainAuthority, referringDomains, totalBacklinks } = authority;
+
+  if (domainAuthority === undefined && referringDomains === undefined && totalBacklinks === undefined) return null;
+
+  let daColor = "text-red-500";
+  if (domainAuthority !== undefined) {
+    if (domainAuthority >= 60) daColor = "text-green-500";
+    else if (domainAuthority >= 40) daColor = "text-yellow-500";
+    else if (domainAuthority >= 20) daColor = "text-orange-500";
+  }
+
+  return (
+    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="backlink-profile">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Link2 className="w-5 h-5 text-blue-600" />
+          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Backlink Profile</CardTitle>
+        </div>
+        <CardDescription className="text-[var(--marketing-text-muted)]">Your site's authority and link portfolio</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-3 gap-6">
+          {domainAuthority !== undefined && (
+            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="domain-authority">
+              <div className="w-20 h-20 mx-auto relative flex items-center justify-center mb-3">
+                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    className="text-slate-200"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    strokeDasharray={`${(domainAuthority / 100) * 251.2} 251.2`}
+                    className={daColor}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className={`text-2xl font-bold ${daColor}`}>{domainAuthority}</span>
+              </div>
+              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Domain Authority</div>
+              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">Industry average: 30-50</div>
+            </div>
+          )}
+
+          {referringDomains !== undefined && (
+            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="referring-domains">
+              <ExternalLink className="w-10 h-10 mx-auto mb-3 text-blue-500" />
+              <div className="text-3xl font-bold text-[var(--marketing-text-heading)]">
+                {referringDomains.toLocaleString()}
+              </div>
+              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Referring Domains</div>
+              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">Unique sites linking to you</div>
+            </div>
+          )}
+
+          {totalBacklinks !== undefined && (
+            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="total-backlinks">
+              <Link2 className="w-10 h-10 mx-auto mb-3 text-green-500" />
+              <div className="text-3xl font-bold text-[var(--marketing-text-heading)]">
+                {totalBacklinks.toLocaleString()}
+              </div>
+              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Total Backlinks</div>
+              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">All incoming links</div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Report() {
   const { scanId } = useParams();
   const [, navigate] = useLocation();
@@ -441,7 +723,7 @@ export default function Report() {
     );
   }
 
-  const { findings, scoreSummary, targetUrl, estimatedImpact } = report;
+  const { findings, scoreSummary, targetUrl, estimatedImpact, fullReport } = report;
 
   const defaultImpact: EstimatedImpact = estimatedImpact || {
     monthlyTrafficOpportunity: Math.round((100 - scoreSummary.overall) * 50),
@@ -482,11 +764,21 @@ export default function Report() {
                 <ScoreRing score={scoreSummary.technical} label="Technical" size="sm" />
                 <ScoreRing score={scoreSummary.content} label="Content" size="sm" />
                 <ScoreRing score={scoreSummary.performance} label="Performance" size="sm" />
+                {scoreSummary.serp !== undefined && (
+                  <ScoreRing score={scoreSummary.serp} label="SERP" size="sm" />
+                )}
+                {scoreSummary.authority !== undefined && (
+                  <ScoreRing score={scoreSummary.authority} label="Authority" size="sm" />
+                )}
               </div>
             </CardContent>
           </Card>
 
           <EstimatedImpactPanel impact={defaultImpact} />
+
+          {fullReport && <KeywordOpportunitiesSection fullReport={fullReport} />}
+          {fullReport && <CompetitorAnalysisSection fullReport={fullReport} />}
+          {fullReport && <BacklinkProfileSection fullReport={fullReport} />}
 
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
