@@ -20,7 +20,9 @@ import {
   Plus,
   Settings as SettingsIcon,
   Trash2,
-  Activity
+  Activity,
+  Zap,
+  Hand
 } from "lucide-react";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { toast } from "sonner";
@@ -571,6 +573,7 @@ export default function Settings() {
   const params = new URLSearchParams(searchString);
   const tabFromUrl = params.get('tab');
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'vault');
+  const [autopilotMode, setAutopilotMode] = useState<'full' | 'approve-major' | 'manual'>('full');
   
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -706,7 +709,7 @@ export default function Settings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="vault" data-testid="tab-vault">
               <Shield className="w-4 h-4 mr-2" />
               Vault
@@ -726,6 +729,10 @@ export default function Settings() {
             <TabsTrigger value="api-keys" data-testid="tab-api-keys">
               <Key className="w-4 h-4 mr-2" />
               API Keys
+            </TabsTrigger>
+            <TabsTrigger value="autopilot" data-testid="tab-autopilot">
+              <Zap className="w-4 h-4 mr-2" />
+              Autopilot
             </TabsTrigger>
           </TabsList>
 
@@ -1003,6 +1010,124 @@ export default function Settings() {
 
           <TabsContent value="api-keys">
             <ApiKeysSection />
+          </TabsContent>
+
+          <TabsContent value="autopilot" className="space-y-6">
+            <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Zap className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">Autopilot Settings</h2>
+                  <p className="text-sm text-muted-foreground">Control how Arclo makes changes to your site automatically.</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div 
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    autopilotMode === 'full' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-muted-foreground/50'
+                  }`}
+                  onClick={() => setAutopilotMode('full')}
+                  data-testid="card-autopilot-full"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${autopilotMode === 'full' ? 'bg-primary/10' : 'bg-muted'}`}>
+                      <Zap className={`w-5 h-5 ${autopilotMode === 'full' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">Full Autopilot</h3>
+                        {autopilotMode === 'full' && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">Active</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Arclo makes all changes automatically. You'll see everything in your activity log.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      autopilotMode === 'full' ? 'border-primary' : 'border-muted-foreground/50'
+                    }`}>
+                      {autopilotMode === 'full' && (
+                        <div className="w-3 h-3 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div 
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    autopilotMode === 'approve-major' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-muted-foreground/50'
+                  }`}
+                  onClick={() => setAutopilotMode('approve-major')}
+                  data-testid="card-autopilot-approve-major"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${autopilotMode === 'approve-major' ? 'bg-primary/10' : 'bg-muted'}`}>
+                      <Shield className={`w-5 h-5 ${autopilotMode === 'approve-major' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">Approve Major Changes</h3>
+                        {autopilotMode === 'approve-major' && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">Active</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Minor fixes are automatic. New pages and major content edits require your approval.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      autopilotMode === 'approve-major' ? 'border-primary' : 'border-muted-foreground/50'
+                    }`}>
+                      {autopilotMode === 'approve-major' && (
+                        <div className="w-3 h-3 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div 
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    autopilotMode === 'manual' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-muted-foreground/50'
+                  }`}
+                  onClick={() => setAutopilotMode('manual')}
+                  data-testid="card-autopilot-manual"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${autopilotMode === 'manual' ? 'bg-primary/10' : 'bg-muted'}`}>
+                      <Hand className={`w-5 h-5 ${autopilotMode === 'manual' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">Manual Mode</h3>
+                        {autopilotMode === 'manual' && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">Active</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        All changes require your approval before going live.
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      autopilotMode === 'manual' ? 'border-primary' : 'border-muted-foreground/50'
+                    }`}>
+                      {autopilotMode === 'manual' && (
+                        <div className="w-3 h-3 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
