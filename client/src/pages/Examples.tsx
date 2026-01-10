@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@shared/routes";
@@ -101,6 +102,11 @@ const EXAMPLES = [
 export default function Examples() {
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/examples" 
+        title="Website Examples – Arclo-Built Sites for Local Businesses"
+        description="See real examples of SEO-optimized websites built by Arclo for plumbing, HVAC, dental, landscaping, and other local service businesses."
+      />
       <section className="px-5 md:px-6 py-12 md:py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">

@@ -1,4 +1,5 @@
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { MarketingCard } from "@/components/marketing/MarketingCard";
 import { BrandButton } from "@/components/marketing/BrandButton";
 import { IconBadge } from "@/components/marketing/IconBadge";
@@ -72,6 +73,11 @@ const useCases = [
 export default function UseCases() {
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/use-cases" 
+        title="Use Cases – Arclo for Every Team"
+        description="Arclo helps small businesses, agencies, e-commerce, healthcare, and developers automate their SEO. See how different organizations use the platform."
+      />
       <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">

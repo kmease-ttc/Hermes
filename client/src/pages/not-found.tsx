@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Home, ArrowLeft, Compass } from "lucide-react";
+import { Home, Search, Eye } from "lucide-react";
 import { ROUTES, resolveDeprecatedRoute } from "@shared/routes";
+import { MarketingLayout } from "@/components/layout/MarketingLayout";
 
 export default function NotFound() {
   const [location, navigate] = useLocation();
@@ -18,70 +18,73 @@ export default function NotFound() {
     }
   }, [location, navigate]);
 
-  const handleGoBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate(ROUTES.DASHBOARD);
-    }
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 space-y-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-semantic-danger/10">
-              <AlertCircle className="h-6 w-6 text-semantic-danger" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Page Not Found</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                The page you're looking for doesn't exist or may have moved.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-3 bg-muted/50 rounded-md">
-            <p className="text-xs text-muted-foreground font-mono break-all">
-              {location}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Button 
-              onClick={handleGoBack}
-              variant="outline"
-              className="w-full justify-start gap-2"
-              data-testid="button-go-back"
+    <MarketingLayout>
+      <div className="flex-1 flex items-center justify-center py-20 px-4">
+        <div className="text-center max-w-lg">
+          <div className="mb-8">
+            <span 
+              className="text-[150px] md:text-[200px] font-bold leading-none"
+              style={{
+                background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Go Back
-            </Button>
-            
-            <Link href={ROUTES.DASHBOARD}>
+              404
+            </span>
+          </div>
+          
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            Page not found
+          </h1>
+          
+          <p className="text-lg text-slate-600 mb-10">
+            The page you're looking for doesn't exist or may have moved.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href={ROUTES.LANDING}>
               <Button 
-                className="w-full justify-start gap-2"
-                data-testid="button-go-dashboard"
+                size="lg"
+                className="w-full sm:w-auto gap-2 text-white font-medium"
+                style={{
+                  background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
+                }}
+                data-testid="button-go-homepage"
               >
                 <Home className="w-4 h-4" />
-                Go to Mission Control
+                Go to Homepage
               </Button>
             </Link>
             
-            <Link href={ROUTES.CREW}>
+            <Link href={ROUTES.SCAN}>
+              <Button 
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto gap-2 font-medium border-slate-300 text-slate-700 hover:bg-slate-50"
+                data-testid="button-analyze-website"
+              >
+                <Search className="w-4 h-4" />
+                Analyze My Website
+              </Button>
+            </Link>
+            
+            <Link href={ROUTES.EXAMPLES}>
               <Button 
                 variant="ghost"
-                className="w-full justify-start gap-2 text-muted-foreground"
-                data-testid="button-go-crew"
+                size="lg"
+                className="w-full sm:w-auto gap-2 font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                data-testid="button-see-examples"
               >
-                <Compass className="w-4 h-4" />
-                Browse Crew
+                <Eye className="w-4 h-4" />
+                See Examples
               </Button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </MarketingLayout>
   );
 }

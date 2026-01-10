@@ -1,4 +1,5 @@
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { IconBadge } from "@/components/marketing/IconBadge";
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
@@ -21,6 +22,11 @@ import {
 export default function HowItWorks() {
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/how-it-works" 
+        title="How It Works – Arclo Autonomous SEO"
+        description="Learn how Arclo finds, fixes, and optimizes your website automatically. No reports to review, no decisions to make — just results."
+      />
       <div 
         className="min-h-screen"
         style={{

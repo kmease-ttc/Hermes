@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,6 +96,11 @@ export default function ManagedSite() {
 
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/managed-site" 
+        title="Managed Website Service – Let Arclo Build and Run Your Site"
+        description="Focus on your business while Arclo builds, manages, and optimizes your website. Professional web presence without the hassle."
+      />
       <div className="py-16 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">

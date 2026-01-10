@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { MarketingCard } from "@/components/marketing/MarketingCard";
 import { BrandButton } from "@/components/marketing/BrandButton";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -219,6 +220,11 @@ export default function WebsiteGenerator() {
 
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/tools/website-generator" 
+        title="Free Website Generator – Create Your SEO-Optimized Site in Minutes"
+        description="Generate a fast, SEO-ready website for your local business in minutes. Answer a few questions and Arclo builds your site automatically."
+      />
       <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">

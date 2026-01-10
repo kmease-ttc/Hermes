@@ -1,4 +1,5 @@
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
+import { SEOHead } from "@/components/marketing/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
@@ -106,6 +107,11 @@ export default function Pricing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   return (
     <MarketingLayout>
+      <SEOHead 
+        path="/pricing" 
+        title="Pricing – Arclo Automated SEO Plans"
+        description="Simple, transparent pricing for automated SEO. Choose from Starter, Autopilot, or Enterprise plans. No contracts, cancel anytime."
+      />
       <div 
         className="min-h-screen"
         style={{

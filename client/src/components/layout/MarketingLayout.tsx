@@ -1,14 +1,77 @@
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Search } from "lucide-react";
+import { Sparkles, Search, Menu, X } from "lucide-react";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface MarketingLayoutProps {
   children: React.ReactNode;
 }
 
 export function MarketingLayout({ children }: MarketingLayoutProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    menuButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileMenuOpen) {
+        closeMobileMenu();
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen, closeMobileMenu]);
+
+  useEffect(() => {
+    if (mobileMenuOpen && menuRef.current) {
+      const focusableElements = menuRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      const handleTabKey = (e: KeyboardEvent) => {
+        if (e.key !== "Tab") return;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleTabKey);
+      firstElement?.focus();
+
+      return () => {
+        document.removeEventListener("keydown", handleTabKey);
+      };
+    }
+  }, [mobileMenuOpen]);
+
   return (
     <div className="marketing-theme min-h-screen flex flex-col text-slate-700 marketing-hero-wash">
       <header className="sticky top-0 z-50 w-full border-b border-[#CBD5E1] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
@@ -51,7 +114,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 Generate My Site
               </Button>
             </Link>
-            <Link href={ROUTES.SCAN}>
+            <Link href={ROUTES.SCAN} className="hidden md:block">
               <Button 
                 size="sm" 
                 className="gap-2 text-white font-medium"
@@ -61,13 +124,82 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 data-testid="button-analyze-site"
               >
                 <Search className="h-4 w-4" />
-                <span className="hidden sm:inline">Analyze My Website</span>
-                <span className="sm:hidden">Analyze</span>
+                Analyze My Website
               </Button>
             </Link>
+            <button
+              ref={menuButtonRef}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              className="md:hidden p-2 text-slate-700 hover:text-slate-950 transition-colors"
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </nav>
         </div>
       </header>
+
+      {mobileMenuOpen && (
+        <div
+          ref={menuRef}
+          className="fixed inset-0 top-16 z-40 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation menu"
+          data-testid="mobile-menu-overlay"
+        >
+          <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
+            <Link href={ROUTES.EXAMPLES} onClick={closeMobileMenu}>
+              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-examples">
+                Examples
+              </span>
+            </Link>
+            <Link href={ROUTES.HOW_IT_WORKS} onClick={closeMobileMenu}>
+              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-how-it-works">
+                How It Works
+              </span>
+            </Link>
+            <Link href={ROUTES.PRICING} onClick={closeMobileMenu}>
+              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-pricing">
+                Pricing
+              </span>
+            </Link>
+            <Link href="/login" onClick={closeMobileMenu}>
+              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-login">
+                Log In
+              </span>
+            </Link>
+            <div className="flex flex-col gap-3 pt-4">
+              <Link href={ROUTES.WEBSITE_GENERATOR} onClick={closeMobileMenu}>
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="w-full gap-2 font-medium border-violet-200 text-violet-700 hover:bg-violet-50"
+                  data-testid="mobile-button-generate-site"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generate My Site
+                </Button>
+              </Link>
+              <Link href={ROUTES.SCAN} onClick={closeMobileMenu}>
+                <Button 
+                  size="lg" 
+                  className="w-full gap-2 text-white font-medium"
+                  style={{
+                    background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
+                  }}
+                  data-testid="mobile-button-analyze-site"
+                >
+                  <Search className="h-4 w-4" />
+                  Analyze My Website
+                </Button>
+              </Link>
+            </div>
+          </nav>
+        </div>
+      )}
 
       <main className="flex-1">
         {children}
