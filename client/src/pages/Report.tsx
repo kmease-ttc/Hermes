@@ -1,14 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { 
-  Loader2, CheckCircle2, AlertTriangle, Info, ArrowRight, Rocket, Download, Shield, Zap, TrendingUp,
-  DollarSign, Users, MousePointer, Copy, FileText, Printer, ChevronDown, ChevronUp,
-  Target, Link2, BarChart2, ExternalLink, Trophy, ArrowDown, ArrowUp, Share2
+  Loader2, CheckCircle2, AlertTriangle, AlertCircle, ArrowRight, Rocket, Shield, Zap, TrendingUp,
+  DollarSign, Users, MousePointer, Eye, Target, Link2, BarChart2, Gauge, Search, Check,
+  Share2, Clock, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { DeployOptionsModal } from "@/components/marketing/DeployOptionsModal";
 import { ShareReportModal } from "@/components/reports/ShareReportModal";
@@ -38,8 +39,17 @@ interface ScoreSummary {
 }
 
 interface FullReport {
-  technical?: any;
-  performance?: any;
+  technical?: {
+    metaCoverage?: number;
+    indexability?: number;
+    issues?: number;
+  };
+  performance?: {
+    lcp?: number;
+    cls?: number;
+    inp?: number;
+    score?: number;
+  };
   serp?: any;
   competitive?: any;
   backlinks?: any;
@@ -72,13 +82,58 @@ interface ReportData {
   fullReport?: FullReport;
 }
 
+type HealthStatus = "at-risk" | "needs-attention" | "healthy";
+
+function getHealthStatus(score: number): HealthStatus {
+  if (score >= 80) return "healthy";
+  if (score >= 60) return "needs-attention";
+  return "at-risk";
+}
+
+function getHealthConfig(status: HealthStatus) {
+  const configs = {
+    "at-risk": {
+      emoji: "🚨",
+      label: "At Risk",
+      color: "text-red-600",
+      bgColor: "bg-red-100",
+      borderColor: "border-red-300",
+    },
+    "needs-attention": {
+      emoji: "⚠️",
+      label: "Needs Attention",
+      color: "text-amber-600",
+      bgColor: "bg-amber-100",
+      borderColor: "border-amber-300",
+    },
+    "healthy": {
+      emoji: "✅",
+      label: "Healthy",
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      borderColor: "border-green-300",
+    },
+  };
+  return configs[status];
+}
+
+function getCardStatus(score: number | undefined): { label: string; color: string; bgColor: string } {
+  if (score === undefined || score < 60) {
+    return { label: "Critical", color: "text-red-700", bgColor: "bg-red-100" };
+  }
+  if (score < 80) {
+    return { label: "Needs Attention", color: "text-amber-700", bgColor: "bg-amber-100" };
+  }
+  return { label: "Good", color: "text-green-700", bgColor: "bg-green-100" };
+}
+
 function ScoreRing({ score, label, size = "lg" }: { score: number; label: string; size?: "sm" | "lg" }) {
   const sizeClasses = size === "lg" ? "w-24 h-24" : "w-16 h-16";
   const textClasses = size === "lg" ? "text-2xl" : "text-lg";
   
   let color = "text-red-500";
   if (score >= 80) color = "text-green-500";
-  else if (score >= 60) color = "text-yellow-500";
+  else if (score >= 60) color = "text-amber-500";
   else if (score >= 40) color = "text-orange-500";
 
   return (
@@ -108,546 +163,80 @@ function ScoreRing({ score, label, size = "lg" }: { score: number; label: string
         </svg>
         <span className={`${textClasses} font-bold ${color}`}>{score}</span>
       </div>
-      <span className="text-sm text-[var(--marketing-text-muted)]">{label}</span>
+      <span className="text-sm text-slate-500">{label}</span>
     </div>
   );
 }
 
-function SeverityIcon({ severity }: { severity: "high" | "medium" | "low" }) {
-  if (severity === "high") return <AlertTriangle className="w-5 h-5 text-red-500" />;
-  if (severity === "medium") return <Info className="w-5 h-5 text-yellow-500" />;
-  return <CheckCircle2 className="w-5 h-5 text-blue-500" />;
-}
-
-function FindingCard({ finding, index }: { finding: Finding; index: number }) {
-  const severityColors = {
-    high: "border-red-500/30 bg-red-500/5",
-    medium: "border-yellow-500/30 bg-yellow-500/5",
-    low: "border-blue-500/30 bg-blue-500/5",
-  };
-
+function DiagnosisCard({ 
+  title, 
+  icon: Icon, 
+  status, 
+  impactSentence, 
+  metrics,
+  onFixClick 
+}: { 
+  title: string;
+  icon: React.ElementType;
+  status: { label: string; color: string; bgColor: string };
+  impactSentence: string;
+  metrics?: React.ReactNode;
+  onFixClick: () => void;
+}) {
   return (
-    <Card className={`border ${severityColors[finding.severity]}`} data-testid={`finding-card-${index}`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start gap-3">
-          <SeverityIcon severity={finding.severity} />
-          <div className="flex-1">
-            <CardTitle className="text-lg">{finding.title}</CardTitle>
-            <div className="flex gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">
-                Impact: {finding.impact}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                Effort: {finding.effort}
-              </Badge>
+    <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow" data-testid={`diagnosis-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <Icon className="w-5 h-5 text-slate-700" />
             </div>
+            <CardTitle className="text-lg text-slate-900">{title}</CardTitle>
           </div>
+          <Badge className={`${status.bgColor} ${status.color} border-0`}>
+            {status.label}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-[var(--marketing-text-muted)] text-sm">{finding.summary}</p>
-        {finding.recommendation && (
-          <div className="mt-3 p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]">
-            <p className="text-sm text-[var(--marketing-text-body)]">
-              <strong>Recommendation:</strong> {finding.recommendation}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function EstimatedImpactPanel({ impact }: { impact: EstimatedImpact }) {
-  return (
-    <Card className="mb-8 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30" data-testid="impact-panel">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-red-500" />
-          <CardTitle className="text-xl text-red-600">Cost of Inaction</CardTitle>
-        </div>
-        <CardDescription className="text-[var(--marketing-text-muted)]">Estimated monthly opportunity you're missing</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <MousePointer className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-traffic">
-              {impact.monthlyTrafficOpportunity.toLocaleString()}
-            </div>
-            <div className="text-sm text-[var(--marketing-text-muted)]">Monthly Traffic Opportunity</div>
-          </div>
-          <div className="text-center">
-            <Users className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-leads">
-              {impact.estimatedLeadsRange.min} - {impact.estimatedLeadsRange.max}
-            </div>
-            <div className="text-sm text-[var(--marketing-text-muted)]">Estimated Lost Leads</div>
-          </div>
-          <div className="text-center">
-            <DollarSign className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-            <div className="text-2xl font-bold text-[var(--marketing-text-heading)]" data-testid="impact-revenue">
-              ${impact.estimatedRevenueRange.min.toLocaleString()} - ${impact.estimatedRevenueRange.max.toLocaleString()}
-            </div>
-            <div className="text-sm text-[var(--marketing-text-muted)]">Estimated Revenue Range</div>
-          </div>
-        </div>
-        <p className="text-xs text-[var(--marketing-text-subtle)] mt-4 text-center">
-          * Estimates based on industry averages and detected issues. Actual results may vary.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ManualInstructionsSection({ findings }: { findings: Finding[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const generateInstructions = () => {
-    return findings.map((finding, index) => {
-      const steps = finding.implementationSteps || [
-        `Identify all ${finding.affectedPages || 'affected'} pages with this issue`,
-        `Apply the recommended fix: ${finding.recommendation || finding.summary}`,
-        `Test changes in staging environment`,
-        `Deploy to production and verify`
-      ];
-      
-      return `
-## ${index + 1}. ${finding.title}
-
-**Priority:** ${finding.severity.toUpperCase()}
-**Impact:** ${finding.impact}
-**Effort:** ${finding.effort}
-${finding.riskLevel ? `**Risk Level:** ${finding.riskLevel}` : ''}
-
-### Summary
-${finding.summary}
-
-### Implementation Steps
-${steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
-
-### Acceptance Criteria
-${finding.acceptanceCriteria || `- Issue no longer detected in subsequent scans\n- No negative impact on page performance`}
-
----
-`;
-    }).join('\n');
-  };
-
-  const copyToClipboard = async () => {
-    const instructions = generateInstructions();
-    await navigator.clipboard.writeText(instructions);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const printInstructions = () => {
-    const content = contentRef.current;
-    if (!content) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>SEO Implementation Plan</title>
-          <style>
-            body { font-family: system-ui, sans-serif; padding: 2rem; line-height: 1.6; }
-            h1 { color: #1a1a1a; border-bottom: 2px solid #D4AF37; padding-bottom: 0.5rem; }
-            h2 { color: #333; margin-top: 2rem; }
-            h3 { color: #555; }
-            .priority-high { color: #dc2626; }
-            .priority-medium { color: #ca8a04; }
-            .priority-low { color: #2563eb; }
-            ol { padding-left: 1.5rem; }
-            hr { margin: 2rem 0; border: none; border-top: 1px solid #ddd; }
-          </style>
-        </head>
-        <body>
-          <h1>SEO Implementation Plan</h1>
-          <pre style="white-space: pre-wrap; font-family: inherit;">${generateInstructions()}</pre>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  return (
-    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-md)]" data-testid="manual-instructions" id="manual-instructions">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#D4AF37]" />
-            <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Implementation Plan (DIY)</CardTitle>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={copyToClipboard}
-              data-testid="btn-copy-instructions"
-            >
-              {copied ? <CheckCircle2 className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-              {copied ? 'Copied!' : 'Copy All'}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={printInstructions}
-              data-testid="btn-print-instructions"
-            >
-              <Printer className="w-4 h-4 mr-1" />
-              Print/PDF
-            </Button>
-          </div>
-        </div>
-        <CardDescription className="text-[var(--marketing-text-muted)]">Step-by-step instructions for your development team</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button
-          variant="ghost"
-          className="w-full justify-between mb-4 text-[var(--marketing-text-body)]"
-          onClick={() => setExpanded(!expanded)}
-          data-testid="btn-toggle-instructions"
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-600">{impactSentence}</p>
+        {metrics && <div className="text-sm">{metrics}</div>}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"
+          onClick={onFixClick}
+          data-testid={`btn-fix-${title.toLowerCase().replace(/\s+/g, '-')}`}
         >
-          <span>{expanded ? 'Hide' : 'Show'} detailed instructions for {findings.length} issues</span>
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          Fix This
+          <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
-        
-        {expanded && (
-          <div ref={contentRef} className="space-y-6" data-testid="instructions-content">
-            {findings.map((finding, index) => (
-              <div key={finding.id} className="border border-[var(--marketing-border)] rounded-lg p-4 bg-[var(--marketing-bg-soft)]">
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-lg font-bold text-[var(--marketing-text-muted)]">{index + 1}.</span>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-[var(--marketing-text-heading)]">{finding.title}</h4>
-                    <div className="flex gap-2 mt-1">
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          finding.severity === 'high' ? 'border-red-500/50 text-red-600' :
-                          finding.severity === 'medium' ? 'border-yellow-500/50 text-yellow-600' :
-                          'border-blue-500/50 text-blue-600'
-                        }`}
-                      >
-                        Priority: {finding.severity.toUpperCase()}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs border-[var(--marketing-border)] text-[var(--marketing-text-muted)]">
-                        Impact: {finding.impact}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs border-[var(--marketing-border)] text-[var(--marketing-text-muted)]">
-                        Effort: {finding.effort}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="ml-7 space-y-3">
-                  <div>
-                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Summary</h5>
-                    <p className="text-sm text-[var(--marketing-text-muted)]">{finding.summary}</p>
-                  </div>
-                  
-                  <div>
-                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Implementation Steps</h5>
-                    <ol className="text-sm text-[var(--marketing-text-muted)] list-decimal ml-4 space-y-1">
-                      {(finding.implementationSteps || [
-                        `Identify all ${finding.affectedPages || 'affected'} pages with this issue`,
-                        `Apply the recommended fix: ${finding.recommendation || finding.summary}`,
-                        `Test changes in staging environment`,
-                        `Deploy to production and verify`
-                      ]).map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                  
-                  <div>
-                    <h5 className="text-sm font-medium text-[var(--marketing-text-body)] mb-1">Acceptance Criteria</h5>
-                    <p className="text-sm text-[var(--marketing-text-muted)]">
-                      {finding.acceptanceCriteria || 'Issue no longer detected in subsequent scans. No negative impact on page performance.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
 }
 
-function KeywordOpportunitiesSection({ fullReport }: { fullReport: FullReport }) {
-  const quickWins = fullReport.keywords?.quickWins || [];
-  const declining = fullReport.keywords?.declining || [];
-
-  if (quickWins.length === 0 && declining.length === 0) return null;
-
-  return (
-    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="keyword-opportunities">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-green-600" />
-          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Keyword Opportunities</CardTitle>
-        </div>
-        <CardDescription className="text-[var(--marketing-text-muted)]">Keywords with high potential for quick wins and those needing attention</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          {quickWins.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="w-4 h-4 text-yellow-500" />
-                <h4 className="font-semibold text-[var(--marketing-text-heading)]">Quick Win Keywords</h4>
-                <Badge className="bg-green-100 text-green-700 border-green-300 text-xs">Positions 11-20</Badge>
-              </div>
-              <div className="space-y-2">
-                {quickWins.slice(0, 5).map((kw, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center justify-between p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
-                    data-testid={`quick-win-keyword-${idx}`}
-                  >
-                    <span className="font-medium text-[var(--marketing-text-body)]">{kw.keyword}</span>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-xs">
-                        Position: #{kw.position}
-                      </Badge>
-                      {kw.volume && (
-                        <span className="text-xs text-[var(--marketing-text-muted)]">
-                          {kw.volume.toLocaleString()} /mo
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {declining.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <ArrowDown className="w-4 h-4 text-red-500" />
-                <h4 className="font-semibold text-[var(--marketing-text-heading)]">Declining Keywords</h4>
-                <Badge className="bg-red-100 text-red-700 border-red-300 text-xs">Needs Attention</Badge>
-              </div>
-              <div className="space-y-2">
-                {declining.slice(0, 5).map((kw, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
-                    data-testid={`declining-keyword-${idx}`}
-                  >
-                    <span className="font-medium text-[var(--marketing-text-body)]">{kw.keyword}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-green-600">#{kw.oldPosition}</span>
-                      <ArrowDown className="w-3 h-3 text-red-500" />
-                      <span className="text-xs text-red-600 font-medium">#{kw.newPosition}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CompetitorAnalysisSection({ fullReport }: { fullReport: FullReport }) {
-  const competitors = fullReport.competitors || [];
-  const contentGaps = fullReport.contentGaps || [];
-
-  if (competitors.length === 0 && contentGaps.length === 0) return null;
-
-  const maxShareOfVoice = Math.max(...competitors.map(c => c.shareOfVoice || 0), 1);
-
-  return (
-    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="competitor-analysis">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <BarChart2 className="w-5 h-5 text-purple-600" />
-          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Competitor Analysis</CardTitle>
-        </div>
-        <CardDescription className="text-[var(--marketing-text-muted)]">How you compare to your top competitors</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          {competitors.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-[var(--marketing-text-heading)] mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-500" />
-                Top Competitors
-              </h4>
-              <div className="space-y-3">
-                {competitors.slice(0, 5).map((comp, idx) => (
-                  <div 
-                    key={idx} 
-                    className="p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
-                    data-testid={`competitor-${idx}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-[var(--marketing-text-body)]">{comp.domain}</span>
-                      {comp.shareOfVoice !== undefined && (
-                        <span className="text-sm text-[var(--marketing-text-muted)]">
-                          {comp.shareOfVoice}% share
-                        </span>
-                      )}
-                    </div>
-                    {comp.shareOfVoice !== undefined && (
-                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-                          style={{ width: `${(comp.shareOfVoice / maxShareOfVoice) * 100}%` }}
-                        />
-                      </div>
-                    )}
-                    {comp.overlap !== undefined && (
-                      <div className="mt-2 text-xs text-[var(--marketing-text-muted)]">
-                        Keyword overlap: {comp.overlap}%
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {contentGaps.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-[var(--marketing-text-heading)] mb-3 flex items-center gap-2">
-                <Target className="w-4 h-4 text-orange-500" />
-                Content Gaps
-              </h4>
-              <div className="space-y-2">
-                {contentGaps.slice(0, 5).map((gap, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center justify-between p-3 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]"
-                    data-testid={`content-gap-${idx}`}
-                  >
-                    <span className="text-[var(--marketing-text-body)]">{gap.topic}</span>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        gap.priority === 'high' ? 'border-red-500/50 text-red-600' :
-                        gap.priority === 'medium' ? 'border-yellow-500/50 text-yellow-600' :
-                        'border-blue-500/50 text-blue-600'
-                      }`}
-                    >
-                      {gap.priority} priority
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function BacklinkProfileSection({ fullReport }: { fullReport: FullReport }) {
-  const authority = fullReport.authority;
-
-  if (!authority) return null;
-
-  const { domainAuthority, referringDomains, totalBacklinks } = authority;
-
-  if (domainAuthority === undefined && referringDomains === undefined && totalBacklinks === undefined) return null;
-
-  let daColor = "text-red-500";
-  if (domainAuthority !== undefined) {
-    if (domainAuthority >= 60) daColor = "text-green-500";
-    else if (domainAuthority >= 40) daColor = "text-yellow-500";
-    else if (domainAuthority >= 20) daColor = "text-orange-500";
-  }
-
-  return (
-    <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]" data-testid="backlink-profile">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Link2 className="w-5 h-5 text-blue-600" />
-          <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Backlink Profile</CardTitle>
-        </div>
-        <CardDescription className="text-[var(--marketing-text-muted)]">Your site's authority and link portfolio</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-3 gap-6">
-          {domainAuthority !== undefined && (
-            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="domain-authority">
-              <div className="w-20 h-20 mx-auto relative flex items-center justify-center mb-3">
-                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    className="text-slate-200"
-                  />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    strokeDasharray={`${(domainAuthority / 100) * 251.2} 251.2`}
-                    className={daColor}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span className={`text-2xl font-bold ${daColor}`}>{domainAuthority}</span>
-              </div>
-              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Domain Authority</div>
-              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">Industry average: 30-50</div>
-            </div>
-          )}
-
-          {referringDomains !== undefined && (
-            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="referring-domains">
-              <ExternalLink className="w-10 h-10 mx-auto mb-3 text-blue-500" />
-              <div className="text-3xl font-bold text-[var(--marketing-text-heading)]">
-                {referringDomains.toLocaleString()}
-              </div>
-              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Referring Domains</div>
-              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">Unique sites linking to you</div>
-            </div>
-          )}
-
-          {totalBacklinks !== undefined && (
-            <div className="text-center p-6 bg-[var(--marketing-bg-soft)] rounded-lg border border-[var(--marketing-border)]" data-testid="total-backlinks">
-              <Link2 className="w-10 h-10 mx-auto mb-3 text-green-500" />
-              <div className="text-3xl font-bold text-[var(--marketing-text-heading)]">
-                {totalBacklinks.toLocaleString()}
-              </div>
-              <div className="text-sm font-medium text-[var(--marketing-text-heading)]">Total Backlinks</div>
-              <div className="text-xs text-[var(--marketing-text-muted)] mt-1">All incoming links</div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+interface FixableIssue {
+  id: string;
+  name: string;
+  explanation: string;
+  benefit: string;
+  checked: boolean;
 }
 
 export default function Report() {
   const { scanId } = useParams();
   const [, navigate] = useLocation();
   const [deployModalOpen, setDeployModalOpen] = useState(false);
-  const [showManualInstructions, setShowManualInstructions] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const [fixableIssues, setFixableIssues] = useState<FixableIssue[]>([
+    { id: "meta", name: "Optimize meta titles & descriptions", explanation: "Improve click-through rates from search results", benefit: "+15-25% CTR improvement", checked: true },
+    { id: "headings", name: "Fix heading structure", explanation: "Better content hierarchy for search engines", benefit: "+10% content relevance", checked: true },
+    { id: "speed", name: "Improve page speed", explanation: "Faster pages rank higher and convert better", benefit: "+20% faster load time", checked: true },
+    { id: "keywords", name: "Create keyword-optimized pages", explanation: "Target high-value search terms you're missing", benefit: "+30% keyword coverage", checked: true },
+    { id: "technical", name: "Deploy technical fixes", explanation: "Fix crawlability and indexing issues", benefit: "+40% indexation rate", checked: true },
+  ]);
 
   const { data: report, isLoading, error } = useQuery<ReportData>({
     queryKey: ["report", scanId],
@@ -658,6 +247,14 @@ export default function Report() {
     },
     enabled: !!scanId,
   });
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyBar(window.scrollY > 600);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   if (!isLoading && report && !report.unlocked) {
     navigate(`/signup?scanId=${scanId}`, { replace: true });
@@ -670,10 +267,6 @@ export default function Report() {
 
   const handleSelectDiy = () => {
     setDeployModalOpen(false);
-    setShowManualInstructions(true);
-    setTimeout(() => {
-      document.getElementById('manual-instructions')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
   };
 
   const handleSelectAutopilot = async () => {
@@ -700,11 +293,17 @@ export default function Report() {
     navigate(ROUTES.MANAGED_SITE);
   };
 
+  const toggleIssue = (id: string) => {
+    setFixableIssues(prev => prev.map(issue => 
+      issue.id === id ? { ...issue, checked: !issue.checked } : issue
+    ));
+  };
+
   if (isLoading) {
     return (
       <MarketingLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
         </div>
       </MarketingLayout>
     );
@@ -715,8 +314,8 @@ export default function Report() {
       <MarketingLayout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
           <AlertTriangle className="w-12 h-12 text-red-500" />
-          <h1 className="text-2xl font-bold text-[var(--marketing-text-heading)]">Report Not Found</h1>
-          <p className="text-[var(--marketing-text-muted)]">This scan may have expired or doesn't exist.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Report Not Found</h1>
+          <p className="text-slate-500">This scan may have expired or doesn't exist.</p>
           <Button onClick={() => navigate("/")} data-testid="btn-back-home">
             Start New Scan
           </Button>
@@ -725,29 +324,33 @@ export default function Report() {
     );
   }
 
-  const { findings, scoreSummary, targetUrl, estimatedImpact, fullReport } = report;
+  const { scoreSummary, targetUrl, estimatedImpact, fullReport } = report;
 
-  const defaultImpact: EstimatedImpact = estimatedImpact || {
-    monthlyTrafficOpportunity: Math.round((100 - scoreSummary.overall) * 50),
-    estimatedLeadsRange: { 
-      min: Math.round((100 - scoreSummary.overall) * 0.5), 
-      max: Math.round((100 - scoreSummary.overall) * 2) 
-    },
-    estimatedRevenueRange: { 
-      min: Math.round((100 - scoreSummary.overall) * 100), 
-      max: Math.round((100 - scoreSummary.overall) * 500) 
-    }
+  const healthStatus = getHealthStatus(scoreSummary.overall);
+  const healthConfig = getHealthConfig(healthStatus);
+
+  const trafficAtRisk = estimatedImpact?.monthlyTrafficOpportunity || Math.round((100 - scoreSummary.overall) * 50);
+  const clicksLost = Math.round(trafficAtRisk * 0.3);
+  const leadsMissed = estimatedImpact?.estimatedLeadsRange || { 
+    min: Math.round(trafficAtRisk * 0.02), 
+    max: Math.round(trafficAtRisk * 0.05) 
   };
+
+  const technicalStatus = getCardStatus(scoreSummary.technical);
+  const performanceStatus = getCardStatus(scoreSummary.performance);
+  const competitiveStatus = getCardStatus(fullReport?.competitors?.length ? 65 : 50);
+  const keywordStatus = getCardStatus(fullReport?.keywords?.quickWins?.length ? 70 : 55);
+  const authorityStatus = getCardStatus(fullReport?.authority?.domainAuthority);
+
+  const selectedFixCount = fixableIssues.filter(i => i.checked).length;
 
   return (
     <MarketingLayout>
-      <div className="py-12 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
-                Full Report Unlocked
-              </Badge>
+      <div className="min-h-screen">
+        {/* SECTION 1: Hero Diagnosis */}
+        <section className="bg-gradient-to-b from-slate-50 to-white py-12 md:py-16 px-4" data-testid="section-hero">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 mb-6">
               <Button
                 variant="outline"
                 size="sm"
@@ -759,124 +362,327 @@ export default function Report() {
                 Share Report
               </Button>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-[var(--marketing-text-heading)]" data-testid="report-title">
-              SEO Analysis Report
+            
+            <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-full text-xl font-semibold mb-6 ${healthConfig.bgColor} ${healthConfig.borderColor} border-2`}>
+              <span>{healthConfig.emoji}</span>
+              <span className={healthConfig.color}>SEO Health: {healthConfig.label}</span>
+            </div>
+            
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-4 leading-tight" data-testid="diagnosis-headline">
+              Your website is losing an estimated <span className="text-red-600">{trafficAtRisk.toLocaleString()} visitors</span> and <span className="text-red-600">{leadsMissed.min}-{leadsMissed.max} leads</span> per month due to preventable SEO issues we can fix automatically.
             </h1>
-            <p className="text-[var(--marketing-text-muted)] text-lg" data-testid="report-url">
-              {targetUrl}
+            
+            <p className="text-slate-500 mb-8" data-testid="report-url">
+              Analysis for: {targetUrl}
             </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <Card className="bg-white border-slate-200 shadow-sm" data-testid="metric-traffic">
+                <CardContent className="pt-6 text-center">
+                  <Eye className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                  <div className="text-3xl font-bold text-slate-900">{trafficAtRisk.toLocaleString()}</div>
+                  <div className="text-sm text-slate-500">Traffic at risk / month</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white border-slate-200 shadow-sm" data-testid="metric-clicks">
+                <CardContent className="pt-6 text-center">
+                  <MousePointer className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+                  <div className="text-3xl font-bold text-slate-900">{clicksLost.toLocaleString()}</div>
+                  <div className="text-sm text-slate-500">Clicks lost / month</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white border-slate-200 shadow-sm" data-testid="metric-leads">
+                <CardContent className="pt-6 text-center">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-violet-500" />
+                  <div className="text-3xl font-bold text-slate-900">{leadsMissed.min}-{leadsMissed.max}</div>
+                  <div className="text-sm text-slate-500">Leads missed / month</div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
+        </section>
 
-          <Card className="mb-8 bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-md)]">
-            <CardHeader>
-              <CardTitle className="text-xl text-[var(--marketing-text-heading)]">Health Scores</CardTitle>
-              <CardDescription className="text-[var(--marketing-text-muted)]">How your site performs across key SEO dimensions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap justify-center gap-8">
-                <ScoreRing score={scoreSummary.overall} label="Overall" size="lg" />
-                <ScoreRing score={scoreSummary.technical} label="Technical" size="sm" />
-                <ScoreRing score={scoreSummary.content} label="Content" size="sm" />
-                <ScoreRing score={scoreSummary.performance} label="Performance" size="sm" />
-                {scoreSummary.serp !== undefined && (
-                  <ScoreRing score={scoreSummary.serp} label="SERP" size="sm" />
-                )}
-                {scoreSummary.authority !== undefined && (
-                  <ScoreRing score={scoreSummary.authority} label="Authority" size="sm" />
-                )}
+        {/* SECTION 2: Diagnosis Signal Cards */}
+        <section className="py-12 px-4 bg-white" data-testid="section-diagnosis-cards">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">What's Affecting Your Rankings</h2>
+            <p className="text-slate-500 text-center mb-8">Click "Fix This" on any card to address that specific issue</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <DiagnosisCard
+                title="Technical SEO Health"
+                icon={Gauge}
+                status={technicalStatus}
+                impactSentence={`${fullReport?.technical?.issues || "Several"} technical issues are preventing search engines from properly indexing your pages.`}
+                metrics={
+                  <div className="flex gap-4 text-slate-500">
+                    <span>Meta Coverage: {fullReport?.technical?.metaCoverage || scoreSummary.technical}%</span>
+                  </div>
+                }
+                onFixClick={handleDeployClick}
+              />
+              
+              <DiagnosisCard
+                title="Core Web Vitals (Speed)"
+                icon={Zap}
+                status={performanceStatus}
+                impactSentence="Slow page speed is hurting your search rankings and causing visitors to leave before converting."
+                metrics={
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                    {fullReport?.performance?.lcp && <span>LCP: {fullReport.performance.lcp}s</span>}
+                    {fullReport?.performance?.cls !== undefined && <span>CLS: {fullReport.performance.cls}</span>}
+                    {fullReport?.performance?.inp && <span>INP: {fullReport.performance.inp}ms</span>}
+                    {!fullReport?.performance && <span>Score: {scoreSummary.performance}/100</span>}
+                  </div>
+                }
+                onFixClick={handleDeployClick}
+              />
+              
+              <DiagnosisCard
+                title="Competitive Landscape"
+                icon={BarChart2}
+                status={competitiveStatus}
+                impactSentence="Your competitors are outranking you for valuable keywords in your market."
+                metrics={
+                  fullReport?.competitors?.length ? (
+                    <div className="space-y-1">
+                      {fullReport.competitors.slice(0, 3).map((comp, idx) => (
+                        <div key={idx} className="text-xs text-slate-500 flex justify-between">
+                          <span>{comp.domain}</span>
+                          {comp.shareOfVoice && <span>{comp.shareOfVoice}% share</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500">Competitor data unavailable</span>
+                  )
+                }
+                onFixClick={handleDeployClick}
+              />
+              
+              <DiagnosisCard
+                title="Keyword Opportunities"
+                icon={Search}
+                status={keywordStatus}
+                impactSentence="You're missing out on quick-win keywords where you could rank on page 1 with minimal effort."
+                metrics={
+                  fullReport?.keywords?.quickWins?.length ? (
+                    <div className="space-y-1">
+                      {fullReport.keywords.quickWins.slice(0, 3).map((kw, idx) => (
+                        <div key={idx} className="text-xs text-slate-500 flex justify-between">
+                          <span className="truncate flex-1">{kw.keyword}</span>
+                          <span className="ml-2">#{kw.position}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500">No quick wins identified yet</span>
+                  )
+                }
+                onFixClick={handleDeployClick}
+              />
+              
+              <DiagnosisCard
+                title="Domain Authority"
+                icon={Link2}
+                status={authorityStatus}
+                impactSentence="Your domain authority affects how well you rank against competitors for the same keywords."
+                metrics={
+                  <div className="flex gap-4 text-slate-500">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-slate-900">
+                        {fullReport?.authority?.domainAuthority || "N/A"}
+                      </div>
+                      <div className="text-xs">DA Score</div>
+                    </div>
+                    {fullReport?.authority?.referringDomains && (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-slate-900">
+                          {fullReport.authority.referringDomains}
+                        </div>
+                        <div className="text-xs">Ref. Domains</div>
+                      </div>
+                    )}
+                  </div>
+                }
+                onFixClick={handleDeployClick}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 3: What This Is Costing You */}
+        <section className="py-16 px-4 bg-slate-900 relative overflow-hidden" data-testid="section-cost">
+          <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 via-pink-600/10 to-amber-600/10" />
+          <div className="max-w-4xl mx-auto relative z-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 text-center">What This Is Costing You</h2>
+            <p className="text-slate-400 text-center mb-10">Every day without these fixes means lost opportunities</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center backdrop-blur-sm" data-testid="cost-visibility">
+                <Eye className="w-10 h-10 mx-auto mb-3 text-red-400" />
+                <div className="text-3xl font-bold text-white mb-1">{Math.round(trafficAtRisk * 12).toLocaleString()}</div>
+                <div className="text-lg text-slate-300 mb-2">Lost Visibility / Year</div>
+                <p className="text-sm text-slate-400">Potential customers who never see your business in search results</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <EstimatedImpactPanel impact={defaultImpact} />
-
-          {fullReport && <KeywordOpportunitiesSection fullReport={fullReport} />}
-          {fullReport && <CompetitorAnalysisSection fullReport={fullReport} />}
-          {fullReport && <BacklinkProfileSection fullReport={fullReport} />}
-
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-[var(--marketing-text-heading)]">Issues Found ({findings.length})</h2>
-              <div className="flex gap-2">
-                <Badge variant="outline" className="border-red-500/50 text-red-600">
-                  {findings.filter(f => f.severity === "high").length} High
-                </Badge>
-                <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">
-                  {findings.filter(f => f.severity === "medium").length} Medium
-                </Badge>
-                <Badge variant="outline" className="border-blue-500/50 text-blue-600">
-                  {findings.filter(f => f.severity === "low").length} Low
-                </Badge>
+              
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center backdrop-blur-sm" data-testid="cost-clicks">
+                <MousePointer className="w-10 h-10 mx-auto mb-3 text-amber-400" />
+                <div className="text-3xl font-bold text-white mb-1">{Math.round(clicksLost * 12).toLocaleString()}</div>
+                <div className="text-lg text-slate-300 mb-2">Lost Clicks / Year</div>
+                <p className="text-sm text-slate-400">People who would have visited your site but went to competitors instead</p>
+              </div>
+              
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center backdrop-blur-sm" data-testid="cost-leads">
+                <DollarSign className="w-10 h-10 mx-auto mb-3 text-green-400" />
+                <div className="text-3xl font-bold text-white mb-1">{leadsMissed.min * 12}-{leadsMissed.max * 12}</div>
+                <div className="text-lg text-slate-300 mb-2">Missed Leads / Year</div>
+                <p className="text-sm text-slate-400">Customers ready to buy who never found you online</p>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="space-y-4">
-              {findings.map((finding, index) => (
-                <FindingCard key={finding.id} finding={finding} index={index} />
+        {/* SECTION 4: One-Click Fix Engine */}
+        <section className="py-12 px-4 bg-white" data-testid="section-fix-engine">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">One-Click Fix Engine</h2>
+            <p className="text-slate-500 text-center mb-8">Select the issues you want us to fix automatically</p>
+            
+            <div className="space-y-3 mb-8">
+              {fixableIssues.map((issue) => (
+                <div 
+                  key={issue.id}
+                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    issue.checked 
+                      ? "border-violet-300 bg-violet-50" 
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                  onClick={() => toggleIssue(issue.id)}
+                  data-testid={`fix-item-${issue.id}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <Checkbox 
+                      checked={issue.checked} 
+                      onCheckedChange={() => toggleIssue(issue.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-slate-900">{issue.name}</span>
+                        <Badge className="bg-green-100 text-green-700 border-0 text-xs">
+                          {issue.benefit}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-500">{issue.explanation}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
+
+            <Button
+              size="lg"
+              className="w-full text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)" }}
+              onClick={handleDeployClick}
+              disabled={selectedFixCount === 0}
+              data-testid="btn-fix-selected"
+            >
+              <Rocket className="w-5 h-5 mr-2" />
+              Fix {selectedFixCount} Selected Issue{selectedFixCount !== 1 ? "s" : ""} Now
+            </Button>
           </div>
+        </section>
 
-          {showManualInstructions && <ManualInstructionsSection findings={findings} />}
-
-          <Card className="bg-gradient-to-r from-[#D4AF37]/10 to-[#D4AF37]/5 border-[#D4AF37]/30 shadow-[var(--marketing-shadow-md)]">
-            <CardContent className="py-8">
-              <div className="text-center">
-                <Rocket className="w-12 h-12 mx-auto mb-4 text-[#D4AF37]" />
-                <h3 className="text-2xl font-bold mb-2 text-[var(--marketing-text-heading)]">Ready to Fix These Issues?</h3>
-                <p className="text-[var(--marketing-text-muted)] mb-6 max-w-2xl mx-auto">
-                  Choose how you'd like to proceed: implement fixes yourself, let Arclo handle it automatically, 
-                  or have us build and manage your entire site.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button
-                    size="lg"
-                    className="bg-[#D4AF37] hover:bg-[#B8972F] text-black font-semibold"
-                    onClick={handleDeployClick}
-                    data-testid="btn-deploy-fixes"
-                  >
-                    <Zap className="w-4 h-4 mr-2" />
-                    Deploy Fixes
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => navigate("/app")}
-                    data-testid="btn-go-to-dashboard"
-                  >
-                    Go to Dashboard
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+        {/* SECTION 6: Trust & Safety */}
+        <section className="py-12 px-4 bg-slate-50" data-testid="section-trust">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">Safe & Secure</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-start gap-3" data-testid="trust-reversible">
+                <div className="p-2 bg-green-100 rounded-full">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">Changes logged and reversible</div>
+                  <p className="text-sm text-slate-500">Every change is tracked and can be undone instantly</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="flex items-start gap-3" data-testid="trust-no-access">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">No account access required</div>
+                  <p className="text-sm text-slate-500">We don't need your CMS or hosting passwords</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3" data-testid="trust-safe-mode">
+                <div className="p-2 bg-violet-100 rounded-full">
+                  <TrendingUp className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">Safe mode enabled by default</div>
+                  <p className="text-sm text-slate-500">Conservative changes that won't break your site</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          <div className="mt-8 grid md:grid-cols-3 gap-4">
-            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
-              <CardContent className="pt-6 text-center">
-                <Shield className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Safe Deployment</h4>
-                <p className="text-sm text-[var(--marketing-text-muted)]">All changes are reviewed and reversible</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
-              <CardContent className="pt-6 text-center">
-                <TrendingUp className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Track Progress</h4>
-                <p className="text-sm text-[var(--marketing-text-muted)]">Monitor improvements over time</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-[var(--marketing-border)] shadow-[var(--marketing-shadow-sm)]">
-              <CardContent className="pt-6 text-center">
-                <Download className="w-8 h-8 mx-auto mb-3 text-[#D4AF37]" />
-                <h4 className="font-semibold mb-1 text-[var(--marketing-text-heading)]">Export Reports</h4>
-                <p className="text-sm text-[var(--marketing-text-muted)]">Share with stakeholders</p>
-              </CardContent>
-            </Card>
+        {/* Score Summary (optional additional context) */}
+        <section className="py-12 px-4 bg-white border-t border-slate-200" data-testid="section-scores">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">Health Score Breakdown</h2>
+            <div className="flex flex-wrap justify-center gap-8">
+              <ScoreRing score={scoreSummary.overall} label="Overall" size="lg" />
+              <ScoreRing score={scoreSummary.technical} label="Technical" size="sm" />
+              <ScoreRing score={scoreSummary.content} label="Content" size="sm" />
+              <ScoreRing score={scoreSummary.performance} label="Performance" size="sm" />
+              {scoreSummary.serp !== undefined && (
+                <ScoreRing score={scoreSummary.serp} label="SERP" size="sm" />
+              )}
+              {scoreSummary.authority !== undefined && (
+                <ScoreRing score={scoreSummary.authority} label="Authority" size="sm" />
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* SECTION 5: Sticky CTA */}
+      {showStickyBar && (
+        <div 
+          className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg py-3 px-4"
+          data-testid="sticky-cta"
+        >
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <div className="hidden sm:block">
+              <div className="flex items-center gap-2 text-slate-500 text-sm">
+                <Clock className="w-4 h-4" />
+                <span>Takes ~3-7 minutes. Safe mode enabled.</span>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="flex-1 sm:flex-none text-white font-semibold shadow-lg"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)" }}
+              onClick={handleDeployClick}
+              data-testid="btn-sticky-fix"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Fix Everything Automatically
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
-      </div>
+      )}
 
       <DeployOptionsModal
         open={deployModalOpen}
