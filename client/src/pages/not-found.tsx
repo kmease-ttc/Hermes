@@ -59,7 +59,7 @@ export default function NotFound() {
               </Button>
             </Link>
             
-            <Link href={ROUTES.SCAN}>
+            <Link href={ROUTES.LANDING + "#analyze"}>
               <Button 
                 variant="outline"
                 size="lg"
