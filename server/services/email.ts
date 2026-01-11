@@ -48,9 +48,12 @@ function getBaseUrl(): string {
 
 export async function sendVerificationEmail(email: string, token: string, displayName?: string): Promise<boolean> {
   try {
+    console.log(`[Email] Attempting to send verification email to ${email}`);
     const { client, fromEmail } = await getUncachableSendGridClient();
+    console.log(`[Email] SendGrid client ready, from: ${fromEmail}`);
     const baseUrl = getBaseUrl();
     const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    console.log(`[Email] Verify URL: ${verifyUrl}`);
     
     const msg = {
       to: email,
@@ -88,11 +91,14 @@ export async function sendVerificationEmail(email: string, token: string, displa
       `,
     };
 
-    await client.send(msg);
-    console.log(`[Email] Verification email sent to ${email}`);
+    const response = await client.send(msg);
+    console.log(`[Email] Verification email sent to ${email}, status: ${response[0]?.statusCode}`);
     return true;
   } catch (error: any) {
     console.error('[Email] Failed to send verification email:', error.message);
+    if (error.response) {
+      console.error('[Email] SendGrid error body:', JSON.stringify(error.response.body));
+    }
     return false;
   }
 }
