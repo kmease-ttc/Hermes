@@ -1,0 +1,244 @@
+Below are **clear, implementation-ready instructions** you can hand directly to the dev team. This is written as a **product + UX + data contract brief**, not vague design feedback.
+
+---
+
+# Scan Results Page — Final UX & Product Improvements
+
+**Goal:** Turn the scan results page into a *diagnosis + prescription* experience that:
+
+* Feels authoritative and non-generic
+* Clearly signals partial vs full coverage
+* Drives urgency without over-selling
+* Makes “Fix Everything” feel obvious and justified
+
+---
+
+## 1. Hero Section: Replace Warning Icon with Letter Grade + Status
+
+### What to change
+
+* **Remove** the large circular `!` icon entirely.
+* **Replace** it with a horizontal “SEO Health Summary” row.
+
+### New layout (left → right, single row)
+
+```
+[ C+ ]   SEO Health: Needs Attention
+```
+
+### Requirements
+
+* **Letter Grade**
+
+  * Large, visually dominant (this is the anchor)
+  * Rounded badge or circle
+  * Color rules:
+
+    * A / B → green
+    * C → amber
+    * D / F → red
+* **SEO Health label**
+
+  * Smaller than the grade
+  * Plain text (no icons)
+  * Examples:
+
+    * “SEO Health: Needs Attention”
+    * “SEO Health: At Risk”
+    * “SEO Health: Strong”
+
+### Placement
+
+* Centered above the main headline
+* Exactly where the `!` icon currently sits
+
+### Data
+
+* Grade is derived from the existing composite score (already discussed)
+* Status text maps to grade band:
+
+  * A/B → Strong
+  * C → Needs Attention
+  * D/F → At Risk
+
+---
+
+## 2. Headline + Context Clarification
+
+### Keep
+
+* Main headline (“Your website is losing ~X visitors monthly”)
+* Impact metrics (traffic, clicks, leads)
+* Primary CTA
+
+### Add (1 line, subtle, under headline)
+
+> Based on an initial SEO scan with no account access.
+
+Purpose:
+
+* Signals honesty
+* Sets expectation that this is **not** a full audit
+* Prevents “I fixed 2 things, I’m done” thinking
+
+---
+
+## 3. Rename and Reframe “What We Found”
+
+### Rename section
+
+Change:
+
+> **What We Found**
+
+To one of:
+
+* **Initial Findings**
+* **Key Issues Detected**
+* **What We Checked (So Far)** ← preferred
+
+### Add a short subtext line under the header
+
+> We ran a fast diagnostic across core SEO signals. Full scans analyze additional ranking, content, and authority factors.
+
+This is critical for long-term conversion.
+
+---
+
+## 4. Balance the Cards to Show Breadth (Not Just Issues)
+
+### Current problem
+
+It visually implies:
+
+> “We checked everything and found 2 issues.”
+
+### Fix
+
+Always show a **balanced grid of categories**, even if some are “Good” or “Checked”.
+
+### Required cards (always visible)
+
+* Technical SEO
+* Core Web Vitals
+* Content Quality
+* Keyword Opportunities
+* Competitive Position
+* Authority & Trust
+
+Even if data is light, the card must exist.
+
+---
+
+## 5. Introduce “Coverage State” Badges on Cards
+
+Each card must have **two independent indicators**:
+
+1. **Health status**
+
+   * Good
+   * Needs Attention
+   * Critical
+
+2. **Coverage badge** (new)
+
+   * Checked
+   * Limited Scan
+   * Preview
+
+### Rules
+
+* If the analysis is shallow or sample-based → `Limited Scan`
+* If deeper logic ran → `Checked`
+* Do **not** lock content behind a paywall on this page
+* This is about transparency, not gating
+
+This subtly communicates: *there’s more depth available*.
+
+---
+
+## 6. Fix the “2 Issues” Perception Problem (Important)
+
+### Do NOT show a total issue count at the top like:
+
+> “We found 2 issues”
+
+This backfires.
+
+### Instead
+
+Let the **grade + impact metrics** carry urgency.
+
+If you must reference scope, use language like:
+
+> “Several preventable issues were detected”
+
+Avoid exact counts in the hero.
+
+---
+
+## 7. Tie the Grade to Action (Microcopy)
+
+Add **one sentence** under the grade or CTA:
+
+Examples:
+
+* “Sites with a C+ grade typically see meaningful gains after fixing the issues below.”
+* “Fixing these items usually improves SEO health by one full grade.”
+
+This makes the CTA feel earned.
+
+---
+
+## 8. CTA Behavior (No Change, But One Rule)
+
+* Keep **Fix Everything Automatically** as the dominant CTA
+* Do **not** add secondary CTAs above the fold
+* This page should have exactly **one obvious next step**
+
+---
+
+## 9. Data / Implementation Notes
+
+### No new integrations required
+
+Use existing services already wired:
+
+* Technical crawler
+* CWV
+* SERP / keyword intel
+* Competitive intel
+* Authority / backlinks
+
+### Do NOT use yet
+
+* Content decay monitor
+* GA / GSC dependent services
+
+### Data shaping rule
+
+Every card must answer:
+
+1. Is this good or bad?
+2. Why does it matter?
+3. Can I fix it now?
+
+No raw API dumps.
+
+---
+
+## 10. Acceptance Criteria (How we know this is done)
+
+* The top of the page no longer feels like a warning banner
+* A user can understand their SEO health in <5 seconds
+* It is obvious this is an **initial** scan, not a full audit
+* The page no longer implies “you’re done after 2 fixes”
+* The grade, impact, and CTA all reinforce each other
+
+---
+
+If you want, next I can:
+
+* Write the exact JSX component spec for the hero grade bar
+* Define the scoring weights formally
+* Draft the copy for each card’s “Limited Scan” state

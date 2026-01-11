@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  ArrowRight, Loader2, AlertTriangle, AlertCircle, CheckCircle, 
+  ArrowRight, Loader2, AlertTriangle, 
   Eye, MousePointerClick, Users, Zap, Shield, Gauge, Search, 
   Link2, BarChart2, Target, Check, TrendingDown, DollarSign
 } from "lucide-react";
@@ -42,42 +42,21 @@ interface ScanPreviewData {
   targetUrl: string;
 }
 
-type HealthStatus = "at-risk" | "needs-attention" | "healthy";
-
-function getHealthStatus(score: number): HealthStatus {
-  if (score >= 80) return "healthy";
-  if (score >= 60) return "needs-attention";
-  return "at-risk";
+function getLetterGrade(score: number): { grade: string; color: string; bgColor: string; borderColor: string } {
+  if (score >= 90) return { grade: "A", color: "text-green-700", bgColor: "bg-green-100", borderColor: "border-green-300" };
+  if (score >= 80) return { grade: "B+", color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200" };
+  if (score >= 70) return { grade: "B", color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200" };
+  if (score >= 60) return { grade: "C+", color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200" };
+  if (score >= 50) return { grade: "C", color: "text-amber-600", bgColor: "bg-amber-100", borderColor: "border-amber-300" };
+  if (score >= 40) return { grade: "D+", color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" };
+  if (score >= 30) return { grade: "D", color: "text-red-600", bgColor: "bg-red-100", borderColor: "border-red-300" };
+  return { grade: "F", color: "text-red-700", bgColor: "bg-red-200", borderColor: "border-red-400" };
 }
 
-function getHealthConfig(status: HealthStatus) {
-  const configs = {
-    "at-risk": {
-      emoji: "🚨",
-      label: "At Risk",
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-      borderColor: "border-red-300",
-      Icon: AlertTriangle,
-    },
-    "needs-attention": {
-      emoji: "⚠️",
-      label: "Needs Attention", 
-      color: "text-amber-600",
-      bgColor: "bg-amber-100",
-      borderColor: "border-amber-300",
-      Icon: AlertCircle,
-    },
-    "healthy": {
-      emoji: "✅",
-      label: "Healthy",
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-300",
-      Icon: CheckCircle,
-    },
-  };
-  return configs[status];
+function getHealthLabel(score: number): string {
+  if (score >= 80) return "Strong";
+  if (score >= 60) return "Needs Attention";
+  return "At Risk";
 }
 
 function estimateImpact(score: number, findings: number) {
@@ -88,12 +67,7 @@ function estimateImpact(score: number, findings: number) {
   const leadsMin = Math.round(trafficAtRisk * 0.015);
   const leadsMax = Math.round(trafficAtRisk * 0.04);
   
-  return {
-    trafficAtRisk,
-    clicksLost,
-    leadsMin,
-    leadsMax,
-  };
+  return { trafficAtRisk, clicksLost, leadsMin, leadsMax };
 }
 
 function getCardStatus(score: number): { label: string; color: string; bgColor: string } {
@@ -102,16 +76,29 @@ function getCardStatus(score: number): { label: string; color: string; bgColor: 
   return { label: "Good", color: "text-green-700", bgColor: "bg-green-100" };
 }
 
+type CoverageState = "checked" | "limited" | "preview";
+
+function getCoverageLabel(state: CoverageState): { label: string; color: string; bgColor: string } {
+  switch (state) {
+    case "checked": return { label: "Checked", color: "text-blue-700", bgColor: "bg-blue-50" };
+    case "limited": return { label: "Limited Scan", color: "text-slate-600", bgColor: "bg-slate-100" };
+    case "preview": return { label: "Preview", color: "text-purple-600", bgColor: "bg-purple-50" };
+  }
+}
+
 interface DiagnosisCardProps {
   title: string;
   icon: React.ReactNode;
   status: { label: string; color: string; bgColor: string };
+  coverage: CoverageState;
   impactText: string;
   details?: string;
   onFix: () => void;
 }
 
-function DiagnosisCard({ title, icon, status, impactText, details, onFix }: DiagnosisCardProps) {
+function DiagnosisCard({ title, icon, status, coverage, impactText, details, onFix }: DiagnosisCardProps) {
+  const coverageInfo = getCoverageLabel(coverage);
+  
   return (
     <Card className="bg-white border-slate-200 hover:shadow-md transition-shadow">
       <CardContent className="p-5">
@@ -122,9 +109,14 @@ function DiagnosisCard({ title, icon, status, impactText, details, onFix }: Diag
             </div>
             <div>
               <h3 className="font-semibold text-slate-900">{title}</h3>
-              <Badge className={`${status.bgColor} ${status.color} text-xs mt-1`}>
-                {status.label}
-              </Badge>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge className={`${status.bgColor} ${status.color} text-xs`}>
+                  {status.label}
+                </Badge>
+                <Badge variant="outline" className={`${coverageInfo.bgColor} ${coverageInfo.color} text-xs border-0`}>
+                  {coverageInfo.label}
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -224,8 +216,8 @@ export default function ScanPreview() {
   }
 
   const preview = previewQuery.data;
-  const healthStatus = preview ? getHealthStatus(preview.scoreSummary.overall) : null;
-  const healthConfig = healthStatus ? getHealthConfig(healthStatus) : null;
+  const gradeInfo = preview ? getLetterGrade(preview.scoreSummary.overall) : null;
+  const healthLabel = preview ? getHealthLabel(preview.scoreSummary.overall) : "";
   const impact = preview ? estimateImpact(preview.scoreSummary.overall, preview.totalFindings) : null;
 
   return (
@@ -277,31 +269,37 @@ export default function ScanPreview() {
           )}
 
           {/* DIAGNOSIS READY STATE */}
-          {isReady && preview && healthConfig && impact && (
+          {isReady && preview && gradeInfo && impact && (
             <div className="space-y-10">
               
-              {/* ===== SECTION 1: HERO DIAGNOSIS ===== */}
+              {/* ===== SECTION 1: LETTER GRADE HERO ===== */}
               <div className="text-center space-y-6">
-                <div className={`w-20 h-20 rounded-full ${healthConfig.bgColor} flex items-center justify-center mx-auto`}>
-                  <healthConfig.Icon className={`w-10 h-10 ${healthConfig.color}`} />
+                
+                {/* Letter Grade + Status Row */}
+                <div className="flex items-center justify-center gap-4">
+                  <div className={`w-20 h-20 rounded-2xl ${gradeInfo.bgColor} ${gradeInfo.borderColor} border-2 flex items-center justify-center`}>
+                    <span className={`text-4xl font-bold ${gradeInfo.color}`}>{gradeInfo.grade}</span>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm text-slate-500 uppercase tracking-wide">SEO Health</p>
+                    <p className={`text-2xl font-semibold ${gradeInfo.color}`}>{healthLabel}</p>
+                  </div>
                 </div>
                 
+                {/* Main Headline */}
                 <div className="space-y-3">
-                  <Badge className={`${healthConfig.bgColor} ${healthConfig.color} px-4 py-1.5 text-sm font-medium`}>
-                    {healthConfig.emoji} SEO Health: {healthConfig.label}
-                  </Badge>
-                  
                   <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
                     Your website is losing <span className="text-red-600">~{impact.trafficAtRisk.toLocaleString()} visitors</span> monthly
                   </h1>
                   
-                  <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                    We found {preview.totalFindings} preventable SEO issues on <span className="font-medium">{preview.targetUrl}</span> that we can fix automatically.
+                  {/* Context Line */}
+                  <p className="text-sm text-slate-500">
+                    Based on an initial SEO scan with no account access.
                   </p>
                 </div>
 
-                {/* 3 Quick Metrics */}
-                <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto pt-4">
+                {/* 3 Impact Metrics */}
+                <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto pt-2">
                   <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
                     <Eye className="w-6 h-6 mx-auto mb-2 text-red-500" />
                     <div className="text-2xl font-bold text-red-700">{impact.trafficAtRisk.toLocaleString()}</div>
@@ -319,6 +317,11 @@ export default function ScanPreview() {
                   </div>
                 </div>
 
+                {/* Grade Microcopy */}
+                <p className="text-sm text-slate-600 max-w-md mx-auto">
+                  Sites with a {gradeInfo.grade} grade typically see meaningful gains after fixing the issues below.
+                </p>
+
                 {/* Primary CTA */}
                 <Button 
                   size="lg" 
@@ -332,15 +335,22 @@ export default function ScanPreview() {
                 <p className="text-sm text-slate-500">Takes ~3-7 minutes. Safe mode enabled.</p>
               </div>
 
-              {/* ===== SECTION 2: DIAGNOSIS SIGNAL CARDS ===== */}
+              {/* ===== SECTION 2: WHAT WE CHECKED (SO FAR) ===== */}
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-900 text-center">What We Found</h2>
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold text-slate-900">What We Checked (So Far)</h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    We ran a fast diagnostic across core SEO signals. Full scans analyze additional ranking, content, and authority factors.
+                  </p>
+                </div>
                 
+                {/* Always show all 6 cards */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <DiagnosisCard
                     title="Technical SEO"
                     icon={<Gauge className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(preview.scoreSummary.technical)}
+                    coverage="checked"
                     impactText="Technical gaps reduce click-through rates even when rankings are strong."
                     details={`Score: ${preview.scoreSummary.technical}/100`}
                     onFix={handleFixClick}
@@ -350,6 +360,7 @@ export default function ScanPreview() {
                     title="Core Web Vitals"
                     icon={<Zap className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(preview.scoreSummary.performance)}
+                    coverage="limited"
                     impactText="Slow pages lose users before they convert. Google deprioritizes slow sites."
                     details={`Score: ${preview.scoreSummary.performance}/100`}
                     onFix={handleFixClick}
@@ -359,6 +370,7 @@ export default function ScanPreview() {
                     title="Content Quality"
                     icon={<Search className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(preview.scoreSummary.content)}
+                    coverage="checked"
                     impactText="Missing or thin content fails to capture search intent and rankings."
                     details={`Score: ${preview.scoreSummary.content}/100`}
                     onFix={handleFixClick}
@@ -368,8 +380,8 @@ export default function ScanPreview() {
                     title="Keyword Opportunities"
                     icon={<Target className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(Math.round((preview.scoreSummary.overall + preview.scoreSummary.content) / 2))}
+                    coverage="limited"
                     impactText="High-intent keywords represent near-term traffic wins with minimal changes."
-                    details={`${preview.totalFindings} opportunities found`}
                     onFix={handleFixClick}
                   />
                   
@@ -377,6 +389,7 @@ export default function ScanPreview() {
                     title="Competitive Position"
                     icon={<BarChart2 className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(preview.scoreSummary.overall)}
+                    coverage="preview"
                     impactText="Competitors are ranking for keywords you're not targeting yet."
                     onFix={handleFixClick}
                   />
@@ -385,6 +398,7 @@ export default function ScanPreview() {
                     title="Authority & Trust"
                     icon={<Link2 className="w-5 h-5 text-slate-600" />}
                     status={getCardStatus(Math.round(preview.scoreSummary.overall * 0.9))}
+                    coverage="preview"
                     impactText="Authority gaps make it harder to sustain rankings long-term."
                     onFix={handleFixClick}
                   />
@@ -499,7 +513,7 @@ export default function ScanPreview() {
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 p-4 shadow-lg z-50">
           <div className="container mx-auto flex items-center justify-between max-w-4xl">
             <div className="hidden md:block">
-              <p className="font-semibold text-slate-900">Ready to fix {preview?.totalFindings} issues?</p>
+              <p className="font-semibold text-slate-900">Ready to improve your SEO health?</p>
               <p className="text-sm text-slate-500">Takes ~3-7 minutes. Safe mode enabled.</p>
             </div>
             <Button 
