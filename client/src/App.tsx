@@ -117,6 +117,9 @@ function Router() {
       <Route path={ROUTES.RESEND_VERIFICATION} component={ResendVerification} />
       <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
+      <Route path={ROUTES.SCAN}>
+        <Redirect to={ROUTES.LANDING + "#analyze"} />
+      </Route>
       <Route path={ROUTES.SCAN_PREVIEW} component={ScanPreview} />
       <Route path={ROUTES.HOW_IT_WORKS} component={HowItWorks} />
       <Route path={ROUTES.USE_CASES} component={UseCases} />
