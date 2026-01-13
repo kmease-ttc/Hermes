@@ -56,9 +56,26 @@ export function LandingHero() {
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-slate-950 tracking-tight mb-4 leading-tight">
           Autonomous SEO for <span className="marketing-gradient-text">local businesses.</span>
         </h1>
-        <p className="text-base md:text-lg text-slate-600 mb-8 max-w-lg mx-auto">
-          Start with a free website analysis. Arclo finds what's holding your site back and fixes it automatically — or generates a better one if needed.
+        <p className="text-base md:text-lg text-slate-600 mb-6 max-w-lg mx-auto">
+          Recover lost traffic. Turn audits into fixes. Stop guessing what's broken — Arclo diagnoses your site and deploys real improvements automatically.
         </p>
+        
+        <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-8">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Scan your site
+          </span>
+          <span className="text-slate-300">→</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+            Identify what's holding it back
+          </span>
+          <span className="text-slate-300">→</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Fix issues automatically
+          </span>
+        </div>
         
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 max-w-xl mx-auto mb-3">
           <Input
@@ -93,8 +110,11 @@ export function LandingHero() {
           <p className="text-sm text-red-600 mb-3" data-testid="text-error">{error}</p>
         )}
         
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm text-slate-500 mb-2">
           No credit card required.
+        </p>
+        <p className="text-xs text-slate-400 mb-4">
+          Powered by live crawl, performance, and ranking signals — not guesses.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
