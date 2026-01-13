@@ -180,18 +180,20 @@ export function registerAuthRoutes(app: Express): void {
         expiresAt,
       });
 
-      // Send verification email
-      const emailSent = await sendVerificationEmail(email, token, displayName || email.split('@')[0]);
+      // Send verification email asynchronously for faster response
+      // Use setImmediate to hand off to the event loop without blocking
+      setImmediate(async () => {
+        try {
+          const emailSent = await sendVerificationEmail(email, token, displayName || email.split('@')[0]);
+          if (!emailSent) {
+            console.error("[Auth] Failed to send verification email to:", email);
+          }
+        } catch (err) {
+          console.error("[Auth] Error sending verification email:", err);
+        }
+      });
 
-      if (!emailSent) {
-        console.error("[Auth] Failed to send verification email to:", email);
-        // Still return success but warn about email issue
-        return res.status(201).json({
-          success: true,
-          message: "Account created. Email delivery may be delayed - if you don't receive it, try requesting a new verification link.",
-        });
-      }
-
+      // Return immediately - email is being sent in background
       return res.status(201).json({
         success: true,
         message: "Check your email to verify your account.",

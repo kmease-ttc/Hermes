@@ -2,7 +2,12 @@ import sgMail from '@sendgrid/mail';
 
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@arclo.pro';
 
-function getSendGridClient() {
+// Initialize SendGrid client once at module load for connection reuse
+let sgClientInitialized = false;
+
+function ensureSendGridClient() {
+  if (sgClientInitialized) return;
+  
   const apiKey = process.env.SendGrid;
   
   if (!apiKey) {
@@ -14,6 +19,11 @@ function getSendGridClient() {
   }
   
   sgMail.setApiKey(apiKey);
+  sgClientInitialized = true;
+}
+
+function getSendGridClient() {
+  ensureSendGridClient();
   return {
     client: sgMail,
     fromEmail: FROM_EMAIL
