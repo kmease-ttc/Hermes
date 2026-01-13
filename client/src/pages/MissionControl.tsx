@@ -1127,26 +1127,16 @@ function TasksOverviewSection({
   };
   
   return (
-    <div data-testid="tasks-overview-section" className="p-5 rounded-2xl border-2 border-amber-500/25 shadow-[0_0_24px_-6px_rgba(245,158,11,0.30)] bg-card/60 backdrop-blur-sm">
-      {/* Header with count circle */}
-      <div className="flex items-center gap-4 mb-4 py-2">
-        {/* Count circle - visual anchor */}
-        <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_-3px_rgba(245,158,11,0.35)]">
-          <span className="text-lg font-bold text-amber-600">{totalOpenTasks}</span>
-        </div>
-        
-        {/* Title and description */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-foreground">Recommended Actions</h2>
-          </div>
+    <div data-testid="tasks-overview-section" className="p-5 rounded-2xl border-2 border-amber-500/25 shadow-[0_0_24px_-6px_rgba(245,158,11,0.30)] bg-card/60 backdrop-blur-sm mb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Recommended Actions</h2>
           <p className="text-sm text-muted-foreground">
             Complete these to improve traffic, rankings, and conversions.
           </p>
         </div>
-        
-        {/* Right side badge */}
-        <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-500/70 border-amber-500/20 flex-shrink-0">
+        <Badge className="text-xs bg-amber-500/15 text-amber-600 border border-amber-500/30 shadow-[0_0_8px_-2px_rgba(245,158,11,0.3)]">
           {totalOpenTasks} open
         </Badge>
       </div>
@@ -1154,40 +1144,57 @@ function TasksOverviewSection({
       {/* Featured Next Action Card */}
       {featuredTask && (
         <Card 
-          className="mb-4 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-500/30 shadow-[0_0_20px_-6px_rgba(245,158,11,0.25)] cursor-pointer hover:border-amber-500/50 transition-all"
+          className="mb-4 bg-gradient-to-br from-amber-500/8 via-transparent to-transparent border border-amber-500/20 cursor-pointer hover:border-amber-500/40 transition-all"
           onClick={() => onReview?.(featuredTask)}
           data-testid="featured-task-card"
         >
           <CardContent className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-start gap-4">
+              {/* Agent color badge - shows who owns this */}
+              {featuredCrew && (
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_-3px_var(--crew-color)]"
+                  style={{ 
+                    backgroundColor: `${featuredCrew.color}20`,
+                    border: `2px solid ${featuredCrew.color}50`,
+                    '--crew-color': featuredCrew.color 
+                  } as any}
+                >
+                  {featuredCrew.avatar ? (
+                    <img src={featuredCrew.avatar} alt={featuredCrew.nickname} className="w-7 h-7 object-contain" />
+                  ) : (
+                    <span className="text-sm font-bold" style={{ color: featuredCrew.color }}>
+                      {featuredCrew.nickname.slice(0, 2)}
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {featuredCrew && (
+                    <span className="text-xs font-medium" style={{ color: featuredCrew.color }}>
+                      {featuredCrew.nickname}
+                    </span>
+                  )}
                   <Badge className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 border-0">
                     Next Action
                   </Badge>
-                  {featuredCrew && (
-                    <Badge 
-                      variant="outline" 
-                      className="text-[10px] px-2 py-0.5 rounded-full border"
-                      style={{ color: featuredCrew.color, borderColor: `${featuredCrew.color}40` }}
-                    >
-                      {featuredCrew.nickname}
-                    </Badge>
-                  )}
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   {getOutcomeTitle(featuredTask.title)}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-muted-foreground mb-2">
                   {getValueDescription(featuredTask)}
                 </p>
-                <p className="text-xs text-amber-600/80 flex items-center gap-1">
+                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   {getImprovesLine(featuredTask)}
                 </p>
               </div>
+              
               <Button 
-                className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-md px-5"
+                className="bg-semantic-success hover:bg-semantic-success/90 text-white rounded-xl shadow-md px-5 flex-shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onReview?.(featuredTask);
@@ -1217,51 +1224,51 @@ function TasksOverviewSection({
                 data-testid={`task-card-${task.id || idx}`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    {crew?.avatar ? (
-                      <img 
-                        src={crew.avatar} 
-                        alt={crew.nickname}
-                        className="w-8 h-8 object-contain flex-shrink-0"
-                      />
-                    ) : crew ? (
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: crew.color }}
-                      >
-                        {crew.nickname.slice(0, 2)}
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-start gap-3">
+                    {/* Agent colored circular badge */}
+                    <div 
+                      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ 
+                        backgroundColor: crew ? `${crew.color}20` : 'var(--muted)',
+                        border: crew ? `2px solid ${crew.color}50` : '2px solid var(--border)'
+                      }}
+                    >
+                      {crew?.avatar ? (
+                        <img src={crew.avatar} alt={crew.nickname} className="w-5 h-5 object-contain" />
+                      ) : crew ? (
+                        <span className="text-xs font-bold" style={{ color: crew.color }}>
+                          {crew.nickname.slice(0, 2)}
+                        </span>
+                      ) : (
                         <Target className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    
                     <div className="flex-1 min-w-0">
+                      {crew && (
+                        <span className="text-[10px] font-medium" style={{ color: crew.color }}>
+                          {crew.nickname}
+                        </span>
+                      )}
                       <h4 className="text-sm font-semibold text-foreground mb-1 group-hover:text-amber-600 transition-colors">
                         {getOutcomeTitle(task.title)}
                       </h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
                         {getValueDescription(task)}
                       </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-6 px-0 text-amber-600 hover:text-amber-700 hover:bg-transparent p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReview?.(task);
+                        }}
+                        data-testid={`button-fix-${task.id || idx}`}
+                      >
+                        Fix This <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-amber-600/70 flex items-center gap-1 flex-1 mr-2">
-                      <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                      <span className="line-clamp-1">{getImprovesLine(task)}</span>
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs h-7 px-3 border-amber-500/30 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onReview?.(task);
-                      }}
-                      data-testid={`button-fix-${task.id || idx}`}
-                    >
-                      Fix This <ArrowRight className="w-3 h-3 ml-1" />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1995,12 +2002,6 @@ export default function MissionControl() {
 
 
         <MetricCardsRow />
-
-        {captainData.priorities && captainData.priorities.length > 0 && (
-          <p className="text-sm text-muted-foreground italic mb-4">
-            We recommend fixing these automatically to prevent further traffic loss.
-          </p>
-        )}
 
         <TasksOverviewSection 
           priorities={captainData.priorities || []}
