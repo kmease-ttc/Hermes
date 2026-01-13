@@ -625,27 +625,29 @@ function MetricCardsRow() {
 }
 
 function AccomplishmentsSection() {
+  // Business-centric accomplishments - prioritized by value impact
+  // Order: Revenue/Leads > Traffic/Visibility > Risk Reduction > System Setup
   const accomplishments = [
     {
       id: 1,
-      title: "Analytics connected",
-      description: "GA4 and Search Console data successfully synced",
+      title: "+2 new leads detected this week",
+      description: "Conversion tracking validated across key landing pages",
       time: "Today",
-      icon: "check"
+      icon: "trending"
     },
     {
       id: 2,
-      title: "Performance scan completed",
-      description: "Core Web Vitals data updated across key pages",
+      title: "Search visibility improved",
+      description: "3 target keywords moved up in search results",
       time: "Yesterday",
       icon: "trending"
     },
     {
       id: 3,
-      title: "Content insights collected",
-      description: "22 new learnings added to your knowledge base",
+      title: "Page performance issues identified early",
+      description: "Core Web Vitals monitored across high-impact pages",
       time: "2 days ago",
-      icon: "spark"
+      icon: "check"
     }
   ];
 
@@ -664,14 +666,14 @@ function AccomplishmentsSection() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
-            <p className="text-sm text-muted-foreground">Progress made so far</p>
+            <p className="text-sm text-muted-foreground">Business wins delivered</p>
           </div>
         </div>
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
           <CardContent className="p-6 text-center">
-            <CheckCircle2 className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+            <TrendingUp className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              Your accomplishments will appear here as tasks complete.
+              Your first wins will appear here as Arclo starts improving traffic, leads, and rankings.
             </p>
           </CardContent>
         </Card>
@@ -684,10 +686,10 @@ function AccomplishmentsSection() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
-          <p className="text-sm text-muted-foreground">Progress made so far</p>
+          <p className="text-sm text-muted-foreground">Business wins delivered</p>
         </div>
         <Badge variant="outline" className="text-xs border-semantic-success/30 text-semantic-success bg-semantic-success/5">
-          {accomplishments.length} improvements completed
+          {accomplishments.length} wins this week
         </Badge>
       </div>
       <Card className="bg-card/60 backdrop-blur-sm border-border/50">
