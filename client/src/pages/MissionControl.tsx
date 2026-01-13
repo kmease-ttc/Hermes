@@ -1362,33 +1362,43 @@ function PrimaryActionCardRow({
             </div>
             <h3 className="text-base font-semibold text-foreground">Send Reports</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-5">
             Review and send tailored reports depending on who you're sharing with.
           </p>
-          <div className="space-y-2">
-            <Link href={ROUTES.WEBSITE_REPORT}>
+          <div className="flex flex-col gap-3">
+            <Link href={ROUTES.WEBSITE_REPORT} className="block">
               <Button 
                 variant="outline"
-                className="w-full rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 justify-start"
+                className="w-full h-14 rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/50 px-5 transition-all"
                 data-testid="button-business-report"
               >
-                <FileText className="w-4 h-4 mr-2" />
-                <div className="text-left">
-                  <span className="block text-sm">Send Business Report</span>
-                  <span className="block text-[10px] text-muted-foreground font-normal">For owners, stakeholders, weekly summaries</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 flex-shrink-0" />
+                    <div className="text-left flex flex-col leading-tight">
+                      <span className="text-sm font-medium">Send Business Report</span>
+                      <span className="text-[11px] text-muted-foreground font-normal">For owners, stakeholders, weekly summaries</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-purple-400/50 flex-shrink-0" />
                 </div>
               </Button>
             </Link>
-            <Link href={ROUTES.DEVELOPER_REPORT}>
+            <Link href={ROUTES.DEVELOPER_REPORT} className="block">
               <Button 
                 variant="outline"
-                className="w-full rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 justify-start"
+                className="w-full h-14 rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/50 px-5 transition-all"
                 data-testid="button-technical-report"
               >
-                <Code className="w-4 h-4 mr-2" />
-                <div className="text-left">
-                  <span className="block text-sm">Send Technical Report</span>
-                  <span className="block text-[10px] text-muted-foreground font-normal">For developers and agencies</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <Code className="w-5 h-5 flex-shrink-0" />
+                    <div className="text-left flex flex-col leading-tight">
+                      <span className="text-sm font-medium">Send Technical Report</span>
+                      <span className="text-[11px] text-muted-foreground font-normal">For developers and agencies</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-purple-400/50 flex-shrink-0" />
                 </div>
               </Button>
             </Link>
