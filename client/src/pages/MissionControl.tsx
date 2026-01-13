@@ -1904,17 +1904,6 @@ export default function MissionControl() {
 
         <AccomplishmentsSection />
 
-        <ConsolidatedMissionWidget
-          priorities={captainData.priorities || []}
-          blockers={captainData.blockers || []}
-          confidence={captainData.confidence || "Low"}
-          isRealData={captainData.isRealData}
-          placeholderReason={captainData.placeholderReason}
-          onReview={handleReviewMission}
-          onRunDiagnostics={() => runDiagnostics.mutate()}
-          isRunning={runDiagnostics.isPending}
-          totalOpenMissions={totalOpenMissions}
-        />
 
         {showValidationPanel && validationResults && (
           <Card className="bg-card/80 backdrop-blur-sm border-border rounded-2xl" data-testid="validation-panel">
