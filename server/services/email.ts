@@ -1,41 +1,22 @@
 import sgMail from '@sendgrid/mail';
 
-let connectionSettings: any;
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@arclo.pro';
 
-async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+function getSendGridClient() {
+  const apiKey = process.env.SendGrid;
+  
+  if (!apiKey) {
+    throw new Error('SendGrid API key not configured. Please add it as a secret named "SendGrid".');
   }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
-    throw new Error('SendGrid not connected');
+  
+  if (!apiKey.startsWith('SG.')) {
+    throw new Error('Invalid SendGrid API key format. Key should start with "SG."');
   }
-  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
-}
-
-async function getUncachableSendGridClient() {
-  const { apiKey, email } = await getCredentials();
+  
   sgMail.setApiKey(apiKey);
   return {
     client: sgMail,
-    fromEmail: email
+    fromEmail: FROM_EMAIL
   };
 }
 
@@ -49,7 +30,7 @@ function getBaseUrl(): string {
 export async function sendVerificationEmail(email: string, token: string, displayName?: string): Promise<boolean> {
   try {
     console.log(`[Email] Attempting to send verification email to ${email}`);
-    const { client, fromEmail } = await getUncachableSendGridClient();
+    const { client, fromEmail } = getSendGridClient();
     console.log(`[Email] SendGrid client ready, from: ${fromEmail}`);
     const baseUrl = getBaseUrl();
     const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
@@ -105,7 +86,7 @@ export async function sendVerificationEmail(email: string, token: string, displa
 
 export async function sendPasswordResetEmail(email: string, token: string, displayName?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableSendGridClient();
+    const { client, fromEmail } = getSendGridClient();
     const baseUrl = getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${token}`;
     
@@ -172,7 +153,7 @@ interface MonthlySummaryData {
 
 export async function sendMonthlySummaryEmail(email: string, data: MonthlySummaryData): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getUncachableSendGridClient();
+    const { client, fromEmail } = getSendGridClient();
     const baseUrl = getBaseUrl();
     const dashboardUrl = `${baseUrl}/dashboard`;
     
