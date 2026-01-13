@@ -947,131 +947,152 @@ function CapabilityCard({ capability }: {
 }) {
   const { crew, kpiValue, kpiLabel, tasksOpen, trend, status, isLocked, whyItMatters } = capability;
   
-  const tintedGlassStyles = status === 'active' ? getTintedGlassStyles(crew.color) : {};
+  // All cards get crew-color glow at varying intensity
+  const glowIntensity = status === 'active' ? '25' : status === 'setup' ? '15' : '10';
+  const borderOpacity = status === 'active' ? '30' : status === 'setup' ? '25' : '15';
   
-  // Locked cards get a subtle crew-color glow for premium feel
-  const lockedStyles = isLocked ? {
-    background: 'rgba(255,255,255,0.03)',
-    border: `1px solid ${crew.color}15`,
-    boxShadow: `0 0 20px ${crew.color}08`,
-  } : {};
-  
-  const setupStyles = status === 'setup' ? {
-    background: 'rgba(255,255,255,0.02)',
-    border: '2px solid rgba(245, 158, 11, 0.3)',
-  } : {};
+  const cardStyles = {
+    background: status === 'active' 
+      ? `linear-gradient(135deg, ${crew.color}08 0%, transparent 50%)`
+      : 'rgba(255,255,255,0.02)',
+    border: `1px solid ${crew.color}${borderOpacity}`,
+    boxShadow: `0 0 ${status === 'active' ? '30' : '20'}px ${crew.color}${glowIntensity}`,
+  };
   
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
   const trendColor = trend === 'up' ? 'text-semantic-success' : trend === 'down' ? 'text-semantic-danger' : 'text-muted-foreground';
   const trendLabel = trend === 'up' ? 'Improving' : trend === 'down' ? 'Declining' : trend === 'stable' ? 'Stable' : '';
+  
+  // KPI widget glow based on status
+  const kpiWidgetGlow = status === 'active' 
+    ? `0 0 20px ${crew.color}40, inset 0 0 30px ${crew.color}10`
+    : status === 'setup'
+    ? `0 0 15px ${crew.color}25, inset 0 0 20px ${crew.color}08`
+    : `0 0 10px ${crew.color}15, inset 0 0 15px ${crew.color}05`;
   
   return (
     <Link href={status === 'locked' ? ROUTES.CREW : buildRoute.agent(capability.serviceId)}>
       <Card 
         className={cn(
           "transition-all duration-200 backdrop-blur-sm rounded-xl overflow-hidden h-full flex flex-col cursor-pointer",
-          status === 'active' && "hover:scale-[1.02] hover:shadow-lg",
-          isLocked && "hover:scale-[1.01] hover:border-primary/30 hover:shadow-[0_0_25px_rgba(139,92,246,0.15)]",
-          status === 'setup' && "hover:scale-[1.02]"
+          "hover:scale-[1.02]"
         )}
-        style={{ ...tintedGlassStyles, ...lockedStyles, ...setupStyles }}
+        style={cardStyles}
         data-testid={`capability-card-${capability.serviceId}`}
       >
-        <CardContent className="p-5 flex flex-col h-full">
+        <CardContent className="p-4 flex flex-col h-full">
           {/* Header: Avatar + Name + Status */}
-          <div className="flex items-center gap-2.5 mb-4">
+          <div className="flex items-center gap-2.5 mb-3">
             {crew.avatar ? (
               <img 
                 src={crew.avatar} 
                 alt={crew.nickname}
                 className={cn(
-                  "w-8 h-8 rounded-full object-cover flex-shrink-0",
-                  status === 'active' && "ring-2",
-                  isLocked && "opacity-70"
+                  "w-7 h-7 rounded-full object-cover flex-shrink-0 ring-1",
+                  isLocked && "opacity-80"
                 )}
-                style={status === 'active' ? { boxShadow: `0 0 8px ${crew.color}30`, borderColor: crew.color } : {}}
+                style={{ borderColor: `${crew.color}50`, boxShadow: `0 0 8px ${crew.color}30` }}
               />
             ) : (
               <div 
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
-                  isLocked && "opacity-70"
-                )}
-                style={{ backgroundColor: `${crew.color}20`, color: crew.color }}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                style={{ backgroundColor: `${crew.color}25`, color: crew.color, boxShadow: `0 0 8px ${crew.color}30` }}
               >
                 {crew.nickname.slice(0, 2)}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h4 className={cn("font-medium text-sm leading-tight")} style={{ color: isLocked ? `${crew.color}90` : crew.color }}>
+              <h4 className="font-medium text-sm leading-tight" style={{ color: crew.color }}>
                 {crew.nickname}
               </h4>
             </div>
             {status === 'active' && (
-              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-semantic-success/15 text-semantic-success border-0">Active</Badge>
+              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-semantic-success/20 text-semantic-success border-0">Active</Badge>
             )}
             {status === 'locked' && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary/70 flex items-center gap-1">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-muted-foreground/30 text-muted-foreground flex items-center gap-1">
                 <Lock className="w-2.5 h-2.5" />
                 Locked
               </Badge>
             )}
             {status === 'setup' && (
-              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/15 text-amber-600 border-0 flex items-center gap-1">
+              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-500 border-0 flex items-center gap-1">
                 <Settings className="w-2.5 h-2.5" />
                 Setup
               </Badge>
             )}
           </div>
           
-          {/* HERO KPI - Central, dominant, crew-colored */}
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-3">
+          {/* KPI WIDGET - Distinct panel matching old Key Metrics cards */}
+          <div 
+            className="flex-1 rounded-lg p-4 flex flex-col items-center justify-center text-center"
+            style={{
+              background: `linear-gradient(180deg, ${crew.color}12 0%, ${crew.color}05 100%)`,
+              border: `1px solid ${crew.color}20`,
+              boxShadow: kpiWidgetGlow,
+            }}
+          >
             <div className="flex items-baseline gap-2">
               <span 
-                className="text-5xl font-bold tracking-tight leading-none"
-                style={{ color: isLocked ? `${crew.color}60` : crew.color }}
+                className="text-4xl font-bold tracking-tight leading-none"
+                style={{ color: isLocked ? `${crew.color}70` : crew.color, textShadow: status === 'active' ? `0 0 20px ${crew.color}50` : 'none' }}
               >
                 {kpiValue}
               </span>
-              {isLocked && (
-                <span className="text-[10px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded font-medium">Sample</span>
+              {(isLocked || status === 'setup') && (
+                <span className="text-[9px] text-muted-foreground bg-black/30 px-1.5 py-0.5 rounded font-medium">Sample</span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{kpiLabel}</p>
+            <p className="text-[11px] text-muted-foreground mt-1.5">{kpiLabel}</p>
             
-            {/* Trend - subtle, secondary (active only) */}
-            {!isLocked && trendLabel && (
-              <div className={cn("flex items-center gap-1 text-[11px] mt-2", trendColor)}>
+            {/* Trend indicator (active cards) */}
+            {status === 'active' && trendLabel && (
+              <div className={cn("flex items-center gap-1 text-[10px] mt-2", trendColor)}>
                 <TrendIcon className="w-3 h-3" />
                 <span>{trendLabel}</span>
               </div>
             )}
             
-            {/* Value proposition for locked cards */}
+            {/* Setup message */}
+            {status === 'setup' && (
+              <p className="text-[10px] text-amber-500/80 mt-2">Configure to unlock tracking</p>
+            )}
+            
+            {/* Value proposition for locked */}
             {isLocked && (
-              <p className="text-[11px] text-muted-foreground mt-3 max-w-[90%] leading-relaxed">{whyItMatters}</p>
+              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">{whyItMatters}</p>
             )}
           </div>
           
-          {/* Footer: Task count / unlock teaser + CTA */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/30">
-            {!isLocked ? (
+          {/* Footer: Tasks + CTA */}
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/20">
+            {status === 'active' ? (
               <>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground">
                   {tasksOpen === 0 ? 'All caught up' : `${tasksOpen} ${tasksOpen === 1 ? 'task' : 'tasks'}`}
                 </span>
-                <span className="text-xs font-medium flex items-center gap-1" style={{ color: crew.color }}>
-                  {status === 'setup' ? 'Configure' : 'Review'} <ArrowRight className="w-3 h-3" />
+                <span className="text-[11px] font-medium flex items-center gap-1" style={{ color: crew.color }}>
+                  Review <ArrowRight className="w-3 h-3" />
+                </span>
+              </>
+            ) : status === 'setup' ? (
+              <>
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500/60" />
+                  Ready to configure
+                </span>
+                <span className="text-[11px] font-medium text-amber-500 flex items-center gap-1">
+                  Configure <ArrowRight className="w-3 h-3" />
                 </span>
               </>
             ) : (
               <>
                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-primary/60" />
+                  <Sparkles className="w-3 h-3 text-primary/50" />
                   Unlocks monitoring
                 </span>
-                <span className="text-xs font-medium text-primary flex items-center gap-1 group-hover:text-primary">
-                  Unlock <ArrowRight className="w-3 h-3" />
+                <span className="text-[11px] font-medium text-primary flex items-center gap-1">
+                  Enable <ArrowRight className="w-3 h-3" />
                 </span>
               </>
             )}
