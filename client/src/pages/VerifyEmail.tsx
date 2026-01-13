@@ -77,6 +77,7 @@ export default function VerifyEmail() {
             <CardFooter>
               {status !== "loading" && (
                 <Button 
+                  variant="primaryGradient"
                   className="w-full"
                   onClick={() => navigate("/login")}
                   data-testid="button-go-to-login"
