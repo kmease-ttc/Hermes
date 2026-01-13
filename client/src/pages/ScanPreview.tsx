@@ -278,7 +278,7 @@ export default function ScanPreview() {
 
             {/* DIAGNOSIS READY STATE */}
             {isReady && preview && gradeInfo && healthInfo && impact && (
-              <div className="space-y-12">
+              <div className="space-y-16">
                 
                 {/* ===== SECTION 1: HERO GLASS PANEL (Layer 3 - Focus) ===== */}
                 <div className={`relative ${glass.panelFocus} p-8 md:p-10 shadow-xl shadow-slate-200/50`}>
@@ -330,24 +330,28 @@ export default function ScanPreview() {
                     </p>
 
                     {/* Primary CTA - Brand gradient */}
-                    <Button 
-                      variant="primaryGradient"
-                      size="lg" 
-                      className="h-14 px-10 text-lg"
-                      onClick={handleFixClick}
-                      data-testid="button-fix-everything"
-                    >
-                      Fix Everything Automatically
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                    <p className="text-sm text-slate-500">Takes ~3-7 minutes. Safe mode enabled.</p>
+                    <div className="space-y-3">
+                      <Button 
+                        variant="primaryGradient"
+                        size="lg" 
+                        className="h-14 px-10 text-lg"
+                        onClick={handleFixClick}
+                        data-testid="button-fix-everything"
+                      >
+                        Fix Everything Automatically
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                      <p className="text-sm text-slate-500">
+                        Safe mode enabled · No destructive changes · Review before publish
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* ===== SECTION 2: WHAT WE CHECKED (Layer 2 - Standard Glass) ===== */}
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-semibold text-slate-900">What We Checked (So Far)</h2>
+                <div className={`${glass.panel} p-6 md:p-8`}>
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-semibold text-slate-800">What We Checked (So Far)</h2>
                     <p className="text-sm text-slate-500 mt-2 max-w-lg mx-auto">
                       We ran a fast diagnostic across core SEO signals. Full scans analyze additional ranking, content, and authority factors.
                     </p>
@@ -486,16 +490,21 @@ export default function ScanPreview() {
                     ))}
                   </div>
 
-                  <Button 
-                    variant="primaryGradient"
-                    size="lg" 
-                    className="w-full h-14 text-lg"
-                    onClick={handleFixClick}
-                    data-testid="button-fix-selected"
-                  >
-                    Fix {selectedFixes.size} Selected Issues Now
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
+                  <div className="space-y-3">
+                    <Button 
+                      variant="primaryGradient"
+                      size="lg" 
+                      className="w-full h-14 text-lg"
+                      onClick={handleFixClick}
+                      data-testid="button-fix-selected"
+                    >
+                      Fix {selectedFixes.size} Selected Issues Now
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                    <p className="text-center text-sm text-slate-500">
+                      All changes are logged and fully reversible
+                    </p>
+                  </div>
                 </div>
 
                 {/* ===== SECTION 5: TRUST & SAFETY (Layer 2 - Standard Glass) ===== */}
