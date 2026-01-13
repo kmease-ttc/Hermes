@@ -97,17 +97,19 @@ export function LandingHero() {
           No credit card required.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
-          <Link 
-            href={ROUTES.WEBSITE_GENERATOR}
-            className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
-            data-testid="link-generate-site"
-          >
-            No site? Generate a free one →
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href={ROUTES.WEBSITE_GENERATOR}>
+            <BrandButton 
+              variant="accent"
+              size="md"
+              data-testid="link-generate-site"
+            >
+              No site? Generate a free one →
+            </BrandButton>
           </Link>
           <Link 
             href={ROUTES.EXAMPLES}
-            className="text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
+            className="text-sm text-slate-600 hover:text-violet-600 underline-offset-2 hover:underline transition-colors"
             data-testid="link-see-examples"
           >
             See examples

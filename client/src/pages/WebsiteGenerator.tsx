@@ -634,7 +634,7 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
           Back
         </BrandButton>
         <BrandButton 
-          variant="primary" 
+          variant="accent" 
           size="lg" 
           icon={Sparkles}
           className="flex-[2]"

@@ -2,12 +2,14 @@ import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 
 interface BrandButtonProps {
-  variant?: "primary" | "secondary" | "link";
+  variant?: "primary" | "secondary" | "accent" | "link";
   size?: "sm" | "md" | "lg";
   icon?: LucideIcon;
   children: ReactNode;
   onClick?: () => void;
   className?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
   "data-testid"?: string;
 }
 
@@ -18,6 +20,8 @@ export function BrandButton({
   children,
   onClick,
   className = "",
+  type = "button",
+  disabled = false,
   "data-testid": testId,
 }: BrandButtonProps) {
   const sizeClasses = {
@@ -26,7 +30,7 @@ export function BrandButton({
     lg: "h-14 px-12 text-lg",
   };
 
-  const baseClasses = "inline-flex items-center justify-center font-semibold transition-all duration-200 gap-2";
+  const baseClasses = "inline-flex items-center justify-center font-semibold transition-all duration-200 gap-2 disabled:opacity-50 disabled:pointer-events-none";
 
   const variantClasses = {
     primary: `
@@ -43,6 +47,14 @@ export function BrandButton({
       hover:border-slate-300 hover:bg-slate-50
       shadow-sm
     `,
+    accent: `
+      rounded-xl text-white
+      bg-gradient-to-r from-emerald-500 to-cyan-500
+      shadow-[0_14px_30px_rgba(16,185,129,0.20)]
+      hover:shadow-[0_18px_40px_rgba(6,182,212,0.22)]
+      hover:-translate-y-0.5
+      focus:outline-none focus:ring-4 focus:ring-emerald-200
+    `,
     link: `
       text-violet-600 hover:text-pink-600
       font-medium
@@ -51,9 +63,11 @@ export function BrandButton({
 
   return (
     <button
+      type={type}
       onClick={onClick}
+      disabled={disabled}
       className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
-      style={variant === "primary" ? { textShadow: "0 1px 2px rgba(0,0,0,0.15)" } : undefined}
+      style={variant === "primary" || variant === "accent" ? { textShadow: "0 1px 2px rgba(0,0,0,0.15)" } : undefined}
       data-testid={testId}
     >
       {Icon && <Icon className={size === "lg" ? "w-5 h-5" : "w-4 h-4"} />}
