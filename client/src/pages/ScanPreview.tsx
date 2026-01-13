@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "@shared/routes";
+import { glass } from "@/styles/glass";
 
 interface Finding {
   id: string;
@@ -100,38 +101,45 @@ function DiagnosisCard({ title, icon, iconColor, status, coverage, impactText, d
   const coverageInfo = getCoverageLabel(coverage);
   
   return (
-    <div className="group relative bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl p-5 shadow-sm hover:shadow-md hover:bg-white/70 transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200/50 flex items-center justify-center shadow-sm`}>
-            <div className={iconColor}>{icon}</div>
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900">{title}</h3>
-            <div className="flex items-center gap-2 mt-1.5">
-              <Badge className={`${status.bgColor} ${status.color} text-xs font-medium border-0`}>
-                {status.label}
-              </Badge>
-              <Badge className={`${coverageInfo.bgColor} ${coverageInfo.color} text-xs font-medium border-0`}>
-                {coverageInfo.label}
-              </Badge>
-            </div>
+    <div className={`${glass.card} h-full flex flex-col p-5`}>
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200/50 flex items-center justify-center shadow-sm shrink-0">
+          <div className={iconColor}>{icon}</div>
+        </div>
+        <div>
+          <h3 className="font-semibold text-slate-900">{title}</h3>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Badge className={`${status.bgColor} ${status.color} text-xs font-medium border-0`}>
+              {status.label}
+            </Badge>
+            <Badge className={`${coverageInfo.bgColor} ${coverageInfo.color} text-xs font-medium border-0`}>
+              {coverageInfo.label}
+            </Badge>
           </div>
         </div>
       </div>
-      <p className="text-sm text-slate-600 mb-4 leading-relaxed">{impactText}</p>
-      {details && (
-        <p className="text-xs text-slate-500 mb-4 font-medium">{details}</p>
-      )}
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="w-full bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-sm"
-        onClick={onFix}
-      >
-        Fix This
-        <ArrowRight className="w-4 h-4 ml-1.5" />
-      </Button>
+      
+      {/* Body - flex-1 to push footer down */}
+      <div className="flex-1">
+        <p className="text-sm text-slate-600 leading-relaxed">{impactText}</p>
+        {details && (
+          <p className="text-xs text-slate-500 mt-2 font-medium">{details}</p>
+        )}
+      </div>
+      
+      {/* Footer - fixed height CTA */}
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <Button 
+          variant="secondaryAccent" 
+          size="sm" 
+          className="w-full h-10"
+          onClick={onFix}
+        >
+          Fix This
+          <ArrowRight className="w-4 h-4 ml-1.5" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -262,7 +270,7 @@ export default function ScanPreview() {
                     {statusQuery.data?.message || "We couldn't complete the scan. Please try again."}
                   </p>
                 </div>
-                <Button onClick={() => navigate(ROUTES.LANDING)} size="lg">
+                <Button variant="primaryGradient" onClick={() => navigate(ROUTES.LANDING)} size="lg">
                   Try Again
                 </Button>
               </div>
@@ -273,7 +281,7 @@ export default function ScanPreview() {
               <div className="space-y-12">
                 
                 {/* ===== SECTION 1: HERO GLASS PANEL (Layer 3 - Focus) ===== */}
-                <div className="relative bg-white/80 backdrop-blur-md border border-white/60 rounded-3xl p-8 md:p-10 shadow-xl shadow-slate-200/50">
+                <div className={`relative ${glass.panelFocus} p-8 md:p-10 shadow-xl shadow-slate-200/50`}>
                   <div className="text-center space-y-6">
                     
                     {/* Letter Grade Ring */}
@@ -323,8 +331,9 @@ export default function ScanPreview() {
 
                     {/* Primary CTA - Brand gradient */}
                     <Button 
+                      variant="primaryGradient"
                       size="lg" 
-                      className="h-14 px-10 text-lg bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 hover:from-violet-700 hover:via-pink-700 hover:to-amber-600 shadow-lg shadow-violet-500/25"
+                      className="h-14 px-10 text-lg"
                       onClick={handleFixClick}
                       data-testid="button-fix-everything"
                     >
@@ -344,8 +353,8 @@ export default function ScanPreview() {
                     </p>
                   </div>
                   
-                  {/* Diagnosis Cards Grid */}
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {/* Diagnosis Cards Grid - items-stretch for equal height */}
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                     <DiagnosisCard
                       title="Technical SEO"
                       icon={<Gauge className="w-5 h-5" />}
@@ -412,7 +421,7 @@ export default function ScanPreview() {
                 </div>
 
                 {/* ===== SECTION 3: WHAT THIS IS COSTING YOU (Layer 3 - Focus Dark) ===== */}
-                <div className="relative bg-slate-900/95 backdrop-blur-md rounded-3xl p-8 md:p-10 overflow-hidden shadow-2xl">
+                <div className={`relative ${glass.panelDark} p-8 md:p-10 overflow-hidden`}>
                   <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 via-pink-600/10 to-amber-600/10" />
                   <div className="relative">
                     <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
@@ -446,7 +455,7 @@ export default function ScanPreview() {
                 </div>
 
                 {/* ===== SECTION 4: ONE-CLICK FIX ENGINE (Layer 2 - Standard Glass) ===== */}
-                <div className="relative bg-white/70 backdrop-blur-sm border border-violet-200/50 rounded-3xl p-8 shadow-lg">
+                <div className={`relative ${glass.panel} border-violet-200/50 p-8 shadow-lg`}>
                   <h2 className="text-xl font-semibold text-slate-900 mb-2">One-Click Fix Engine</h2>
                   <p className="text-slate-600 mb-6">Select fixes to apply — no setup required, fully reversible.</p>
                   
@@ -454,10 +463,10 @@ export default function ScanPreview() {
                     {fixableIssues.map((fix) => (
                       <label 
                         key={fix.id}
-                        className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        className={`flex items-center gap-4 p-4 cursor-pointer transition-all ${
                           selectedFixes.has(fix.id) 
-                            ? "bg-violet-50/80 border-violet-300 shadow-sm" 
-                            : "bg-white/60 border-slate-200 hover:border-violet-200 hover:bg-white/80"
+                            ? glass.rowSelected
+                            : `${glass.row} hover:border-violet-200`
                         }`}
                       >
                         <Checkbox 
@@ -478,8 +487,9 @@ export default function ScanPreview() {
                   </div>
 
                   <Button 
+                    variant="primaryGradient"
                     size="lg" 
-                    className="w-full h-14 text-lg bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 hover:from-violet-700 hover:via-pink-700 hover:to-amber-600 shadow-lg shadow-violet-500/20"
+                    className="w-full h-14 text-lg"
                     onClick={handleFixClick}
                     data-testid="button-fix-selected"
                   >
@@ -489,7 +499,7 @@ export default function ScanPreview() {
                 </div>
 
                 {/* ===== SECTION 5: TRUST & SAFETY (Layer 2 - Standard Glass) ===== */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/50 shadow-sm">
+                <div className={`${glass.panel} p-6`}>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-8 h-8 rounded-lg bg-emerald-100/80 flex items-center justify-center">
                       <Shield className="w-4 h-4 text-emerald-600" />
@@ -532,8 +542,9 @@ export default function ScanPreview() {
               <p className="text-sm text-slate-500">Takes ~3-7 minutes. Safe mode enabled.</p>
             </div>
             <Button 
+              variant="primaryGradient"
               size="lg" 
-              className="h-12 px-8 bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 hover:from-violet-700 hover:via-pink-700 hover:to-amber-600 shadow-lg"
+              className="h-12 px-8"
               onClick={handleFixClick}
               data-testid="button-sticky-fix"
             >

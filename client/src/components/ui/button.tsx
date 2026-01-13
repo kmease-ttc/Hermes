@@ -31,6 +31,12 @@ const buttonVariants = cva(
           "bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-400 border-0",
         purple:
           "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:from-purple-400 hover:to-violet-400 border-0",
+        primaryGradient:
+          "bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 text-white shadow-lg shadow-violet-500/25 hover:from-violet-700 hover:via-pink-700 hover:to-amber-600 hover:shadow-violet-500/40 border-0",
+        secondaryAccent:
+          "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-cyan-600 hover:shadow-emerald-500/40 border-0",
+        glassOutline:
+          "bg-white/60 backdrop-blur-sm border border-slate-200/50 text-slate-700 shadow-sm hover:bg-white/80 hover:border-slate-300 focus-visible:ring-violet-500",
       },
       size: {
         // @replit changed sizes
