@@ -707,20 +707,19 @@ function AccomplishmentsSection() {
   }
 
   return (
-    <div className="mb-8" data-testid="accomplishments-section">
+    <div className="p-5 rounded-2xl border-2 border-emerald-500/25 shadow-[0_0_24px_-6px_rgba(16,185,129,0.30)] bg-card/60 backdrop-blur-sm mb-8" data-testid="accomplishments-section">
       {/* Header with celebratory badge */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Your Wins</h2>
           <p className="text-sm text-muted-foreground">Business improvements this week</p>
         </div>
-        <Badge className="text-xs bg-semantic-success/10 text-semantic-success border-semantic-success/30 flex items-center gap-1.5">
-          <Zap className="w-3 h-3" />
-          Momentum: {accomplishments.length} wins this week
+        <Badge className="text-xs bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)]">
+          {accomplishments.length} wins this week
         </Badge>
       </div>
 
-      <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+      <div className="bg-card/40 rounded-xl">
         <CardContent className="p-5">
           {/* This Week's Impact Summary */}
           <div className="mb-5">
@@ -797,7 +796,7 @@ function AccomplishmentsSection() {
             <ChevronRight className="w-4 h-4 text-purple-500/50" />
           </div>
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
