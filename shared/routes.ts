@@ -66,6 +66,10 @@ export const ROUTES = {
   SPEEDSTER: "/app/speedster",
   SOCRATES: "/app/socrates",
   
+  // Reports
+  WEBSITE_REPORT: "/app/reports/website",
+  DEVELOPER_REPORT: "/app/reports/developer",
+  
   // System pages
   TICKETS: "/app/tickets",
   CHANGES: "/app/changes",

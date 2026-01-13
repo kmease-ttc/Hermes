@@ -1,0 +1,188 @@
+You are a senior product + UX engineer working on the **Mission Control dashboard**. The dashboard is now strong at telling users *what to do next*, but it is missing a critical psychological component: **visible progress**. Your task is to add an **Accomplishments section** that rewards progress and builds momentum.
+
+This is a **UI + light data wiring change**. Do not introduce complex gamification or new backend systems unless necessary.
+
+---
+
+## OBJECTIVE (why this matters)
+
+Right now the dashboard emphasizes:
+
+* What’s broken
+* What needs fixing
+* What to do next
+
+That creates urgency, but **no sense of progress**.
+
+We need a section that answers:
+
+> “Is this actually working?”
+
+This improves:
+
+* Retention
+* Trust
+* Willingness to click “Fix Everything”
+* Willingness to stay subscribed
+
+---
+
+## PLACEMENT (very important)
+
+Insert a new section called **Accomplishments**:
+
+**Layout order must be:**
+
+1. Primary Action Cards (Fix Everything / Send Reports)
+2. **Accomplishments (NEW)**
+3. Tasks
+4. Key Metrics
+5. What Needs Fixing
+
+Accomplishments must sit **between Quick Actions and Tasks**.
+This way the user sees:
+
+> “Here’s what we did → here’s what’s next.”
+
+---
+
+## SECTION NAME & TONE
+
+### Section title
+
+**Accomplishments**
+
+Optional subtitle (small, muted):
+
+> “Progress made so far”
+
+Do NOT call this:
+
+* History
+* Logs
+* Audit trail
+
+This is about **wins**, not records.
+
+---
+
+## VISUAL DESIGN (must match system)
+
+* Use the same **glass panel styling** as Tasks and Key Metrics
+* Slightly lighter than Tasks (less urgency)
+* Calm, positive tone
+* No red
+* Minimal gold
+* Mostly neutral + green for success
+
+This section should feel **rewarding**, not stressful.
+
+---
+
+## CONTENT MODEL (keep it simple)
+
+Show **3–5 recent accomplishments**, max.
+
+Each item includes:
+
+* Icon (green check / upward arrow / spark)
+* Short title (action-oriented)
+* Subtext (what changed)
+* Relative time (“Today”, “Yesterday”, “2 days ago”)
+
+### Example items
+
+* **Analytics connected**
+  GA4 and Search Console data successfully synced
+  *Today*
+
+* **Indexing issues resolved**
+  12 pages confirmed indexed by Google
+  *Yesterday*
+
+* **Content insights collected**
+  22 new learnings added to your knowledge base
+  *2 days ago*
+
+* **Performance improvements detected**
+  Core Web Vitals data updated across key pages
+  *3 days ago*
+
+---
+
+## DATA SOURCING (do not overengineer)
+
+Use **existing execution / task completion data**.
+
+Implementation guidance:
+
+* Pull from the same place you already record:
+
+  * completed tasks
+  * successful runs
+  * integrations enabled
+* Filter:
+
+  * status = success
+  * order by most recent
+* Limit to last 7–14 days
+* Display top 3–5 only
+
+If no accomplishments yet:
+
+* Show a soft empty state:
+
+  > “Your accomplishments will appear here as tasks complete.”
+
+---
+
+## WHAT NOT TO DO
+
+* Do NOT show failures here
+* Do NOT show raw logs
+* Do NOT show technical jargon
+* Do NOT make it clickable for now
+* Do NOT add charts or graphs
+
+This is about **emotional reinforcement**, not analytics.
+
+---
+
+## OPTIONAL (nice-to-have, not required)
+
+If easy to implement:
+
+* Small summary badge in header:
+
+  * “7 improvements completed”
+* Or:
+
+  * “Last update: Today”
+
+But keep it understated.
+
+---
+
+## ACCEPTANCE CHECKLIST
+
+Before marking done, verify:
+
+* Accomplishments section appears **between Quick Actions and Tasks**
+* It uses glass styling consistent with the rest of the dashboard
+* Items are phrased as **wins**, not system events
+* Green is used sparingly and positively
+* The section makes the dashboard feel *progressive*, not punitive
+
+If the user scrolls and thinks:
+
+> “Oh — things are actually getting better.”
+
+…then it’s working.
+
+---
+
+## GUIDING PRINCIPLE
+
+> **People don’t stay for dashboards. They stay for progress.**
+
+This section should quietly prove that Arclo is doing real work on their behalf.

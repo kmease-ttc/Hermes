@@ -56,6 +56,8 @@ import ManagedSite from "@/pages/ManagedSite";
 import SelectSite from "@/pages/SelectSite";
 import Examples from "@/pages/Examples";
 import SharedReport from "@/pages/SharedReport";
+import WebsiteReportPage from "@/pages/WebsiteReportPage";
+import DeveloperReportPage from "@/pages/DeveloperReportPage";
 import { ROUTES, buildRoute, resolveAgentSlug } from "@shared/routes";
 import { useRoute } from "wouter";
 import { useEffect } from "react";
@@ -163,6 +165,10 @@ function Router() {
       <Route path={ROUTES.HELP}><ProtectedRoute component={Help} /></Route>
       <Route path={ROUTES.DEV_PALETTE}><ProtectedRoute component={CrewPalette} /></Route>
       <Route path={ROUTES.DEV_LINEAGE}><ProtectedRoute component={DevLineage} /></Route>
+      
+      {/* Report review pages */}
+      <Route path={ROUTES.WEBSITE_REPORT}><ProtectedRoute component={WebsiteReportPage} /></Route>
+      <Route path={ROUTES.DEVELOPER_REPORT}><ProtectedRoute component={DeveloperReportPage} /></Route>
       
       {/* App home redirect */}
       <Route path={ROUTES.HOME}>

@@ -30,7 +30,8 @@ import {
   Zap,
   Users,
   FileText,
-  Code
+  Code,
+  Send
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -623,6 +624,103 @@ function MetricCardsRow() {
   );
 }
 
+function AccomplishmentsSection() {
+  const accomplishments = [
+    {
+      id: 1,
+      title: "Analytics connected",
+      description: "GA4 and Search Console data successfully synced",
+      time: "Today",
+      icon: "check"
+    },
+    {
+      id: 2,
+      title: "Performance scan completed",
+      description: "Core Web Vitals data updated across key pages",
+      time: "Yesterday",
+      icon: "trending"
+    },
+    {
+      id: 3,
+      title: "Content insights collected",
+      description: "22 new learnings added to your knowledge base",
+      time: "2 days ago",
+      icon: "spark"
+    }
+  ];
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'check': return <CheckCircle2 className="w-5 h-5 text-semantic-success" />;
+      case 'trending': return <TrendingUp className="w-5 h-5 text-semantic-success" />;
+      case 'spark': return <Zap className="w-5 h-5 text-semantic-success" />;
+      default: return <CheckCircle2 className="w-5 h-5 text-semantic-success" />;
+    }
+  };
+
+  if (accomplishments.length === 0) {
+    return (
+      <div className="mb-8" data-testid="accomplishments-section">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
+            <p className="text-sm text-muted-foreground">Progress made so far</p>
+          </div>
+        </div>
+        <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+          <CardContent className="p-6 text-center">
+            <CheckCircle2 className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-sm text-muted-foreground">
+              Your accomplishments will appear here as tasks complete.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-8" data-testid="accomplishments-section">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
+          <p className="text-sm text-muted-foreground">Progress made so far</p>
+        </div>
+        <Badge variant="outline" className="text-xs border-semantic-success/30 text-semantic-success bg-semantic-success/5">
+          {accomplishments.length} improvements completed
+        </Badge>
+      </div>
+      <Card className="bg-card/60 backdrop-blur-sm border-border/50">
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            {accomplishments.map((item, index) => (
+              <div 
+                key={item.id}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-xl transition-colors hover:bg-muted/30",
+                  index !== accomplishments.length - 1 && "border-b border-border/30 pb-3"
+                )}
+              >
+                <div className="w-10 h-10 rounded-xl bg-semantic-success/10 flex items-center justify-center flex-shrink-0">
+                  {getIcon(item.icon)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function AgentSummaryCard({ agent, enabled = true, needsConfig = false }: { agent: { serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' | 'neutral'; keyMetric: string; keyMetricValue: string; delta: string; whatChanged: string }; enabled?: boolean; needsConfig?: boolean }) {
   const crew = getCrewMember(agent.serviceId);
@@ -1152,50 +1250,53 @@ function PrimaryActionCardRow({
         </CardContent>
       </Card>
 
-      {/* Card 2: Website Report - SECONDARY */}
+      {/* Card 2: Send Website Report - SECONDARY */}
       <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-border" data-testid="card-website-report">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary" />
+              <Send className="w-5 h-5 text-primary" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">Website Report</h3>
+            <h3 className="text-base font-semibold text-foreground">Send Website Report</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Track how your site is performing today and over time. This powers your weekly email summary.
+            Review and send a clear summary of how your site is performing. This will power weekly reports.
           </p>
-          <Button 
-            variant="outline"
-            className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5"
-            data-testid="button-website-report-card"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            View Website Report
-          </Button>
+          <Link href={ROUTES.WEBSITE_REPORT}>
+            <Button 
+              variant="outline"
+              className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+              data-testid="button-website-report-card"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Review Website Report
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 
-      {/* Card 3: Developer Report - SECONDARY */}
+      {/* Card 3: Send Developer Report - SECONDARY */}
       <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-border" data-testid="card-developer-report">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-              <Code className="w-5 h-5 text-primary" />
+              <Send className="w-5 h-5 text-primary" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">Developer Report</h3>
+            <h3 className="text-base font-semibold text-foreground">Send Developer Report</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            A clean, shareable report with prioritized technical issues for your developer or agency.
+            Review and send a technical report with prioritized issues for your developer or agency.
           </p>
-          <Button 
-            variant="outline"
-            onClick={onOpenDeveloperReport}
-            className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5"
-            data-testid="button-developer-report-card"
-          >
-            <Code className="w-4 h-4 mr-2" />
-            Generate Developer Report
-          </Button>
+          <Link href={ROUTES.DEVELOPER_REPORT}>
+            <Button 
+              variant="outline"
+              className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+              data-testid="button-developer-report-card"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Review Developer Report
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>
@@ -1572,6 +1673,8 @@ export default function MissionControl() {
           onOpenDeveloperReport={() => setExportModalOpen(true)}
           isExecuting={isExecutingAll}
         />
+
+        <AccomplishmentsSection />
 
         <ConsolidatedMissionWidget
           priorities={captainData.priorities || []}
