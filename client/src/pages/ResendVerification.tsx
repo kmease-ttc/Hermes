@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function ResendVerification() {
-  const [email, setEmail] = useState("");
+  const searchString = useSearch();
+  const params = new URLSearchParams(searchString);
+  const emailFromQuery = params.get("email") || "";
+  
+  const [email, setEmail] = useState(emailFromQuery);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

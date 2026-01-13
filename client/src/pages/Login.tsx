@@ -68,7 +68,7 @@ export default function Login() {
                       {showResendLink && (
                         <>
                           {" "}
-                          <a href="/resend-verification" className="underline hover:opacity-80">
+                          <a href={`/resend-verification?email=${encodeURIComponent(email)}`} className="underline hover:opacity-80">
                             Resend verification email
                           </a>
                         </>
