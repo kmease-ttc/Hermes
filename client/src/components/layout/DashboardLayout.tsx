@@ -10,7 +10,6 @@ import {
   X,
   Globe,
   ChevronDown,
-  ChevronRight,
   Plus,
   Check,
   Link2,
@@ -19,7 +18,6 @@ import {
   Users,
   Trophy
 } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { USER_FACING_AGENTS, AGENTS } from "@/config/agents";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,8 +95,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     addSiteMutation.mutate({ displayName: newSiteName.trim(), baseUrl: url });
   };
 
-  const [crewExpanded, setCrewExpanded] = useState(true);
-  
   const navItems = [
     { href: ROUTES.DASHBOARD, label: "Mission Control", icon: LayoutDashboard },
     { href: ROUTES.ACHIEVEMENTS, label: "Achievements", icon: Trophy },
@@ -212,89 +208,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </Link>
           
-          {/* Add Crew - expandable with crew members */}
-          <Collapsible open={crewExpanded} onOpenChange={setCrewExpanded}>
-            <CollapsibleTrigger asChild>
-              <div 
-                className={cn(
-                  "flex items-center justify-between rounded-md transition-colors group cursor-pointer",
-                  location.startsWith(ROUTES.AGENTS) || crewExpanded
-                    ? "bg-primary/10" 
-                    : "hover:bg-muted"
-                )}
-                data-testid="button-toggle-crew"
-              >
-                <div 
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors",
-                    location.startsWith(ROUTES.AGENTS) || crewExpanded
-                      ? "text-primary" 
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
-                >
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Crew</span>
-                </div>
-                <div
-                  className={cn(
-                    "px-3 py-2.5 transition-colors shrink-0",
-                    location.startsWith(ROUTES.AGENTS) || crewExpanded
-                      ? "text-primary" 
-                      : "text-muted-foreground/60 group-hover:text-foreground"
-                  )}
-                >
-                  <ChevronRight className={cn("w-4 h-4 transition-transform", crewExpanded && "rotate-90")} />
-                </div>
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
-              {hiredCrewMembers.map((member) => {
-                const agentRoute = buildRoute.agent(member.service_id);
-                const isActive = location === agentRoute;
-                return (
-                  <Link key={member.service_id} href={agentRoute}>
-                    <div 
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer",
-                        isActive 
-                          ? "bg-primary/10 text-primary" 
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                      data-testid={`link-nav-crew-${member.service_id}`}
-                    >
-                      {member.avatar ? (
-                        <img src={member.avatar} alt={member.nickname} className="w-5 h-5 object-contain" />
-                      ) : (
-                        <div 
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                          style={{ backgroundColor: member.color }}
-                        >
-                          {member.nickname.slice(0, 1)}
-                        </div>
-                      )}
-                      <span className="truncate">{member.nickname}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-              
-              {/* Hire Crew link */}
-              <Link href={ROUTES.CREW}>
-                <div 
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer border border-dashed border-primary/30 hover:border-primary hover:bg-primary/5",
-                    location === ROUTES.CREW
-                      ? "bg-primary/10 text-primary border-primary" 
-                      : "text-primary/70 hover:text-primary"
-                  )}
-                  data-testid="link-nav-hire-crew"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="truncate">{hiredCrewMembers.length > 0 ? "Hire more crew" : "Hire Crew"}</span>
-                </div>
-              </Link>
-            </CollapsibleContent>
-          </Collapsible>
+          {/* Crew - simple nav item */}
+          <Link href={ROUTES.CREW}>
+            <div 
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                location === ROUTES.CREW || location.startsWith(ROUTES.AGENTS)
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+              data-testid="link-nav-crew"
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="truncate">Crew</span>
+            </div>
+          </Link>
           
           {navItems.slice(1).map((item) => {
             const Icon = item.icon;
