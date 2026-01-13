@@ -311,7 +311,7 @@ export default function HowItWorks() {
               <h2 className="text-3xl font-bold text-[#020617] mb-8 tracking-tight">
                 Want to be completely hands-off?
               </h2>
-              <Link href={ROUTES.LANDING}>
+              <Link href={ROUTES.SCAN}>
                 <button 
                   className="inline-flex items-center justify-center h-14 px-12 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 gap-3 mx-auto focus:outline-none focus:ring-4 focus:ring-violet-200"
                   style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}

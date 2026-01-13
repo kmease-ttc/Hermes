@@ -115,7 +115,7 @@ export default function UseCases() {
               <h2 className="text-2xl font-bold text-slate-950 mb-6 tracking-tight">
                 Ready to automate your SEO?
               </h2>
-              <Link href={ROUTES.LANDING}>
+              <Link href={ROUTES.SCAN}>
                 <BrandButton variant="primary" size="lg" icon={Sparkles} data-testid="button-run-scan">
                   Fix my SEO automatically
                 </BrandButton>
