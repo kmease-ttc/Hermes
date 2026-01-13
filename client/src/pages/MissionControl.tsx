@@ -625,39 +625,64 @@ function MetricCardsRow() {
 }
 
 function AccomplishmentsSection() {
-  // Business-centric accomplishments - prioritized by value impact
-  // Order: Revenue/Leads > Traffic/Visibility > Risk Reduction > System Setup
+  // Win-focused accomplishments with proof chips and value lines
   const accomplishments = [
     {
       id: 1,
-      title: "+2 new leads detected this week",
-      description: "Conversion tracking validated across key landing pages",
+      headline: "+2 leads captured",
+      whyItMatters: "More patients found and contacted you this week.",
+      proofChips: ["Tracked across 4 landing pages", "Conversion tracking verified"],
       time: "Today",
-      icon: "trending"
+      iconType: "leads",
+      iconColor: "emerald"
     },
     {
       id: 2,
-      title: "Search visibility improved",
-      description: "3 target keywords moved up in search results",
+      headline: "3 keywords moved up",
+      whyItMatters: "Your clinic is showing up higher for high-intent searches.",
+      proofChips: ["Best move: +4 positions", "Top keyword: 'psychiatrist orlando'"],
       time: "Yesterday",
-      icon: "trending"
+      iconType: "rank",
+      iconColor: "purple"
     },
     {
       id: 3,
-      title: "Page performance issues identified early",
-      description: "Core Web Vitals monitored across high-impact pages",
+      headline: "Traffic loss prevented",
+      whyItMatters: "Performance issues caught before they hurt conversions.",
+      proofChips: ["LCP flagged on 2 pages", "Core Web Vitals monitored"],
       time: "2 days ago",
-      icon: "check"
+      iconType: "shield",
+      iconColor: "amber"
     }
   ];
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'check': return <CheckCircle2 className="w-5 h-5 text-semantic-success" />;
-      case 'trending': return <TrendingUp className="w-5 h-5 text-semantic-success" />;
-      case 'spark': return <Zap className="w-5 h-5 text-semantic-success" />;
-      default: return <CheckCircle2 className="w-5 h-5 text-semantic-success" />;
-    }
+  // This week's impact summary
+  const impactSummary = [
+    { label: "Leads", value: "+2", icon: <Users className="w-3.5 h-3.5" /> },
+    { label: "Keywords up", value: "+3", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { label: "Issues prevented", value: "5", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  ];
+
+  const getIcon = (type: string, color: string) => {
+    const colorClasses = {
+      emerald: "text-emerald-500",
+      purple: "text-purple-500",
+      amber: "text-amber-500",
+    };
+    const bgClasses = {
+      emerald: "bg-emerald-500/15 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]",
+      purple: "bg-purple-500/15 shadow-[0_0_12px_-3px_rgba(139,92,246,0.4)]",
+      amber: "bg-amber-500/15 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]",
+    };
+    const iconClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.emerald;
+    const bgClass = bgClasses[color as keyof typeof bgClasses] || bgClasses.emerald;
+
+    const icons: Record<string, JSX.Element> = {
+      leads: <Users className={cn("w-5 h-5", iconClass)} />,
+      rank: <TrendingUp className={cn("w-5 h-5", iconClass)} />,
+      shield: <CheckCircle2 className={cn("w-5 h-5", iconClass)} />,
+    };
+    return { icon: icons[type] || icons.leads, bgClass };
   };
 
   if (accomplishments.length === 0) {
@@ -665,8 +690,8 @@ function AccomplishmentsSection() {
       <div className="mb-8" data-testid="accomplishments-section">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
-            <p className="text-sm text-muted-foreground">Business wins delivered</p>
+            <h2 className="text-lg font-semibold text-foreground">Your Wins</h2>
+            <p className="text-sm text-muted-foreground">Business improvements delivered</p>
           </div>
         </div>
         <Card className="bg-card/60 backdrop-blur-sm border-border/50">
@@ -683,40 +708,93 @@ function AccomplishmentsSection() {
 
   return (
     <div className="mb-8" data-testid="accomplishments-section">
+      {/* Header with celebratory badge */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Accomplishments</h2>
-          <p className="text-sm text-muted-foreground">Business wins delivered</p>
+          <h2 className="text-lg font-semibold text-foreground">Your Wins</h2>
+          <p className="text-sm text-muted-foreground">Business improvements this week</p>
         </div>
-        <Badge variant="outline" className="text-xs border-semantic-success/30 text-semantic-success bg-semantic-success/5">
-          {accomplishments.length} wins this week
+        <Badge className="text-xs bg-semantic-success/10 text-semantic-success border-semantic-success/30 flex items-center gap-1.5">
+          <Zap className="w-3 h-3" />
+          Momentum: {accomplishments.length} wins this week
         </Badge>
       </div>
+
       <Card className="bg-card/60 backdrop-blur-sm border-border/50">
-        <CardContent className="p-4">
-          <div className="space-y-3">
-            {accomplishments.map((item, index) => (
-              <div 
-                key={item.id}
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-xl transition-colors hover:bg-muted/30",
-                  index !== accomplishments.length - 1 && "border-b border-border/30 pb-3"
-                )}
-              >
-                <div className="w-10 h-10 rounded-xl bg-semantic-success/10 flex items-center justify-center flex-shrink-0">
-                  {getIcon(item.icon)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
+        <CardContent className="p-5">
+          {/* This Week's Impact Summary */}
+          <div className="mb-5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">This Week's Impact</p>
+            <div className="flex gap-3">
+              {impactSummary.map((item, idx) => (
+                <div 
+                  key={idx}
+                  className="flex-1 bg-muted/40 rounded-xl p-3 flex items-center gap-2"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-semantic-success/10 flex items-center justify-center text-semantic-success">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground leading-none">{item.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{item.label}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          <Separator className="mb-5" />
+
+          {/* Win Cards */}
+          <div className="space-y-4">
+            {accomplishments.map((item) => {
+              const { icon, bgClass } = getIcon(item.iconType, item.iconColor);
+              return (
+                <div 
+                  key={item.id}
+                  className="p-4 rounded-xl bg-muted/30 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", bgClass)}>
+                      {icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="font-semibold text-foreground">{item.headline}</p>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{item.time}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{item.whyItMatters}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.proofChips.map((chip, idx) => (
+                          <Badge 
+                            key={idx} 
+                            variant="outline" 
+                            className="text-[10px] px-2 py-0.5 bg-background/50 text-muted-foreground border-border/50 font-normal"
+                          >
+                            {chip}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <Separator className="my-5" />
+
+          {/* Next Win Teaser */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <Target className="w-4 h-4 text-purple-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Next win:</span> Complete 'Unlock Analytics Insights' to track traffic and conversion trends.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-purple-500/50" />
           </div>
         </CardContent>
       </Card>
