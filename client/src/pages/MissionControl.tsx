@@ -2203,13 +2203,13 @@ export default function MissionControl() {
           isRunningDiagnostics={runDiagnostics.isPending}
         />
 
+        <AccomplishmentsSection />
+
         <TasksOverviewSection 
           priorities={captainData.priorities || []}
           totalOpenTasks={totalOpenMissions}
           onReview={handleReviewMission}
         />
-
-        <AccomplishmentsSection />
 
 
         {showValidationPanel && validationResults && (
