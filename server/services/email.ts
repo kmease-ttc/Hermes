@@ -24,7 +24,11 @@ function getBaseUrl(): string {
   if (process.env.NODE_ENV === 'production') {
     return process.env.APP_BASE_URL || 'https://arclo.io';
   }
-  return process.env.DEV_BASE_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+  // Use REPLIT_DEV_DOMAIN for development (the webview URL)
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  return process.env.DEV_BASE_URL || 'https://arclo.io';
 }
 
 export async function sendVerificationEmail(email: string, token: string, displayName?: string): Promise<boolean> {
