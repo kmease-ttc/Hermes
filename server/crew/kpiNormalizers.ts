@@ -13,6 +13,7 @@ function normalizeScottyOutput(crewId: string, siteId: string, response: any): K
   let technicalHealthScore = 100;
   
   const crawlSummary = response?.crawl_summary || {};
+  const indexability = response?.indexability || {};
   const issues = response?.issues || [];
   const kpisFromWorker = response?.kpis || {};
   
@@ -39,12 +40,27 @@ function normalizeScottyOutput(crewId: string, siteId: string, response: any): K
     measuredAt: new Date(),
   });
   
-  if (kpisFromWorker.pages_crawled !== undefined) {
+  const indexCoverage = kpisFromWorker.index_coverage 
+    ?? indexability.coverage_percent 
+    ?? crawlSummary.index_coverage 
+    ?? null;
+  if (indexCoverage !== null) {
+    kpis.push({
+      siteId,
+      crewId,
+      metricKey: "indexCoverage",
+      value: indexCoverage,
+      unit: "percent",
+      measuredAt: new Date(),
+    });
+  }
+  
+  if (kpisFromWorker.pages_crawled !== undefined || crawlSummary.pages_crawled !== undefined) {
     kpis.push({
       siteId,
       crewId,
       metricKey: "tech.pages_crawled",
-      value: kpisFromWorker.pages_crawled,
+      value: kpisFromWorker.pages_crawled ?? crawlSummary.pages_crawled,
       unit: "count",
       measuredAt: new Date(),
     });
