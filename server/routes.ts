@@ -6657,6 +6657,21 @@ When answering:
         logger.warn("API", "CrewStatusService failed, falling back to inline score computation", { error: (err as Error).message });
       }
       
+      // Fetch latest crew KPIs from lineage tables
+      const allCrewKpis = await Promise.all(
+        crewIds.map(async crewId => {
+          try {
+            const kpis = await storage.getLatestCrewKpis(targetSiteId, crewId);
+            return { crewId, kpis };
+          } catch {
+            return { crewId, kpis: [] };
+          }
+        })
+      );
+      const crewKpisMap = Object.fromEntries(
+        allCrewKpis.map(({ crewId, kpis }) => [crewId, kpis])
+      );
+      
       const crewSummaries = crewIds.map(crewId => {
         const crew = CREW[crewId];
         const crewMissions = getMissionsForCrew(crewId);
@@ -6743,6 +6758,11 @@ When answering:
         const cachedStatus = crewStatusMap[crewId];
         const scoreData = cachedStatus?.score ?? { value: null, status: 'unknown' as const, updatedAt: new Date().toISOString() };
         
+        // Get lineage KPI data if available
+        const lineageKpis = crewKpisMap[crewId] || [];
+        const primaryKpi = lineageKpis.find(k => k.metricKey === crew.primaryMetricId);
+        const realKpiValue = primaryKpi?.value ?? null;
+        
         // Missions data
         const thisWeekCompletions = crewCompletionsAll.filter(c => 
           new Date(c.createdAt) >= oneWeekAgo
@@ -6764,9 +6784,9 @@ When answering:
           },
           lastCompletedAt: lastCompleted?.createdAt || null,
           status,
-          // Primary metric for display
+          // Primary metric for display (real KPI data takes precedence over mission-based score)
           primaryMetric: scoreData.value !== null ? 'Health Score' : 'Completion Rate',
-          primaryMetricValue: scoreData.value,
+          primaryMetricValue: realKpiValue ?? scoreData.value,
           deltaPercent,
           deltaLabel: scoreData.value !== null
             ? (scoreData.value >= 80 ? 'Healthy' : scoreData.value >= 50 ? 'Needs work' : 'Critical')
