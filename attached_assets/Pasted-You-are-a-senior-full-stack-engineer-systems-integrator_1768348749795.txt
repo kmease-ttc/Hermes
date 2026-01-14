@@ -1,0 +1,296 @@
+You are a senior full-stack engineer + systems integrator. The product has a **lineage/identity problem**: the same “thing” (e.g., Scotty) exists in multiple places (worker app, Bitwarden secret JSON, Integrations UI, Crew manifest, Mission Control card, and the Scotty dashboard page), but the platform treats them as different entities. Result: data shows on the Scotty page but does not propagate to Mission Control, reports use placeholder data, and Integrations shows failures even when the worker works.
+
+Your job: implement a **single canonical identity + contract** per agent and wire the entire app to that contract. Then apply the pattern across all 11 agents.
+
+This is not a redesign request. This is **data lineage + integration architecture**.
+
+---
+
+# 0) Definition: what “done” means
+
+For Scotty (and then all agents):
+
+* There is exactly one canonical identifier: `crewId = "scotty"`.
+* The worker, secrets/config, integrations status, ingestion pipeline, dashboards, and reports all reference that same `crewId`.
+* If the worker is reachable and returns valid outputs, Integrations shows READY and Mission Control + reports show real metrics (not placeholder).
+* If the worker is not reachable or has missing outputs, Integrations shows the same failure reason and dashboards degrade gracefully with “no data yet” (but no fake placeholder values).
+
+---
+
+# 1) Create ONE canonical registry (single source of truth)
+
+Create (or consolidate into) a single file used everywhere:
+
+`shared/crew/crewRegistry.ts` (or `shared/crew/registry.ts`)
+
+Each entry must include **all lineage keys**:
+
+```ts
+export type CrewId =
+  | "scotty" | "speedster" | "sentinel" | "hemingway" | "atlas"
+  | "draper" | "socrates" | "popular" | "lookout" | "beacon" | "natasha";
+
+export type CrewContract = {
+  crewId: CrewId;                // canonical ID: used across app
+  displayName: string;           // “Scotty”
+  category: string;              // “Technical SEO”
+  color: string;                 // agent color token
+  worker: {
+    baseUrlConfigKey: string;    // e.g. "SEO_TECHNICAL_CRAWLER_BASE_URL"
+    apiKeySecretKey: string;     // e.g. "SEO_TECHNICAL_CRAWLER_API_KEY"
+    healthPath: string;          // e.g. "/api/health"
+    outputsContract: string[];   // list of required outputs (see below)
+  };
+  integration: {
+    integrationId: string;       // stable key for Integrations UI (often same as crewId)
+  };
+  dashboards: {
+    route: string;               // e.g. "/app/agents/scotty"
+    primaryKpi: {
+      id: string;                // "crawlHealth"
+      label: string;             // "CrawlHealth"
+      unit?: string;             // "%"
+    };
+  };
+};
+```
+
+Non-negotiable: every place in the codebase that currently uses “SEO_TECHNICAL_CRAWLER”, “crawl_render”, “technical”, etc. must resolve through this registry.
+
+---
+
+# 2) Normalize configuration/secret reading (stop duplicating keys)
+
+Create a single “integration config resolver” on the server:
+
+`server/integrations/getCrewIntegrationConfig.ts`
+
+Given a `crewId`, it returns:
+
+* resolved base URL (from configs)
+* resolved API key (from secrets)
+* health endpoint
+* list of expected outputs
+
+This function must be used by:
+
+* Integrations page API
+* Mission Control metrics ingestion
+* Report generation
+* Any “Run Diagnostics” logic
+
+Do not allow code paths to read secrets/config directly in multiple places.
+
+---
+
+# 3) Define “Outputs Contract” per crew (this fixes Integrations vs reality)
+
+Right now Integrations says “missing” but Scotty page has data → your outputs contract is inconsistent.
+
+For each crew, define **exact required outputs** (and optional outputs) in the registry.
+
+Example for Scotty (Technical SEO):
+
+* required outputs:
+
+  * `crawl_summary`
+  * `issues`
+  * `kpis`
+* optional:
+
+  * `render_validation`
+  * `indexability_breakdown`
+
+Then implement a canonical checker:
+
+`server/integrations/validateCrewOutputs.ts`
+
+Input: worker response payload(s)
+Output: { ok, missing: string[], summary }
+
+This same checker must drive:
+
+* Integrations “Missing outputs” column
+* “Worker connected” status
+* Whether Mission Control is allowed to show real KPI vs “no data yet”
+
+---
+
+# 4) Create a single ingestion pipeline (worker → DB → API)
+
+You need durable storage so the dashboards don’t depend on the live worker response or placeholder data.
+
+Implement this pattern:
+
+### A) Run worker and store results
+
+Endpoint:
+`POST /api/crew/:crewId/run`
+
+Flow:
+
+1. Resolve config via getCrewIntegrationConfig(crewId)
+2. Call worker `/api/run` (or crew-specific run endpoint)
+3. Validate outputs via validateCrewOutputs
+4. Persist results into DB using a consistent schema
+
+### B) DB schema: normalized crew runs
+
+Create tables (drizzle):
+
+* `crew_runs` (run metadata)
+
+  * id, siteId, crewId, status, startedAt, completedAt, summary, missingOutputs(json)
+* `crew_kpis`
+
+  * runId, siteId, crewId, kpiId, value, unit, trendDelta, measuredAt
+* `crew_findings`
+
+  * runId, siteId, crewId, severity, title, description, meta(json)
+
+### C) Read APIs for UI
+
+* `GET /api/crew/:crewId/overview?siteId=...`
+
+  * returns latest run + primary KPI + trend + tasks count + top findings
+* `GET /api/dashboard/mission-control?siteId=...`
+
+  * aggregates latest KPIs + tasks counts for the Capabilities & Performance grid
+* `GET /api/reports/business?siteId=...`
+* `GET /api/reports/technical?siteId=...`
+
+All these must read from DB, not from placeholder constants.
+
+---
+
+# 5) Make Integrations page a truth mirror of the same pipeline
+
+Integrations should show:
+
+* reachable status (health check)
+* validated outputs contract status
+* last run timestamp + runtime
+* missing outputs based on validateCrewOutputs
+
+Implement Integrations backend as:
+`GET /api/integrations/status`
+
+For each crew in registry:
+
+* resolve config
+* run health check
+* look up latest run from DB
+* compute readiness:
+
+  * READY if reachable AND (no required outputs missing OR at least one successful run exists with full required outputs)
+  * NEEDS_CONFIG if missing base URL or key
+  * BLOCKED if explicitly disabled
+  * STALE if last run too old (optional)
+
+This ensures Integrations cannot claim failure if the dashboards show success (and vice versa).
+
+---
+
+# 6) Fix the “Scotty page shows data but Mission Control doesn’t” issue
+
+This is almost certainly because the Scotty page is reading from one source (direct worker call or local mock) while Mission Control reads from another (DB placeholder, or different keys).
+
+Make every crew dashboard page fetch:
+`GET /api/crew/:crewId/overview`
+
+No direct worker calls from client pages.
+
+Also ensure the KPI shown in Mission Control uses the same `primaryKpi.id` defined in registry. If Scotty’s primary KPI is `crawlHealth`, the overview endpoint must populate it into `crew_kpis` every run.
+
+---
+
+# 7) Remove placeholder data and enforce “no fake metrics”
+
+Rule:
+
+* If no successful run data exists in DB, show:
+
+  * “No data yet — run diagnostics”
+  * sample values only for LOCKED crews (clearly labeled “Sample”)
+* Never show placeholder values for active crews.
+
+Implement:
+
+* `isPlaceholder: true/false` on any displayed KPI value
+* UI refuses to render placeholder for `status=Active`
+
+---
+
+# 8) Migration plan: apply to all 11 agents
+
+Do Scotty first end-to-end.
+
+Then for each remaining crewId:
+
+1. Add entry to registry with:
+
+   * baseUrlConfigKey
+   * apiKeySecretKey
+   * outputsContract
+   * primaryKpi
+2. Update worker adapter:
+
+   * a per-crew “normalizeWorkerResponseToKpisAndFindings()”
+3. Confirm:
+
+   * POST /api/crew/:crewId/run stores data
+   * /api/crew/:crewId/overview renders
+   * Integrations readiness matches
+
+Create a checklist script:
+`scripts/verify_lineage.ts`
+
+It loops through all crewIds and prints:
+
+* config present?
+* secret present?
+* worker reachable?
+* outputs valid?
+* DB has latest run?
+* overview endpoint returns primary KPI?
+
+Fail the script if any crew fails.
+
+---
+
+# 9) Concrete acceptance tests (Scotty)
+
+After implementing:
+
+* Integrations shows Scotty = READY (or Needs Config with exact missing key)
+* Running Scotty creates a `crew_runs` row + KPI rows + findings rows
+* Mission Control card for Scotty shows the real KPI (not “Completion Rate” placeholder)
+* Scotty dashboard page shows the same KPI and findings as Mission Control
+* Business report and Technical report include Scotty metrics/findings when available
+
+---
+
+# 10) Deliverables (must provide in your final response)
+
+* The canonical registry file path + snippet of Scotty entry
+* The integration config resolver function path
+* The validate outputs contract function path
+* DB tables added/updated
+* The three key endpoints:
+
+  * /api/crew/:crewId/run
+  * /api/crew/:crewId/overview
+  * /api/integrations/status
+* Proof: screenshot or log showing Scotty readiness + Mission Control KPI pulling from real data
+
+---
+
+# Guiding principle
+
+Stop treating “worker app”, “secret JSON”, “integration row”, “crew card”, “dashboard page” as separate objects.
+
+They are all the same object:
+
+> `crewId`
+
+Everything must resolve through that single identity and contract.

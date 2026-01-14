@@ -214,6 +214,14 @@ export interface CrewScoreMetric {
   source: string;
 }
 
+export interface WorkerContract {
+  baseUrlEnvKey: string;
+  apiKeySecretKey: string;
+  healthPath: string;
+  runPath: string;
+  requiredOutputs: string[];
+}
+
 export interface CrewDefinition {
   crewId: string;
   nickname: string;
@@ -225,6 +233,9 @@ export interface CrewDefinition {
   primaryMetricId: MetricKey | null;
   dependencies: CrewDependencies;
   scoreMetric: CrewScoreMetric | null;
+  worker?: WorkerContract;
+  integrationId: string;
+  dashboardRoute: string;
 }
 
 function deriveTheme(color: string): CrewTheme {
@@ -253,6 +264,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'ga4.sessions',
     dependencies: { required: ['ga4', 'gsc'], optional: [] },
     scoreMetric: { id: 'health_score', label: 'Health Score', source: 'issues' },
+    worker: {
+      baseUrlEnvKey: 'GOOGLE_DATA_CONNECTOR_BASE_URL',
+      apiKeySecretKey: 'GOOGLE_DATA_CONNECTOR_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['ga4_summary', 'gsc_summary', 'kpis'],
+    },
+    integrationId: 'popular',
+    dashboardRoute: '/app/agents/popular',
   },
   speedster: {
     crewId: 'speedster',
@@ -265,6 +285,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'vitals.performance_score',
     dependencies: { required: ['pagespeed'], optional: [] },
     scoreMetric: { id: 'cwv_pass_rate', label: 'CWV Pass Rate', source: 'pagespeed' },
+    worker: {
+      baseUrlEnvKey: 'CORE_WEB_VITALS_BASE_URL',
+      apiKeySecretKey: 'CORE_WEB_VITALS_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['vitals_summary', 'issues', 'kpis'],
+    },
+    integrationId: 'speedster',
+    dashboardRoute: '/app/agents/speedster',
   },
   lookout: {
     crewId: 'lookout',
@@ -277,6 +306,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'serp.keywords_top10',
     dependencies: { required: ['serp_api'], optional: ['gsc'] },
     scoreMetric: { id: 'ranking_coverage', label: 'Ranking Coverage', source: 'serp' },
+    worker: {
+      baseUrlEnvKey: 'SERP_INTEL_BASE_URL',
+      apiKeySecretKey: 'SERP_INTEL_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['serp_summary', 'rankings', 'kpis'],
+    },
+    integrationId: 'lookout',
+    dashboardRoute: '/app/agents/lookout',
   },
   scotty: {
     crewId: 'scotty',
@@ -289,6 +327,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'tech.errors',
     dependencies: { required: ['crawler'], optional: ['gsc'] },
     scoreMetric: { id: 'technical_health', label: 'Technical Health', source: 'crawler' },
+    worker: {
+      baseUrlEnvKey: 'CRAWL_RENDER_BASE_URL',
+      apiKeySecretKey: 'CRAWL_RENDER_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['crawl_summary', 'issues', 'kpis'],
+    },
+    integrationId: 'scotty',
+    dashboardRoute: '/app/agents/scotty',
   },
   beacon: {
     crewId: 'beacon',
@@ -301,6 +348,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'links.domain_authority',
     dependencies: { required: ['backlink_api'], optional: [] },
     scoreMetric: { id: 'domain_authority', label: 'Domain Authority', source: 'backlinks' },
+    worker: {
+      baseUrlEnvKey: 'BACKLINK_AUTHORITY_BASE_URL',
+      apiKeySecretKey: 'BACKLINK_AUTHORITY_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['backlink_summary', 'issues', 'kpis'],
+    },
+    integrationId: 'beacon',
+    dashboardRoute: '/app/agents/beacon',
   },
   sentinel: {
     crewId: 'sentinel',
@@ -313,6 +369,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'content.decay_signals',
     dependencies: { required: ['ga4'], optional: ['gsc'] },
     scoreMetric: { id: 'content_freshness', label: 'Content Freshness', source: 'decay' },
+    worker: {
+      baseUrlEnvKey: 'CONTENT_DECAY_BASE_URL',
+      apiKeySecretKey: 'CONTENT_DECAY_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['decay_summary', 'issues', 'kpis'],
+    },
+    integrationId: 'sentinel',
+    dashboardRoute: '/app/agents/sentinel',
   },
   natasha: {
     crewId: 'natasha',
@@ -325,6 +390,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'competitive.gaps',
     dependencies: { required: ['serp_api'], optional: ['backlink_api'] },
     scoreMetric: { id: 'competitive_position', label: 'Competitive Position', source: 'competitive' },
+    worker: {
+      baseUrlEnvKey: 'COMPETITIVE_SNAPSHOT_BASE_URL',
+      apiKeySecretKey: 'COMPETITIVE_SNAPSHOT_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['competitive_summary', 'gaps', 'kpis'],
+    },
+    integrationId: 'natasha',
+    dashboardRoute: '/app/agents/natasha',
   },
   draper: {
     crewId: 'draper',
@@ -337,6 +411,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'ads.conversions',
     dependencies: { required: ['google_ads'], optional: ['ga4'] },
     scoreMetric: { id: 'roas', label: 'ROAS', source: 'google_ads' },
+    worker: {
+      baseUrlEnvKey: 'GOOGLE_ADS_CONNECTOR_BASE_URL',
+      apiKeySecretKey: 'GOOGLE_ADS_CONNECTOR_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['ads_summary', 'issues', 'kpis'],
+    },
+    integrationId: 'draper',
+    dashboardRoute: '/app/agents/draper',
   },
   hemingway: {
     crewId: 'hemingway',
@@ -349,6 +432,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: null,
     dependencies: { required: ['openai'], optional: ['seo_kbase'] },
     scoreMetric: { id: 'content_quality_score', label: 'Content Quality Score', source: 'hemingway' },
+    worker: {
+      baseUrlEnvKey: 'CONTENT_GENERATOR_BASE_URL',
+      apiKeySecretKey: 'CONTENT_GENERATOR_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['content_summary', 'generated_content'],
+    },
+    integrationId: 'hemingway',
+    dashboardRoute: '/app/agents/hemingway',
   },
   socrates: {
     crewId: 'socrates',
@@ -361,6 +453,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'kb.insights_written',
     dependencies: { required: ['kbase_api'], optional: [] },
     scoreMetric: { id: 'knowledge_coverage', label: 'Knowledge Coverage', source: 'kbase' },
+    worker: {
+      baseUrlEnvKey: 'SEO_KBASE_BASE_URL',
+      apiKeySecretKey: 'SEO_KBASE_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['kbase_summary', 'insights', 'kpis'],
+    },
+    integrationId: 'socrates',
+    dashboardRoute: '/app/agents/socrates',
   },
   atlas: {
     crewId: 'atlas',
@@ -373,6 +474,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: 'ai.coverage_score',
     dependencies: { required: ['openai'], optional: ['crawler', 'seo_kbase'] },
     scoreMetric: { id: 'ai_coverage_score', label: 'AI Coverage Score', source: 'ai_optimization' },
+    worker: {
+      baseUrlEnvKey: 'AI_OPTIMIZATION_BASE_URL',
+      apiKeySecretKey: 'AI_OPTIMIZATION_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['ai_summary', 'recommendations', 'kpis'],
+    },
+    integrationId: 'atlas',
+    dashboardRoute: '/app/agents/atlas',
   },
   major_tom: {
     crewId: 'major_tom',
@@ -385,6 +495,15 @@ export const CREW: Record<string, CrewDefinition> = {
     primaryMetricId: null,
     dependencies: { required: [], optional: [] },
     scoreMetric: null,
+    worker: {
+      baseUrlEnvKey: 'ORCHESTRATOR_BASE_URL',
+      apiKeySecretKey: 'ORCHESTRATOR_API_KEY',
+      healthPath: '/api/health',
+      runPath: '/api/run',
+      requiredOutputs: ['orchestration_summary'],
+    },
+    integrationId: 'major_tom',
+    dashboardRoute: '/app/mission-control',
   },
 } as const;
 

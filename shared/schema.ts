@@ -2884,3 +2884,67 @@ export const insertSiteAssetSchema = createInsertSchema(siteAssets).omit({
 });
 export type InsertSiteAsset = z.infer<typeof insertSiteAssetSchema>;
 export type SiteAsset = typeof siteAssets.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREW IDENTITY SYSTEM TABLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Crew run results - tracks each worker execution
+export const crewRuns = pgTable("crew_runs", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  crewId: text("crew_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, running, completed, failed
+  summary: text("summary"),
+  missingOutputs: jsonb("missing_outputs").$type<string[]>(),
+  rawPayload: jsonb("raw_payload"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCrewRunSchema = createInsertSchema(crewRuns).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCrewRun = z.infer<typeof insertCrewRunSchema>;
+export type CrewRun = typeof crewRuns.$inferSelect;
+
+// Crew KPIs - normalized metric values from runs
+export const crewKpis = pgTable("crew_kpis", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => crewRuns.id),
+  siteId: text("site_id").notNull(),
+  crewId: text("crew_id").notNull(),
+  metricKey: text("metric_key").notNull(),
+  value: real("value"),
+  unit: text("unit"),
+  trendDelta: real("trend_delta"),
+  measuredAt: timestamp("measured_at").defaultNow().notNull(),
+});
+
+export const insertCrewKpiSchema = createInsertSchema(crewKpis).omit({
+  id: true,
+});
+export type InsertCrewKpi = z.infer<typeof insertCrewKpiSchema>;
+export type CrewKpi = typeof crewKpis.$inferSelect;
+
+// Crew findings - issues/recommendations from runs
+export const crewFindings = pgTable("crew_findings", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => crewRuns.id),
+  siteId: text("site_id").notNull(),
+  crewId: text("crew_id").notNull(),
+  severity: text("severity").notNull(), // critical, high, medium, low, info
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category"),
+  meta: jsonb("meta"),
+  surfacedAt: timestamp("surfaced_at").defaultNow().notNull(),
+});
+
+export const insertCrewFindingSchema = createInsertSchema(crewFindings).omit({
+  id: true,
+});
+export type InsertCrewFinding = z.infer<typeof insertCrewFindingSchema>;
+export type CrewFinding = typeof crewFindings.$inferSelect;
