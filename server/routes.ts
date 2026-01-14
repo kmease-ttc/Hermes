@@ -57,6 +57,9 @@ import governanceRoutes from './routes/governance';
 import { generatedSites, siteGenerationJobs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { enqueueJob } from "./siteGeneration/worker";
+import { getCrewIntegrationConfig, getAllCrewConfigs } from "./integrations/getCrewIntegrationConfig";
+import { validateCrewOutputs } from "./integrations/validateCrewOutputs";
+import { CREW } from "@shared/registry";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -861,6 +864,266 @@ export async function registerRoutes(
     } catch (error) {
       logger.error("Popular", "Readiness check error", { error });
       res.status(500).json({ ok: false, error: "Failed to check Popular readiness" });
+    }
+  });
+
+  // POST /api/crew/:crewId/run - Execute a crew worker and store results
+  app.post("/api/crew/:crewId/run", async (req, res) => {
+    try {
+      const { crewId } = req.params;
+      const { siteId = "default", inputs = {} } = req.body;
+      
+      // Get crew integration config
+      let config;
+      try {
+        config = getCrewIntegrationConfig(crewId);
+      } catch (err) {
+        return res.status(404).json({ ok: false, error: `Unknown crew: ${crewId}` });
+      }
+      
+      // Check if crew is ready
+      if (config.configStatus === "no_worker") {
+        return res.status(400).json({ 
+          ok: false, 
+          error: "Crew has no worker contract defined",
+          crewId,
+        });
+      }
+      
+      if (config.configStatus === "needs_config") {
+        return res.status(400).json({ 
+          ok: false, 
+          error: "Crew worker is not configured",
+          crewId,
+          missingConfig: config.missingConfig,
+        });
+      }
+      
+      // Create the run record
+      const crewRun = await storage.createCrewRun({
+        siteId,
+        crewId,
+        status: "running",
+        triggeredBy: "api",
+        startedAt: new Date(),
+      });
+      
+      try {
+        // Call the worker endpoint
+        const workerResponse = await fetch(config.runEndpoint!, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({ siteId, inputs }),
+        });
+        
+        if (!workerResponse.ok) {
+          const errorText = await workerResponse.text();
+          await storage.updateCrewRun(crewRun.id, {
+            status: "failed",
+            completedAt: new Date(),
+            errorMessage: `Worker error: ${workerResponse.status} - ${errorText}`,
+          });
+          return res.status(502).json({ 
+            ok: false, 
+            error: "Worker request failed",
+            runId: crewRun.id,
+            details: errorText,
+          });
+        }
+        
+        const workerData = await workerResponse.json();
+        
+        // Validate outputs
+        const validation = validateCrewOutputs(crewId, workerData);
+        
+        // Update run with results
+        await storage.updateCrewRun(crewRun.id, {
+          status: validation.valid ? "completed" : "completed_partial",
+          completedAt: new Date(),
+          outputPayload: workerData,
+        });
+        
+        // Extract and store KPIs if present
+        if (workerData.kpis && Array.isArray(workerData.kpis)) {
+          const kpiRecords = workerData.kpis.map((kpi: any) => ({
+            runId: crewRun.id,
+            siteId,
+            crewId,
+            metricKey: kpi.key || kpi.metric,
+            metricValue: String(kpi.value),
+            unit: kpi.unit || null,
+            context: kpi.context || null,
+          }));
+          await storage.saveCrewKpis(kpiRecords);
+        }
+        
+        // Extract and store findings if present
+        if (workerData.findings && Array.isArray(workerData.findings)) {
+          const findingRecords = workerData.findings.map((f: any) => ({
+            runId: crewRun.id,
+            siteId,
+            crewId,
+            severity: f.severity || "info",
+            title: f.title,
+            description: f.description || null,
+            recommendation: f.recommendation || null,
+            affectedUrl: f.url || f.affectedUrl || null,
+            category: f.category || null,
+            surfacedAt: new Date(),
+          }));
+          await storage.saveCrewFindings(findingRecords);
+        }
+        
+        res.json({
+          ok: true,
+          runId: crewRun.id,
+          crewId,
+          status: validation.valid ? "completed" : "completed_partial",
+          validation,
+          outputs: workerData,
+        });
+        
+      } catch (workerError: any) {
+        await storage.updateCrewRun(crewRun.id, {
+          status: "failed",
+          completedAt: new Date(),
+          errorMessage: workerError.message || "Unknown worker error",
+        });
+        throw workerError;
+      }
+      
+    } catch (error: any) {
+      logger.error("CrewRun", "Failed to execute crew worker", { error });
+      res.status(500).json({ ok: false, error: error.message || "Failed to execute crew" });
+    }
+  });
+
+  // GET /api/crew/:crewId/overview - Get latest crew data
+  app.get("/api/crew/:crewId/overview", async (req, res) => {
+    try {
+      const { crewId } = req.params;
+      const siteId = (req.query.siteId as string) || (req.query.site_id as string) || "default";
+      
+      // Validate crew exists
+      if (!CREW[crewId]) {
+        return res.status(404).json({ ok: false, error: `Unknown crew: ${crewId}` });
+      }
+      
+      const crew = CREW[crewId];
+      
+      // Get latest run for this crew/site
+      const latestRun = await storage.getLatestCrewRun(siteId, crewId);
+      
+      // Get latest KPIs
+      const latestKpis = await storage.getLatestCrewKpis(siteId, crewId);
+      
+      // Get recent findings
+      const recentFindings = await storage.getRecentCrewFindings(siteId, crewId, 10);
+      
+      // Get recent runs for history
+      const recentRuns = await storage.getRecentCrewRuns(siteId, crewId, 5);
+      
+      // Get config status
+      let configStatus: "ready" | "needs_config" | "no_worker" = "no_worker";
+      let missingConfig: string[] = [];
+      try {
+        const config = getCrewIntegrationConfig(crewId);
+        configStatus = config.configStatus;
+        missingConfig = config.missingConfig;
+      } catch {
+        // Crew not found in config - already handled
+      }
+      
+      res.json({
+        ok: true,
+        crewId,
+        displayName: crew.nickname,
+        siteId,
+        configStatus,
+        missingConfig,
+        latestRun: latestRun ? {
+          id: latestRun.id,
+          status: latestRun.status,
+          startedAt: latestRun.startedAt,
+          completedAt: latestRun.completedAt,
+          triggeredBy: latestRun.triggeredBy,
+        } : null,
+        kpis: latestKpis.map(k => ({
+          key: k.metricKey,
+          value: k.metricValue,
+          unit: k.unit,
+          context: k.context,
+          capturedAt: k.capturedAt,
+        })),
+        findings: recentFindings.map(f => ({
+          id: f.id,
+          severity: f.severity,
+          title: f.title,
+          description: f.description,
+          recommendation: f.recommendation,
+          affectedUrl: f.affectedUrl,
+          category: f.category,
+          surfacedAt: f.surfacedAt,
+        })),
+        recentRuns: recentRuns.map(r => ({
+          id: r.id,
+          status: r.status,
+          startedAt: r.startedAt,
+          completedAt: r.completedAt,
+        })),
+      });
+    } catch (error: any) {
+      logger.error("CrewOverview", "Failed to get crew overview", { error });
+      res.status(500).json({ ok: false, error: error.message || "Failed to get crew overview" });
+    }
+  });
+
+  // GET /api/integrations/status - Get all crew integration statuses
+  app.get("/api/integrations/status", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || (req.query.site_id as string) || "default";
+      
+      // Get all crew configs
+      const configs = getAllCrewConfigs();
+      
+      // Enrich with latest run status from DB
+      const statuses = await Promise.all(configs.map(async (config) => {
+        const latestRun = await storage.getLatestCrewRun(siteId, config.crewId);
+        
+        return {
+          crewId: config.crewId,
+          displayName: config.displayName,
+          configStatus: config.configStatus,
+          missingConfig: config.missingConfig,
+          hasWorker: config.configStatus !== "no_worker",
+          lastRun: latestRun ? {
+            id: latestRun.id,
+            status: latestRun.status,
+            startedAt: latestRun.startedAt,
+            completedAt: latestRun.completedAt,
+          } : null,
+          lastRunStatus: latestRun?.status || "never_run",
+          lastRunAt: latestRun?.completedAt || latestRun?.startedAt || null,
+        };
+      }));
+      
+      res.json({
+        ok: true,
+        siteId,
+        integrations: statuses,
+        summary: {
+          total: statuses.length,
+          ready: statuses.filter(s => s.configStatus === "ready").length,
+          needsConfig: statuses.filter(s => s.configStatus === "needs_config").length,
+          noWorker: statuses.filter(s => s.configStatus === "no_worker").length,
+        },
+      });
+    } catch (error: any) {
+      logger.error("IntegrationStatus", "Failed to get integration statuses", { error });
+      res.status(500).json({ ok: false, error: error.message || "Failed to get integration statuses" });
     }
   });
 

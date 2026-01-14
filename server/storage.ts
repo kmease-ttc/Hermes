@@ -41,6 +41,15 @@ import {
   crewState,
   type CrewState,
   type InsertCrewState,
+  crewRuns,
+  type CrewRun,
+  type InsertCrewRun,
+  crewKpis,
+  type CrewKpi,
+  type InsertCrewKpi,
+  crewFindings,
+  type CrewFinding,
+  type InsertCrewFinding,
   fixPlans,
   type FixPlan,
   type InsertFixPlan,
@@ -563,6 +572,23 @@ export interface IStorage {
   getReportSharesByScanId(scanId: string): Promise<ReportShare[]>;
   incrementShareViewCount(shareToken: string): Promise<void>;
   revokeReportShare(id: number): Promise<void>;
+  
+  // Crew Runs (canonical identity system)
+  createCrewRun(run: InsertCrewRun): Promise<CrewRun>;
+  updateCrewRun(runId: number, updates: Partial<InsertCrewRun>): Promise<CrewRun | undefined>;
+  getCrewRunById(runId: number): Promise<CrewRun | undefined>;
+  getLatestCrewRun(siteId: string, crewId: string): Promise<CrewRun | undefined>;
+  getRecentCrewRuns(siteId: string, crewId: string, limit?: number): Promise<CrewRun[]>;
+  
+  // Crew KPIs
+  saveCrewKpis(kpis: InsertCrewKpi[]): Promise<CrewKpi[]>;
+  getCrewKpisByRunId(runId: number): Promise<CrewKpi[]>;
+  getLatestCrewKpis(siteId: string, crewId: string): Promise<CrewKpi[]>;
+  
+  // Crew Findings
+  saveCrewFindings(findings: InsertCrewFinding[]): Promise<CrewFinding[]>;
+  getCrewFindingsByRunId(runId: number): Promise<CrewFinding[]>;
+  getRecentCrewFindings(siteId: string, crewId: string, limit?: number): Promise<CrewFinding[]>;
 }
 
 class DBStorage implements IStorage {
@@ -3442,6 +3468,90 @@ class DBStorage implements IStorage {
       .update(users)
       .set({ passwordHash, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  // Crew Runs (canonical identity system)
+  async createCrewRun(run: InsertCrewRun): Promise<CrewRun> {
+    const [result] = await db.insert(crewRuns).values(run).returning();
+    return result;
+  }
+
+  async updateCrewRun(runId: number, updates: Partial<InsertCrewRun>): Promise<CrewRun | undefined> {
+    const [result] = await db
+      .update(crewRuns)
+      .set(updates)
+      .where(eq(crewRuns.id, runId))
+      .returning();
+    return result;
+  }
+
+  async getCrewRunById(runId: number): Promise<CrewRun | undefined> {
+    const [result] = await db
+      .select()
+      .from(crewRuns)
+      .where(eq(crewRuns.id, runId))
+      .limit(1);
+    return result;
+  }
+
+  async getLatestCrewRun(siteId: string, crewId: string): Promise<CrewRun | undefined> {
+    const [result] = await db
+      .select()
+      .from(crewRuns)
+      .where(and(eq(crewRuns.siteId, siteId), eq(crewRuns.crewId, crewId)))
+      .orderBy(desc(crewRuns.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  async getRecentCrewRuns(siteId: string, crewId: string, limit: number = 10): Promise<CrewRun[]> {
+    return db
+      .select()
+      .from(crewRuns)
+      .where(and(eq(crewRuns.siteId, siteId), eq(crewRuns.crewId, crewId)))
+      .orderBy(desc(crewRuns.createdAt))
+      .limit(limit);
+  }
+
+  // Crew KPIs
+  async saveCrewKpis(kpis: InsertCrewKpi[]): Promise<CrewKpi[]> {
+    if (kpis.length === 0) return [];
+    return db.insert(crewKpis).values(kpis).returning();
+  }
+
+  async getCrewKpisByRunId(runId: number): Promise<CrewKpi[]> {
+    return db
+      .select()
+      .from(crewKpis)
+      .where(eq(crewKpis.runId, runId));
+  }
+
+  async getLatestCrewKpis(siteId: string, crewId: string): Promise<CrewKpi[]> {
+    const latestRun = await this.getLatestCrewRun(siteId, crewId);
+    if (!latestRun) return [];
+    return this.getCrewKpisByRunId(latestRun.id);
+  }
+
+  // Crew Findings
+  async saveCrewFindings(findings: InsertCrewFinding[]): Promise<CrewFinding[]> {
+    if (findings.length === 0) return [];
+    return db.insert(crewFindings).values(findings).returning();
+  }
+
+  async getCrewFindingsByRunId(runId: number): Promise<CrewFinding[]> {
+    return db
+      .select()
+      .from(crewFindings)
+      .where(eq(crewFindings.runId, runId));
+  }
+
+  async getRecentCrewFindings(siteId: string, crewId: string, limit: number = 20): Promise<CrewFinding[]> {
+    return db
+      .select()
+      .from(crewFindings)
+      .where(and(eq(crewFindings.siteId, siteId), eq(crewFindings.crewId, crewId)))
+      .orderBy(desc(crewFindings.surfacedAt))
+      .limit(limit);
   }
 }
 
