@@ -140,15 +140,48 @@ describe('KPI Normalizers', () => {
   });
 
   describe('Primary KPI contract enforcement', () => {
-    const CREWS_WITH_NORMALIZERS = ['scotty', 'speedster', 'popular'];
+    const ALL_CREWS = [
+      'scotty', 'speedster', 'popular', 'sentinel', 'hemingway',
+      'atlas', 'socrates', 'lookout', 'beacon', 'natasha', 'draper', 'major_tom'
+    ];
     
-    it.each(CREWS_WITH_NORMALIZERS)('%s normalizer produces its primary KPI', (crewId) => {
+    it.each(ALL_CREWS)('%s normalizer produces its primary KPI', (crewId) => {
       const mockResponse = getMockWorkerResponse(crewId);
       const result = normalizeWorkerOutputToKpis(crewId, TEST_SITE_ID, mockResponse);
       const primaryKpi = CREW_KPI_CONTRACTS[crewId].primaryKpi;
       
       const hasPrimaryKpi = result.kpis.some(kpi => kpi.metricKey === primaryKpi);
       expect(hasPrimaryKpi).toBe(true);
+    });
+  });
+
+  describe('Additional crew normalizers', () => {
+    it('Sentinel produces content.decay_signals', () => {
+      const response = { decay_summary: { pages_losing_traffic: 5 } };
+      const result = normalizeWorkerOutputToKpis('sentinel', TEST_SITE_ID, response);
+      const decay = result.kpis.find(k => k.metricKey === 'content.decay_signals');
+      expect(decay?.value).toBe(5);
+    });
+
+    it('Beacon produces links.domain_authority', () => {
+      const response = { links_summary: { domain_authority: 45 } };
+      const result = normalizeWorkerOutputToKpis('beacon', TEST_SITE_ID, response);
+      const da = result.kpis.find(k => k.metricKey === 'links.domain_authority');
+      expect(da?.value).toBe(45);
+    });
+
+    it('Lookout produces serp.keywords_top10', () => {
+      const response = { serp_summary: { keywords_top10: 25 } };
+      const result = normalizeWorkerOutputToKpis('lookout', TEST_SITE_ID, response);
+      const kw = result.kpis.find(k => k.metricKey === 'serp.keywords_top10');
+      expect(kw?.value).toBe(25);
+    });
+
+    it('Draper produces ads.conversions', () => {
+      const response = { ads_summary: { conversions: 120 } };
+      const result = normalizeWorkerOutputToKpis('draper', TEST_SITE_ID, response);
+      const conv = result.kpis.find(k => k.metricKey === 'ads.conversions');
+      expect(conv?.value).toBe(120);
     });
   });
 });
@@ -161,6 +194,24 @@ function getMockWorkerResponse(crewId: string): any {
       return { vitals_summary: { performance_score: 85 } };
     case 'popular':
       return { ga4_summary: { sessions: 1000 } };
+    case 'sentinel':
+      return { decay_summary: { pages_losing_traffic: 3 } };
+    case 'hemingway':
+      return { content_summary: { quality_score: 88 } };
+    case 'atlas':
+      return { ai_summary: { coverage_score: 72 } };
+    case 'socrates':
+      return { kb_summary: { insights_generated: 15 } };
+    case 'lookout':
+      return { serp_summary: { keywords_top10: 20 } };
+    case 'beacon':
+      return { links_summary: { domain_authority: 55 } };
+    case 'natasha':
+      return { competitive_summary: { gaps_found: 8 } };
+    case 'draper':
+      return { ads_summary: { conversions: 50 } };
+    case 'major_tom':
+      return { orchestration_summary: { health_score: 95 } };
     default:
       return { kpis: { default_metric: 50 } };
   }
