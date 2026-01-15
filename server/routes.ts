@@ -329,7 +329,7 @@ export async function registerRoutes(
       const slug = generateSlugFromBusinessName(data.businessName);
       const publishedUrl = `https://${slug}.arclo.site`;
 
-      await db.insert(generatedSites).values({
+      const [siteRecord] = await db.insert(generatedSites).values({
         siteId,
         businessName: data.businessName,
         businessCategory: data.businessCategory,
@@ -343,16 +343,25 @@ export async function registerRoutes(
         domainPreference: data.domainPreference,
         status: "queued",
         publishedUrl,
+      }).returning({ id: generatedSites.id });
+
+      // Enqueue the job for the background worker to process
+      const jobId = await enqueueJob("generate_preview_site", siteRecord.id, {
+        businessName: data.businessName,
+        businessCategory: data.businessCategory,
       });
 
-      logger.info("GeneratedSites", "New generated site created", { 
+      logger.info("GeneratedSites", "New generated site created and job enqueued", { 
         siteId, 
+        siteDbId: siteRecord.id,
+        jobId,
         businessName: data.businessName,
         email: data.email,
       });
 
       return res.json({ 
         siteId, 
+        jobId,
         status: "queued", 
         publishedUrl 
       });
@@ -395,6 +404,63 @@ export async function registerRoutes(
       return res.status(500).json({ 
         success: false, 
         message: "Failed to get generated site" 
+      });
+    }
+  });
+
+  // Get site generation job status for polling
+  app.get("/api/generated-sites/:siteId/status", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      
+      if (!siteId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Site ID is required" 
+        });
+      }
+
+      // Get site record
+      const siteResult = await db
+        .select()
+        .from(generatedSites)
+        .where(eq(generatedSites.siteId, siteId))
+        .limit(1);
+
+      if (siteResult.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Generated site not found" 
+        });
+      }
+
+      const site = siteResult[0];
+
+      // Get latest job for this site
+      const jobResult = await db
+        .select()
+        .from(siteGenerationJobs)
+        .where(eq(siteGenerationJobs.siteId, site.id))
+        .orderBy(siteGenerationJobs.createdAt)
+        .limit(1);
+
+      const job = jobResult.length > 0 ? jobResult[0] : null;
+
+      return res.json({
+        siteStatus: site.status,
+        buildState: site.buildState,
+        previewUrl: site.previewUrl,
+        publishedUrl: site.publishedUrl,
+        jobStatus: job?.status ?? null,
+        progress: job?.progress ?? 0,
+        progressMessage: job?.progressMessage ?? null,
+        errorMessage: job?.errorMessage ?? null,
+      });
+    } catch (error: any) {
+      logger.error("GeneratedSites", "Failed to get site status", { error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to get site status" 
       });
     }
   });

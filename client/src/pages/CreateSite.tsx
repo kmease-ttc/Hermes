@@ -86,6 +86,65 @@ export default function CreateSite() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const pollJobStatus = async (siteIdToPoll: string, publishedUrlFallback: string) => {
+    const maxPolls = 60; // 60 polls * 2 seconds = 2 minutes max
+    let polls = 0;
+    
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/generated-sites/${siteIdToPoll}/status`);
+        if (!res.ok) {
+          throw new Error("Failed to get status");
+        }
+        
+        const status = await res.json();
+        
+        // Update generation step based on progress
+        if (status.progress >= 75) {
+          setGenerationStep("publishing");
+        } else if (status.progress >= 40) {
+          setGenerationStep("writing_seo");
+        } else {
+          setGenerationStep("creating_pages");
+        }
+        
+        // Check if completed or failed
+        if (status.jobStatus === "completed" || status.siteStatus === "preview_ready") {
+          setPublishedUrl(status.publishedUrl || status.previewUrl || publishedUrlFallback);
+          setStep("success");
+          return;
+        }
+        
+        if (status.jobStatus === "failed") {
+          setError(status.errorMessage || "Site generation failed. Please try again.");
+          setStep("form");
+          return;
+        }
+        
+        // Continue polling
+        polls++;
+        if (polls < maxPolls) {
+          setTimeout(poll, 2000);
+        } else {
+          // Timeout - but site might still be processing
+          setPublishedUrl(publishedUrlFallback);
+          setStep("success");
+        }
+      } catch (err) {
+        polls++;
+        if (polls < maxPolls) {
+          setTimeout(poll, 2000);
+        } else {
+          setError("Something went wrong. Please try again.");
+          setStep("form");
+        }
+      }
+    };
+    
+    // Start polling after a short delay
+    setTimeout(poll, 1000);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -130,13 +189,10 @@ export default function CreateSite() {
 
       const data = await res.json();
       setSiteId(data.siteId);
-
-      setTimeout(() => setGenerationStep("writing_seo"), 2000);
-      setTimeout(() => setGenerationStep("publishing"), 4000);
-      setTimeout(() => {
-        setPublishedUrl(data.publishedUrl || `https://${formData.businessName.toLowerCase().replace(/\s+/g, "-")}.arclo.site`);
-        setStep("success");
-      }, 6000);
+      
+      // Start polling for real job progress
+      const publishedUrlFallback = data.publishedUrl || `https://${formData.businessName.toLowerCase().replace(/\s+/g, "-")}.arclo.site`;
+      pollJobStatus(data.siteId, publishedUrlFallback);
 
     } catch (err) {
       setError("Something went wrong. Please try again.");
