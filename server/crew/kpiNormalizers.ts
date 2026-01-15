@@ -275,20 +275,39 @@ function normalizeSocratesOutput(crewId: string, siteId: string, response: any):
   const workerKpis = response?.kpis || {};
   const kbSummary = response?.kb_summary || {};
   
+  // Primary KPI: totalLearnings (per spec - this is what shows on Socrates page)
+  const totalLearnings = workerKpis.total_learnings 
+    ?? kbSummary.total_learnings 
+    ?? response?.total_learnings
+    ?? workerKpis.insights_generated
+    ?? kbSummary.insights_generated
+    ?? 0;
+  
+  kpis.push({
+    siteId,
+    crewId,
+    metricKey: "totalLearnings",
+    value: totalLearnings,
+    unit: "count",
+    measuredAt: new Date(),
+  });
+  
+  // Secondary KPI: insightsGenerated
   const insightsGenerated = workerKpis.insights_written 
     ?? kbSummary.insights_generated 
     ?? workerKpis.insights_generated 
     ?? 0;
   
-  // Primary KPI: insightsGenerated
-  kpis.push({
-    siteId,
-    crewId,
-    metricKey: "insightsGenerated",
-    value: insightsGenerated,
-    unit: "count",
-    measuredAt: new Date(),
-  });
+  if (insightsGenerated > 0) {
+    kpis.push({
+      siteId,
+      crewId,
+      metricKey: "insightsGenerated",
+      value: insightsGenerated,
+      unit: "count",
+      measuredAt: new Date(),
+    });
+  }
   
   const guidanceUsed = workerKpis.guidance_used ?? kbSummary.guidance_used ?? null;
   if (guidanceUsed !== null) {
@@ -304,7 +323,7 @@ function normalizeSocratesOutput(crewId: string, siteId: string, response: any):
   
   return {
     kpis,
-    summary: `${insightsGenerated} insights generated`,
+    summary: `${totalLearnings} learnings collected`,
   };
 }
 

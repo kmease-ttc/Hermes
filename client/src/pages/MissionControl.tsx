@@ -839,7 +839,7 @@ function CapabilitiesSection({
     
     if (isSocrates && kbStatus) {
       kpiValue = String(kbStatus.totalLearnings || 0);
-      kpiLabel = "Insights Generated";
+      kpiLabel = kpiConfig.label; // Use registry label: "Total Learnings"
     }
     
     // Task count
@@ -1603,7 +1603,7 @@ function AgentSummaryGrid({ agents, crewSummaries, kbStatus, agentStatus }: {
         : "No tasks completed yet");
     
     if (isSocrates && kbStatus) {
-      keyMetric = "Knowledge entries";
+      keyMetric = "Total Learnings";
       keyMetricValue = String(kbStatus.totalLearnings || 0);
       whatChanged = kbStatus.configured ? "Knowledge base connected" : "Connect to SEO KBase worker";
     }
@@ -2021,15 +2021,15 @@ export default function MissionControl() {
   const { data: kbStatus } = useQuery({
     queryKey: ["kb-status", currentSite?.siteId],
     queryFn: async () => {
-      const res = await fetch(`/api/kb/status?siteId=${currentSite?.siteId || ""}`);
+      // Use /api/kb/overview which returns the actual totalLearnings count (same source as Socrates page)
+      const res = await fetch(`/api/kb/overview?siteId=${currentSite?.siteId || ""}`);
       if (!res.ok) return { configured: false, totalLearnings: 0 };
       const result = await res.json();
       return {
-        configured: result.data?.configured || false,
-        totalLearnings: result.data?.recentLearnings?.length || 0,
-        status: result.data?.status || 'unknown',
-        canRead: result.data?.canRead || false,
-        canWrite: result.data?.canWrite || false,
+        configured: result.configured || false,
+        totalLearnings: result.totalLearnings || 0, // Use actual count from KB overview
+        status: result.configured ? 'active' : 'unknown',
+        isRealData: result.isRealData || false,
       };
     },
     staleTime: 60000,

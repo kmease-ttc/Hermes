@@ -94,12 +94,12 @@ export const CREW_KPI_CONTRACTS: Record<string, CrewKpiContract> = {
     whyItMatters: "Paid traffic driving to your site",
   },
   socrates: {
-    allowedKpis: ["insightsGenerated", "kb.insights_written", "kb.guidance_used"],
-    primaryKpi: "insightsGenerated",
-    label: "Insights Generated",
+    allowedKpis: ["totalLearnings", "insightsGenerated", "kb.insights_written", "kb.guidance_used"],
+    primaryKpi: "totalLearnings",
+    label: "Total Learnings",
     unit: "count",
-    sampleValue: "~15",
-    whyItMatters: "Learning from your site data",
+    sampleValue: "~220",
+    whyItMatters: "Knowledge collected from your site data",
   },
   atlas: {
     allowedKpis: ["aiOptimizationScore", "ai.coverage_score", "ai.llm_visibility"],

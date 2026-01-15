@@ -59,7 +59,7 @@ describe('Primary KPI Contract', () => {
       sentinel: { kpis: { pages_losing_traffic: 3 } },
       hemingway: { kpis: { content_score: 72 } },
       atlas: { kpis: { ai_coverage_score: 68 } },
-      socrates: { kpis: { insights_written: 15 } },
+      socrates: { kpis: { total_learnings: 220 } },
       lookout: { kpis: { keywords_tracked: 25 } },
       beacon: { kpis: { domain_authority: 35 } },
       natasha: { kpis: { competitors_tracked: 5 } },
@@ -108,7 +108,7 @@ describe('Primary KPI Contract', () => {
       lookout: 'keywordsTracked',
       natasha: 'competitorsTracked',
       draper: 'clicks',
-      socrates: 'insightsGenerated',
+      socrates: 'totalLearnings',
       atlas: 'aiOptimizationScore',
       major_tom: 'orchestration_health',
     };

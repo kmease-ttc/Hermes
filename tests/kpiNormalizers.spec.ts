@@ -201,7 +201,7 @@ function getMockWorkerResponse(crewId: string): any {
     case 'atlas':
       return { ai_summary: { coverage_score: 72 } };
     case 'socrates':
-      return { kb_summary: { insights_generated: 15 } };
+      return { kpis: { total_learnings: 220 } };
     case 'lookout':
       return { serp_summary: { keywords_tracked: 25 } };
     case 'beacon':
