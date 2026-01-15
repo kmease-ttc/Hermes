@@ -24,7 +24,7 @@ describe('KPI Normalizers', () => {
       const workerResponse = { issues: [], kpis: {} };
       const result = normalizeWorkerOutputToKpis('scotty', TEST_SITE_ID, workerResponse);
       
-      const healthScore = result.kpis.find(k => k.metricKey === 'technicalHealthScore');
+      const healthScore = result.kpis.find(k => k.metricKey === 'crawlHealthPct');
       expect(healthScore?.value).toBe(100);
     });
 
@@ -38,7 +38,7 @@ describe('KPI Normalizers', () => {
       };
       
       const result = normalizeWorkerOutputToKpis('scotty', TEST_SITE_ID, workerResponse);
-      const healthScore = result.kpis.find(k => k.metricKey === 'technicalHealthScore');
+      const healthScore = result.kpis.find(k => k.metricKey === 'crawlHealthPct');
       
       expect(healthScore?.value).toBeLessThanOrEqual(70);
     });
@@ -89,7 +89,7 @@ describe('KPI Normalizers', () => {
       };
       
       const result = normalizeWorkerOutputToKpis('speedster', TEST_SITE_ID, workerResponse);
-      const score = result.kpis.find(k => k.metricKey === 'vitals.performance_score');
+      const score = result.kpis.find(k => k.metricKey === 'performanceScore');
       
       expect(score?.value).toBe(92);
     });
@@ -118,7 +118,7 @@ describe('KPI Normalizers', () => {
       
       const result = normalizeWorkerOutputToKpis('popular', TEST_SITE_ID, workerResponse);
       
-      const sessions = result.kpis.find(k => k.metricKey === 'ga4.sessions');
+      const sessions = result.kpis.find(k => k.metricKey === 'monthlySessions');
       const clicks = result.kpis.find(k => k.metricKey === 'gsc.clicks');
       
       expect(sessions?.value).toBe(25000);
@@ -156,32 +156,32 @@ describe('KPI Normalizers', () => {
   });
 
   describe('Additional crew normalizers', () => {
-    it('Sentinel produces content.decay_signals', () => {
+    it('Sentinel produces pagesLosingTraffic', () => {
       const response = { decay_summary: { pages_losing_traffic: 5 } };
       const result = normalizeWorkerOutputToKpis('sentinel', TEST_SITE_ID, response);
-      const decay = result.kpis.find(k => k.metricKey === 'content.decay_signals');
+      const decay = result.kpis.find(k => k.metricKey === 'pagesLosingTraffic');
       expect(decay?.value).toBe(5);
     });
 
-    it('Beacon produces links.domain_authority', () => {
+    it('Beacon produces domainAuthority', () => {
       const response = { links_summary: { domain_authority: 45 } };
       const result = normalizeWorkerOutputToKpis('beacon', TEST_SITE_ID, response);
-      const da = result.kpis.find(k => k.metricKey === 'links.domain_authority');
+      const da = result.kpis.find(k => k.metricKey === 'domainAuthority');
       expect(da?.value).toBe(45);
     });
 
-    it('Lookout produces serp.keywords_top10', () => {
-      const response = { serp_summary: { keywords_top10: 25 } };
+    it('Lookout produces keywordsTracked', () => {
+      const response = { serp_summary: { keywords_tracked: 25 } };
       const result = normalizeWorkerOutputToKpis('lookout', TEST_SITE_ID, response);
-      const kw = result.kpis.find(k => k.metricKey === 'serp.keywords_top10');
+      const kw = result.kpis.find(k => k.metricKey === 'keywordsTracked');
       expect(kw?.value).toBe(25);
     });
 
-    it('Draper produces ads.conversions', () => {
-      const response = { ads_summary: { conversions: 120 } };
+    it('Draper produces clicks', () => {
+      const response = { ads_summary: { clicks: 1200 } };
       const result = normalizeWorkerOutputToKpis('draper', TEST_SITE_ID, response);
-      const conv = result.kpis.find(k => k.metricKey === 'ads.conversions');
-      expect(conv?.value).toBe(120);
+      const clicks = result.kpis.find(k => k.metricKey === 'clicks');
+      expect(clicks?.value).toBe(1200);
     });
   });
 });
@@ -203,13 +203,13 @@ function getMockWorkerResponse(crewId: string): any {
     case 'socrates':
       return { kb_summary: { insights_generated: 15 } };
     case 'lookout':
-      return { serp_summary: { keywords_top10: 20 } };
+      return { serp_summary: { keywords_tracked: 25 } };
     case 'beacon':
       return { links_summary: { domain_authority: 55 } };
     case 'natasha':
-      return { competitive_summary: { gaps_found: 8 } };
+      return { competitive_summary: { competitors_tracked: 5 } };
     case 'draper':
-      return { ads_summary: { conversions: 50 } };
+      return { ads_summary: { clicks: 1200 } };
     case 'major_tom':
       return { orchestration_summary: { health_score: 95 } };
     default:

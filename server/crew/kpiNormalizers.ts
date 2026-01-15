@@ -10,7 +10,7 @@ type KpiNormalizer = (crewId: string, siteId: string, workerResponse: any) => Kp
 function normalizeScottyOutput(crewId: string, siteId: string, response: any): KpiNormalizerResult {
   const kpis: Omit<InsertCrewKpi, "runId">[] = [];
   
-  let technicalHealthScore = 100;
+  let crawlHealthPct = 100;
   
   const crawlSummary = response?.crawl_summary || {};
   const indexability = response?.indexability || {};
@@ -21,22 +21,23 @@ function normalizeScottyOutput(crewId: string, siteId: string, response: any): K
   const highCount = issues.filter((i: any) => i.severity === 'high').length;
   const mediumCount = issues.filter((i: any) => i.severity === 'medium').length;
   
-  technicalHealthScore -= criticalCount * 15;
-  technicalHealthScore -= highCount * 5;
-  technicalHealthScore -= mediumCount * 2;
+  crawlHealthPct -= criticalCount * 15;
+  crawlHealthPct -= highCount * 5;
+  crawlHealthPct -= mediumCount * 2;
   
   if (criticalCount > 0) {
-    technicalHealthScore = Math.min(technicalHealthScore, 70);
+    crawlHealthPct = Math.min(crawlHealthPct, 70);
   }
   
-  technicalHealthScore = Math.max(0, Math.min(100, technicalHealthScore));
+  crawlHealthPct = Math.max(0, Math.min(100, crawlHealthPct));
   
+  // Primary KPI: crawlHealthPct
   kpis.push({
     siteId,
     crewId,
-    metricKey: "technicalHealthScore",
-    value: technicalHealthScore,
-    unit: "score",
+    metricKey: "crawlHealthPct",
+    value: crawlHealthPct,
+    unit: "%",
     measuredAt: new Date(),
   });
   
@@ -79,7 +80,7 @@ function normalizeScottyOutput(crewId: string, siteId: string, response: any): K
   
   return {
     kpis,
-    summary: `Technical Health: ${technicalHealthScore}/100 (${criticalCount} critical, ${highCount} high issues)`,
+    summary: `Crawl Health: ${crawlHealthPct}% (${criticalCount} critical, ${highCount} high issues)`,
   };
 }
 
@@ -90,10 +91,11 @@ function normalizeSpeedsterOutput(crewId: string, siteId: string, response: any)
   
   const performanceScore = workerKpis.performance_score ?? vitalsSummary.performance_score ?? null;
   if (performanceScore !== null) {
+    // Primary KPI: performanceScore
     kpis.push({
       siteId,
       crewId,
-      metricKey: "vitals.performance_score",
+      metricKey: "performanceScore",
       value: performanceScore,
       unit: "score",
       measuredAt: new Date(),
@@ -125,12 +127,13 @@ function normalizePopularOutput(crewId: string, siteId: string, response: any): 
   
   const sessions = workerKpis.sessions ?? ga4Summary.sessions ?? null;
   if (sessions !== null) {
+    // Primary KPI: monthlySessions
     kpis.push({
       siteId,
       crewId,
-      metricKey: "ga4.sessions",
+      metricKey: "monthlySessions",
       value: sessions,
-      unit: "count_monthly",
+      unit: "count",
       measuredAt: new Date(),
     });
   }
@@ -163,10 +166,11 @@ function normalizeSentinelOutput(crewId: string, siteId: string, response: any):
     ?? workerKpis.decay_signals 
     ?? 0;
   
+  // Primary KPI: pagesLosingTraffic
   kpis.push({
     siteId,
     crewId,
-    metricKey: "content.decay_signals",
+    metricKey: "pagesLosingTraffic",
     value: pagesLosingTraffic,
     unit: "count",
     measuredAt: new Date(),
@@ -195,16 +199,17 @@ function normalizeHemingwayOutput(crewId: string, siteId: string, response: any)
   const workerKpis = response?.kpis || {};
   const contentSummary = response?.content_summary || {};
   
-  const contentScore = workerKpis.content_score 
+  const contentQualityScore = workerKpis.content_score 
     ?? contentSummary.quality_score 
     ?? workerKpis.quality_score 
     ?? 85;
   
+  // Primary KPI: contentQualityScore
   kpis.push({
     siteId,
     crewId,
-    metricKey: "content_score",
-    value: Math.max(0, Math.min(100, contentScore)),
+    metricKey: "contentQualityScore",
+    value: Math.max(0, Math.min(100, contentQualityScore)),
     unit: "score",
     measuredAt: new Date(),
   });
@@ -223,7 +228,7 @@ function normalizeHemingwayOutput(crewId: string, siteId: string, response: any)
   
   return {
     kpis,
-    summary: `Content Score: ${contentScore}/100`,
+    summary: `Content Quality: ${contentQualityScore}/100`,
   };
 }
 
@@ -232,17 +237,18 @@ function normalizeAtlasOutput(crewId: string, siteId: string, response: any): Kp
   const workerKpis = response?.kpis || {};
   const aiSummary = response?.ai_summary || {};
   
-  const aiCoverageScore = workerKpis.ai_coverage_score 
+  const aiOptimizationScore = workerKpis.ai_coverage_score 
     ?? aiSummary.coverage_score 
     ?? workerKpis.coverage_score 
     ?? 50;
   
+  // Primary KPI: aiOptimizationScore
   kpis.push({
     siteId,
     crewId,
-    metricKey: "ai.coverage_score",
-    value: Math.max(0, Math.min(100, aiCoverageScore)),
-    unit: "percent",
+    metricKey: "aiOptimizationScore",
+    value: Math.max(0, Math.min(100, aiOptimizationScore)),
+    unit: "score",
     measuredAt: new Date(),
   });
   
@@ -260,7 +266,7 @@ function normalizeAtlasOutput(crewId: string, siteId: string, response: any): Kp
   
   return {
     kpis,
-    summary: `AI Coverage: ${aiCoverageScore}%`,
+    summary: `AI Optimization: ${aiOptimizationScore}%`,
   };
 }
 
@@ -269,16 +275,17 @@ function normalizeSocratesOutput(crewId: string, siteId: string, response: any):
   const workerKpis = response?.kpis || {};
   const kbSummary = response?.kb_summary || {};
   
-  const insightsWritten = workerKpis.insights_written 
+  const insightsGenerated = workerKpis.insights_written 
     ?? kbSummary.insights_generated 
     ?? workerKpis.insights_generated 
     ?? 0;
   
+  // Primary KPI: insightsGenerated
   kpis.push({
     siteId,
     crewId,
-    metricKey: "kb.insights_written",
-    value: insightsWritten,
+    metricKey: "insightsGenerated",
+    value: insightsGenerated,
     unit: "count",
     measuredAt: new Date(),
   });
@@ -297,7 +304,7 @@ function normalizeSocratesOutput(crewId: string, siteId: string, response: any):
   
   return {
     kpis,
-    summary: `${insightsWritten} insights generated`,
+    summary: `${insightsGenerated} insights generated`,
   };
 }
 
@@ -306,27 +313,28 @@ function normalizeLookoutOutput(crewId: string, siteId: string, response: any): 
   const workerKpis = response?.kpis || {};
   const serpSummary = response?.serp_summary || {};
   
-  const keywordsTop10 = workerKpis.keywords_top10 
-    ?? serpSummary.keywords_top10 
-    ?? workerKpis.keywords_up 
+  // Primary KPI: keywordsTracked
+  const keywordsTracked = workerKpis.keywords_tracked 
+    ?? serpSummary.keywords_tracked 
+    ?? workerKpis.keywords_total
     ?? 0;
   
   kpis.push({
     siteId,
     crewId,
-    metricKey: "serp.keywords_top10",
-    value: keywordsTop10,
+    metricKey: "keywordsTracked",
+    value: keywordsTracked,
     unit: "count",
     measuredAt: new Date(),
   });
   
-  const keywordsTracked = workerKpis.keywords_tracked ?? serpSummary.keywords_tracked ?? null;
-  if (keywordsTracked !== null) {
+  const keywordsTop10 = workerKpis.keywords_top10 ?? serpSummary.keywords_top10 ?? null;
+  if (keywordsTop10 !== null) {
     kpis.push({
       siteId,
       crewId,
-      metricKey: "serp.keywords_tracked",
-      value: keywordsTracked,
+      metricKey: "serp.keywords_top10",
+      value: keywordsTop10,
       unit: "count",
       measuredAt: new Date(),
     });
@@ -346,7 +354,7 @@ function normalizeLookoutOutput(crewId: string, siteId: string, response: any): 
   
   return {
     kpis,
-    summary: `${keywordsTop10} keywords in top 10`,
+    summary: `${keywordsTracked} keywords tracked`,
   };
 }
 
@@ -360,10 +368,11 @@ function normalizeBeaconOutput(crewId: string, siteId: string, response: any): K
     ?? workerKpis.da 
     ?? 0;
   
+  // Primary KPI: domainAuthority
   kpis.push({
     siteId,
     crewId,
-    metricKey: "links.domain_authority",
+    metricKey: "domainAuthority",
     value: Math.max(0, Math.min(100, domainAuthority)),
     unit: "score",
     measuredAt: new Date(),
@@ -404,19 +413,33 @@ function normalizeNatashaOutput(crewId: string, siteId: string, response: any): 
   const workerKpis = response?.kpis || {};
   const competitiveSummary = response?.competitive_summary || {};
   
-  const keywordGaps = workerKpis.keyword_gaps 
-    ?? competitiveSummary.gaps_found 
-    ?? workerKpis.gaps 
+  // Primary KPI: competitorsTracked
+  const competitorsTracked = workerKpis.competitors_tracked 
+    ?? competitiveSummary.competitors_tracked 
+    ?? workerKpis.competitors
     ?? 0;
   
   kpis.push({
     siteId,
     crewId,
-    metricKey: "competitive.gaps",
-    value: keywordGaps,
+    metricKey: "competitorsTracked",
+    value: competitorsTracked,
     unit: "count",
     measuredAt: new Date(),
   });
+  
+  // Secondary: keyword gaps
+  const keywordGaps = workerKpis.keyword_gaps ?? competitiveSummary.gaps_found ?? null;
+  if (keywordGaps !== null) {
+    kpis.push({
+      siteId,
+      crewId,
+      metricKey: "competitive.gaps",
+      value: keywordGaps,
+      unit: "count",
+      measuredAt: new Date(),
+    });
+  }
   
   const opportunities = workerKpis.opportunities ?? competitiveSummary.opportunities ?? null;
   if (opportunities !== null) {
@@ -432,7 +455,7 @@ function normalizeNatashaOutput(crewId: string, siteId: string, response: any): 
   
   return {
     kpis,
-    summary: `${keywordGaps} keyword gaps found`,
+    summary: `${competitorsTracked} competitors tracked`,
   };
 }
 
@@ -441,18 +464,32 @@ function normalizeDraperOutput(crewId: string, siteId: string, response: any): K
   const workerKpis = response?.kpis || {};
   const adsSummary = response?.ads_summary || {};
   
-  const conversions = workerKpis.conversions 
-    ?? adsSummary.conversions 
+  // Primary KPI: clicks (per spec requirement)
+  const clicks = workerKpis.clicks 
+    ?? adsSummary.clicks 
     ?? 0;
   
   kpis.push({
     siteId,
     crewId,
-    metricKey: "ads.conversions",
-    value: conversions,
+    metricKey: "clicks",
+    value: clicks,
     unit: "count",
     measuredAt: new Date(),
   });
+  
+  // Secondary KPIs
+  const conversions = workerKpis.conversions ?? adsSummary.conversions ?? null;
+  if (conversions !== null) {
+    kpis.push({
+      siteId,
+      crewId,
+      metricKey: "ads.conversions",
+      value: conversions,
+      unit: "count",
+      measuredAt: new Date(),
+    });
+  }
   
   const spend = workerKpis.spend ?? adsSummary.spend ?? null;
   if (spend !== null) {
@@ -462,18 +499,6 @@ function normalizeDraperOutput(crewId: string, siteId: string, response: any): K
       metricKey: "ads.spend",
       value: spend,
       unit: "currency",
-      measuredAt: new Date(),
-    });
-  }
-  
-  const clicks = workerKpis.clicks ?? adsSummary.clicks ?? null;
-  if (clicks !== null) {
-    kpis.push({
-      siteId,
-      crewId,
-      metricKey: "ads.clicks",
-      value: clicks,
-      unit: "count",
       measuredAt: new Date(),
     });
   }
@@ -492,7 +517,7 @@ function normalizeDraperOutput(crewId: string, siteId: string, response: any): K
   
   return {
     kpis,
-    summary: `${conversions} conversions`,
+    summary: `${clicks.toLocaleString()} clicks`,
   };
 }
 

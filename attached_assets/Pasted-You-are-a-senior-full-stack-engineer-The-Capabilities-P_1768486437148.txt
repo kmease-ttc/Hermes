@@ -1,0 +1,162 @@
+You are a senior full-stack engineer. The Capabilities & Performance grid is still wrong: most cards show a generic “Completion Rate” placeholder instead of each crew’s real KPI. We must make every crew card display a **unique, crew-specific KPI** pulled from that crew’s dashboard data (canonical pipeline), and only fall back to placeholder when real data truly doesn’t exist yet.
+
+We will do this systematically for ALL crews.
+
+Non-negotiables
+
+* Each crew must have exactly ONE primary KPI shown on Mission Control.
+* That KPI must come from the crew’s canonical overview data (DB-backed), not hardcoded.
+* If there is no real data yet, show an explicit placeholder (“—” + “Run diagnostics”) for ACTIVE crews; and allow “Sample” placeholders for LOCKED crews.
+* Draper’s primary KPI must be **Clicks**.
+* Remove “Completion Rate” as a displayed KPI on Mission Control entirely (it is not a business KPI).
+
+---
+
+## Step 1) Lock the primary KPI per crew in the canonical registry
+
+Update `shared/crew/crewRegistry.ts` so every crew defines `primaryKpi`:
+
+Use these defaults (can be tuned later):
+
+* scotty:      kpiId = "crawlHealthPct"         label = "Crawl Health"         unit = "%"
+* speedster:   kpiId = "performanceScore"       label = "Performance Score"   unit = "score"
+* sentinel:    kpiId = "pagesLosingTraffic"     label = "Pages Losing Traffic"unit = "count"
+* hemingway:   kpiId = "contentQualityScore"    label = "Content Quality"     unit = "score"
+* beacon:      kpiId = "domainAuthority"        label = "Domain Authority"    unit = "score"
+* lookout:     kpiId = "keywordsTracked"        label = "Keywords Tracked"    unit = "count"   (already showing sample)
+* natasha:     kpiId = "competitorsTracked"     label = "Competitors Tracked" unit = "count"   (already showing sample)
+* popular:     kpiId = "monthlySessions"        label = "Monthly Sessions"    unit = "count"   (already working)
+* socrates:    kpiId = "insightsGenerated"      label = "Insights Generated"  unit = "count"
+* atlas:       kpiId = "aiOptimizationScore"    label = "AI Optimization"     unit = "score"
+* draper:      kpiId = "clicks"                 label = "Clicks"              unit = "count"   (explicit requirement)
+
+This registry is the single source of truth for what the home page should display.
+
+---
+
+## Step 2) Ensure every crew run produces that KPI (normalization adapters)
+
+For each crew, implement/extend a normalization function that maps the crew’s dashboard/run output into `crew_kpis` rows with the exact `kpiId` above.
+
+Location suggestion:
+`server/crew/normalize/{crewId}.ts`
+
+### Example: Scotty
+
+Scotty dashboard already shows: CrawlHealth 91%, IndexCoverage 88%, Core Web Vitals 72%, Critical Issues 2.
+For Mission Control we will use Crawl Health.
+
+Normalize Scotty worker output into:
+
+* { crewId:"scotty", kpiId:"crawlHealthPct", value: 91, unit:"%" }
+
+Also store the other KPIs as secondary rows if available:
+
+* indexCoveragePct (88)
+* coreWebVitalsScore (72)
+* criticalIssuesCount (2)
+
+### Example: Draper (Clicks)
+
+Normalize Draper worker output into:
+
+* { crewId:"draper", kpiId:"clicks", value: <clickCount>, unit:"count" }
+
+If Draper isn’t configured, return no KPI rows and mark needs_config in status.
+
+Repeat this for all crews so the primary KPI exists after a successful run.
+
+Important:
+
+* Do NOT emit “completionRate” into crew_kpis for Mission Control.
+* Keep completion rate internal if you need it, but it is not the KPI.
+
+---
+
+## Step 3) Store KPIs in DB on every successful run
+
+In `POST /api/crew/:crewId/run`:
+
+* After worker returns:
+
+  * validate outputs
+  * call normalize function
+  * insert returned KPI rows into `crew_kpis` with runId/siteId/crewId
+* Ensure `GET /api/crew/:crewId/overview` returns:
+
+  * latest primary KPI using crewRegistry primaryKpi.kpiId
+  * plus optional extra KPIs for that crew dashboard page
+
+---
+
+## Step 4) Update Capabilities & Performance UI to render the registry KPI
+
+In Mission Control capabilities grid:
+
+* For each crew card:
+
+  * read `primaryKpi` from the overview API response
+  * render:
+
+    * value (large)
+    * label (small)
+* If primaryKpi missing:
+
+  * ACTIVE crew: show “—” + “Run diagnostics”
+  * LOCKED crew: show “Sample” value (already implemented for some)
+
+Remove any fallback to “Completion Rate” in the UI. If no KPI, show placeholder instead.
+
+---
+
+## Step 5) Fix current mismatch: crew page shows real KPI but overview API does not
+
+This is the identity/lineage gap.
+Enforce:
+
+* Crew dashboard pages must also use `/api/crew/:crewId/overview` (DB-backed)
+* They must not call workers directly for displayed KPIs
+
+So the same KPIs power:
+
+* the crew dashboard page
+* the mission control card
+* the reports
+
+---
+
+## Step 6) Backfill & smoke test
+
+1. Run diagnostics for each crew once.
+2. Verify Mission Control cards show unique KPIs:
+
+* Scotty shows Crawl Health %
+* Speedster shows Performance Score
+* Sentinel shows Pages Losing Traffic
+* Hemingway shows Content Quality
+* Draper shows Clicks
+* etc.
+
+---
+
+## Step 7) Add a test to prevent regression (required)
+
+Add `tests/primaryKpiContract.spec.ts`:
+
+* For every crew in crewRegistry:
+
+  * assert registry has primaryKpi.kpiId
+  * after a mocked successful normalization result, `crew_kpis` includes a row with that kpiId
+  * Mission Control aggregation uses that kpiId (and never “completionRate”)
+
+Fail the build if any crew card would fall back to “completionRate”.
+
+---
+
+## Deliverables
+
+* Updated crewRegistry with primary KPI mapping for all crews (Draper = clicks)
+* Normalization adapters for each crew producing the required KPI rows
+* Mission Control capabilities grid uses primary KPI and never “completionRate”
+* Placeholder behavior for missing data (— for active, sample for locked)
+* Contract test preventing future drift

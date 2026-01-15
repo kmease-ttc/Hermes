@@ -47,6 +47,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { ROUTES, buildRoute } from "@shared/routes";
 import { SERVICE_TO_CREW } from "@shared/registry";
+import { CREW_KPI_CONTRACTS } from "@shared/crew/kpiSchemas";
 import { SocratesMemoryCard } from "@/components/dashboard/SocratesMemoryCard";
 import { DeveloperReportModal } from "@/components/export/DeveloperReportModal";
 import { MissionDetailsModal } from "@/components/dashboard/MissionDetailsModal";
@@ -817,22 +818,7 @@ function CapabilitiesSection({
 }) {
   const { isHired } = useHiredCrews();
   
-  // Core KPI definitions per crew
-  const CREW_KPIS: Record<string, { label: string; sampleValue: string; whyItMatters: string }> = {
-    crawl_render: { label: "Issues Found", sampleValue: "~12", whyItMatters: "Technical issues blocking search visibility" },
-    core_web_vitals: { label: "Performance Score", sampleValue: "~85", whyItMatters: "Speed directly impacts rankings and conversions" },
-    content_decay: { label: "Pages Declining", sampleValue: "~3", whyItMatters: "Content losing traffic needs attention" },
-    content_generator: { label: "Content Score", sampleValue: "~72", whyItMatters: "Quality signals that Google rewards" },
-    google_data_connector: { label: "Monthly Sessions", sampleValue: "~12.4K", whyItMatters: "Traffic trends show growth or decline" },
-    serp_intel: { label: "Keywords Tracked", sampleValue: "~25", whyItMatters: "Monitor ranking movements" },
-    ai_optimization: { label: "AI Readiness", sampleValue: "~68%", whyItMatters: "Optimize for AI search answers" },
-    google_ads_connector: { label: "Conversions", sampleValue: "~45", whyItMatters: "Paid campaign performance" },
-    seo_kbase: { label: "Insights Generated", sampleValue: "~15", whyItMatters: "Learning from your site data" },
-    backlink_authority: { label: "Domain Authority", sampleValue: "~35", whyItMatters: "Link equity and credibility" },
-    competitive_snapshot: { label: "Competitors Tracked", sampleValue: "~5", whyItMatters: "Stay ahead of the competition" },
-  };
-  
-  // Build capability cards data
+  // Build capability cards data using CREW_KPI_CONTRACTS as single source of truth
   const capabilities = agents.map(agent => {
     const crew = getCrewMember(agent.serviceId);
     const crewId = SERVICE_TO_CREW[agent.serviceId] || agent.serviceId;
@@ -841,12 +827,15 @@ function CapabilitiesSection({
     const hired = isHired(agent.serviceId);
     const isSocrates = agent.serviceId === 'seo_kbase';
     
-    // Get KPI config
-    const kpiConfig = CREW_KPIS[agent.serviceId] || { label: "Tasks Open", sampleValue: "~5", whyItMatters: "Actions to improve your site" };
+    // Get KPI config from canonical registry (single source of truth)
+    const kpiContract = CREW_KPI_CONTRACTS[crewId];
+    const kpiConfig = kpiContract 
+      ? { label: kpiContract.label, sampleValue: kpiContract.sampleValue, whyItMatters: kpiContract.whyItMatters }
+      : { label: "Tasks Open", sampleValue: "~5", whyItMatters: "Actions to improve your site" };
     
-    // Determine KPI value
+    // Determine KPI value - use real data from crewSummary, never "Completion Rate"
     let kpiValue = crewSummary?.primaryMetricValue?.toString() || "—";
-    let kpiLabel = crewSummary?.primaryMetric || kpiConfig.label;
+    let kpiLabel = kpiConfig.label; // Always use registry label, never crewSummary.primaryMetric
     
     if (isSocrates && kbStatus) {
       kpiValue = String(kbStatus.totalLearnings || 0);
@@ -883,14 +872,24 @@ function CapabilitiesSection({
     };
   });
   
-  // Add locked capabilities that aren't in the hired list - show ALL to meet spec
-  const allCrewIds = Object.keys(CREW_KPIS);
+  // Service IDs for all crew capabilities
+  const ALL_SERVICE_IDS = [
+    'crawl_render', 'core_web_vitals', 'content_decay', 'content_generator',
+    'google_data_connector', 'serp_intel', 'ai_optimization', 'google_ads_connector',
+    'seo_kbase', 'backlink_authority', 'competitive_snapshot'
+  ];
+  
+  // Add locked capabilities that aren't in the hired list
   const hiredIds = agents.map(a => a.serviceId);
-  const lockedCapabilities = allCrewIds
+  const lockedCapabilities = ALL_SERVICE_IDS
     .filter(id => !hiredIds.includes(id))
     .map(serviceId => {
       const crew = getCrewMember(serviceId);
-      const kpiConfig = CREW_KPIS[serviceId];
+      const crewId = SERVICE_TO_CREW[serviceId] || serviceId;
+      const kpiContract = CREW_KPI_CONTRACTS[crewId];
+      const kpiConfig = kpiContract 
+        ? { label: kpiContract.label, sampleValue: kpiContract.sampleValue, whyItMatters: kpiContract.whyItMatters }
+        : { label: "Tasks Open", sampleValue: "~5", whyItMatters: "Actions to improve your site" };
       return {
         serviceId,
         crew,
