@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,24 @@ export default function WebsiteReportPage() {
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const { data: reportData, isLoading } = useQuery({
+    queryKey: ['/api/analyze/report', activeSite?.id],
+    queryFn: async () => {
+      if (!activeSite?.id) return null;
+      const res = await fetch(`/api/analyze/report?siteId=${activeSite.id}`);
+      return res.json();
+    },
+    enabled: !!activeSite?.id,
+  });
+
+  const healthGrade = reportData?.summary?.healthGrade || '—';
+  const openTasks = reportData?.summary?.openTasks ?? '—';
+  const monthlySessions = reportData?.crews?.popular?.primaryKpi?.value;
+  const formattedSessions = monthlySessions != null 
+    ? Number(monthlySessions).toLocaleString() 
+    : 'No data';
+  const hasData = reportData?.ok && reportData?.summary;
+
   const handleSend = async () => {
     if (!email.trim()) {
       toast.error("Please enter a recipient email");
@@ -51,6 +70,16 @@ export default function WebsiteReportPage() {
     toast.success("Link copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -96,15 +125,17 @@ export default function WebsiteReportPage() {
                   <div className="p-4 rounded-xl bg-muted/50">
                     <p className="text-sm text-muted-foreground mb-1">Health Grade</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-3xl font-bold text-primary">B+</span>
-                      <Badge className="bg-semantic-success-soft text-semantic-success">Improving</Badge>
+                      <span className="text-3xl font-bold text-primary">{healthGrade}</span>
+                      {hasData && <Badge className="bg-semantic-success-soft text-semantic-success">Active</Badge>}
                     </div>
                   </div>
                   <div className="p-4 rounded-xl bg-muted/50">
                     <p className="text-sm text-muted-foreground mb-1">Open Tasks</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-3xl font-bold text-foreground">12</span>
-                      <Badge className="bg-semantic-warning-soft text-semantic-warning">3 high priority</Badge>
+                      <span className="text-3xl font-bold text-foreground">{openTasks}</span>
+                      {typeof openTasks === 'number' && openTasks > 0 && (
+                        <Badge className="bg-semantic-warning-soft text-semantic-warning">Pending</Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -117,28 +148,19 @@ export default function WebsiteReportPage() {
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <span className="text-sm">Monthly Sessions</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">12,450</span>
-                        <span className="text-xs text-semantic-success flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-0.5" />+8%
-                        </span>
+                        <span className="font-semibold">{formattedSessions}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <span className="text-sm">Bounce Rate</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">42%</span>
-                        <span className="text-xs text-semantic-danger flex items-center">
-                          <TrendingDown className="w-3 h-3 mr-0.5" />+3%
-                        </span>
+                        <span className="font-semibold text-muted-foreground">—</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <span className="text-sm">Conversion Rate</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">3.2%</span>
-                        <span className="text-xs text-semantic-success flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-0.5" />+0.5%
-                        </span>
+                        <span className="font-semibold text-muted-foreground">—</span>
                       </div>
                     </div>
                   </div>
@@ -148,20 +170,36 @@ export default function WebsiteReportPage() {
 
                 <div>
                   <h4 className="font-semibold mb-3">Trend Highlights</h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      Traffic increased 8% compared to last month
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      3 pages with slow load times identified
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      Mobile performance improved after last fix
-                    </li>
-                  </ul>
+                  {hasData ? (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      {reportData?.crews?.scotty?.status === 'active' && (
+                        <li className="flex items-start gap-2">
+                          <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          Technical SEO diagnostics active
+                        </li>
+                      )}
+                      {reportData?.crews?.speedster?.status === 'active' && (
+                        <li className="flex items-start gap-2">
+                          <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          Performance monitoring enabled
+                        </li>
+                      )}
+                      {reportData?.crews?.popular?.status === 'active' && (
+                        <li className="flex items-start gap-2">
+                          <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          Traffic analytics connected
+                        </li>
+                      )}
+                      {!reportData?.crews?.scotty?.status && !reportData?.crews?.speedster?.status && !reportData?.crews?.popular?.status && (
+                        <li className="flex items-start gap-2">
+                          <Target className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          Run diagnostics for insights
+                        </li>
+                      )}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Run diagnostics for insights</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
