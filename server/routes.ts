@@ -61,6 +61,7 @@ import { getCrewIntegrationConfig, getAllCrewConfigs } from "./integrations/getC
 import { validateCrewOutputs } from "./integrations/validateCrewOutputs";
 import { CREW, METRIC_KEYS } from "@shared/registry";
 import { CREW_KPI_CONTRACTS } from "@shared/crew/kpiSchemas";
+import { computeHealthStatus, type HealthStatus } from "@shared/crew/kpiSnapshot";
 import { normalizeWorkerOutputToKpis } from "./crew/kpiNormalizers";
 
 const createSiteSchema = z.object({
@@ -7181,6 +7182,28 @@ When answering:
         // Sample value for display when no real data exists (for parity with crew pages)
         const sampleValue = kpiContract?.sampleValue || null;
         
+        // Get last run info for health status calculation
+        const latestRun = crewServiceRuns[0];
+        const lastRunStatus: "success" | "failed" | "never" = latestRun 
+          ? (latestRun.status === 'success' ? 'success' : 'failed')
+          : 'never';
+        const lastUpdatedAt = primaryKpi?.capturedAt?.toISOString() 
+          || latestRun?.finishedAt?.toISOString() 
+          || scoreData.updatedAt 
+          || null;
+        
+        // Check if crew needs configuration (integration not enabled)
+        const crewNeedsConfig = !hasAnyData && lastRunStatus === 'never';
+        
+        // Compute health status using shared logic
+        const isSample = provenance === 'sample';
+        const { health, healthReason } = computeHealthStatus(
+          isSample,
+          lastUpdatedAt,
+          lastRunStatus,
+          crewNeedsConfig
+        );
+        
         return {
           crewId,
           nickname: crew.nickname,
@@ -7211,6 +7234,11 @@ When answering:
           emptyStateReason: !hasAnyData ? 'Run diagnostics to see metrics' : null,
           // Flag to distinguish source of data
           dataSource: hasLineageData ? 'lineage' : (hasLegacyScore ? 'legacy' : 'none'),
+          // Health status for freshness indicators
+          health,
+          healthReason,
+          lastRunStatus,
+          lastUpdatedAt,
         };
       });
       
