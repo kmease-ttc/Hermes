@@ -54,7 +54,9 @@ import {
   type CrewStatus 
 } from "./services/crewStatus";
 import governanceRoutes from './routes/governance';
-import { generatedSites, siteGenerationJobs, crewFindings } from "@shared/schema";
+import { generatedSites, siteGenerationJobs, crewFindings, type InsertAgentActionLog, type InsertOutcomeEventLog } from "@shared/schema";
+import { processUnattributedEvents } from "./services/socratesAttribution";
+import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 import { enqueueJob } from "./siteGeneration/worker";
 import { getCrewIntegrationConfig, getAllCrewConfigs } from "./integrations/getCrewIntegrationConfig";
@@ -16422,6 +16424,88 @@ Current metrics for the site: ${metricsContext}`;
       });
     } catch (error: any) {
       logger.error("API", "Failed to disable crew agent", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // === Socrates Learning System Routes ===
+
+  // POST /api/socrates/actions - Log an agent action
+  app.post("/api/socrates/actions", async (req, res) => {
+    try {
+      const body = req.body as Omit<InsertAgentActionLog, "id" | "createdAt">;
+      
+      const actionId = body.actionId || uuidv4();
+      
+      const created = await storage.createAgentActionLog({
+        ...body,
+        actionId,
+      });
+      
+      res.json(created);
+    } catch (error: any) {
+      logger.error("Socrates", "Failed to log agent action", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/socrates/events - Log an outcome event
+  app.post("/api/socrates/events", async (req, res) => {
+    try {
+      const body = req.body as Omit<InsertOutcomeEventLog, "id" | "createdAt">;
+      
+      const eventId = body.eventId || uuidv4();
+      
+      const created = await storage.createOutcomeEventLog({
+        ...body,
+        eventId,
+      });
+      
+      res.json(created);
+    } catch (error: any) {
+      logger.error("Socrates", "Failed to log outcome event", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/socrates/learnings - Retrieve top learnings
+  app.get("/api/socrates/learnings", async (req, res) => {
+    try {
+      const { siteId, metricKeys, agentId, limit = "5" } = req.query;
+      
+      const parsedMetricKeys = metricKeys 
+        ? String(metricKeys).split(",").map(k => k.trim()).filter(Boolean)
+        : undefined;
+      
+      const entries = await storage.getSocratesKbEntriesByContext({
+        siteId: siteId ? String(siteId) : undefined,
+        metricKeys: parsedMetricKeys,
+        agentId: agentId ? String(agentId) : undefined,
+        status: "active",
+        limit: parseInt(String(limit), 10) || 5,
+      });
+      
+      res.json(entries);
+    } catch (error: any) {
+      logger.error("Socrates", "Failed to retrieve learnings", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/socrates/attribute - Process attribution for a site
+  app.post("/api/socrates/attribute", async (req, res) => {
+    try {
+      const { siteId } = req.body;
+      
+      if (!siteId) {
+        return res.status(400).json({ error: "siteId is required" });
+      }
+      
+      const result = await processUnattributedEvents(siteId);
+      
+      res.json(result);
+    } catch (error: any) {
+      logger.error("Socrates", "Failed to process attribution", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
