@@ -207,6 +207,18 @@ import {
   reportShares,
   type ReportShare,
   type InsertReportShare,
+  agentActionLogs,
+  type AgentActionLog,
+  type InsertAgentActionLog,
+  outcomeEventLogs,
+  type OutcomeEventLog,
+  type InsertOutcomeEventLog,
+  attributionRecords,
+  type AttributionRecord,
+  type InsertAttributionRecord,
+  socratesKbEntries,
+  type SocratesKbEntry,
+  type InsertSocratesKbEntry,
 } from "@shared/schema";
 import { eq, desc, and, gte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -589,6 +601,26 @@ export interface IStorage {
   saveCrewFindings(findings: InsertCrewFinding[]): Promise<CrewFinding[]>;
   getCrewFindingsByRunId(runId: number): Promise<CrewFinding[]>;
   getRecentCrewFindings(siteId: string, crewId: string, limit?: number): Promise<CrewFinding[]>;
+  
+  // Socrates: Agent Action Logs
+  createAgentActionLog(data: InsertAgentActionLog): Promise<AgentActionLog>;
+  getAgentActionLogsByTimeWindow(siteId: string, startTime: Date, endTime: Date): Promise<AgentActionLog[]>;
+  getAgentActionLogsByActionIds(actionIds: string[]): Promise<AgentActionLog[]>;
+  
+  // Socrates: Outcome Event Logs
+  createOutcomeEventLog(data: InsertOutcomeEventLog): Promise<OutcomeEventLog>;
+  getOutcomeEventLogsBySite(siteId: string, limit?: number): Promise<OutcomeEventLog[]>;
+  getUnattributedOutcomeEvents(siteId: string): Promise<OutcomeEventLog[]>;
+  
+  // Socrates: Attribution Records
+  createAttributionRecord(data: InsertAttributionRecord): Promise<AttributionRecord>;
+  getAttributionsByEventId(eventId: string): Promise<AttributionRecord[]>;
+  
+  // Socrates: Knowledge Base Entries
+  createSocratesKbEntry(data: InsertSocratesKbEntry): Promise<SocratesKbEntry>;
+  updateSocratesKbEntry(kbId: string, updates: Partial<InsertSocratesKbEntry>): Promise<SocratesKbEntry | null>;
+  getSocratesKbEntriesByContext(params: { siteId?: string; metricKeys?: string[]; agentId?: string; status?: string; limit?: number }): Promise<SocratesKbEntry[]>;
+  getSocratesKbEntryByKbId(kbId: string): Promise<SocratesKbEntry | null>;
 }
 
 class DBStorage implements IStorage {
@@ -3552,6 +3584,131 @@ class DBStorage implements IStorage {
       .where(and(eq(crewFindings.siteId, siteId), eq(crewFindings.crewId, crewId)))
       .orderBy(desc(crewFindings.surfacedAt))
       .limit(limit);
+  }
+
+  // Socrates: Agent Action Logs
+  async createAgentActionLog(data: InsertAgentActionLog): Promise<AgentActionLog> {
+    const [result] = await db.insert(agentActionLogs).values(data).returning();
+    return result;
+  }
+
+  async getAgentActionLogsByTimeWindow(siteId: string, startTime: Date, endTime: Date): Promise<AgentActionLog[]> {
+    return db
+      .select()
+      .from(agentActionLogs)
+      .where(
+        and(
+          eq(agentActionLogs.siteId, siteId),
+          gte(agentActionLogs.timestampStart, startTime),
+          sql`${agentActionLogs.timestampStart} <= ${endTime}`
+        )
+      )
+      .orderBy(desc(agentActionLogs.timestampStart));
+  }
+
+  async getAgentActionLogsByActionIds(actionIds: string[]): Promise<AgentActionLog[]> {
+    if (actionIds.length === 0) return [];
+    return db
+      .select()
+      .from(agentActionLogs)
+      .where(sql`${agentActionLogs.actionId} = ANY(${actionIds})`);
+  }
+
+  // Socrates: Outcome Event Logs
+  async createOutcomeEventLog(data: InsertOutcomeEventLog): Promise<OutcomeEventLog> {
+    const [result] = await db.insert(outcomeEventLogs).values(data).returning();
+    return result;
+  }
+
+  async getOutcomeEventLogsBySite(siteId: string, limit: number = 100): Promise<OutcomeEventLog[]> {
+    return db
+      .select()
+      .from(outcomeEventLogs)
+      .where(eq(outcomeEventLogs.siteId, siteId))
+      .orderBy(desc(outcomeEventLogs.timestamp))
+      .limit(limit);
+  }
+
+  async getUnattributedOutcomeEvents(siteId: string): Promise<OutcomeEventLog[]> {
+    return db
+      .select()
+      .from(outcomeEventLogs)
+      .where(
+        and(
+          eq(outcomeEventLogs.siteId, siteId),
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${attributionRecords} 
+            WHERE ${attributionRecords.eventId} = ${outcomeEventLogs.eventId}
+          )`
+        )
+      )
+      .orderBy(desc(outcomeEventLogs.timestamp));
+  }
+
+  // Socrates: Attribution Records
+  async createAttributionRecord(data: InsertAttributionRecord): Promise<AttributionRecord> {
+    const [result] = await db.insert(attributionRecords).values(data).returning();
+    return result;
+  }
+
+  async getAttributionsByEventId(eventId: string): Promise<AttributionRecord[]> {
+    return db
+      .select()
+      .from(attributionRecords)
+      .where(eq(attributionRecords.eventId, eventId))
+      .orderBy(desc(attributionRecords.confidence));
+  }
+
+  // Socrates: Knowledge Base Entries
+  async createSocratesKbEntry(data: InsertSocratesKbEntry): Promise<SocratesKbEntry> {
+    const [result] = await db.insert(socratesKbEntries).values(data).returning();
+    return result;
+  }
+
+  async updateSocratesKbEntry(kbId: string, updates: Partial<InsertSocratesKbEntry>): Promise<SocratesKbEntry | null> {
+    const [result] = await db
+      .update(socratesKbEntries)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(socratesKbEntries.kbId, kbId))
+      .returning();
+    return result || null;
+  }
+
+  async getSocratesKbEntriesByContext(params: { 
+    siteId?: string; 
+    metricKeys?: string[]; 
+    agentId?: string; 
+    status?: string; 
+    limit?: number 
+  }): Promise<SocratesKbEntry[]> {
+    const conditions: any[] = [];
+    
+    if (params.status) {
+      conditions.push(eq(socratesKbEntries.status, params.status));
+    }
+    
+    let query = db
+      .select()
+      .from(socratesKbEntries);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const results = await query
+      .orderBy(desc(socratesKbEntries.confidence))
+      .limit(params.limit || 50);
+    
+    return results;
+  }
+
+  async getSocratesKbEntryByKbId(kbId: string): Promise<SocratesKbEntry | null> {
+    const [result] = await db
+      .select()
+      .from(socratesKbEntries)
+      .where(eq(socratesKbEntries.kbId, kbId))
+      .limit(1);
+    return result || null;
   }
 }
 
