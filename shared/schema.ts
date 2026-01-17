@@ -2948,3 +2948,113 @@ export const insertCrewFindingSchema = createInsertSchema(crewFindings).omit({
 });
 export type InsertCrewFinding = z.infer<typeof insertCrewFindingSchema>;
 export type CrewFinding = typeof crewFindings.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOCRATES LEARNING METHODOLOGY TABLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Agent Action Logs - append-only log of all agent actions
+export const agentActionLogs = pgTable("agent_action_logs", {
+  id: serial("id").primaryKey(),
+  actionId: text("action_id").notNull().unique(),
+  agentId: text("agent_id").notNull(), // crew id like 'scotty', 'beacon', 'draper'
+  siteId: text("site_id").notNull(),
+  env: text("env").notNull(), // 'dev' or 'prod'
+  timestampStart: timestamp("timestamp_start").notNull(),
+  timestampEnd: timestamp("timestamp_end"),
+  actionType: text("action_type").notNull(), // 'crawl', 'deploy', 'content_update', 'config_change', 'integration_setup', 'run'
+  targets: jsonb("targets"), // array of urls, files, configs
+  diffSummary: text("diff_summary"), // if code/content changed
+  commitSha: text("commit_sha"),
+  deployId: text("deploy_id"),
+  jobId: text("job_id"),
+  runId: text("run_id"),
+  expectedImpact: jsonb("expected_impact"), // metrics expected to move
+  riskLevel: text("risk_level"), // 'low', 'med', 'high'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgentActionLogSchema = createInsertSchema(agentActionLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAgentActionLog = z.infer<typeof insertAgentActionLogSchema>;
+export type AgentActionLog = typeof agentActionLogs.$inferSelect;
+
+// Outcome Event Logs - append-only log of observed outcomes
+export const outcomeEventLogs = pgTable("outcome_event_logs", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  env: text("env").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  eventType: text("event_type").notNull(), // 'regression', 'improvement', 'breakage', 'anomaly'
+  metricKey: text("metric_key").notNull(), // crawl_health, pages_losing_traffic, domain_authority, LCP, indexing_coverage, clicks, etc.
+  oldValue: real("old_value"),
+  newValue: real("new_value"),
+  delta: real("delta"),
+  severity: text("severity"), // 'low', 'med', 'high'
+  detectionSource: text("detection_source"), // 'scheduler', 'monitor', 'manual'
+  context: jsonb("context"), // urls affected, error codes, affected templates
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertOutcomeEventLogSchema = createInsertSchema(outcomeEventLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertOutcomeEventLog = z.infer<typeof insertOutcomeEventLogSchema>;
+export type OutcomeEventLog = typeof outcomeEventLogs.$inferSelect;
+
+// Attribution Records - links outcomes to candidate actions
+export const attributionRecords = pgTable("attribution_records", {
+  id: serial("id").primaryKey(),
+  attributionId: text("attribution_id").notNull().unique(),
+  siteId: text("site_id").notNull(),
+  env: text("env").notNull(),
+  eventId: text("event_id").notNull(), // references outcomeEventLogs.eventId
+  candidateActionIds: jsonb("candidate_action_ids"), // array of actionIds
+  timeProximityScore: real("time_proximity_score"), // 0-1
+  changeSurfaceScore: real("change_surface_score"), // 0-1
+  historicalLikelihoodScore: real("historical_likelihood_score"), // 0-1
+  confounders: jsonb("confounders"), // array of possible causes
+  confidence: real("confidence").notNull(), // 0-1
+  explanation: text("explanation"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAttributionRecordSchema = createInsertSchema(attributionRecords).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAttributionRecord = z.infer<typeof insertAttributionRecordSchema>;
+export type AttributionRecord = typeof attributionRecords.$inferSelect;
+
+// Socrates Knowledge Base Entries - learnings derived from attribution
+export const socratesKbEntries = pgTable("socrates_kb_entries", {
+  id: serial("id").primaryKey(),
+  kbId: text("kb_id").notNull().unique(),
+  title: text("title").notNull(),
+  problemStatement: text("problem_statement").notNull(),
+  contextScope: jsonb("context_scope").notNull(), // metricKeys[], siteArchetype, techStack, pageType, environment
+  triggerPattern: text("trigger_pattern"), // what signals to look for
+  rootCauseHypothesis: text("root_cause_hypothesis"),
+  evidence: jsonb("evidence").notNull(), // eventIds[], actionIds[], diffs, beforeAfter
+  recommendedAction: text("recommended_action"),
+  avoidAction: text("avoid_action"),
+  guardrail: text("guardrail"),
+  confidence: real("confidence").notNull(), // 0-1
+  status: text("status").notNull().default("draft"), // 'draft', 'active', 'deprecated'
+  tags: jsonb("tags"), // array of tags
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSocratesKbEntrySchema = createInsertSchema(socratesKbEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSocratesKbEntry = z.infer<typeof insertSocratesKbEntrySchema>;
+export type SocratesKbEntry = typeof socratesKbEntries.$inferSelect;
