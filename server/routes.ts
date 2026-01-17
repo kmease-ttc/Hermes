@@ -54,7 +54,7 @@ import {
   type CrewStatus 
 } from "./services/crewStatus";
 import governanceRoutes from './routes/governance';
-import { generatedSites, siteGenerationJobs, crewFindings, type InsertAgentActionLog, type InsertOutcomeEventLog } from "@shared/schema";
+import { generatedSites, siteGenerationJobs, crewFindings, insertAgentActionLogSchema, insertOutcomeEventLogSchema, type InsertAgentActionLog, type InsertOutcomeEventLog } from "@shared/schema";
 import { processUnattributedEvents } from "./services/socratesAttribution";
 import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
@@ -16433,8 +16433,15 @@ Current metrics for the site: ${metricsContext}`;
   // POST /api/socrates/actions - Log an agent action
   app.post("/api/socrates/actions", async (req, res) => {
     try {
-      const body = req.body as Omit<InsertAgentActionLog, "id" | "createdAt">;
+      const parsed = insertAgentActionLogSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: parsed.error.errors 
+        });
+      }
       
+      const body = parsed.data;
       const actionId = body.actionId || uuidv4();
       
       const created = await storage.createAgentActionLog({
@@ -16452,8 +16459,15 @@ Current metrics for the site: ${metricsContext}`;
   // POST /api/socrates/events - Log an outcome event
   app.post("/api/socrates/events", async (req, res) => {
     try {
-      const body = req.body as Omit<InsertOutcomeEventLog, "id" | "createdAt">;
+      const parsed = insertOutcomeEventLogSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: parsed.error.errors 
+        });
+      }
       
+      const body = parsed.data;
       const eventId = body.eventId || uuidv4();
       
       const created = await storage.createOutcomeEventLog({

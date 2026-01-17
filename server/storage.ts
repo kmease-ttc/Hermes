@@ -3687,6 +3687,28 @@ class DBStorage implements IStorage {
       conditions.push(eq(socratesKbEntries.status, params.status));
     }
     
+    // Filter by siteId in contextScope JSONB field
+    if (params.siteId) {
+      conditions.push(
+        sql`${socratesKbEntries.contextScope}->>'siteId' = ${params.siteId}`
+      );
+    }
+    
+    // Filter by agentId in contextScope JSONB field
+    if (params.agentId) {
+      conditions.push(
+        sql`${socratesKbEntries.contextScope}->>'agentId' = ${params.agentId}`
+      );
+    }
+    
+    // Filter by metricKeys overlap in contextScope JSONB field
+    if (params.metricKeys && params.metricKeys.length > 0) {
+      // Use JSONB ?| operator to check if any of the provided metricKeys exist in the array
+      conditions.push(
+        sql`${socratesKbEntries.contextScope}->'metricKeys' ?| array[${sql.join(params.metricKeys.map(k => sql`${k}`), sql`, `)}]`
+      );
+    }
+    
     let query = db
       .select()
       .from(socratesKbEntries);
