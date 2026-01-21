@@ -70,18 +70,26 @@ A unified pipeline across 12 "crews" with defined impact, effort, autoFixable fl
 ### Unified Crew Lineage System
 All crew identity, theming, integrations, and scores are derived from a single canonical source, ensuring consistent scoring and status across the platform. Scores (0-100 health rating) and Tasks (open task count) are distinct concepts, clearly separated in data and UI presentation.
 
-### Mission Control Dashboard (Updated Jan 2026)
-The primary dashboard answering three user intents:
-- **Understand**: Website Report (default view) - current site health, key metrics, task counts
-- **Share**: Developer Report - neutral, technical report for sharing with devs/agencies
-- **Fix**: Fix Everything - managed execution action
+### Dashboard (Rebuilt Jan 2026)
+The primary dashboard with report-style light theme answering user intents: rankings, movement, and next actions.
 
-Key features:
-- **Unified Metrics Grid**: Shows all metrics (owned + locked) together, not separated
-- **Enticing Locked Cards**: Sample values, "why it matters" copy, task count badges, value-first CTAs
-- **Tasks Overview Section**: "What Needs Fixing" showing top 3 priority tasks + total count
-- **Crew Cards**: One big metric + task count with clear "Review Tasks →" CTAs
-- **Terminology**: All user-facing text uses "tasks" instead of "missions"
+**Concept Renames:**
+- Mission Control → Dashboard
+- Crew → Agents
+
+**Structure (7 sections):**
+1. **Header**: SEO Performance Overview with Weekly Report badge and 4 KPI stat cards
+2. **Ranking Momentum**: Improving / Needs Attention columns (7-day change)
+3. **What To Do Next**: 4 prescriptive steps with Active/Locked states and unlock CTAs
+4. **Pages to Optimize**: Action recommendations per page with keyword context
+5. **Top Performers**: Green-tinted success section with protection advisory
+6. **Agents**: Locked/unlockable capability cards (Technical SEO, Analytics, Content, Automation)
+7. **How It Works**: Footer explaining the 4-step workflow
+
+**Light Theme:**
+- Uses `.dashboard-light` CSS class with inverted colors
+- AppShell accepts `lightMode` prop for sidebar theming
+- Body background overridden via `body:has(.dashboard-light)`
 
 ### Gold Standard Worker Blueprint
 All microservice workers adhere to a blueprint defining required endpoints (`/health`, `/smoke-test`, `/capabilities`, `/run`), a standard JSON response shape, API key authentication, and `X-Request-Id` correlation.

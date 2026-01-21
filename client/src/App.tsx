@@ -10,7 +10,7 @@ import { SiteProvider } from "@/hooks/useSiteContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import AppShell from "@/components/AppShell";
 import NotFound from "@/pages/not-found";
-import MissionControl from "@/pages/MissionControl";
+import Dashboard from "@/pages/Dashboard";
 import Tickets from "@/pages/Tickets";
 import Settings from "@/pages/Settings";
 import Sites from "@/pages/Sites";
@@ -19,7 +19,6 @@ import Integrations from "@/pages/Integrations";
 import SuggestedChanges from "@/pages/SuggestedChanges";
 import Authority from "@/pages/Authority";
 import Crew from "@/pages/Crew";
-import MyCrew from "@/pages/MyCrew";
 import AgentDetail from "@/pages/AgentDetail";
 import KeywordRankings from "@/pages/KeywordRankings";
 import Runs from "@/pages/Runs";
@@ -96,9 +95,9 @@ function LegacyRedirect({ to }: { to: string }) {
   return null;
 }
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ component: Component, lightMode = false }: { component: React.ComponentType; lightMode?: boolean }) {
   return (
-    <AppShell>
+    <AppShell lightMode={lightMode}>
       <Component />
     </AppShell>
   );
@@ -139,10 +138,12 @@ function Router() {
       {/* ============================================ */}
       {/* APP ROUTES - Authenticated application pages */}
       {/* ============================================ */}
-      <Route path={ROUTES.DASHBOARD}><ProtectedRoute component={MissionControl} /></Route>
-      <Route path={ROUTES.MISSION_CONTROL}><ProtectedRoute component={MissionControl} /></Route>
+      <Route path={ROUTES.DASHBOARD}><ProtectedRoute component={Dashboard} lightMode /></Route>
+      <Route path={ROUTES.MISSION_CONTROL}><ProtectedRoute component={Dashboard} lightMode /></Route>
       <Route path={ROUTES.SELECT_SITE} component={SelectSite} />
-      <Route path={ROUTES.CREW}><ProtectedRoute component={MyCrew} /></Route>
+      <Route path={ROUTES.CREW}>
+        <Redirect to={ROUTES.AGENTS} />
+      </Route>
       <Route path={ROUTES.AGENTS}><ProtectedRoute component={Crew} /></Route>
       <Route path={ROUTES.AGENT_DETAIL}><ProtectedRoute component={AgentDetail} /></Route>
       <Route path={ROUTES.KEYWORDS}><ProtectedRoute component={KeywordRankings} /></Route>
@@ -189,7 +190,7 @@ function Router() {
       </Route>
       <Route path="/crew/:agentId" component={CrewRedirect} />
       <Route path="/crew">
-        <LegacyRedirect to={ROUTES.CREW} />
+        <LegacyRedirect to={ROUTES.AGENTS} />
       </Route>
       <Route path="/agents">
         <LegacyRedirect to={ROUTES.AGENTS} />

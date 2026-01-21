@@ -1,525 +1,538 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { SiteSelector } from "@/components/dashboard/SiteSelector";
-import { PillarCard, PillarStatus, TrendDirection } from "@/components/dashboard/PillarCard";
-import { TicketList } from "@/components/dashboard/TicketList";
-import { AskAI } from "@/components/dashboard/AskAI";
-import { BenchmarkComparison } from "@/components/dashboard/BenchmarkComparison";
-import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
-import { ActivityLog } from "@/components/dashboard/ActivityLog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Download, AlertCircle, Activity, Shield, Search, ExternalLink } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RefreshingBadge, StaleIndicator } from "@/components/ui/stale-indicator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  TrendingUp, 
+  TrendingDown,
+  Lock,
+  CheckCircle2,
+  ArrowRight,
+  Target,
+  Zap,
+  FileText,
+  Settings,
+  BarChart3,
+  Search,
+  PenTool,
+  Bot,
+  ExternalLink
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useSiteContext } from "@/hooks/useSiteContext";
+import { SiteSelector } from "@/components/site/SiteSelector";
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
+import { cn } from "@/lib/utils";
 
-interface TrafficInsight {
-  status: PillarStatus;
-  direction: TrendDirection;
-  headline: string;
-  why: string;
-  kpis: { label: string; value: string | number; delta?: string; interpretation?: 'good' | 'warning' | 'critical' | 'neutral' }[];
-  actions: { text: string; link?: string }[];
+interface RankingItem {
+  keyword: string;
+  position: number;
+  change: number;
+  volume?: number;
 }
 
-interface TechnicalInsight {
-  status: PillarStatus;
-  direction: TrendDirection;
-  headline: string;
-  why: string;
-  kpis: { label: string; value: string | number; delta?: string; interpretation?: 'good' | 'warning' | 'critical' | 'neutral' }[];
-  actions: { text: string; link?: string }[];
+interface PageToOptimize {
+  url: string;
+  title: string;
+  keyword: string;
+  position: number;
+  volume: number;
+  action: string;
 }
 
-interface KeywordInsight {
-  status: PillarStatus;
-  direction: TrendDirection;
-  headline: string;
-  why: string;
-  kpis: { label: string; value: string | number; delta?: string; interpretation?: 'good' | 'warning' | 'critical' | 'neutral' }[];
-  actions: { text: string; link?: string }[];
+interface TopPerformer {
+  url: string;
+  title: string;
+  keyword: string;
+  position: number;
 }
 
-function generateTrafficInsight(stats: any): TrafficInsight {
-  if (!stats?.organicTraffic?.trend || stats.organicTraffic.trend.length < 7) {
-    return {
-      status: 'inconclusive',
-      direction: 'flat',
-      headline: 'GA4 data not yet collected',
-      why: 'Run diagnostics to fetch traffic data from Google Analytics. Without this data, we cannot assess your organic traffic health.',
-      kpis: [
-        { label: 'Organic Sessions', value: '—', interpretation: 'neutral' },
-        { label: 'Total Sessions', value: '—', interpretation: 'neutral' },
+interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  includes: string[];
+  status: "active" | "locked" | "setup_required";
+  ctaLabel: string;
+  ctaAction: string;
+}
+
+function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext?: string }) {
+  return (
+    <div className="bg-gradient-to-br from-violet-50 to-pink-50 dark:from-violet-950/30 dark:to-pink-950/30 rounded-xl p-5 border border-violet-100 dark:border-violet-900/50">
+      <p className="text-sm text-muted-foreground mb-1">{label}</p>
+      <p className="text-3xl font-bold text-foreground">{value}</p>
+      {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
+    </div>
+  );
+}
+
+function RankingMomentumSection({ improving, needsAttention }: { improving: RankingItem[]; needsAttention: RankingItem[] }) {
+  return (
+    <section className="space-y-4" data-testid="section-ranking-momentum">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-foreground">Ranking Momentum</h2>
+        <Badge variant="outline" className="text-xs">7-day change</Badge>
+      </div>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              Improving
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {improving.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No significant improvements this week</p>
+            ) : (
+              improving.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100 dark:border-emerald-900/30 last:border-0">
+                  <span className="text-sm font-medium truncate max-w-[200px]">{item.keyword}</span>
+                  <div className="flex items-center gap-3">
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                      +{Math.abs(item.change)}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground w-8 text-right">#{item.position}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 text-amber-600" />
+              Needs Attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {needsAttention.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No significant declines this week</p>
+            ) : (
+              needsAttention.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-amber-100 dark:border-amber-900/30 last:border-0">
+                  <span className="text-sm font-medium truncate max-w-[200px]">{item.keyword}</span>
+                  <div className="flex items-center gap-3">
+                    <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                      {item.change}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground w-8 text-right">#{item.position}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+function WhatToDoNextSection() {
+  const steps = [
+    {
+      number: 1,
+      title: "Strengthen pages already close to page one",
+      description: "Several important pages are ranking between positions #4–#10. These are the fastest opportunities to move into the top results.",
+      actions: [
+        "Improve titles and headings",
+        "Add internal links from high-traffic pages",
+        "Expand content to answer related questions"
       ],
-      actions: [{ text: 'Run diagnostics to fetch GA4 data' }],
-    };
-  }
+      status: "active" as const,
+      unlockLabel: null
+    },
+    {
+      number: 2,
+      title: "Build pages for high-volume gaps",
+      description: "Some high-search keywords still don't have a strong page competing in the results.",
+      actions: [
+        "Create or expand hub pages for core services",
+        "Cover broader search intent before going deeper",
+        "Focus on one strong page per topic"
+      ],
+      status: "locked" as const,
+      unlockLabel: "Unlock Content Optimization"
+    },
+    {
+      number: 3,
+      title: "Fix technical issues that limit rankings",
+      description: "Technical issues can quietly prevent pages from ranking higher, even with good content.",
+      actions: [
+        "Ensure pages are crawlable and indexable",
+        "Fix missing headings and thin content",
+        "Improve page speed and mobile performance"
+      ],
+      status: "locked" as const,
+      unlockLabel: "Unlock Technical SEO"
+    },
+    {
+      number: 4,
+      title: "Publish with momentum (weekly plan)",
+      description: "Consistent publishing reinforces rankings and prevents backsliding.",
+      actions: [
+        "Week 1: Strengthen existing ranking pages",
+        "Week 2: Publish supporting content",
+        "Week 3+: Maintain weekly updates"
+      ],
+      status: "locked" as const,
+      unlockLabel: "Unlock Content Automation"
+    }
+  ];
 
-  const trend = stats.organicTraffic.trend;
-  const recent7d = trend.slice(-7).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
-  const previous7d = trend.slice(-14, -7).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
-  const totalSessions = trend.reduce((sum: number, d: any) => sum + (d.value || 0), 0);
-  
-  let changePercent = 0;
-  if (previous7d > 0) {
-    changePercent = ((recent7d - previous7d) / previous7d) * 100;
-  }
-
-  let status: PillarStatus = 'good';
-  let direction: TrendDirection = 'flat';
-  let headline = 'Traffic is stable compared to last week';
-  let why = 'Organic traffic is maintaining steady levels. No immediate concerns detected.';
-  let actions: { text: string; link?: string }[] = [];
-
-  if (changePercent < -25) {
-    status = 'critical';
-    direction = 'down';
-    headline = `Organic sessions down ${Math.abs(changePercent).toFixed(0)}% week-over-week`;
-    why = 'Significant traffic decline detected. This could indicate ranking drops, indexation issues, or seasonal patterns. Immediate investigation recommended.';
-    actions = [
-      { text: 'Investigate ranking drops for top landing pages', link: '/analysis' },
-      { text: 'Check for recent technical changes affecting indexation' },
-    ];
-  } else if (changePercent < -10) {
-    status = 'attention';
-    direction = 'down';
-    headline = `Organic sessions down ${Math.abs(changePercent).toFixed(0)}% week-over-week`;
-    why = 'Moderate traffic decline. Review keyword positions for pages that may have lost visibility.';
-    actions = [
-      { text: 'Review keyword positions 4–12 for quick recovery', link: '/serp' },
-      { text: 'Check top losing pages for content freshness' },
-    ];
-  } else if (changePercent > 10) {
-    status = 'good';
-    direction = 'up';
-    headline = `Organic sessions up ${changePercent.toFixed(0)}% week-over-week`;
-    why = 'Traffic is growing. Continue current SEO efforts and monitor which pages are driving gains.';
-    actions = [];
-  }
-
-  return {
-    status,
-    direction,
-    headline,
-    why,
-    kpis: [
-      { 
-        label: 'Organic (7d)', 
-        value: recent7d.toLocaleString(), 
-        delta: changePercent !== 0 ? `${changePercent > 0 ? '+' : ''}${changePercent.toFixed(0)}%` : undefined,
-        interpretation: changePercent < -10 ? 'critical' : changePercent > 10 ? 'good' : 'neutral'
-      },
-      { 
-        label: 'Total (30d)', 
-        value: totalSessions.toLocaleString(),
-        interpretation: 'neutral'
-      },
-    ],
-    actions,
-  };
+  return (
+    <section className="space-y-4" data-testid="section-what-to-do-next">
+      <h2 className="text-xl font-semibold text-foreground">What To Do Next</h2>
+      
+      <div className="space-y-4">
+        {steps.map((step) => (
+          <Card key={step.number} className={cn(
+            "transition-all",
+            step.status === "locked" && "opacity-75"
+          )}>
+            <CardContent className="pt-5">
+              <div className="flex items-start gap-4">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                  step.status === "active" 
+                    ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300" 
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {step.number}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground mb-1">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{step.description}</p>
+                  
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">What this means:</p>
+                    <ul className="space-y-1">
+                      {step.actions.map((action, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <span className="text-violet-500 mt-1">•</span>
+                          <span>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {step.status === "active" ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Active
+                      </Badge>
+                    ) : (
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Lock className="w-3 h-3" />
+                        {step.unlockLabel}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-function generateTechnicalInsight(stats: any): TechnicalInsight {
-  if (!stats?.webChecks) {
-    return {
-      status: 'inconclusive',
-      direction: 'flat',
-      headline: 'Website health checks not yet run',
-      why: 'Run diagnostics to crawl your site and check for technical SEO issues like indexation blockers, missing meta tags, and server errors.',
-      kpis: [
-        { label: 'Pages Checked', value: '—', interpretation: 'neutral' },
-        { label: 'Issues Found', value: '—', interpretation: 'neutral' },
-      ],
-      actions: [{ text: 'Run diagnostics to crawl the site' }],
-    };
-  }
-
-  const { total, passed } = stats.webChecks;
-  const issues = total - passed;
-  const passRate = total > 0 ? (passed / total) * 100 : 0;
-
-  let status: PillarStatus = 'good';
-  let direction: TrendDirection = 'flat';
-  let headline = `All ${total} pages passing health checks`;
-  let why = 'No technical issues detected. Your site is well-optimized for crawling and indexation.';
-  let actions: { text: string; link?: string }[] = [];
-
-  if (passRate < 75) {
-    status = 'critical';
-    direction = 'down';
-    headline = `Only ${passRate.toFixed(0)}% of health checks passing`;
-    why = `${issues} pages have issues that may block indexation or hurt rankings. These likely include noindex tags, missing sitemaps, or server errors.`;
-    actions = [
-      { text: 'Fix indexation blockers first (noindex, robots.txt)', link: '/analysis' },
-      { text: 'Check server response codes for 4xx/5xx errors' },
-    ];
-  } else if (passRate < 90) {
-    status = 'attention';
-    direction = 'flat';
-    headline = `${issues} pages have issues that need attention`;
-    why = 'Minor technical issues detected. These may include duplicate titles, missing meta descriptions, or slow page speeds.';
-    actions = [
-      { text: 'Fix duplicate titles on affected pages', link: '/analysis' },
-      { text: 'Add missing meta descriptions' },
-    ];
-  }
-
-  return {
-    status,
-    direction,
-    headline,
-    why,
-    kpis: [
-      { 
-        label: 'Pages Checked', 
-        value: total,
-        interpretation: 'neutral'
-      },
-      { 
-        label: 'Issues Found', 
-        value: issues,
-        interpretation: issues > 5 ? 'critical' : issues > 0 ? 'warning' : 'good'
-      },
-    ],
-    actions,
-  };
+function PagesToOptimizeSection({ pages }: { pages: PageToOptimize[] }) {
+  return (
+    <section className="space-y-4" data-testid="section-pages-to-optimize">
+      <h2 className="text-xl font-semibold text-foreground">Pages to Optimize</h2>
+      
+      <div className="space-y-3">
+        {pages.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">Connect your Search Console to see optimization opportunities</p>
+            </CardContent>
+          </Card>
+        ) : (
+          pages.map((page, idx) => (
+            <Card key={idx} className="hover:border-violet-300 dark:hover:border-violet-700 transition-colors">
+              <CardContent className="py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">{page.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{page.url}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {page.keyword}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        #{page.position} · {page.volume.toLocaleString()} mo/search
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">{page.action}</p>
+                    <Button variant="ghost" size="sm" className="mt-1 gap-1 text-xs">
+                      View <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </section>
+  );
 }
 
-function generateKeywordInsight(serpOverview: any): KeywordInsight {
-  if (!serpOverview?.totalKeywords) {
-    return {
-      status: 'inconclusive',
-      direction: 'flat',
-      headline: 'No keywords tracked yet',
-      why: 'Add target keywords to monitor your search rankings. Without tracked keywords, we cannot assess your visibility in search results.',
-      kpis: [
-        { label: 'Tracked', value: 0, interpretation: 'neutral' },
-        { label: 'In Top 10', value: 0, interpretation: 'neutral' },
-      ],
-      actions: [{ text: 'Add target keywords to start tracking', link: '/serp' }],
-    };
-  }
+function TopPerformersSection({ performers }: { performers: TopPerformer[] }) {
+  return (
+    <section className="space-y-4" data-testid="section-top-performers">
+      <h2 className="text-xl font-semibold text-foreground">Top Performers</h2>
+      
+      <Card className="bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900/30">
+        <CardContent className="pt-5">
+          {performers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No top-ranking pages detected yet</p>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {performers.map((page, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100 dark:border-emerald-900/20 last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{page.title}</p>
+                      <p className="text-xs text-muted-foreground">{page.keyword}</p>
+                    </div>
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 shrink-0">
+                      #{page.position}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4 italic">
+                These pages protect your traffic. Changes here should be deliberate.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
 
-  if (!serpOverview.lastCheck) {
-    return {
-      status: 'inconclusive',
-      direction: 'flat',
-      headline: 'Keywords seeded but not yet checked',
-      why: `${serpOverview.totalKeywords} keywords are ready to track. Run a SERP check to fetch current rankings.`,
-      kpis: [
-        { label: 'Tracked', value: serpOverview.totalKeywords, interpretation: 'neutral' },
-        { label: 'In Top 10', value: '—', interpretation: 'neutral' },
-      ],
-      actions: [{ text: 'Run SERP check to fetch rankings', link: '/serp' }],
-    };
-  }
+function AgentsSection({ agents }: { agents: Agent[] }) {
+  return (
+    <section className="space-y-4" data-testid="section-agents">
+      <h2 className="text-xl font-semibold text-foreground">Agents</h2>
+      <p className="text-sm text-muted-foreground">Unlock capabilities to automate your SEO workflow</p>
+      
+      <div className="grid md:grid-cols-2 gap-4">
+        {agents.map((agent) => (
+          <Card 
+            key={agent.id} 
+            className={cn(
+              "relative overflow-hidden transition-all",
+              agent.status === "locked" && "opacity-80"
+            )}
+          >
+            {agent.status === "locked" && (
+              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-900/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-muted-foreground/50" />
+              </div>
+            )}
+            
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bot className="w-4 h-4 text-violet-500" />
+                {agent.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">{agent.description}</p>
+              
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Includes:</p>
+                <ul className="space-y-1">
+                  {agent.includes.map((item, idx) => (
+                    <li key={idx} className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <Button 
+                variant={agent.status === "active" ? "outline" : "default"}
+                size="sm" 
+                className="w-full mt-2"
+              >
+                {agent.ctaLabel}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-  const { stats } = serpOverview;
-  const { inTop10, inTop20, losers, winners, avgPosition, notRanking } = stats;
-  const total = serpOverview.totalKeywords;
-  const opportunities = total - inTop10 - notRanking;
+function HowItWorksSection() {
+  const steps = [
+    { number: 1, text: "Rankings tracked weekly" },
+    { number: 2, text: "Meaningful movement detected" },
+    { number: 3, text: "Prescriptive actions generated" },
+    { number: 4, text: "Automation unlocked where useful" }
+  ];
 
-  let status: PillarStatus = 'good';
-  let direction: TrendDirection = 'flat';
-  let headline = `${inTop10} keywords in top 10 positions`;
-  let why = 'Your tracked keywords are performing well. Continue monitoring for any position changes.';
-  let actions: { text: string; link?: string }[] = [];
-
-  if (losers > winners && losers > 0) {
-    status = 'attention';
-    direction = 'down';
-    headline = `More keywords declining (${losers}) than improving (${winners})`;
-    why = 'Rankings are trending downward. Focus on keywords in positions 4–12 for quick wins.';
-    actions = [
-      { text: 'Optimize titles/meta for opportunity keywords', link: '/serp' },
-      { text: 'Add internal links to underperforming pages' },
-    ];
-  } else if (inTop10 === 0 && total > 0) {
-    status = 'attention';
-    direction = 'flat';
-    headline = 'No keywords ranking in top 10 yet';
-    why = `Most tracked keywords are ranking outside the top 10 or not ranking at all. This indicates an opportunity to improve content and on-page SEO.`;
-    actions = [
-      { text: 'Review top-ranking competitors for content gaps', link: '/serp' },
-      { text: 'Expand content depth on key landing pages' },
-    ];
-  } else if (winners > losers && winners > 0) {
-    status = 'good';
-    direction = 'up';
-    headline = `Keywords improving (${winners}) outpacing declines (${losers})`;
-    why = 'Positive ranking momentum. Your SEO efforts are showing results.';
-    actions = [];
-  }
-
-  return {
-    status,
-    direction,
-    headline,
-    why,
-    kpis: [
-      { label: 'Tracked', value: total, interpretation: 'neutral' },
-      { label: 'In Top 10', value: inTop10, interpretation: inTop10 > 0 ? 'good' : 'warning' },
-      { label: 'Opportunities', value: opportunities > 0 ? opportunities : 0, interpretation: opportunities > 5 ? 'warning' : 'neutral' },
-      { label: 'Not Ranking', value: notRanking, interpretation: notRanking > total / 2 ? 'critical' : 'neutral' },
-    ],
-    actions,
-  };
+  return (
+    <section className="space-y-4 pt-8 border-t border-border" data-testid="section-how-it-works">
+      <h2 className="text-lg font-semibold text-foreground text-center">How This Works</h2>
+      
+      <div className="flex flex-wrap justify-center gap-4">
+        {steps.map((step, idx) => (
+          <div key={step.number} className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-xs font-bold text-violet-700 dark:text-violet-300">
+              {step.number}
+            </div>
+            <span className="text-sm text-muted-foreground">{step.text}</span>
+            {idx < steps.length - 1 && <ArrowRight className="w-4 h-4 text-muted-foreground/50 hidden sm:block" />}
+          </div>
+        ))}
+      </div>
+      
+      <p className="text-center text-sm text-muted-foreground italic max-w-lg mx-auto">
+        Rankings are the signal. Everything here exists to improve them.
+      </p>
+    </section>
+  );
 }
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isRunning, setIsRunning] = useState(false);
-  const { selectedSite, selectedSiteId, sites, isLoading: sitesLoading } = useSiteContext();
-
-  const { data: authStatus } = useQuery({
-    queryKey: ['auth-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/auth/status');
-      if (!res.ok) throw new Error('Failed to check auth status');
-      return res.json();
-    },
+  const { siteId, siteDomain } = useSiteContext();
+  
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["/api/dashboard", siteId],
+    enabled: !!siteId,
   });
 
-  const { data: stats, isFetching: statsFetching, isError: statsError, dataUpdatedAt: statsUpdatedAt, refetch: refetchStats } = useQuery({
-    queryKey: ['dashboard-stats', selectedSiteId],
-    queryFn: async () => {
-      const res = await fetch(`/api/dashboard/stats${selectedSiteId ? `?siteId=${selectedSiteId}` : ''}`);
-      if (!res.ok) throw new Error('Failed to fetch stats');
-      return res.json();
-    },
-    refetchInterval: 30000,
-    enabled: !!selectedSiteId || sites.length === 0,
-  });
+  const mockImprovingKeywords: RankingItem[] = [
+    { keyword: "seo audit tool", position: 7, change: 4 },
+    { keyword: "website performance checker", position: 12, change: 3 },
+    { keyword: "technical seo analysis", position: 15, change: 5 },
+  ];
 
-  const { data: serpOverview, isFetching: serpFetching, isError: serpError, refetch: refetchSerp } = useQuery({
-    queryKey: ['serp-overview', selectedSiteId],
-    queryFn: async () => {
-      const res = await fetch(`/api/serp/overview${selectedSiteId ? `?siteId=${selectedSiteId}` : ''}`);
-      if (!res.ok) throw new Error('Failed to fetch SERP overview');
-      return res.json();
-    },
-    enabled: !!selectedSiteId || sites.length === 0,
-  });
+  const mockNeedsAttention: RankingItem[] = [
+    { keyword: "site speed test", position: 18, change: -3 },
+    { keyword: "core web vitals", position: 25, change: -6 },
+  ];
 
-  const isRefreshing = (statsFetching && !!stats) || (serpFetching && !!serpOverview);
-  const hasError = statsError || serpError;
-
-  const runDiagnostics = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/run${selectedSiteId ? `?siteId=${selectedSiteId}` : ''}`, { 
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to run diagnostics');
-      }
-      return res.json();
+  const mockPagesToOptimize: PageToOptimize[] = [
+    {
+      url: "/services/seo-audit",
+      title: "SEO Audit Services",
+      keyword: "seo audit services",
+      position: 8,
+      volume: 2400,
+      action: "Rewrite title tag"
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Diagnostics Completed",
-        description: `${data.classification || 'Analysis'}: ${data.summary}`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['serp-overview'] });
-      setIsRunning(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Diagnostics Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsRunning(false);
-    },
-  });
-
-  const handleRunDiagnostics = () => {
-    setIsRunning(true);
-    runDiagnostics.mutate();
-  };
-
-  const handleGetAuthUrl = async () => {
-    try {
-      const res = await fetch('/api/auth/url');
-      const data = await res.json();
-      if (data.url) {
-        window.open(data.url, '_blank');
-        toast({
-          title: "Authentication Required",
-          description: "Complete the OAuth flow in the new window.",
-        });
-      }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    {
+      url: "/blog/technical-seo-guide",
+      title: "Complete Technical SEO Guide",
+      keyword: "technical seo guide",
+      position: 11,
+      volume: 1800,
+      action: "Add internal links"
     }
-  };
+  ];
 
-  const trafficInsight = generateTrafficInsight(stats);
-  const technicalInsight = generateTechnicalInsight(stats);
-  const keywordInsight = generateKeywordInsight(serpOverview);
+  const mockTopPerformers: TopPerformer[] = [
+    { url: "/tools/site-audit", title: "Free Site Audit Tool", keyword: "free site audit", position: 3 },
+    { url: "/blog/seo-checklist", title: "2024 SEO Checklist", keyword: "seo checklist", position: 2 },
+  ];
 
-  const domain = selectedSite?.baseUrl?.replace(/^https?:\/\//, '') || 'your site';
-
-  const getOverallStatus = () => {
-    const statuses = [trafficInsight.status, technicalInsight.status, keywordInsight.status];
-    if (statuses.includes('critical')) return { text: 'Issues Detected', color: 'text-semantic-danger', bg: 'bg-semantic-danger-soft' };
-    if (statuses.includes('attention')) return { text: 'Needs Attention', color: 'text-semantic-warning', bg: 'bg-semantic-warning-soft' };
-    if (statuses.every(s => s === 'inconclusive')) return { text: 'Setup Required', color: 'text-muted-foreground', bg: 'bg-muted' };
-    return { text: 'Healthy', color: 'text-semantic-success', bg: 'bg-semantic-success-soft' };
-  };
-
-  const overallStatus = getOverallStatus();
-
-  if (sitesLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (sites.length === 0) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No Sites Configured</h2>
-          <p className="text-muted-foreground mb-4">Add your first website to start monitoring.</p>
-          <Link href={ROUTES.SITE_NEW}>
-            <Button data-testid="button-add-first-site">Add Your First Site</Button>
-          </Link>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const mockAgents: Agent[] = [
+    {
+      id: "technical_seo",
+      name: "Technical SEO",
+      description: "Automated crawling and technical issue detection",
+      includes: ["Weekly site crawls", "Issue prioritization", "Fix recommendations"],
+      status: "locked",
+      ctaLabel: "Subscribe",
+      ctaAction: "/pricing"
+    },
+    {
+      id: "analytics_insights",
+      name: "Analytics Insights",
+      description: "Connect GA4 and Search Console for deeper analysis",
+      includes: ["Traffic analysis", "Ranking tracking", "Performance trends"],
+      status: "setup_required",
+      ctaLabel: "Finish Setup",
+      ctaAction: "/integrations"
+    },
+    {
+      id: "content_optimization",
+      name: "Content Optimization",
+      description: "AI-powered content recommendations",
+      includes: ["Title optimization", "Content gap analysis", "Competitor insights"],
+      status: "locked",
+      ctaLabel: "Upgrade Plan",
+      ctaAction: "/pricing"
+    },
+    {
+      id: "content_automation",
+      name: "Content Automation",
+      description: "Automated content publishing pipeline",
+      includes: ["Weekly publishing schedule", "Content briefs", "Performance tracking"],
+      status: "locked",
+      ctaLabel: "Subscribe",
+      ctaAction: "/pricing"
+    }
+  ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        
-        <div className="relative flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-          <RefreshingBadge isRefreshing={isRefreshing} />
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <SiteSelector />
-              {selectedSite && (
-                <a 
-                  href={selectedSite.baseUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              )}
-            </div>
+    <DashboardLayout className="dashboard-light">
+      <div className="space-y-8 max-w-5xl mx-auto">
+        <header className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${overallStatus.bg} ${overallStatus.color}`}>
-                  {overallStatus.text}
-                </span>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-foreground">SEO Performance Overview</h1>
+                <Badge variant="outline" className="text-xs">Weekly Report</Badge>
               </div>
-              <p className="text-muted-foreground mt-1">
-                Daily diagnostic report for <span className="font-medium text-foreground">{domain}</span>
-              </p>
+              <p className="text-muted-foreground">Updated weekly · Focused on rankings that drive demand</p>
             </div>
+            <SiteSelector />
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2" data-testid="button-export">
-              <Download className="w-4 h-4" />
-              Export
-            </Button>
-            <Button 
-              onClick={handleRunDiagnostics} 
-              disabled={isRunning}
-              className="gap-2 shadow-lg shadow-primary/20"
-              data-testid="button-run-diagnostics"
-            >
-              <Play className="w-4 h-4" />
-              {isRunning ? 'Running...' : 'Run Diagnostics'}
-            </Button>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Keywords Tracked" value={42} />
+            <StatCard label="Ranking in Top 20" value={18} subtext="43% of tracked" />
+            <StatCard label="Improved This Week" value={7} subtext="+12 positions total" />
+            <StatCard label="Declined This Week" value={3} subtext="-8 positions total" />
           </div>
-        </div>
+        </header>
 
-        {!authStatus?.authenticated && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Authentication Required</AlertTitle>
-            <AlertDescription className="flex items-center justify-between">
-              <span>Connect to Google Analytics and Search Console to enable data collection.</span>
-              <Button onClick={handleGetAuthUrl} variant="outline" size="sm" className="ml-4" data-testid="button-authenticate">
-                Authenticate
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        <RankingMomentumSection 
+          improving={mockImprovingKeywords} 
+          needsAttention={mockNeedsAttention} 
+        />
 
-        <section>
-          <div className="grid lg:grid-cols-3 gap-4">
-            <PillarCard
-              title="Website Traffic"
-              icon={<Activity className="w-5 h-5 text-semantic-info" />}
-              status={trafficInsight.status}
-              direction={trafficInsight.direction}
-              statusHeadline={trafficInsight.headline}
-              whyExplanation={trafficInsight.why}
-              kpis={trafficInsight.kpis}
-              nextActions={trafficInsight.actions}
-              detailsLink="/analysis"
-            />
-            <PillarCard
-              title="Technical SEO"
-              icon={<Shield className="w-5 h-5 text-semantic-success" />}
-              status={technicalInsight.status}
-              direction={technicalInsight.direction}
-              statusHeadline={technicalInsight.headline}
-              whyExplanation={technicalInsight.why}
-              kpis={technicalInsight.kpis}
-              nextActions={technicalInsight.actions}
-              detailsLink="/analysis"
-            />
-            <PillarCard
-              title="Keyword Ranking"
-              icon={<Search className="w-5 h-5 text-primary" />}
-              status={keywordInsight.status}
-              direction={keywordInsight.direction}
-              statusHeadline={keywordInsight.headline}
-              whyExplanation={keywordInsight.why}
-              kpis={keywordInsight.kpis}
-              nextActions={keywordInsight.actions}
-              detailsLink="/keywords"
-            />
-          </div>
-        </section>
+        <WhatToDoNextSection />
 
-        <section className="space-y-4">
-          <BenchmarkComparison />
-          <KnowledgeBaseCard />
-        </section>
+        <PagesToOptimizeSection pages={mockPagesToOptimize} />
 
-        <section>
-          <ActivityLog />
-        </section>
+        <TopPerformersSection performers={mockTopPerformers} />
 
-        <section>
-          <TicketList />
-        </section>
+        <AgentsSection agents={mockAgents} />
 
-        <section>
-          <AskAI />
-        </section>
-
+        <HowItWorksSection />
       </div>
     </DashboardLayout>
   );
