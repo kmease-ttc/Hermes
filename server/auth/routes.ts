@@ -298,7 +298,9 @@ export function registerAuthRoutes(app: Express): void {
       });
 
       // Send verification email
-      await sendVerificationEmail(email, token, user.displayName || undefined);
+      console.log("[Auth] Sending verification email to:", email);
+      const emailSent = await sendVerificationEmail(email, token, user.displayName || undefined);
+      console.log("[Auth] Verification email result:", emailSent ? "sent" : "failed");
 
       return res.json(genericResponse);
     } catch (error: any) {
