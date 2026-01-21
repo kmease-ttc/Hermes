@@ -61,10 +61,10 @@ interface Agent {
 
 function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext?: string }) {
   return (
-    <div className="glass-strong rounded-xl p-5">
-      <p className="text-sm text-gray-600 mb-1">{label}</p>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
-      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+    <div className="glass-strong glow-border rounded-xl p-5">
+      <p className="text-sm text-[#334155] mb-1">{label}</p>
+      <p className="text-3xl font-bold text-[#0B1220]">{value}</p>
+      {subtext && <p className="text-xs text-[#334155] mt-1">{subtext}</p>}
     </div>
   );
 }
@@ -78,25 +78,25 @@ function RankingMomentumSection({ improving, needsAttention }: { improving: Rank
       </div>
       
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="glass-green rounded-xl overflow-hidden">
-          <CardHeader className="pb-3 border-b border-emerald-200/50">
-            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+        <Card className="glass-green glow-success rounded-xl overflow-hidden">
+          <CardHeader className="pb-3 border-b border-emerald-200/30">
+            <CardTitle className="text-base flex items-center gap-2 text-[#0B1220]">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               Improving
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-4">
             {improving.length === 0 ? (
-              <p className="text-sm text-gray-600">No significant improvements this week</p>
+              <p className="text-sm text-[#334155]">No significant improvements this week</p>
             ) : (
               improving.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                  <span className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{item.keyword}</span>
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100/30 last:border-0">
+                  <span className="text-sm font-semibold text-[#0B1220] truncate max-w-[200px]">{item.keyword}</span>
                   <div className="flex items-center gap-3">
                     <Badge className="bg-emerald-100 text-emerald-800 font-semibold">
                       +{Math.abs(item.change)}
                     </Badge>
-                    <span className="text-sm font-semibold text-gray-700 w-8 text-right">#{item.position}</span>
+                    <span className="text-sm font-semibold text-[#334155] w-8 text-right">#{item.position}</span>
                   </div>
                 </div>
               ))
@@ -104,25 +104,25 @@ function RankingMomentumSection({ improving, needsAttention }: { improving: Rank
           </CardContent>
         </Card>
 
-        <Card className="glass-amber rounded-xl overflow-hidden">
-          <CardHeader className="pb-3 border-b border-amber-200/50">
-            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+        <Card className="glass-amber glow-brand rounded-xl overflow-hidden">
+          <CardHeader className="pb-3 border-b border-amber-200/30">
+            <CardTitle className="text-base flex items-center gap-2 text-[#0B1220]">
               <TrendingDown className="w-4 h-4 text-amber-600" />
               Needs Attention
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-4">
             {needsAttention.length === 0 ? (
-              <p className="text-sm text-gray-600">No significant declines this week</p>
+              <p className="text-sm text-[#334155]">No significant declines this week</p>
             ) : (
               needsAttention.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                  <span className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{item.keyword}</span>
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-amber-100/30 last:border-0">
+                  <span className="text-sm font-semibold text-[#0B1220] truncate max-w-[200px]">{item.keyword}</span>
                   <div className="flex items-center gap-3">
                     <Badge className="bg-amber-100 text-amber-800 font-semibold">
                       {item.change}
                     </Badge>
-                    <span className="text-sm font-semibold text-gray-700 w-8 text-right">#{item.position}</span>
+                    <span className="text-sm font-semibold text-[#334155] w-8 text-right">#{item.position}</span>
                   </div>
                 </div>
               ))
@@ -194,7 +194,7 @@ function WhatToDoNextSection() {
         {steps.map((step) => (
           <Card key={step.number} className={cn(
             "transition-all rounded-xl",
-            step.status === "active" ? "glass-purple" : "glass glow-border"
+            step.status === "active" ? "glass-purple glow-brand" : "glass glow-border"
           )}>
             <CardContent className="pt-5">
               <div className="flex items-start gap-4">
@@ -303,21 +303,21 @@ function TopPerformersSection({ performers }: { performers: TopPerformer[] }) {
     <section className="space-y-4" data-testid="section-top-performers">
       <h2 className="text-xl font-semibold text-gray-900">Top Performers</h2>
       
-      <Card className="glass-green rounded-xl overflow-hidden">
-        <CardHeader className="pb-0 border-b border-emerald-200/50">
+      <Card className="glass-green glow-success rounded-xl overflow-hidden">
+        <CardHeader className="pb-0 border-b border-emerald-200/30">
           <p className="text-sm font-semibold text-emerald-800 py-2">Pages ranking in top 3</p>
         </CardHeader>
         <CardContent className="pt-4">
           {performers.length === 0 ? (
-            <p className="text-gray-600 text-center py-4">No top-ranking pages detected yet</p>
+            <p className="text-[#334155] text-center py-4">No top-ranking pages detected yet</p>
           ) : (
             <>
               <div className="space-y-3">
                 {performers.map((page, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100/30 last:border-0">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 truncate">{page.title}</p>
-                      <p className="text-xs text-gray-600">{page.keyword}</p>
+                      <p className="font-semibold text-[#0B1220] truncate">{page.title}</p>
+                      <p className="text-xs text-[#334155]">{page.keyword}</p>
                     </div>
                     <Badge className="bg-emerald-100 text-emerald-800 font-bold shrink-0">
                       #{page.position}
@@ -325,7 +325,7 @@ function TopPerformersSection({ performers }: { performers: TopPerformer[] }) {
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-gray-600 mt-4 italic">
+              <p className="text-sm text-[#334155] mt-4 italic">
                 These pages protect your traffic. Changes here should be deliberate.
               </p>
             </>
@@ -348,7 +348,7 @@ function AgentsSection({ agents }: { agents: Agent[] }) {
             key={agent.id} 
             className={cn(
               "relative rounded-xl",
-              agent.status === "locked" ? "glass glow-border" : "glass-purple"
+              agent.status === "locked" ? "glass glow-border" : "glass-purple glow-brand"
             )}
           >
             {agent.status === "locked" && (

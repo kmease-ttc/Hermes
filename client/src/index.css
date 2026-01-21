@@ -369,33 +369,58 @@ body:has(.dashboard-light) {
    ======================================== */
 
 :root {
-  /* Glass backgrounds - increased opacity for better contrast */
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-bg-strong: rgba(255, 255, 255, 0.94);
-  --glass-border: rgba(17, 24, 39, 0.12);
+  /* Glass backgrounds */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(17, 24, 39, 0.10);
   --glass-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
   --glass-blur: 14px;
 
-  /* Text (high contrast) */
-  --glass-text: #111827;
-  --glass-muted: #374151;
+  /* Text (high contrast - never lighter than #334155) */
+  --glass-text: #0B1220;
+  --glass-muted: #334155;
 
-  /* Gradients */
-  --grad-primary: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #f59e0b 100%);
-  --grad-success: linear-gradient(90deg, #10b981 0%, #22c55e 60%, #a3e635 100%);
-  --grad-info: linear-gradient(90deg, #38bdf8 0%, #6366f1 60%, #a78bfa 100%);
+  /* High-chroma brand gradient (matches logo/button sharpness) */
+  --brand-gradient: linear-gradient(90deg,
+    #6D28D9 0%,
+    #7C3AED 18%,
+    #A855F7 36%,
+    #EC4899 58%,
+    #F97316 78%,
+    #F59E0B 100%
+  );
 
-  /* Glow colors */
-  --glow-purple: rgba(124, 58, 237, 0.25);
-  --glow-pink: rgba(236, 72, 153, 0.20);
-  --glow-amber: rgba(245, 158, 11, 0.18);
-  --glow-green: rgba(34, 197, 94, 0.18);
+  /* Secondary gradients */
+  --brand-gradient-vertical: linear-gradient(180deg,
+    rgba(109, 40, 217, 0.16) 0%,
+    rgba(236, 72, 153, 0.12) 55%,
+    rgba(245, 158, 11, 0.10) 100%
+  );
 
-  /* Tinted glass fills */
-  --tint-green: rgba(34, 197, 94, 0.08);
-  --tint-purple: rgba(124, 58, 237, 0.08);
-  --tint-amber: rgba(245, 158, 11, 0.08);
-  --tint-pink: rgba(236, 72, 153, 0.06);
+  --success-gradient: linear-gradient(90deg,
+    #059669 0%,
+    #10B981 35%,
+    #22C55E 70%,
+    #A3E635 100%
+  );
+
+  --info-gradient: linear-gradient(90deg,
+    #0284C7 0%,
+    #38BDF8 35%,
+    #6366F1 70%,
+    #A855F7 100%
+  );
+
+  /* Legacy gradient aliases */
+  --grad-primary: var(--brand-gradient);
+  --grad-success: var(--success-gradient);
+  --grad-info: var(--info-gradient);
+
+  /* Subtle tints for glass fills (6-10% opacity only) */
+  --tint-brand: rgba(109, 40, 217, 0.06);
+  --tint-success: rgba(16, 185, 129, 0.07);
+  --tint-amber: rgba(245, 158, 11, 0.06);
+  --tint-pink: rgba(236, 72, 153, 0.05);
 }
 
 /* Glass card base */
@@ -415,32 +440,49 @@ body:has(.dashboard-light) {
   box-shadow: var(--glass-shadow);
 }
 
-/* Tinted glass fills - increased opacity for better contrast */
+/* Tinted glass fills with crisp glows */
 .glass-green {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(255,255,255,0.92));
+  background: linear-gradient(135deg, var(--tint-success), rgba(255,255,255,0.72));
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(34, 197, 94, 0.30);
-  box-shadow: 0 10px 30px var(--glow-green);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .glass-purple {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(255,255,255,0.92));
+  background: linear-gradient(135deg, var(--tint-brand), rgba(255,255,255,0.72));
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(124, 58, 237, 0.30);
-  box-shadow: 0 10px 30px var(--glow-purple);
+  border: 1px solid rgba(109, 40, 217, 0.25);
 }
 
 .glass-amber {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(255,255,255,0.92));
+  background: linear-gradient(135deg, var(--tint-amber), rgba(255,255,255,0.72));
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(245, 158, 11, 0.30);
-  box-shadow: 0 10px 30px var(--glow-amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
-/* Gradient border using mask technique */
+/* Crisp high-chroma glow utilities */
+.glow-brand {
+  box-shadow:
+    0 18px 45px rgba(109, 40, 217, 0.18),
+    0 10px 30px rgba(236, 72, 153, 0.14),
+    0 6px 18px rgba(245, 158, 11, 0.12);
+}
+
+.glow-success {
+  box-shadow:
+    0 18px 45px rgba(16, 185, 129, 0.16),
+    0 8px 24px rgba(34, 197, 94, 0.12);
+}
+
+.glow-info {
+  box-shadow:
+    0 18px 45px rgba(56, 189, 248, 0.14),
+    0 8px 24px rgba(99, 102, 241, 0.12);
+}
+
+/* Gradient border using mask technique - crisp and vivid */
 .glow-border {
   position: relative;
   background: var(--glass-bg);
@@ -455,45 +497,48 @@ body:has(.dashboard-light) {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1px;
-  background: var(--grad-primary);
+  padding: 1.5px;
+  background: var(--brand-gradient);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 1;
 }
 
-/* Soft outer glow utilities */
-.glow-purple-shadow { box-shadow: 0 18px 45px var(--glow-purple); }
-.glow-green-shadow { box-shadow: 0 18px 45px var(--glow-green); }
-.glow-amber-shadow { box-shadow: 0 18px 45px var(--glow-amber); }
-
-/* Gradient button styles - using darker gradient for AA contrast with white text */
+/* Sharp gradient button styles - matches Analyze button sharpness */
 .btn-gradient-primary {
-  background: linear-gradient(90deg, #6d28d9 0%, #be185d 55%, #b45309 100%);
-  color: white;
+  background: var(--brand-gradient);
+  color: #FFFFFF;
   font-weight: 600;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 10px 30px rgba(109,40,217,0.22);
   transition: all 0.2s ease;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .btn-gradient-primary:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 8px 25px var(--glow-purple);
+  filter: saturate(1.1) contrast(1.05);
+  box-shadow: 0 14px 40px rgba(109,40,217,0.28);
+}
+
+.btn-gradient-primary:active {
+  filter: saturate(1.05) contrast(1.0);
 }
 
 .btn-gradient-success {
-  background: linear-gradient(90deg, #047857 0%, #15803d 60%, #65a30d 100%);
-  color: white;
+  background: var(--success-gradient);
+  color: #FFFFFF;
   font-weight: 600;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 10px 30px rgba(16,185,129,0.22);
   transition: all 0.2s ease;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .btn-gradient-success:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 8px 25px var(--glow-green);
+  filter: saturate(1.1) contrast(1.05);
+  box-shadow: 0 14px 40px rgba(16,185,129,0.28);
+}
+
+.btn-gradient-success:active {
+  filter: saturate(1.05) contrast(1.0);
 }
