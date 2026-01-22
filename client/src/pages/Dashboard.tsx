@@ -59,21 +59,33 @@ interface Agent {
   ctaAction: string;
 }
 
-function OutcomeCard({ label, value, subtext, delta, deltaType }: { 
+function OutcomeCard({ label, value, subtext, delta, deltaType, tint }: { 
   label: string; 
   value: string | number; 
   subtext?: string;
   delta?: string;
   deltaType?: 'positive' | 'negative' | 'neutral';
+  tint: 'brand' | 'brand-light' | 'blue' | 'green';
 }) {
+  const tintClasses = {
+    'brand': 'bg-violet-500/10',
+    'brand-light': 'bg-violet-400/8',
+    'blue': 'bg-blue-500/10',
+    'green': 'bg-emerald-500/10'
+  };
+  
   return (
-    <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+    <div className={cn(
+      "rounded-xl p-5 border border-gray-200/40 shadow-sm relative overflow-hidden",
+      tintClasses[tint]
+    )}>
+      <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+      <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">{label}</p>
       <div className="flex items-baseline gap-2">
         <p className="text-4xl font-bold text-gray-900">{value}</p>
         {delta && (
           <span className={cn(
-            "text-sm font-semibold",
+            "text-sm font-bold",
             deltaType === 'positive' && "text-emerald-600",
             deltaType === 'negative' && "text-red-600",
             deltaType === 'neutral' && "text-gray-500"
@@ -87,11 +99,18 @@ function OutcomeCard({ label, value, subtext, delta, deltaType }: {
   );
 }
 
-function HealthScoreCard({ label, score, owner, status }: { label: string; score: number; owner: string; status: 'good' | 'warning' | 'danger' }) {
-  const accentColors = {
-    good: 'bg-emerald-500',
-    warning: 'bg-amber-500',
-    danger: 'bg-red-500'
+function HealthScoreCard({ label, score, owner, status, tint }: { 
+  label: string; 
+  score: number; 
+  owner: string; 
+  status: 'good' | 'warning' | 'danger';
+  tint: 'purple' | 'teal' | 'amber' | 'indigo';
+}) {
+  const tintClasses = {
+    'purple': 'bg-purple-500/10',
+    'teal': 'bg-teal-500/10',
+    'amber': 'bg-amber-500/10',
+    'indigo': 'bg-indigo-500/10'
   };
   const ringColors = {
     good: 'stroke-emerald-500',
@@ -103,11 +122,14 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
   const strokeDashoffset = circumference - (score / 100) * circumference;
   
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", accentColors[status])} />
-      <div className="relative w-12 h-12 shrink-0 ml-2">
+    <div className={cn(
+      "rounded-xl p-4 border border-gray-200/40 shadow-sm flex items-center gap-4 relative overflow-hidden",
+      tintClasses[tint]
+    )}>
+      <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+      <div className="relative w-12 h-12 shrink-0">
         <svg className="w-12 h-12 -rotate-90" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="18" fill="none" stroke="#f3f4f6" strokeWidth="3" />
+          <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
           <circle 
             cx="20" cy="20" r="18" fill="none" 
             className={ringColors[status]}
@@ -117,7 +139,7 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
             strokeLinecap="round"
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900">
+        <span className="absolute inset-0 flex items-center justify-center text-base font-bold text-gray-900">
           {score}
         </span>
       </div>
@@ -131,8 +153,9 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
 
 function ActivityCard({ label, value, period }: { label: string; value: number; period: string }) {
   return (
-    <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm flex items-center justify-between">
-      <span className="text-sm text-gray-500">{label}</span>
+    <div className="bg-gray-50/80 rounded-lg p-3 border border-gray-200/40 shadow-sm flex items-center justify-between relative overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px bg-white/40" />
+      <span className="text-sm text-gray-600">{label}</span>
       <div className="text-right">
         <span className="text-xl font-bold text-gray-900">{value}</span>
         <span className="text-xs text-gray-400 ml-1">{period}</span>
@@ -608,20 +631,20 @@ export default function Dashboard() {
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Outcomes</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <OutcomeCard label="Keywords in Top 3" value={8} delta="+2" deltaType="positive" subtext="Core targets" />
-                <OutcomeCard label="Keywords in Top 10" value={24} delta="+5" deltaType="positive" subtext="57% of tracked" />
-                <OutcomeCard label="Organic Traffic" value="12.4K" delta="+8%" deltaType="positive" subtext="Last 30 days" />
-                <OutcomeCard label="Conversions" value={147} delta="-3%" deltaType="negative" subtext="Last 30 days" />
+                <OutcomeCard label="Keywords in Top 3" value={8} delta="+2" deltaType="positive" subtext="Core targets" tint="brand" />
+                <OutcomeCard label="Keywords in Top 10" value={24} delta="+5" deltaType="positive" subtext="57% of tracked" tint="brand-light" />
+                <OutcomeCard label="Organic Traffic" value="12.4K" delta="+8%" deltaType="positive" subtext="Last 30 days" tint="blue" />
+                <OutcomeCard label="Conversions" value={147} delta="-3%" deltaType="negative" subtext="Last 30 days" tint="green" />
               </div>
             </div>
             
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Health Scores</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <HealthScoreCard label="Domain Authority" score={42} owner="Backlinks Agent" status="warning" />
-                <HealthScoreCard label="Technical SEO" score={78} owner="Technical Agent" status="good" />
-                <HealthScoreCard label="Content Coverage" score={61} owner="Competitive Intel" status="warning" />
-                <HealthScoreCard label="AI Readiness" score={85} owner="Atlas Agent" status="good" />
+                <HealthScoreCard label="Domain Authority" score={42} owner="Backlinks Agent" status="warning" tint="purple" />
+                <HealthScoreCard label="Technical SEO" score={78} owner="Technical Agent" status="good" tint="teal" />
+                <HealthScoreCard label="Content Coverage" score={61} owner="Competitive Intel" status="warning" tint="amber" />
+                <HealthScoreCard label="AI Readiness" score={85} owner="Atlas Agent" status="good" tint="indigo" />
               </div>
             </div>
             
