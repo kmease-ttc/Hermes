@@ -1074,11 +1074,44 @@ export async function runWorkerOrchestration(
   
   const configs = await Promise.all(configPromises);
   
+  // Log run_inputs - what data sources are available for this run
+  const availableInputs = configs
+    .filter(({ config }) => config.valid && config.base_url)
+    .map(({ mapping }) => mapping.serviceSlug);
+  const skippedInputs = configs
+    .filter(({ config }) => !config.valid || !config.base_url)
+    .map(({ mapping }) => mapping.serviceSlug);
+  
+  await socratesLogger.logRunInputs(siteId, "orchestrator", runId, {
+    availableInputs,
+    skippedInputs,
+    totalConfigured: configs.length,
+    domain: resolvedDomain,
+  });
+  
   const callPromises = configs.map(({ mapping, config }) =>
     callWorker(config, mapping, siteId, runId, resolvedDomain!)
   );
   
   const results = await Promise.all(callPromises);
+  
+  // Log run_outputs - raw worker results before recommendation assembly
+  const successfulWorkers = results.filter(r => r.status === "success");
+  const failedWorkers = results.filter(r => r.status === "failed" || r.status === "timeout");
+  const skippedWorkers = results.filter(r => r.status === "skipped");
+  
+  await socratesLogger.logRunOutputs(siteId, "orchestrator", runId, {
+    workerResults: {
+      successful: successfulWorkers.length,
+      failed: failedWorkers.length,
+      skipped: skippedWorkers.length,
+    },
+    successfulWorkerKeys: successfulWorkers.map(w => w.workerKey),
+    failedWorkerKeys: failedWorkers.map(w => ({ key: w.workerKey, errorCode: w.errorCode })),
+    metricsSnapshot: Object.fromEntries(
+      successfulWorkers.map(w => [w.workerKey, w.metrics])
+    ),
+  });
   
   const workerResultsToSave: InsertSeoWorkerResult[] = results.map(result => ({
     runId,

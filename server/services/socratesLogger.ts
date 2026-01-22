@@ -42,6 +42,40 @@ export async function logAgentEvent(
   const actionId = `${eventType}_${uuidv4()}`;
   const now = new Date();
 
+  // Build expectedImpact to include all relevant payload data for querying
+  let expectedImpact: Record<string, any> | undefined;
+  if (payload) {
+    expectedImpact = {
+      ...(payload.metrics || {}),
+      ...(payload.outputs || {}),
+    };
+    
+    // Ensure counts are stored at top level for easy querying
+    if (payload.suggestionsCount !== undefined) {
+      expectedImpact.suggestionsCount = payload.suggestionsCount;
+    }
+    if (payload.insightsCount !== undefined) {
+      expectedImpact.insightsCount = payload.insightsCount;
+    }
+    if (payload.ticketsCount !== undefined) {
+      expectedImpact.ticketsCount = payload.ticketsCount;
+    }
+    if (payload.recommendations) {
+      expectedImpact.recommendationsCount = payload.recommendations.length;
+      expectedImpact.recommendations = payload.recommendations;
+    }
+    
+    // Include status if provided
+    if (payload.status) {
+      expectedImpact.status = payload.status;
+    }
+    
+    // If empty after processing, set to undefined
+    if (Object.keys(expectedImpact).length === 0) {
+      expectedImpact = undefined;
+    }
+  }
+
   try {
     await storage.createAgentActionLog({
       actionId,
@@ -53,7 +87,7 @@ export async function logAgentEvent(
       actionType: eventType,
       runId: payload?.runId,
       targets: payload?.inputs || undefined,
-      expectedImpact: payload?.metrics || payload?.outputs || undefined,
+      expectedImpact,
       notes: payload?.errorDetail || undefined,
       riskLevel: eventType === "run_error" ? "high" : "low",
     });
