@@ -368,7 +368,7 @@ function WhatToDoNextSection() {
             "rounded-xl border overflow-hidden relative transition-all",
             step.status === "active" 
               ? "bg-white border-violet-200 shadow-sm" 
-              : "bg-gray-50/60 border-gray-200/60 opacity-50"
+              : "bg-white border-gray-200 shadow-sm"
           )}>
             {step.status === "active" && (
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500" />
@@ -388,10 +388,10 @@ function WhatToDoNextSection() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className={cn(
                       "font-semibold",
-                      step.status === "active" ? "text-gray-900" : "text-gray-500"
+                      step.status === "active" ? "text-gray-900" : "text-gray-700"
                     )}>{step.title}</h3>
                     {step.status === "locked" && (
-                      <Badge variant="outline" className="text-xs bg-gray-100 text-gray-400 border-gray-200">
+                      <Badge variant="outline" className="text-xs bg-gray-100 text-gray-500 border-gray-200">
                         <Lock className="w-3 h-3 mr-1" />
                         Locked
                       </Badge>
@@ -399,21 +399,21 @@ function WhatToDoNextSection() {
                   </div>
                   <p className={cn(
                     "text-sm mb-3",
-                    step.status === "active" ? "text-gray-500" : "text-gray-400"
+                    step.status === "active" ? "text-gray-500" : "text-gray-600"
                   )}>{step.description}</p>
                   
                   <div className="mb-4">
                     <p className={cn(
                       "text-xs font-medium mb-2",
-                      step.status === "active" ? "text-gray-600" : "text-gray-400"
+                      step.status === "active" ? "text-gray-600" : "text-gray-600"
                     )}>What this means:</p>
                     <ul className="space-y-1">
                       {step.actions.map((action, idx) => (
                         <li key={idx} className={cn(
                           "text-sm flex items-start gap-2",
-                          step.status === "active" ? "text-gray-500" : "text-gray-400"
+                          step.status === "active" ? "text-gray-500" : "text-gray-600"
                         )}>
-                          <span className="text-gray-300 mt-1">•</span>
+                          <span className="text-gray-400 mt-1">•</span>
                           <span>{action}</span>
                         </li>
                       ))}
@@ -431,11 +431,11 @@ function WhatToDoNextSection() {
                           size="sm" 
                           variant="outline" 
                           disabled
-                          className="w-fit bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
+                          className="w-fit bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed hover:bg-gray-100"
                         >
                           {step.unlockLabel}
                         </Button>
-                        <span className="text-xs text-gray-400">Complete previous step to unlock</span>
+                        <span className="text-xs text-gray-500">Complete previous step to unlock</span>
                       </>
                     )}
                   </div>
@@ -552,7 +552,7 @@ function ModulesSection({ modules }: { modules: Module[] }) {
         "rounded-xl border overflow-hidden relative transition-all",
         mod.status === "active" 
           ? "bg-white border-violet-200 shadow-sm" 
-          : "bg-gray-50/60 border-gray-200/60 opacity-50"
+          : "bg-white border-gray-200 shadow-sm"
       )}
     >
       {mod.status === "active" && (
@@ -573,11 +573,11 @@ function ModulesSection({ modules }: { modules: Module[] }) {
       <CardHeader className={cn("pb-3", mod.status === "active" && "ml-1")}>
         <CardTitle className={cn(
           "text-base flex items-center gap-2",
-          mod.status === "active" ? "text-gray-900" : "text-gray-500"
+          mod.status === "active" ? "text-gray-900" : "text-gray-700"
         )}>
           <Search className={cn(
             "w-4 h-4",
-            mod.status === "active" ? "text-violet-600" : "text-gray-400"
+            mod.status === "active" ? "text-violet-600" : "text-gray-500"
           )} />
           {mod.name}
         </CardTitle>
@@ -585,23 +585,23 @@ function ModulesSection({ modules }: { modules: Module[] }) {
       <CardContent className={cn("space-y-3", mod.status === "active" && "ml-1")}>
         <p className={cn(
           "text-sm",
-          mod.status === "active" ? "text-gray-500" : "text-gray-400"
+          mod.status === "active" ? "text-gray-500" : "text-gray-600"
         )}>{mod.description}</p>
         
         <div>
           <p className={cn(
             "text-xs font-medium mb-1",
-            mod.status === "active" ? "text-gray-600" : "text-gray-400"
+            mod.status === "active" ? "text-gray-600" : "text-gray-600"
           )}>Includes:</p>
           <ul className="space-y-1">
             {mod.includes.map((item, idx) => (
               <li key={idx} className={cn(
                 "text-xs flex items-center gap-1",
-                mod.status === "active" ? "text-gray-500" : "text-gray-400"
+                mod.status === "active" ? "text-gray-500" : "text-gray-600"
               )}>
                 <CheckCircle2 className={cn(
                   "w-3 h-3",
-                  mod.status === "active" ? "text-emerald-500" : "text-gray-300"
+                  mod.status === "active" ? "text-emerald-500" : "text-gray-400"
                 )} />
                 {item}
               </li>
@@ -626,7 +626,7 @@ function ModulesSection({ modules }: { modules: Module[] }) {
               >
                 {mod.ctaLabel}
               </Button>
-              <span className="text-xs text-gray-400 text-center">Requires Google API connection</span>
+              <span className="text-xs text-gray-500 text-center">Requires Google API connection</span>
             </>
           ) : (
             <>
@@ -634,11 +634,11 @@ function ModulesSection({ modules }: { modules: Module[] }) {
                 size="sm" 
                 variant="outline"
                 disabled
-                className="w-full bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
+                className="w-full bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed hover:bg-gray-100"
               >
                 {mod.ctaLabel}
               </Button>
-              <span className="text-xs text-gray-400 text-center">Upgrade plan to unlock</span>
+              <span className="text-xs text-gray-500 text-center">Upgrade plan to unlock</span>
             </>
           )}
         </div>
