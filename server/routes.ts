@@ -20562,6 +20562,7 @@ Return JSON in this exact format:
           competitive_intel: false,
           authority_signals: false,
         },
+        integrations: site?.integrations || null,
       });
     } catch (error: any) {
       logger.error("InternalAPI", "Failed to get site state", { error: error.message });
