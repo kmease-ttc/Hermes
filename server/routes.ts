@@ -19999,31 +19999,87 @@ Return JSON in this exact format:
         global_insight: performanceInsight,
       };
 
-      const industryKeywords = [
-        { keyword: `${domain.replace("www.", "")} services`, intent: "high_intent", position: null, volume: 500 },
-        { keyword: `best ${domain.split(".")[0]}`, intent: "informational", position: null, volume: 1200 },
-        { keyword: `${domain.split(".")[0]} near me`, intent: "high_intent", position: null, volume: 800 },
-        { keyword: `${domain.replace("www.", "")} reviews`, intent: "informational", position: null, volume: 400 },
-        { keyword: `affordable ${domain.split(".")[0]}`, intent: "high_intent", position: null, volume: 600 },
-      ];
+      // Fetch real data from SERP worker service
+      const { serpWorkerClient } = await import("./connectors/serpWorker");
+      let serpKeywords: any[] = [];
+      let serpCompetitors: any[] = [];
+      let serpInitialized = false;
+      
+      try {
+        serpInitialized = await serpWorkerClient.init();
+        if (serpInitialized) {
+          // Fetch real keyword data from SERP service
+          const keywordsResponse = await serpWorkerClient.getKeywords(domain) as any;
+          // Handle both array and wrapped object responses
+          serpKeywords = Array.isArray(keywordsResponse) 
+            ? keywordsResponse 
+            : (keywordsResponse?.keywords || keywordsResponse?.data || []);
+          
+          // Fetch real competitor data from SERP service
+          const competitorsResponse = await serpWorkerClient.getCompetitors(domain) as any;
+          // Handle both array and wrapped object responses
+          serpCompetitors = Array.isArray(competitorsResponse) 
+            ? competitorsResponse 
+            : (competitorsResponse?.competitors || competitorsResponse?.data || []);
+          
+          logger.info("FreeReport", `Fetched ${serpKeywords.length} keywords and ${serpCompetitors.length} competitors from SERP worker`);
+        }
+      } catch (serpError: any) {
+        logger.warn("FreeReport", `SERP worker fetch failed, using fallback: ${serpError.message}`);
+      }
 
-      const keywords = transformToKeywords(industryKeywords.map(k => ({
-        keyword: k.keyword,
-        intent: k.intent,
-        position: k.position,
-        volume: k.volume,
-        winnerDomain: undefined,
-      })));
+      // Transform SERP keywords to the format expected by transformToKeywords
+      // Filter out invalid keywords (must have non-empty keyword string)
+      const validSerpKeywords = serpKeywords.filter((kw: any) => {
+        const kwText = kw.keyword || kw.query || '';
+        return typeof kwText === 'string' && kwText.trim().length > 0;
+      });
+      
+      const keywordData = validSerpKeywords.length > 0 
+        ? validSerpKeywords.map((kw: any) => ({
+            keyword: (kw.keyword || kw.query || '').trim(),
+            intent: kw.priority === 'money' || kw.category === 'transactional' ? 'high_intent' : 'informational',
+            position: kw.currentPosition || kw.position || null,
+            volume: kw.volume || kw.searchVolume || 0,
+            winnerDomain: undefined,
+          }))
+        : [
+            { keyword: `${domain.replace("www.", "")} services`, intent: "high_intent", position: null, volume: 500 },
+            { keyword: `best ${domain.split(".")[0]}`, intent: "informational", position: null, volume: 1200 },
+            { keyword: `${domain.split(".")[0]} near me`, intent: "high_intent", position: null, volume: 800 },
+          ].map(k => ({ ...k, winnerDomain: undefined }));
 
-      keywords.insight = "Keyword ranking data requires Google Search Console integration. Connect your Search Console account for accurate keyword position tracking.";
+      const keywords = transformToKeywords(keywordData);
 
-      const placeholderCompetitors = [
-        { domain: `competitor1-${domain.split(".")[0]}.com`, keywordCount: 0, positions: [], examplePages: [] },
-        { domain: `competitor2-${domain.split(".")[0]}.com`, keywordCount: 0, positions: [], examplePages: [] },
-      ];
+      const hasRealKeywords = validSerpKeywords.length > 0;
+      keywords.insight = hasRealKeywords 
+        ? `Tracking ${validSerpKeywords.length} keywords. ${keywords.bucket_counts.top_3} are in top 3 positions.`
+        : "Keyword ranking data requires Google Search Console integration. Connect your Search Console account for accurate keyword position tracking.";
 
-      const competitors = transformToCompetitors(placeholderCompetitors, { domain });
-      competitors.insight = "Competitor analysis requires SERP API integration. This data will be populated when SERP tracking is enabled for your keywords.";
+      // Transform SERP competitors to the format expected by transformToCompetitors
+      // Filter out invalid competitors (must have non-empty domain)
+      const validSerpCompetitors = serpCompetitors.filter((c: any) => {
+        const domainText = c.domain || '';
+        return typeof domainText === 'string' && domainText.trim().length > 0;
+      });
+      
+      const competitorData = validSerpCompetitors.length > 0
+        ? validSerpCompetitors.map((c: any) => ({
+            domain: (c.domain || '').trim(),
+            keywordCount: c.keywordsRanking || c.keywordCount || 0,
+            positions: c.positions || [],
+            examplePages: c.pages || c.urlPatterns || [],
+          }))
+        : [
+            { domain: `competitor1-${domain.split(".")[0]}.com`, keywordCount: 0, positions: [], examplePages: [] },
+            { domain: `competitor2-${domain.split(".")[0]}.com`, keywordCount: 0, positions: [], examplePages: [] },
+          ];
+
+      const competitors = transformToCompetitors(competitorData, { domain });
+      const hasRealCompetitors = validSerpCompetitors.length > 0;
+      competitors.insight = hasRealCompetitors
+        ? `Found ${validSerpCompetitors.length} competitors ranking for your keywords.`
+        : "Competitor analysis requires SERP API integration. This data will be populated when SERP tracking is enabled for your keywords.";
 
       const baseScore = scoreSummary.overall_score || scoreSummary.overallScore;
       const healthScoreFromScan = typeof baseScore === "number" ? baseScore : null;
@@ -20050,11 +20106,13 @@ Return JSON in this exact format:
         generation_status: "complete" | "partial"; 
         missing: Record<string, string>;
       } = {
-        generation_status: "complete",
-        missing: {
-          competitors: "Competitor data requires SERP API integration",
-          keywords: "Keyword rankings require Search Console integration",
-        },
+        generation_status: hasRealKeywords && hasRealCompetitors ? "complete" : "partial",
+        missing: hasRealKeywords && hasRealCompetitors 
+          ? {}
+          : {
+              ...(!hasRealKeywords ? { keywords: "Keyword rankings require Search Console integration" } : {}),
+              ...(!hasRealCompetitors ? { competitors: "Competitor data requires SERP API integration" } : {}),
+            },
       };
 
       const fullReport = scan.full_report || {};
