@@ -26,7 +26,7 @@ const DEFAULT_NEXT_STEPS: AgentNextStep[] = [
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-1.5">
+    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
       {children}
     </p>
   );
@@ -59,8 +59,8 @@ export function AgentCard({
   return (
     <Card 
       className={cn(
-        "relative overflow-hidden transition-all rounded-xl border-l-[3px]",
-        onClick && "cursor-pointer",
+        "relative overflow-hidden transition-all rounded-xl border-l-[3px] bg-white border-gray-200 shadow-sm",
+        onClick && "cursor-pointer hover:shadow-md",
         className
       )}
       style={{ borderLeftColor: crew.color }}
@@ -129,9 +129,9 @@ export function AgentCard({
                   </TooltipProvider>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">{crew.role}</p>
+              <p className="text-xs text-gray-600">{crew.role}</p>
               {crew.shortDescription && (
-                <p className="text-xs text-muted-foreground/70 truncate mt-0.5">{crew.shortDescription}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{crew.shortDescription}</p>
               )}
             </div>
           </div>
@@ -142,7 +142,7 @@ export function AgentCard({
         {crew.watchDescription && (
           <div className="mb-4">
             <SectionLabel>What I watch</SectionLabel>
-            <p className="text-sm text-foreground/80">{crew.watchDescription}</p>
+            <p className="text-sm text-gray-700">{crew.watchDescription}</p>
           </div>
         )}
 
@@ -153,19 +153,19 @@ export function AgentCard({
               <div className="space-y-1.5">
                 {displayFindings.map((finding, i) => (
                   <div key={i} className="flex justify-between items-baseline gap-2">
-                    <span className="text-sm text-muted-foreground">{finding.label}</span>
-                    <span className="text-sm font-medium text-foreground tabular-nums">{finding.value}</span>
+                    <span className="text-sm text-gray-600">{finding.label}</span>
+                    <span className="text-sm font-medium text-gray-900 tabular-nums">{finding.value}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground/60 italic">No data yet</p>
+              <p className="text-sm text-gray-400 italic">No data yet</p>
             )}
           </div>
 
           <div>
             <SectionLabel>Last checked</SectionLabel>
-            <p className="text-sm text-foreground/80 mb-4">{lastCheckIn || "Never"}</p>
+            <p className="text-sm text-gray-700 mb-4">{lastCheckIn || "Never"}</p>
 
             <SectionLabel>Next steps</SectionLabel>
             <ol className="space-y-1.5">
@@ -177,7 +177,7 @@ export function AgentCard({
                   >
                     {step.step}
                   </span>
-                  <span className="text-sm text-foreground/80 leading-snug">{step.action}</span>
+                  <span className="text-sm text-gray-700 leading-snug">{step.action}</span>
                 </li>
               ))}
             </ol>
