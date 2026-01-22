@@ -59,24 +59,39 @@ interface Agent {
   ctaAction: string;
 }
 
-function OutcomeCard({ label, value, subtext, highlight }: { label: string; value: string | number; subtext?: string; highlight?: boolean }) {
+function OutcomeCard({ label, value, subtext, delta, deltaType }: { 
+  label: string; 
+  value: string | number; 
+  subtext?: string;
+  delta?: string;
+  deltaType?: 'positive' | 'negative' | 'neutral';
+}) {
   return (
-    <div className={cn(
-      "glass-strong rounded-xl p-5",
-      highlight ? "glow-border" : "border border-[rgba(17,24,39,0.08)]"
-    )}>
-      <p className="text-sm text-[#334155] mb-1">{label}</p>
-      <p className="text-4xl font-bold text-[#0B1220]">{value}</p>
-      {subtext && <p className="text-xs text-[#334155] mt-1">{subtext}</p>}
+    <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-4xl font-bold text-gray-900">{value}</p>
+        {delta && (
+          <span className={cn(
+            "text-sm font-semibold",
+            deltaType === 'positive' && "text-emerald-600",
+            deltaType === 'negative' && "text-red-600",
+            deltaType === 'neutral' && "text-gray-500"
+          )}>
+            {delta}
+          </span>
+        )}
+      </div>
+      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
     </div>
   );
 }
 
 function HealthScoreCard({ label, score, owner, status }: { label: string; score: number; owner: string; status: 'good' | 'warning' | 'danger' }) {
-  const statusColors = {
-    good: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-    warning: 'text-amber-600 bg-amber-50 border-amber-200',
-    danger: 'text-red-600 bg-red-50 border-red-200'
+  const accentColors = {
+    good: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    danger: 'bg-red-500'
   };
   const ringColors = {
     good: 'stroke-emerald-500',
@@ -88,10 +103,11 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
   const strokeDashoffset = circumference - (score / 100) * circumference;
   
   return (
-    <div className="glass rounded-xl p-4 flex items-center gap-4">
-      <div className="relative w-12 h-12 shrink-0">
+    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1", accentColors[status])} />
+      <div className="relative w-12 h-12 shrink-0 ml-2">
         <svg className="w-12 h-12 -rotate-90" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="18" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+          <circle cx="20" cy="20" r="18" fill="none" stroke="#f3f4f6" strokeWidth="3" />
           <circle 
             cx="20" cy="20" r="18" fill="none" 
             className={ringColors[status]}
@@ -101,13 +117,13 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
             strokeLinecap="round"
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#0B1220]">
+        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900">
           {score}
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#0B1220] truncate">{label}</p>
-        <p className="text-xs text-[#334155]">{owner}</p>
+        <p className="text-sm font-semibold text-gray-900 truncate">{label}</p>
+        <p className="text-xs text-gray-500">{owner}</p>
       </div>
     </div>
   );
@@ -115,11 +131,11 @@ function HealthScoreCard({ label, score, owner, status }: { label: string; score
 
 function ActivityCard({ label, value, period }: { label: string; value: number; period: string }) {
   return (
-    <div className="glass rounded-lg p-3 flex items-center justify-between">
-      <span className="text-sm text-[#334155]">{label}</span>
+    <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm flex items-center justify-between">
+      <span className="text-sm text-gray-500">{label}</span>
       <div className="text-right">
-        <span className="text-lg font-bold text-[#0B1220]">{value}</span>
-        <span className="text-xs text-[#334155] ml-1">{period}</span>
+        <span className="text-xl font-bold text-gray-900">{value}</span>
+        <span className="text-xs text-gray-400 ml-1">{period}</span>
       </div>
     </div>
   );
@@ -130,29 +146,28 @@ function RankingMomentumSection({ improving, needsAttention }: { improving: Rank
     <section className="space-y-4" data-testid="section-ranking-momentum">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900">Ranking Momentum</h2>
-        <Badge variant="outline" className="text-xs">7-day change</Badge>
+        <span className="text-xs text-gray-500">7-day change</span>
       </div>
       
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="glass-green glow-success rounded-xl overflow-hidden">
-          <CardHeader className="pb-3 border-b border-emerald-200/30">
-            <CardTitle className="text-base flex items-center gap-2 text-[#0B1220]">
+        <Card className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
+          <CardHeader className="pb-3 border-b border-gray-100 ml-1">
+            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               Improving
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 pt-4">
+          <CardContent className="space-y-2 pt-4 ml-1">
             {improving.length === 0 ? (
-              <p className="text-sm text-[#334155]">No significant improvements this week</p>
+              <p className="text-sm text-gray-500">No significant improvements this week</p>
             ) : (
               improving.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100/30 last:border-0">
-                  <span className="text-sm font-semibold text-[#0B1220] truncate max-w-[200px]">{item.keyword}</span>
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{item.keyword}</span>
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-emerald-100 text-emerald-800 font-semibold">
-                      +{Math.abs(item.change)}
-                    </Badge>
-                    <span className="text-sm font-semibold text-[#334155] w-8 text-right">#{item.position}</span>
+                    <span className="text-sm font-semibold text-emerald-600">+{Math.abs(item.change)}</span>
+                    <span className="text-sm text-gray-500 w-8 text-right">#{item.position}</span>
                   </div>
                 </div>
               ))
@@ -160,25 +175,24 @@ function RankingMomentumSection({ improving, needsAttention }: { improving: Rank
           </CardContent>
         </Card>
 
-        <Card className="glass-amber glow-brand rounded-xl overflow-hidden">
-          <CardHeader className="pb-3 border-b border-amber-200/30">
-            <CardTitle className="text-base flex items-center gap-2 text-[#0B1220]">
-              <TrendingDown className="w-4 h-4 text-amber-600" />
-              Needs Attention
+        <Card className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
+          <CardHeader className="pb-3 border-b border-gray-100 ml-1">
+            <CardTitle className="text-base flex items-center gap-2 text-gray-900">
+              <TrendingDown className="w-4 h-4 text-red-600" />
+              Declined
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 pt-4">
+          <CardContent className="space-y-2 pt-4 ml-1">
             {needsAttention.length === 0 ? (
-              <p className="text-sm text-[#334155]">No significant declines this week</p>
+              <p className="text-sm text-gray-500">No significant declines this week</p>
             ) : (
               needsAttention.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-amber-100/30 last:border-0">
-                  <span className="text-sm font-semibold text-[#0B1220] truncate max-w-[200px]">{item.keyword}</span>
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{item.keyword}</span>
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-amber-100 text-amber-800 font-semibold">
-                      {item.change}
-                    </Badge>
-                    <span className="text-sm font-semibold text-[#334155] w-8 text-right">#{item.position}</span>
+                    <span className="text-sm font-semibold text-red-600">{item.change}</span>
+                    <span className="text-sm text-gray-500 w-8 text-right">#{item.position}</span>
                   </div>
                 </div>
               ))
@@ -249,16 +263,19 @@ function WhatToDoNextSection() {
       <div className="space-y-4">
         {steps.map((step) => (
           <Card key={step.number} className={cn(
-            "transition-all rounded-xl",
-            step.status === "active" ? "glass-purple glow-brand" : "glass glow-border"
+            "bg-white rounded-xl border shadow-sm overflow-hidden relative",
+            step.status === "active" ? "border-violet-200" : "border-gray-100"
           )}>
-            <CardContent className="pt-5">
+            {step.status === "active" && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500" />
+            )}
+            <CardContent className={cn("pt-5", step.status === "active" && "ml-1")}>
               <div className="flex items-start gap-4">
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
                   step.status === "active" 
                     ? "bg-violet-600 text-white" 
-                    : "bg-gray-200 text-gray-700"
+                    : "bg-gray-100 text-gray-500"
                 )}>
                   {step.number}
                 </div>
@@ -267,20 +284,20 @@ function WhatToDoNextSection() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-gray-900">{step.title}</h3>
                     {step.status === "locked" && (
-                      <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
+                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
                         <Lock className="w-3 h-3 mr-1" />
                         Locked
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{step.description}</p>
+                  <p className="text-sm text-gray-500 mb-3">{step.description}</p>
                   
                   <div className="mb-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-2">What this means:</p>
+                    <p className="text-xs font-medium text-gray-600 mb-2">What this means:</p>
                     <ul className="space-y-1">
                       {step.actions.map((action, idx) => (
-                        <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                          <span className="text-violet-600 mt-1">•</span>
+                        <li key={idx} className="text-sm text-gray-500 flex items-start gap-2">
+                          <span className="text-gray-400 mt-1">•</span>
                           <span>{action}</span>
                         </li>
                       ))}
@@ -289,12 +306,12 @@ function WhatToDoNextSection() {
                   
                   <div className="flex items-center gap-2">
                     {step.status === "active" ? (
-                      <Badge className="bg-emerald-100 text-emerald-800 font-semibold">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                      <span className="text-sm font-medium text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" />
                         Active
-                      </Badge>
+                      </span>
                     ) : (
-                      <Button size="sm" className="gap-1 btn-gradient-primary">
+                      <Button size="sm" variant="outline" className="text-violet-600 border-violet-200 hover:bg-violet-50">
                         {step.unlockLabel}
                       </Button>
                     )}
@@ -316,31 +333,31 @@ function PagesToOptimizeSection({ pages }: { pages: PageToOptimize[] }) {
       
       <div className="space-y-3">
         {pages.length === 0 ? (
-          <Card className="glass rounded-xl">
+          <Card className="bg-white rounded-xl border border-gray-100 shadow-sm">
             <CardContent className="py-8 text-center">
-              <p className="text-gray-600">Connect your Search Console to see optimization opportunities</p>
+              <p className="text-gray-500">Connect your Search Console to see optimization opportunities</p>
             </CardContent>
           </Card>
         ) : (
           pages.map((page, idx) => (
-            <Card key={idx} className="glass rounded-xl hover:shadow-lg transition-all">
+            <Card key={idx} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-gray-900 truncate">{page.title}</p>
-                    <p className="text-xs text-gray-500 truncate">{page.url}</p>
+                    <p className="text-xs text-gray-400 truncate">{page.url}</p>
                     <div className="flex items-center gap-3 mt-2">
-                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-300">
+                      <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
                         {page.keyword}
-                      </Badge>
-                      <span className="text-xs font-semibold text-gray-700">
+                      </span>
+                      <span className="text-xs text-gray-500">
                         #{page.position} · {page.volume.toLocaleString()} mo/search
                       </span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm text-violet-700 font-semibold">{page.action}</p>
-                    <Button variant="ghost" size="sm" className="mt-1 gap-1 text-xs text-gray-700 hover:text-gray-900">
+                    <p className="text-sm text-violet-600 font-medium">{page.action}</p>
+                    <Button variant="ghost" size="sm" className="mt-1 gap-1 text-xs text-gray-500 hover:text-gray-900">
                       View <ArrowRight className="w-3 h-3" />
                     </Button>
                   </div>
@@ -359,29 +376,30 @@ function TopPerformersSection({ performers }: { performers: TopPerformer[] }) {
     <section className="space-y-4" data-testid="section-top-performers">
       <h2 className="text-xl font-semibold text-gray-900">Top Performers</h2>
       
-      <Card className="glass-green glow-success rounded-xl overflow-hidden">
-        <CardHeader className="pb-0 border-b border-emerald-200/30">
-          <p className="text-sm font-semibold text-emerald-800 py-2">Pages ranking in top 3</p>
+      <Card className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
+        <CardHeader className="pb-0 border-b border-gray-100 ml-1">
+          <p className="text-sm font-medium text-emerald-600 py-2">Pages ranking in top 3</p>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 ml-1">
           {performers.length === 0 ? (
-            <p className="text-[#334155] text-center py-4">No top-ranking pages detected yet</p>
+            <p className="text-gray-500 text-center py-4">No top-ranking pages detected yet</p>
           ) : (
             <>
               <div className="space-y-3">
                 {performers.map((page, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b border-emerald-100/30 last:border-0">
+                  <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[#0B1220] truncate">{page.title}</p>
-                      <p className="text-xs text-[#334155]">{page.keyword}</p>
+                      <p className="font-medium text-gray-900 truncate">{page.title}</p>
+                      <p className="text-xs text-gray-500">{page.keyword}</p>
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-800 font-bold shrink-0">
+                    <span className="text-sm font-bold text-emerald-600 shrink-0">
                       #{page.position}
-                    </Badge>
+                    </span>
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-[#334155] mt-4 italic">
+              <p className="text-sm text-gray-500 mt-4">
                 These pages protect your traffic. Changes here should be deliberate.
               </p>
             </>
@@ -396,39 +414,42 @@ function AgentsSection({ agents }: { agents: Agent[] }) {
   return (
     <section className="space-y-4" data-testid="section-agents">
       <h2 className="text-xl font-semibold text-gray-900">Agents</h2>
-      <p className="text-sm text-gray-600">Unlock capabilities to automate your SEO workflow</p>
+      <p className="text-sm text-gray-500">Unlock capabilities to automate your SEO workflow</p>
       
       <div className="grid md:grid-cols-2 gap-4">
         {agents.map((agent) => (
           <Card 
             key={agent.id} 
             className={cn(
-              "relative rounded-xl",
-              agent.status === "locked" ? "glass glow-border" : "glass-purple glow-brand"
+              "bg-white rounded-xl border shadow-sm overflow-hidden relative",
+              agent.status === "active" ? "border-violet-200" : "border-gray-100"
             )}
           >
+            {agent.status === "active" && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500" />
+            )}
             {agent.status === "locked" && (
-              <Badge className="absolute top-3 right-3 bg-gray-900/80 text-white border-0 text-xs">
+              <Badge variant="outline" className="absolute top-3 right-3 bg-gray-50 text-gray-500 border-gray-200 text-xs">
                 <Lock className="w-3 h-3 mr-1" />
                 Locked
               </Badge>
             )}
             
-            <CardHeader className="pb-3">
+            <CardHeader className={cn("pb-3", agent.status === "active" && "ml-1")}>
               <CardTitle className="text-base flex items-center gap-2 text-gray-900">
                 <Bot className="w-4 h-4 text-violet-600" />
                 {agent.name}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-gray-600">{agent.description}</p>
+            <CardContent className={cn("space-y-3", agent.status === "active" && "ml-1")}>
+              <p className="text-sm text-gray-500">{agent.description}</p>
               
               <div>
-                <p className="text-xs font-semibold text-gray-700 mb-1">Includes:</p>
+                <p className="text-xs font-medium text-gray-600 mb-1">Includes:</p>
                 <ul className="space-y-1">
                   {agent.includes.map((item, idx) => (
-                    <li key={idx} className="text-xs text-gray-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <li key={idx} className="text-xs text-gray-500 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                       {item}
                     </li>
                   ))}
@@ -437,11 +458,12 @@ function AgentsSection({ agents }: { agents: Agent[] }) {
               
               <Button 
                 size="sm" 
+                variant="outline"
                 className={cn(
                   "w-full mt-2",
                   agent.status === "active" 
-                    ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200" 
-                    : "btn-gradient-primary"
+                    ? "text-gray-600 border-gray-200" 
+                    : "text-violet-600 border-violet-200 hover:bg-violet-50"
                 )}
               >
                 {agent.ctaLabel}
@@ -574,27 +596,27 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-[#0B1220]">SEO Performance Overview</h1>
-                <Badge className="text-xs bg-violet-100 text-violet-800 border-violet-300">Weekly Report</Badge>
+                <h1 className="text-2xl font-bold text-gray-900">SEO Performance Overview</h1>
+                <span className="text-xs font-medium text-violet-600 bg-violet-50 px-2 py-1 rounded">Weekly Report</span>
               </div>
-              <p className="text-[#334155]">Updated weekly · Rankings are the north star</p>
+              <p className="text-gray-500">Updated weekly · Rankings are the north star</p>
             </div>
             <SiteSelector />
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <p className="text-xs font-semibold text-[#334155] uppercase tracking-wide mb-3">Outcomes</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Outcomes</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <OutcomeCard label="Keywords in Top 3" value={8} subtext="Core targets" highlight />
-                <OutcomeCard label="Keywords in Top 10" value={24} subtext="57% of tracked" highlight />
-                <OutcomeCard label="Organic Traffic" value="12.4K" subtext="Last 30 days" />
-                <OutcomeCard label="Conversions" value={147} subtext="Last 30 days" />
+                <OutcomeCard label="Keywords in Top 3" value={8} delta="+2" deltaType="positive" subtext="Core targets" />
+                <OutcomeCard label="Keywords in Top 10" value={24} delta="+5" deltaType="positive" subtext="57% of tracked" />
+                <OutcomeCard label="Organic Traffic" value="12.4K" delta="+8%" deltaType="positive" subtext="Last 30 days" />
+                <OutcomeCard label="Conversions" value={147} delta="-3%" deltaType="negative" subtext="Last 30 days" />
               </div>
             </div>
             
             <div>
-              <p className="text-xs font-semibold text-[#334155] uppercase tracking-wide mb-3">Health Scores</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Health Scores</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <HealthScoreCard label="Domain Authority" score={42} owner="Backlinks Agent" status="warning" />
                 <HealthScoreCard label="Technical SEO" score={78} owner="Technical Agent" status="good" />
@@ -604,7 +626,7 @@ export default function Dashboard() {
             </div>
             
             <div>
-              <p className="text-xs font-semibold text-[#334155] uppercase tracking-wide mb-3">Activity</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Activity</p>
               <div className="grid grid-cols-3 gap-3">
                 <ActivityCard label="Blogs Published" value={4} period="30d" />
                 <ActivityCard label="Pages Optimized" value={12} period="30d" />
