@@ -3,7 +3,7 @@ import SpeedsterContent from "./speedster/SpeedsterContent";
 
 export default function Speedster() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <SpeedsterContent />
     </DashboardLayout>
   );

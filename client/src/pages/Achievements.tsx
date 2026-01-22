@@ -315,7 +315,7 @@ export default function Achievements() {
   const crewIds = USER_FACING_AGENTS;
   
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>

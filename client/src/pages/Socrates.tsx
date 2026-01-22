@@ -3,7 +3,7 @@ import { SocratesContent } from "./socrates/SocratesContent";
 
 export default function Socrates() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <SocratesContent />
     </DashboardLayout>
   );

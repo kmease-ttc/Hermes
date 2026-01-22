@@ -75,7 +75,7 @@ export default function CrewPage() {
   const captainData = getMockCaptainRecommendations();
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6" data-testid="agents-page">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">

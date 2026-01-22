@@ -73,7 +73,7 @@ export default function WebsiteReportPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -82,7 +82,7 @@ export default function WebsiteReportPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Link href={ROUTES.MISSION_CONTROL}>

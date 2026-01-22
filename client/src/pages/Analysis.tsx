@@ -396,7 +396,7 @@ export default function Analysis() {
   const parsed = report?.markdownReport ? parseReport(report.markdownReport) : null;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>

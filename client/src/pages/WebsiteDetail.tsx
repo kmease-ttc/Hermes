@@ -629,7 +629,7 @@ export default function WebsiteDetail() {
 
   if (!siteId) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Invalid site ID</p>
         </div>
@@ -638,7 +638,7 @@ export default function WebsiteDetail() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button 

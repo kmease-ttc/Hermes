@@ -743,7 +743,7 @@ export default function MyCrew() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">My Crew</h1>

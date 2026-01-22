@@ -3,7 +3,7 @@ import { TicketList } from "@/components/dashboard/TicketList";
 
 export default function Tickets() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">All Tickets</h1>

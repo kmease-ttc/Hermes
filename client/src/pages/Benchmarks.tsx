@@ -182,7 +182,7 @@ function BenchmarkCard({ metric }: { metric: BenchmarkMetric }) {
 
 export default function Benchmarks() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6" data-testid="benchmarks-page">
         <div className="flex items-center justify-between">
           <div>

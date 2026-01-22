@@ -114,7 +114,7 @@ export default function DeveloperReportPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <Link href={ROUTES.MISSION_CONTROL}>

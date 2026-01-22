@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function Privacy() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold" data-testid="text-privacy-title">Privacy Policy</h1>

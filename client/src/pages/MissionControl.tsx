@@ -2208,7 +2208,7 @@ export default function MissionControl() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6" data-testid="mission-control-page">
         <div className="relative flex items-center justify-between">
           <RefreshingBadge isRefreshing={isRefreshing} />

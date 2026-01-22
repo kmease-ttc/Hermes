@@ -155,7 +155,7 @@ export default function SiteDetail() {
 
   if (!isNew && isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
@@ -164,7 +164,7 @@ export default function SiteDetail() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6 max-w-3xl">
         <div className="flex items-center gap-4">
           <Link href="/sites">

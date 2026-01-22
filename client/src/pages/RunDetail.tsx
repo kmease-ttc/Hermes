@@ -66,7 +66,7 @@ export default function RunDetail() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="flex items-center justify-center py-24">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
@@ -76,7 +76,7 @@ export default function RunDetail() {
 
   if (!run) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="p-6">
           <Card>
             <CardContent className="py-12">
@@ -105,7 +105,7 @@ export default function RunDetail() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/runs">

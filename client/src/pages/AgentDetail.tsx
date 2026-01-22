@@ -35,7 +35,7 @@ export default function AgentDetail() {
 
   if (!match || !isUserFacingAgent(agentId)) {
     return (
-      <DashboardLayout>
+      <DashboardLayout className="dashboard-light">
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <h1 className="text-2xl font-bold">Agent Not Found</h1>
           <p className="text-muted-foreground">The agent you're looking for doesn't exist.</p>
@@ -78,7 +78,7 @@ export default function AgentDetail() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-4" data-testid={`agent-detail-${agentId}`}>
         <Button 
           variant="ghost" 

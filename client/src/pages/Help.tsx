@@ -71,7 +71,7 @@ const externalResources = [
 
 export default function Help() {
   return (
-    <DashboardLayout>
+    <DashboardLayout className="dashboard-light">
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Help Center</h1>
