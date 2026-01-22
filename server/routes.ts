@@ -19377,7 +19377,7 @@ Return JSON in this exact format:
     const { scanId } = req.params;
     try {
       const result = await db.execute(sql`
-        SELECT scan_id, target_url, normalized_url, status, preview_findings, score_summary
+        SELECT scan_id, target_url, normalized_url, status, preview_findings, score_summary, full_report
         FROM scan_requests
         WHERE scan_id = ${scanId}
       `);
@@ -19394,12 +19394,65 @@ Return JSON in this exact format:
 
       const findings = scan.preview_findings || [];
       const scoreSummary = scan.score_summary || { overall: 0, technical: 0, content: 0, performance: 0 };
+      const fullReport = scan.full_report || {};
+
+      // Extract domain from URL for display
+      let siteName = "Your Website";
+      let domain = scan.normalized_url || scan.target_url;
+      try {
+        const urlObj = new URL(domain);
+        domain = urlObj.hostname;
+        // Convert domain to readable name
+        siteName = domain.replace(/^www\./, '').replace(/\.(com|org|net|io|co|pro)$/, '').replace(/[-_]/g, ' ');
+        siteName = siteName.charAt(0).toUpperCase() + siteName.slice(1);
+      } catch {}
+
+      // Extract keyword data for the report
+      const keywords = fullReport.keywords || { quickWins: [], declining: [] };
+      const serp = fullReport.serp || {};
+      const authority = fullReport.authority || {};
+      
+      // Parse SERP data for current wins and big gaps
+      const serpKeywords = serp.keywords || [];
+      const currentWins = serpKeywords
+        .filter((kw: any) => kw.position && kw.position <= 3)
+        .slice(0, 5)
+        .map((kw: any) => ({
+          keyword: kw.keyword || kw.query,
+          volume: kw.volume || kw.search_volume || 0,
+          position: kw.position || kw.rank,
+        }));
+      
+      const bigGaps = serpKeywords
+        .filter((kw: any) => !kw.position || kw.position > 100)
+        .slice(0, 5)
+        .map((kw: any) => ({
+          keyword: kw.keyword || kw.query,
+          volume: kw.volume || kw.search_volume || 0,
+        }));
+
+      // Calculate keyword stats
+      const keywordStats = {
+        total: serpKeywords.length,
+        top20: serpKeywords.filter((kw: any) => kw.position && kw.position <= 20).length,
+        notRanked: serpKeywords.filter((kw: any) => !kw.position || kw.position > 100).length,
+      };
 
       res.json({
         findings: findings.slice(0, 3),
         scoreSummary,
         totalFindings: findings.length,
         targetUrl: scan.normalized_url || scan.target_url,
+        siteName,
+        domain,
+        currentWins,
+        bigGaps,
+        keywordStats,
+        authority: {
+          domainAuthority: authority.domainAuthority || null,
+          referringDomains: authority.referringDomains || null,
+        },
+        generatedAt: new Date().toISOString(),
       });
     } catch (error: any) {
       logger.error("Scan", `Failed to get scan preview for ${scanId}`, { error: error.message });
