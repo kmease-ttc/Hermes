@@ -1,0 +1,188 @@
+TASK: Merge Scotty Performance Monitoring + Decay Monitor into a single “Technical SEO” agent (UI + orchestration), while still calling all underlying APIs on the backend.
+
+GOAL
+Create one agent entry in the UI and in the recommendation pipeline called:
+
+* Agent key: `technical_seo`
+* Display name: “Technical SEO”
+  This agent must aggregate results from:
+
+1. Scotty Performance Monitoring API (performance / speed / CWV-ish)
+2. Content Decay Monitor API (decay / freshness / slipping pages)
+3. Core Web Vitals API (if separate from Scotty; keep calling it)
+
+Important: UI should show ONE agent, but backend should still call all three services and merge results.
+
+---
+
+1. UI CHANGES (Agent List + Dashboard)
+
+1.1 Replace/Hide old cards
+
+* Remove (or hide) individual cards for:
+
+  * `scotty_performance` (or whatever key is used)
+  * `decay_monitor`
+  * `core_web_vitals` (only if it was previously a “separate agent” card)
+* Add one new card:
+
+  * “Technical SEO”
+
+1.2 Agent metadata mapping
+
+* Provide one `AgentDefinition` for `technical_seo` with:
+
+  * description: “Performance, Core Web Vitals, and content decay monitoring — unified into one weekly technical health agent.”
+  * outputs: “Issues, prioritized fixes, and monitoring alerts”
+  * cost: aggregated from sub-agents
+  * last_run: the max(last_run of underlying calls)
+
+1.3 Status logic
+Technical SEO status should reflect underlying sub-agents:
+
+* Status = ERROR if any required sub-agent call failed
+* Status = STALE if any sub-agent data is stale past SLA
+* Status = OK only if all required sub-agent calls succeeded and are within SLA
+
+---
+
+2. BACKEND / ORCHESTRATION
+
+2.1 New orchestration entrypoint
+Implement:
+
+* `runTechnicalSeoAgent(domain, context)` (or equivalent)
+
+This function must:
+
+* call all three APIs in parallel
+* normalize each response into a shared schema
+* merge into a single “Technical SEO” result object
+* emit unified recommendations under `agent=technical_seo`
+
+2.2 APIs to call (do not remove any)
+Call these base URLs (already present in configs/secrets):
+
+* Performance monitoring (Scotty): whichever service you currently call for Scotty
+* Decay monitor: `SEO_CONTENT_DECAY_MONITOR_BASE_URL`
+* Core Web Vitals: `SEO_CORE_WEB_VITALS_BASE_URL`
+
+Notes:
+
+* Even if Scotty and CWV overlap, still call both for now.
+* We can dedupe metrics later — but keep the data sources.
+
+2.3 Normalization contract (required)
+Each sub-call must be converted to:
+
+* `technical_findings[]` with:
+
+  * `type` (enum: performance | cwv | decay)
+  * `severity` (low/med/high)
+  * `title`
+  * `summary`
+  * `evidence` (metrics, urls, timestamps)
+  * `recommended_actions[]`
+  * `source` (scotty | decay_monitor | core_web_vitals)
+
+Then produce:
+
+* `recommendations[]` (canonical recommendation objects) with:
+
+  * `agent = technical_seo`
+  * `category = technical_seo` (or `technical` if you already have that enum)
+  * include evidence + source mapping so we can trace to underlying service
+
+2.4 Dedupe requirements
+If two sources produce the “same” recommendation:
+
+* Deduplicate by fingerprint:
+
+  * `fingerprint = hash(domain + normalized_title + normalized_target_url + recommendation_type)`
+* Combine evidence:
+
+  * Keep both sources in an array: `sources: ["scotty", "core_web_vitals"]`
+
+2.5 Error handling (must be explicit)
+If any underlying service fails:
+
+* Technical SEO agent run should still complete, but:
+
+  * mark status as PARTIAL
+  * include a visible warning: “Some technical sources failed”
+  * include `errors[]` with service name + message
+
+---
+
+3. LOGGING (Socrates requirement)
+
+3.1 One run id, three child spans
+
+* Generate a single `run_id` for `technical_seo`
+* For each API call, create a child log span:
+
+  * `run_child_started`
+  * `run_child_completed` / `run_child_error`
+
+3.2 Emit unified run summary
+At end:
+
+* total findings count
+* total recommendations count
+* list of failed sources (if any)
+* total estimated cost/time
+  All logs go to Socrates under:
+* `agent=technical_seo`
+  And child logs must include:
+* `source=scotty|decay_monitor|core_web_vitals`
+
+---
+
+4. DATA FRESHNESS / SCHEDULE
+
+* Default SLA per sub-source:
+
+  * Performance: 7 days
+  * CWV: 7 days
+  * Decay: 7 days (or 14 if that’s how it’s designed)
+* `technical_seo` is stale if ANY sub-source is stale past SLA.
+* When user clicks “Run”, trigger all three calls.
+
+---
+
+5. ACCEPTANCE TESTS
+
+A) UI
+
+* Agents page shows ONE agent: Technical SEO
+* Old agents do not appear as separate cards
+* Technical SEO card shows:
+
+  * last run time
+  * status (OK/STALE/ERROR/PARTIAL)
+  * summary counts (findings + recs)
+
+B) Backend
+
+* Running Technical SEO produces:
+
+  * calls to all 3 APIs
+  * merged output
+  * deduped recommendations
+  * correct evidence attribution
+
+C) Logging
+
+* Socrates shows:
+
+  * one parent run for technical_seo
+  * three child spans
+  * errors correctly attributed without killing the entire run
+
+---
+
+IMPLEMENTATION NOTES
+
+* Prefer adding `technical_seo` as a first-class agent definition rather than special casing the UI.
+* Keep old service integrations intact; only change how they’re surfaced + aggregated.
+* Do not change recommendation categories elsewhere yet — just ensure “What to do next” can include Technical SEO results in the technical section.

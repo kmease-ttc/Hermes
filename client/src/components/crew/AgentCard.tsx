@@ -26,7 +26,7 @@ const DEFAULT_NEXT_STEPS: AgentNextStep[] = [
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5" style={{ opacity: 1 }}>
       {children}
     </p>
   );
@@ -59,11 +59,11 @@ export function AgentCard({
   return (
     <Card 
       className={cn(
-        "relative overflow-hidden transition-all rounded-xl border-l-[3px] bg-white border-gray-200 shadow-sm",
+        "agent-card relative overflow-hidden transition-all rounded-xl border-l-[3px] bg-white border border-slate-200 shadow-sm text-slate-900",
         onClick && "cursor-pointer hover:shadow-md",
         className
       )}
-      style={{ borderLeftColor: crew.color }}
+      style={{ borderLeftColor: crew.color, opacity: 1 }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       data-testid={`agent-card-${serviceId}`}
@@ -87,7 +87,7 @@ export function AgentCard({
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <h3 className="font-semibold text-base leading-tight" style={{ color: crew.color }}>
+                <h3 className="font-medium text-base leading-tight text-slate-900">
                   {crew.nickname}
                 </h3>
                 {crew.tooltipInfo && (
@@ -129,9 +129,9 @@ export function AgentCard({
                   </TooltipProvider>
                 )}
               </div>
-              <p className="text-xs text-gray-600">{crew.role}</p>
+              <p className="text-xs text-slate-700" style={{ opacity: 1 }}>{crew.role}</p>
               {crew.shortDescription && (
-                <p className="text-xs text-gray-500 truncate mt-0.5">{crew.shortDescription}</p>
+                <p className="text-xs text-slate-600 truncate mt-0.5" style={{ opacity: 1 }}>{crew.shortDescription}</p>
               )}
             </div>
           </div>
@@ -142,7 +142,7 @@ export function AgentCard({
         {crew.watchDescription && (
           <div className="mb-4">
             <SectionLabel>What I watch</SectionLabel>
-            <p className="text-sm text-gray-700">{crew.watchDescription}</p>
+            <p className="text-sm text-slate-700" style={{ opacity: 1 }}>{crew.watchDescription}</p>
           </div>
         )}
 
@@ -153,19 +153,19 @@ export function AgentCard({
               <div className="space-y-1.5">
                 {displayFindings.map((finding, i) => (
                   <div key={i} className="flex justify-between items-baseline gap-2">
-                    <span className="text-sm text-gray-600">{finding.label}</span>
-                    <span className="text-sm font-medium text-gray-900 tabular-nums">{finding.value}</span>
+                    <span className="text-sm text-slate-600" style={{ opacity: 1 }}>{finding.label}</span>
+                    <span className="text-sm font-medium text-slate-900 tabular-nums" style={{ opacity: 1 }}>{finding.value}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 italic">No data yet</p>
+              <p className="text-sm text-slate-500 italic" style={{ opacity: 1 }}>No data yet</p>
             )}
           </div>
 
           <div>
             <SectionLabel>Last checked</SectionLabel>
-            <p className="text-sm text-gray-700 mb-4">{lastCheckIn || "Never"}</p>
+            <p className="text-sm text-slate-700 mb-4" style={{ opacity: 1 }}>{lastCheckIn || "Never"}</p>
 
             <SectionLabel>Next steps</SectionLabel>
             <ol className="space-y-1.5">
@@ -173,11 +173,11 @@ export function AgentCard({
                 <li key={step.step} className="flex items-start gap-2">
                   <span 
                     className="flex-shrink-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center mt-0.5"
-                    style={{ backgroundColor: `${crew.color}15`, color: crew.color }}
+                    style={{ backgroundColor: `${crew.color}20`, color: crew.color }}
                   >
                     {step.step}
                   </span>
-                  <span className="text-sm text-gray-700 leading-snug">{step.action}</span>
+                  <span className="text-sm text-slate-700 leading-snug" style={{ opacity: 1 }}>{step.action}</span>
                 </li>
               ))}
             </ol>

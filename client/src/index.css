@@ -542,3 +542,9 @@ body:has(.dashboard-light) {
 .btn-gradient-success:active {
   filter: saturate(1.05) contrast(1.0);
 }
+
+/* Agent card contrast safety net */
+.agent-card,
+.agent-card * {
+  opacity: 1 !important;
+}
