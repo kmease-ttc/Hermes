@@ -66,13 +66,14 @@ function OutcomeCard({ label, value, subtext, delta, deltaType, tint }: {
   subtext?: string;
   delta?: string;
   deltaType?: 'positive' | 'negative' | 'neutral';
-  tint: 'amber' | 'purple' | 'blue' | 'green';
+  tint: 'amber' | 'purple' | 'blue' | 'green' | 'red';
 }) {
   const tintStyles = {
     'amber': { bg: 'bg-amber-100', text: 'text-amber-600', labelText: 'text-amber-700' },
     'purple': { bg: 'bg-violet-100', text: 'text-violet-600', labelText: 'text-violet-700' },
     'blue': { bg: 'bg-cyan-100', text: 'text-cyan-600', labelText: 'text-cyan-700' },
-    'green': { bg: 'bg-emerald-100', text: 'text-emerald-600', labelText: 'text-emerald-700' }
+    'green': { bg: 'bg-emerald-100', text: 'text-emerald-600', labelText: 'text-emerald-700' },
+    'red': { bg: 'bg-red-100', text: 'text-red-600', labelText: 'text-red-700' }
   };
   
   const style = tintStyles[tint];
@@ -750,7 +751,7 @@ export default function Dashboard() {
                 <OutcomeCard label="Authority" value={42} subtext="Domain strength" tint="amber" />
                 <OutcomeCard label="Keywords" value={95} delta="+12" deltaType="positive" subtext="Total tracked" tint="purple" />
                 <OutcomeCard label="Top 20" value={39} delta="+5" deltaType="positive" subtext="Ranking positions" tint="blue" />
-                <OutcomeCard label="Quick Wins" value={5} subtext="Ready to improve" tint="green" />
+                <OutcomeCard label="Not Ranked" value={12} subtext="Missing from top 100" tint="red" />
               </div>
             </div>
             
