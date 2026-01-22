@@ -108,6 +108,30 @@ A shareable, read-only SEO diagnosis report generated from website scans, stored
 ### Change Governance System
 A platform-wide governance layer that logs, validates, and batches all SEO changes. It uses a Change Log SDK, KB Validator, Cadence Checker, and Deploy Windows to manage the lifecycle of changes, from proposal to execution, with pre/post metrics capture.
 
+### Internal API (Hermes ↔ SERP Worker)
+Bidirectional communication between Hermes and external SERP Worker service.
+
+**Authentication**:
+- Header: `X-ARCLO-API-KEY`
+- Validates against: `process.env.SEO_SCHEDULER_API_KEY`
+
+**Endpoints**:
+- `GET /api/internal/site/state?domain=` - Site configuration and scan state
+- `GET /api/internal/site/authority?domain=` - Authority data with licensing check
+- `GET /api/internal/site/recommendations?domain=&week=` - Page-specific recommendations
+- `GET /api/internal/completed?domain=` - Completed work fingerprints
+- `POST /api/internal/report` - Store report callback from Worker
+
+**Recommendations Endpoint**:
+Returns page-specific, varied, copy/paste-ready actions with deterministic variation per week. Implements:
+- FAQ variance: 0→5-7, 1-3→3-5, 4-6→2-4, ≥7→no add
+- Content variance: <450→600-900w, 450-900→250-500w, 900-1500→150-300w
+- Link variance: 0→6-10, 1-2→4-6, 3-5→2-4, ≥6→no add
+- Title changes only when issues exist (too long, missing city)
+- Fingerprint suppression via `completed_work` table
+
+**Limitation**: serp_keywords table lacks siteId; recommendations only use full-URL keywords to ensure domain safety.
+
 ## External Dependencies
 
 ### Google APIs
