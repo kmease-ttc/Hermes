@@ -1,4 +1,5 @@
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import { useEffect, useState, useRef } from "react";
 import { buildRoute } from "@shared/routes";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { USER_FACING_AGENTS, getCrewMember } from "@/config/agents";
 import { getMockAgentData } from "@/config/mockAgentInsights";
 import { getMockCaptainRecommendations } from "@/config/mockCaptainRecommendations";
 import { Bot } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
@@ -26,6 +28,30 @@ function formatRelativeTime(dateString: string): string {
 
 export default function CrewPage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const [focusedAgentId, setFocusedAgentId] = useState<string | null>(null);
+  const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const focusParam = params.get("focus");
+    
+    if (focusParam && USER_FACING_AGENTS.includes(focusParam)) {
+      setFocusedAgentId(focusParam);
+      
+      setTimeout(() => {
+        const element = agentRefs.current[focusParam];
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+
+      setTimeout(() => {
+        setFocusedAgentId(null);
+        window.history.replaceState({}, "", window.location.pathname);
+      }, 2000);
+    }
+  }, [search]);
   
   const userFacingAgents = USER_FACING_AGENTS
     .map((serviceId) => {
@@ -82,7 +108,15 @@ export default function CrewPage() {
 
         <div className="flex flex-col gap-6">
           {userFacingAgents.map((agent) => (
-            <div key={agent.serviceId} id={agent.serviceId}>
+            <div 
+              key={agent.serviceId} 
+              id={agent.serviceId}
+              ref={(el) => { agentRefs.current[agent.serviceId] = el; }}
+              className={cn(
+                "transition-all duration-500",
+                focusedAgentId === agent.serviceId && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg animate-pulse"
+              )}
+            >
               <AgentCard
                 serviceId={agent.serviceId}
                 score={agent.score}

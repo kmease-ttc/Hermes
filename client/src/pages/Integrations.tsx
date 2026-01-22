@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { SiteSelector } from "@/components/site/SiteSelector";
@@ -493,6 +493,28 @@ export default function Integrations() {
     secretsCount: number;
     summary: { total: number; healthy: number; failed: number; secretsFound: number } | null;
   }>({ refreshedAt: null, vaultConnected: false, vaultReason: null, vaultError: null, secretsCount: 0, summary: null });
+  const [highlightedHash, setHighlightedHash] = useState<string | null>(null);
+  const ga4Ref = useRef<HTMLDivElement | null>(null);
+  const gscRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash === "ga4" || hash === "gsc") {
+      setHighlightedHash(hash);
+      
+      setTimeout(() => {
+        const element = hash === "ga4" ? ga4Ref.current : gscRef.current;
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+
+      setTimeout(() => {
+        setHighlightedHash(null);
+        window.history.replaceState({}, "", window.location.pathname + window.location.search);
+      }, 2000);
+    }
+  }, []);
 
   // Quick cached summary for instant loading (SWR pattern)
   const { data: cachedSummary, isLoading: cachedSummaryLoading } = useQuery<{
@@ -1345,6 +1367,48 @@ export default function Integrations() {
                       ) : (
                         <XCircle className="w-4 h-4 text-semantic-danger ml-auto" />
                       )}
+                    </div>
+                    {/* GA4 Status */}
+                    <div 
+                      id="ga4"
+                      ref={ga4Ref}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl bg-muted/30 border transition-all duration-500",
+                        highlightedHash === "ga4" 
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse border-primary" 
+                          : "border-border"
+                      )}
+                      data-testid="integration-ga4"
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-semantic-info-soft text-semantic-info">
+                        <Activity className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Google Analytics 4</p>
+                        <p className="text-xs text-muted-foreground">Traffic & Conversions</p>
+                      </div>
+                      <Settings className="w-4 h-4 text-muted-foreground ml-auto" />
+                    </div>
+                    {/* GSC Status */}
+                    <div 
+                      id="gsc"
+                      ref={gscRef}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl bg-muted/30 border transition-all duration-500",
+                        highlightedHash === "gsc" 
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse border-primary" 
+                          : "border-border"
+                      )}
+                      data-testid="integration-gsc"
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-semantic-info-soft text-semantic-info">
+                        <Search className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Google Search Console</p>
+                        <p className="text-xs text-muted-foreground">Search Performance</p>
+                      </div>
+                      <Settings className="w-4 h-4 text-muted-foreground ml-auto" />
                     </div>
                   </div>
                   {platformDeps?.bitwarden && !platformDeps.bitwarden.connected && platformDeps.bitwarden.lastError && (
