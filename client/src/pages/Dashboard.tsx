@@ -718,7 +718,30 @@ export default function Dashboard() {
   const { siteId, siteDomain, selectedSite } = useSiteContext();
   const [, navigate] = useLocation();
   
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading } = useQuery<{
+    siteId: string;
+    domain: string;
+    lastUpdated: string;
+    summary: {
+      totalKeywords: number;
+      inTop3: number;
+      inTop10: number;
+      improved: number;
+      declined: number;
+    };
+    costMetrics: {
+      trafficAtRisk: number;
+      clicksLost: number;
+      leadsLost: string;
+      revenueAtRisk: string;
+    };
+    improvingKeywords: RankingItem[];
+    decliningKeywords: RankingItem[];
+    pagesToOptimize: PageToOptimize[];
+    topPerformers: TopPerformer[];
+    competitors: { domain: string; keywordsRanking: number }[];
+    hasRealData: boolean;
+  }>({
     queryKey: ["/api/dashboard", siteId],
     enabled: !!siteId,
   });
@@ -728,40 +751,14 @@ export default function Dashboard() {
   const hasGsc = !!integrations.gsc?.property;
   const hasCrawler = integrations.crawler?.enabled ?? false;
 
-  const mockImprovingKeywords: RankingItem[] = [
-    { keyword: "seo audit tool", position: 7, change: 4 },
-    { keyword: "website performance checker", position: 12, change: 3 },
-    { keyword: "technical seo analysis", position: 15, change: 5 },
-  ];
-
-  const mockNeedsAttention: RankingItem[] = [
-    { keyword: "site speed test", position: 18, change: -3 },
-    { keyword: "core web vitals", position: 25, change: -6 },
-  ];
-
-  const mockPagesToOptimize: PageToOptimize[] = [
-    {
-      url: "/services/seo-audit",
-      title: "SEO Audit Services",
-      keyword: "seo audit services",
-      position: 8,
-      volume: 2400,
-      action: "Rewrite title tag"
-    },
-    {
-      url: "/blog/technical-seo-guide",
-      title: "Complete Technical SEO Guide",
-      keyword: "technical seo guide",
-      position: 11,
-      volume: 1800,
-      action: "Add internal links"
-    }
-  ];
-
-  const mockTopPerformers: TopPerformer[] = [
-    { url: "/tools/site-audit", title: "Free Site Audit Tool", keyword: "free site audit", position: 3 },
-    { url: "/blog/seo-checklist", title: "2024 SEO Checklist", keyword: "seo checklist", position: 2 },
-  ];
+  // Use real data from API, with fallbacks for empty states
+  const improvingKeywords: RankingItem[] = dashboardData?.improvingKeywords || [];
+  const decliningKeywords: RankingItem[] = dashboardData?.decliningKeywords || [];
+  const pagesToOptimize: PageToOptimize[] = dashboardData?.pagesToOptimize || [];
+  const topPerformers: TopPerformer[] = dashboardData?.topPerformers || [];
+  const costMetrics = dashboardData?.costMetrics || { trafficAtRisk: 0, clicksLost: 0, leadsLost: "0", revenueAtRisk: "$0" };
+  const summary = dashboardData?.summary || { totalKeywords: 0, inTop3: 0, inTop10: 0, improved: 0, declined: 0 };
+  const hasRealData = dashboardData?.hasRealData || false;
 
   const mockModules: Module[] = [
     {
@@ -837,28 +834,28 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <CostMetricCard 
                   title="Traffic at risk/mo" 
-                  value={1255} 
+                  value={costMetrics.trafficAtRisk} 
                   tint="red"
                   icon={Eye}
                   isEstimate
                 />
                 <CostMetricCard 
                   title="Clicks lost/mo" 
-                  value={502} 
+                  value={costMetrics.clicksLost} 
                   tint="amber"
                   icon={Sun}
                   isEstimate
                 />
                 <CostMetricCard 
                   title="Leads missed/mo" 
-                  value="19-50" 
+                  value={costMetrics.leadsLost} 
                   tint="orange"
                   icon={Users}
                   isEstimate
                 />
                 <CostMetricCard 
                   title="Page-one opportunities" 
-                  value={18} 
+                  value={summary.inTop10 || 0} 
                   tint="violet"
                   icon={Target}
                 />
@@ -881,37 +878,37 @@ export default function Dashboard() {
                 />
                 <DataCard 
                   title="Keywords" 
-                  value={hasGsc ? 95 : "—"} 
-                  status={hasGsc ? "active" : "setup_required"}
-                  statusLabel={hasGsc ? undefined : "Requires setup"}
-                  delta={hasGsc ? "+12" : undefined}
-                  deltaType={hasGsc ? "positive" : undefined}
-                  description={hasGsc ? "Total tracked" : "Connect Search Console"} 
-                  ctaText={hasGsc ? undefined : "Connect"}
+                  value={hasRealData ? summary.totalKeywords : "—"} 
+                  status={hasRealData ? "active" : "setup_required"}
+                  statusLabel={hasRealData ? undefined : "No data"}
+                  delta={hasRealData && summary.improved > 0 ? `+${summary.improved}` : undefined}
+                  deltaType={hasRealData && summary.improved > 0 ? "positive" : undefined}
+                  description={hasRealData ? "Total tracked" : "Waiting for SERP data"} 
+                  ctaText={hasRealData ? undefined : "Run Scan"}
                   tint="purple"
-                  onClick={() => navigate("/app/settings/integrations#gsc")}
+                  onClick={() => navigate(ROUTES.RUNS)}
                 />
                 <DataCard 
-                  title="Top 20" 
-                  value={hasGsc ? 39 : "—"} 
-                  status={hasGsc ? "active" : "setup_required"}
-                  statusLabel={hasGsc ? undefined : "Requires setup"}
-                  delta={hasGsc ? "+5" : undefined}
-                  deltaType={hasGsc ? "positive" : undefined}
-                  description={hasGsc ? "Ranking positions" : "Connect Search Console"} 
-                  ctaText={hasGsc ? undefined : "Connect"}
+                  title="Top 10" 
+                  value={hasRealData ? summary.inTop10 : "—"} 
+                  status={hasRealData ? "active" : "setup_required"}
+                  statusLabel={hasRealData ? undefined : "No data"}
+                  delta={hasRealData && summary.improved > 0 ? `+${summary.improved}` : undefined}
+                  deltaType={hasRealData && summary.improved > 0 ? "positive" : undefined}
+                  description={hasRealData ? "Ranking positions" : "Waiting for SERP data"} 
+                  ctaText={hasRealData ? undefined : "Run Scan"}
                   tint="blue"
-                  onClick={() => navigate("/app/settings/integrations#gsc")}
+                  onClick={() => navigate(ROUTES.RUNS)}
                 />
                 <DataCard 
-                  title="Not Ranked" 
-                  value={hasGsc ? 12 : "—"} 
-                  status={hasGsc ? "active" : "setup_required"}
-                  statusLabel={hasGsc ? undefined : "Requires setup"}
-                  description={hasGsc ? "Missing from top 100" : "Connect Search Console"} 
-                  ctaText={hasGsc ? undefined : "Connect"}
+                  title="Top 3" 
+                  value={hasRealData ? summary.inTop3 : "—"} 
+                  status={hasRealData ? "active" : "setup_required"}
+                  statusLabel={hasRealData ? undefined : "No data"}
+                  description={hasRealData ? "Premium positions" : "Waiting for SERP data"} 
+                  ctaText={hasRealData ? undefined : "Run Scan"}
                   tint="red"
-                  onClick={() => navigate("/app/settings/integrations#gsc")}
+                  onClick={() => navigate(ROUTES.RUNS)}
                 />
               </div>
             </div>
@@ -936,15 +933,15 @@ export default function Dashboard() {
         </header>
 
         <RankingMomentumSection 
-          improving={mockImprovingKeywords} 
-          needsAttention={mockNeedsAttention} 
+          improving={improvingKeywords} 
+          needsAttention={decliningKeywords} 
         />
 
         <WhatToDoNextSection />
 
-        <PagesToOptimizeSection pages={mockPagesToOptimize} />
+        <PagesToOptimizeSection pages={pagesToOptimize} />
 
-        <TopPerformersSection performers={mockTopPerformers} />
+        <TopPerformersSection performers={topPerformers} />
 
         <ModulesSection modules={mockModules} />
 

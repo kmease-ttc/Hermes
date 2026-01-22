@@ -7903,6 +7903,176 @@ Return JSON:
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Dashboard Data Endpoint (Site-specific)
+  // ═══════════════════════════════════════════════════════════════════════════
+  app.get("/api/dashboard/:siteId", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      logger.info("Dashboard", `Fetching dashboard data for site: ${siteId}`);
+
+      // Authorization check - verify user has access to this site
+      const session = (req as any).session;
+      const userId = session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      // Check if user has access to this siteId
+      const userSites = user.websites || [];
+      if (!userSites.includes(siteId)) {
+        return res.status(403).json({ error: "Access denied to this site" });
+      }
+
+      // Look up site to get domain
+      const sites = await storage.getSites();
+      const site = sites.find(s => s.siteId === siteId);
+      
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      let domain = site.baseUrl || siteId;
+      try {
+        const url = new URL(domain.startsWith("http") ? domain : `https://${domain}`);
+        domain = url.hostname;
+      } catch {
+        domain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      }
+
+      // Fetch real data from SERP worker
+      const { serpWorkerClient } = await import("./connectors/serpWorker");
+      let keywords: any[] = [];
+      let competitors: any[] = [];
+      let summary: any = null;
+      let movers: { gainers: any[]; losers: any[] } = { gainers: [], losers: [] };
+
+      try {
+        const initialized = await serpWorkerClient.init();
+        if (initialized) {
+          const [keywordsRes, competitorsRes, summaryRes, moversRes] = await Promise.all([
+            serpWorkerClient.getKeywords(domain).catch(() => []),
+            serpWorkerClient.getCompetitors(domain).catch(() => []),
+            serpWorkerClient.getSummary(domain).catch(() => null),
+            serpWorkerClient.getMovers(domain).catch(() => ({ gainers: [], losers: [] })),
+          ]);
+          
+          // Normalize responses
+          keywords = Array.isArray(keywordsRes) ? keywordsRes : ((keywordsRes as any)?.keywords || []);
+          competitors = Array.isArray(competitorsRes) ? competitorsRes : ((competitorsRes as any)?.competitors || []);
+          summary = summaryRes;
+          // Handle movers response - ensure gainers/losers arrays exist
+          const moversData = moversRes as any;
+          movers = {
+            gainers: moversData?.gainers || [],
+            losers: moversData?.losers || []
+          };
+          
+          logger.info("Dashboard", `Fetched ${keywords.length} keywords, ${competitors.length} competitors for ${domain}`);
+        }
+      } catch (serpError: any) {
+        logger.warn("Dashboard", `SERP worker fetch failed: ${serpError.message}`);
+      }
+
+      // Transform keywords into improving/declining categories
+      const improvingKeywords = movers.gainers.slice(0, 5).map((m: any) => ({
+        keyword: m.keyword,
+        position: m.currentPosition,
+        change: Math.abs(m.change),
+        volume: keywords.find((k: any) => k.keyword === m.keyword)?.volume || 0
+      }));
+
+      const decliningKeywords = movers.losers.slice(0, 5).map((m: any) => ({
+        keyword: m.keyword,
+        position: m.currentPosition,
+        change: -Math.abs(m.change),
+        volume: keywords.find((k: any) => k.keyword === m.keyword)?.volume || 0
+      }));
+
+      // Find pages to optimize (keywords ranked 4-20 with high volume)
+      const pagesToOptimize = keywords
+        .filter((k: any) => k.currentPosition && k.currentPosition > 3 && k.currentPosition <= 20)
+        .sort((a: any, b: any) => (b.volume || 0) - (a.volume || 0))
+        .slice(0, 4)
+        .map((k: any) => ({
+          url: k.url || `/${k.keyword?.replace(/\s+/g, '-').toLowerCase()}`,
+          title: k.keyword || '',
+          keyword: k.keyword || '',
+          position: k.currentPosition,
+          volume: k.volume || 0,
+          action: k.currentPosition <= 10 ? "Add internal links" : "Optimize content"
+        }));
+
+      // Top performers (top 3 rankings)
+      const topPerformers = keywords
+        .filter((k: any) => k.currentPosition && k.currentPosition <= 3)
+        .slice(0, 4)
+        .map((k: any) => ({
+          url: k.url || `/${k.keyword?.replace(/\s+/g, '-').toLowerCase()}`,
+          title: k.keyword || '',
+          keyword: k.keyword || '',
+          position: k.currentPosition
+        }));
+
+      // Calculate cost metrics based on keywords at risk
+      const keywordsAtRisk = keywords.filter((k: any) => {
+        const delta = k.delta || (k.currentPosition && k.previousPosition ? k.previousPosition - k.currentPosition : 0);
+        return delta < 0;
+      });
+      const trafficAtRisk = keywordsAtRisk.reduce((sum: number, k: any) => sum + (k.volume || 0), 0);
+      const clicksLost = Math.round(trafficAtRisk * 0.04); // ~4% CTR estimate
+      const leadsLost = Math.round(clicksLost * 0.03); // ~3% conversion estimate
+
+      res.json({
+        siteId,
+        domain,
+        lastUpdated: new Date().toISOString(),
+        
+        // Summary stats
+        summary: {
+          totalKeywords: summary?.totalKeywords || keywords.length,
+          inTop3: summary?.inTop3 || keywords.filter((k: any) => k.currentPosition && k.currentPosition <= 3).length,
+          inTop10: summary?.inTop10 || keywords.filter((k: any) => k.currentPosition && k.currentPosition <= 10).length,
+          improved: summary?.improved || movers.gainers.length,
+          declined: summary?.declined || movers.losers.length,
+        },
+
+        // Cost of inaction metrics
+        costMetrics: {
+          trafficAtRisk,
+          clicksLost,
+          leadsLost: leadsLost > 0 ? `${leadsLost}-${Math.round(leadsLost * 2.5)}` : "0",
+          revenueAtRisk: `$${Math.round(leadsLost * 150).toLocaleString()}`
+        },
+
+        // Keyword movement
+        improvingKeywords,
+        decliningKeywords,
+        
+        // Pages and optimization
+        pagesToOptimize,
+        topPerformers,
+        
+        // Competitors
+        competitors: competitors.slice(0, 5).map((c: any) => ({
+          domain: c.domain,
+          keywordsRanking: c.keywordsRanking || 0,
+        })),
+
+        // Data availability
+        hasRealData: keywords.length > 0,
+      });
+    } catch (error: any) {
+      logger.error("Dashboard", `Error fetching dashboard data: ${error.message}`);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const now = new Date();
