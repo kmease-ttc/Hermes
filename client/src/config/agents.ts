@@ -50,12 +50,10 @@ export const USER_FACING_AGENTS = [
   "serp_intel",            // Lookout - SERP Tracking  
   "google_data_connector", // Popular - Analytics & Signals
   
-  // ENGINEERING & PERFORMANCE (2)
-  "crawl_render",          // Scotty - Technical SEO
-  "core_web_vitals",       // Speedster - Performance Monitoring
+  // ENGINEERING & PERFORMANCE (1) - Merged agent
+  "technical_seo",         // Technical SEO - Unified technical health agent
   
-  // CONTENT SYSTEMS (2)
-  "content_decay",         // Sentinel - Content Decay
+  // CONTENT SYSTEMS (1)
   "content_generator",     // Hemingway - Content Strategy
   
   // AUTHORITY & TRUST (1)
@@ -353,6 +351,24 @@ export const AGENTS: Record<string, CrewMember> = {
       { method: "POST", path: "/api/atlas/run", auth: "api_key" },
       { method: "GET", path: "/api/atlas/outputs/latest", auth: "api_key" },
     ],
+  },
+  technical_seo: {
+    service_id: "technical_seo",
+    nickname: "Technical SEO",
+    role: "Technical Health",
+    color: "#F97316",
+    icon: Wrench,
+    avatar: scottyAvatar,
+    blurb: "Performance, Core Web Vitals, and content decay monitoring — unified into one weekly technical health agent.",
+    shortDescription: "Monitors technical health, speed, and content freshness.",
+    pricePerMonth: 79,
+    tooltipInfo: {
+      whatItDoes: "Performs comprehensive technical SEO audits including crawlability, Core Web Vitals, and content decay detection. Provides prioritized fixes for maximum impact.",
+      outputs: ["Technical issues", "Core Web Vitals scores", "Content decay alerts", "Prioritized fixes"],
+    },
+    watchDescription: "Technical SEO health, page speed, and content performance",
+    capabilities: ["Technical Audit", "Performance Monitoring", "Content Decay Detection"],
+    dependencies: ["orchestrator", "google_data_connector"],
   },
 };
 

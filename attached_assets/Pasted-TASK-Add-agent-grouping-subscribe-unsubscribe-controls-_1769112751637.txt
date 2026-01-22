@@ -1,0 +1,177 @@
+TASK: Add agent grouping + subscribe/unsubscribe controls on the Agents page
+
+GOAL
+Organize agents into two sections and clearly show which agents are active vs purchasable, with a visible Subscribe / Unsubscribe action on each card.
+
+This is an information architecture + affordance change, not backend billing logic (yet).
+
+---
+
+## 1) AGENT GROUPING (PAGE STRUCTURE)
+
+### Sections to create (top → bottom)
+
+1. **Core Agents**
+   Subtitle (small, muted text):
+   “These agents are included and active by default.”
+
+2. **Additional Agents**
+   Subtitle:
+   “Optional agents you can add or remove at any time.”
+
+### Rules
+
+* Core Agents always render first
+* Additional Agents render below with clear visual separation
+* Use section headers (`h2`) with strong contrast
+
+Example structure:
+
+```
+Core Agents
+[agent cards...]
+
+Additional Agents
+[agent cards...]
+```
+
+Do NOT mix agents into a single grid anymore.
+
+---
+
+## 2) AGENT METADATA (FRONTEND MODEL)
+
+Each agent definition must include:
+
+* `id`
+* `name`
+* `description`
+* `category`: `"core"` | `"additional"`
+* `isSubscribed`: boolean
+
+If `isSubscribed === true` → show **Unsubscribe**
+If `isSubscribed === false` → show **Subscribe**
+
+No pricing logic yet — just state.
+
+---
+
+## 3) CARD UI: SUBSCRIBE / UNSUBSCRIBE ACTION
+
+### Placement
+
+* Top-right corner of each agent card
+* Inline button (not a dropdown)
+
+### Button behavior (visual only for now)
+
+* Subscribed agents:
+
+  * Button text: **Unsubscribe**
+  * Style: secondary / outline
+* Not subscribed agents:
+
+  * Button text: **Subscribe**
+  * Style: primary
+
+Example Tailwind styles:
+
+* Subscribe:
+
+  * `bg-purple-600 text-white hover:bg-purple-700`
+* Unsubscribe:
+
+  * `border border-slate-300 text-slate-700 hover:bg-slate-100`
+
+Button must be clearly visible without hovering.
+
+---
+
+## 4) CARD STATE RULES
+
+### Subscribed agents
+
+* Normal contrast (current readable state)
+* Status badge can remain (OK / Stale / Error)
+
+### Unsubscribed agents
+
+* Card still readable (DO NOT reduce opacity on text)
+* Optional:
+
+  * Slightly lighter background (`bg-slate-50`)
+  * Small “Not active” label under description
+
+Do NOT:
+
+* Gray out text
+* Use opacity on the whole card
+
+---
+
+## 5) INTERACTION (TEMPORARY LOGIC)
+
+For now:
+
+* Clicking Subscribe / Unsubscribe:
+
+  * Toggles `isSubscribed` in local state
+  * Updates button text immediately
+* No backend persistence required yet
+* Log to console:
+
+  * `Subscribed to agent: {id}`
+  * `Unsubscribed from agent: {id}`
+
+This gives us UX validation without wiring billing.
+
+---
+
+## 6) FILES LIKELY TO CHANGE
+
+* `src/pages/agents.tsx`
+* `src/components/AgentCard.tsx`
+* Agent definitions config (wherever agents are listed)
+* Possibly a small helper:
+
+  * `groupAgentsByCategory(agents)`
+
+---
+
+## 7) ACCEPTANCE CHECKLIST
+
+Before marking done:
+
+* Agents page has **two clearly labeled sections**
+* Core agents are all grouped at the top
+* Additional agents are grouped below
+* Every agent card shows:
+
+  * Name
+  * Description
+  * Subscribe OR Unsubscribe button (never both)
+* Active agents show **Unsubscribe**
+* Inactive agents show **Subscribe**
+* No text contrast regressions
+* No opacity-based muting
+
+---
+
+## 8) IMPORTANT NON-GOALS (DO NOT DO)
+
+* Do NOT implement payments
+* Do NOT hide unsubscribed agents
+* Do NOT remove agent cards dynamically based on subscription
+* Do NOT change backend agent execution yet
+
+---
+
+DONE WHEN
+A user can scan the page and instantly understand:
+
+* What’s included
+* What’s optional
+* What’s active
+* What they can add or remove
+
+No guessing, no hovering, no reading docs.
