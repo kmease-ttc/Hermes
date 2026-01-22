@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { path: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/app/agents", label: "Agents", icon: Bot },
+  { path: "/app/benchmarks", label: "Benchmarks", icon: Target },
   { path: "/app/achievements", label: "Achievements", icon: Award },
 ];
 
