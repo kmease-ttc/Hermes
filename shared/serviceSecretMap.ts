@@ -267,6 +267,18 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
       run: "/run"
     }
   },
+  {
+    serviceSlug: "technical_seo",
+    displayName: "Technical SEO (Unified)",
+    bitwardenSecret: null,  // Orchestrated internally - no external worker needed
+    type: "infrastructure",  // Internal orchestration service
+    requiresBaseUrl: false,  // Calls crawl_render, core_web_vitals, content_decay internally
+    category: "analysis",
+    workerEndpoints: {
+      health: "/api/health",
+      run: "/api/agents/technical-seo/run"
+    }
+  },
 
   // Planned / Not Built Yet
   {

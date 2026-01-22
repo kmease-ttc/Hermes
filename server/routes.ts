@@ -13,7 +13,7 @@ import { serpConnector } from "./connectors/serp";
 import { websiteChecker } from "./website_checks";
 import { analysisEngine } from "./analysis";
 import { runFullDiagnostic } from "./analysis/orchestrator";
-import { runWorkerOrchestration, getAggregatedDashboardMetrics } from "./workerOrchestrator";
+import { runWorkerOrchestration, getAggregatedDashboardMetrics, runTechnicalSeoAgent } from "./workerOrchestrator";
 import { logger } from "./utils/logger";
 import { apiKeyAuth, internalApiAuth } from "./middleware/apiAuth";
 import crypto, { randomUUID, scrypt, timingSafeEqual } from "crypto";
@@ -3428,6 +3428,35 @@ Format your response as JSON with these keys:
       });
     } catch (error: any) {
       logger.error("API", `Failed to get agent data for ${agentId}`, { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Technical SEO Agent Run API - Runs unified technical_seo agent (crawl_render + core_web_vitals + content_decay)
+  app.post("/api/agents/technical-seo/run", async (req, res) => {
+    const siteId = (req.body.site_id as string) || "default";
+    const domain = req.body.domain || process.env.DOMAIN || "example.com";
+    
+    try {
+      logger.info("API", "Starting Technical SEO agent run", { siteId, domain });
+      
+      const runId = `tech_seo_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const result = await runTechnicalSeoAgent(domain, { siteId, runId });
+      
+      logger.info("API", "Technical SEO agent run completed", { 
+        runId: result.runId, 
+        status: result.status,
+        findingsCount: result.findings.length,
+        recommendationsCount: result.recommendations.length,
+        errorCount: result.errors.length,
+      });
+      
+      res.json({
+        ok: true,
+        ...result,
+      });
+    } catch (error: any) {
+      logger.error("API", "Technical SEO agent run failed", { error: error.message });
       res.status(500).json({ ok: false, error: error.message });
     }
   });

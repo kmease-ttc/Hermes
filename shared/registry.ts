@@ -522,7 +522,7 @@ export const CREW: Record<string, CrewDefinition> = {
     crewId: 'technical_seo',
     nickname: 'Technical SEO',
     role: 'Technical Health',
-    services: ['crawl_render', 'core_web_vitals', 'content_decay'],
+    services: ['technical_seo'],
     metricsOwned: [
       'vitals.lcp', 'vitals.cls', 'vitals.inp', 'vitals.performance_score',
       'tech.pages_crawled', 'tech.errors', 'tech.warnings', 'tech.blocked_urls',
