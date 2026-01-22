@@ -32,13 +32,13 @@ function getSendGridClient() {
 
 function getBaseUrl(): string {
   if (process.env.NODE_ENV === 'production') {
-    return process.env.APP_BASE_URL || 'https://arclo.io';
+    return process.env.APP_BASE_URL || 'https://arclo.pro';
   }
   // Use REPLIT_DEV_DOMAIN for development (the webview URL)
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
-  return process.env.DEV_BASE_URL || 'https://arclo.io';
+  return process.env.DEV_BASE_URL || 'https://arclo.pro';
 }
 
 export async function sendVerificationEmail(email: string, token: string, displayName?: string): Promise<boolean> {
@@ -69,7 +69,7 @@ export async function sendVerificationEmail(email: string, token: string, displa
               Please verify your email address by clicking the button below:
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${verifyUrl}" style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              <a href="${verifyUrl}" style="background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
                 Verify Email
               </a>
             </div>
@@ -123,7 +123,7 @@ export async function sendPasswordResetEmail(email: string, token: string, displ
               You requested to reset your password. Click the button below to set a new one:
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              <a href="${resetUrl}" style="background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
                 Reset Password
               </a>
             </div>
