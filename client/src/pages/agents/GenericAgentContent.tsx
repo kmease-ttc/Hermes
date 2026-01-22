@@ -5,16 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { PlayCircle, AlertCircle, CheckCircle2, Clock, Wrench, Download, Settings2, RefreshCw, Search, Lightbulb } from "lucide-react";
 import { useSiteContext } from "@/hooks/useSiteContext";
 import { CrewDashboardShell } from "@/components/crew-dashboard/CrewDashboardShell";
-import { useCrewMissions } from "@/hooks/useCrewMissions";
 import { useCrewStatus } from "@/hooks/useCrewStatus";
 import { SERVICE_TO_CREW } from "@shared/registry";
 import type { 
   CrewIdentity, 
-  MissionStatusState, 
-  MissionItem, 
   InspectorTab, 
   KpiDescriptor,
-  MissionPromptConfig 
 } from "@/components/crew-dashboard/types";
 import { useState, useMemo } from "react";
 import { KeyMetricsGrid } from "@/components/key-metrics";
@@ -49,12 +45,7 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
 
   const crewId = SERVICE_TO_CREW[agentId] || agentId;
 
-  const { missionState, executeMission, isLoading: missionsLoading } = useCrewMissions({
-    siteId,
-    crewId,
-  });
-
-  const { score: crewScore, missions: crewMissions, isLoading: scoreLoading } = useCrewStatus({
+  const { score: crewScore } = useCrewStatus({
     siteId,
     crewId,
   });
@@ -95,52 +86,6 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
     monitors: crew.watchDescription ? [crew.watchDescription] : [],
   };
 
-  const missionStatus: MissionStatusState = missionState?.status ? {
-    tier: missionState.status.tier,
-    summaryLine: missionState.status.nextStep,
-    nextStep: missionState.status.nextStep,
-    priorityCount: missionState.status.priorityCount,
-    blockerCount: 0,
-    autoFixableCount: missionState.status.autoFixableCount,
-    status: missionsLoading ? "loading" : "ready",
-    score: crewScore !== null ? { value: crewScore, status: 'ok' as const } : { value: null, status: 'unknown' as const },
-    missions: crewMissions ? { 
-      open: crewMissions.pending, 
-      total: crewMissions.total, 
-      completedThisWeek: 0 
-    } : { open: (missionState?.nextActions || []).length, total: 0, completedThisWeek: 0 },
-  } : {
-    tier: "doing_okay",
-    summaryLine: "Loading missions...",
-    nextStep: "Loading...",
-    priorityCount: 0,
-    blockerCount: 0,
-    autoFixableCount: 0,
-    status: missionsLoading ? "loading" : "ready",
-    score: { value: null, status: 'unknown' as const },
-    missions: { open: 0, total: 0, completedThisWeek: 0 },
-  };
-
-  const missions: MissionItem[] = (missionState?.nextActions || []).map((action) => ({
-    id: action.missionId,
-    title: action.title,
-    reason: action.description,
-    status: "pending" as const,
-    impact: action.impact as 'high' | 'medium' | 'low',
-    effort: action.effort,
-    action: {
-      label: "Fix it",
-      onClick: () => executeMission(action.missionId),
-      disabled: false,
-    },
-  }));
-
-  const recentlyCompleted = missionState?.lastCompleted ? {
-    id: missionState.lastCompleted.runId || missionState.lastCompleted.missionId,
-    title: missionState.lastCompleted.summary || 'Mission completed',
-    completedAt: missionState.lastCompleted.completedAt,
-  } : null;
-
   const kpis: KpiDescriptor[] = [
     {
       id: "findings",
@@ -179,14 +124,6 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
       status: (data?.suggestionsCount ?? 0) > 0 ? "warning" : "good" as const,
     },
   ], [hasRealData, crewScore, data, findings.length]);
-
-  const missionPrompt: MissionPromptConfig = {
-    label: `Ask ${crew.nickname}`,
-    placeholder: `What would you like ${crew.nickname} to help with?`,
-    onSubmit: (question) => {
-      console.log("Question for", crew.nickname, ":", question);
-    },
-  };
 
   const findingsTab: InspectorTab = {
     id: "findings",
@@ -357,13 +294,9 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
       crew={crewIdentity}
       agentScore={crewScore}
       agentScoreTooltip={`${crew.nickname}'s current performance score based on site health`}
-      missionStatus={missionStatus}
-      missions={missions}
-      recentlyCompleted={recentlyCompleted}
       kpis={kpis}
       customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
       inspectorTabs={inspectorTabs}
-      missionPrompt={missionPrompt}
       headerActions={headerActions}
       onSettings={() => console.log("Settings for:", agentId)}
     />
