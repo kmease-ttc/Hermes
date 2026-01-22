@@ -94,6 +94,8 @@ export const scanRequests = pgTable("scan_requests", {
   previewFindings: jsonb("preview_findings"), // Limited findings shown before signup
   fullReport: jsonb("full_report"), // Complete report data
   scoreSummary: jsonb("score_summary"), // Overall scores
+  geoScope: text("geo_scope"), // "local" | "national"
+  geoLocation: jsonb("geo_location").$type<{ city?: string; state?: string; country?: string } | null>(), // Location for local scope
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
@@ -531,6 +533,8 @@ export const sites = pgTable("sites", {
   lastDeployAt: timestamp("last_deploy_at"),
   status: text("status").default("active"), // active, paused, onboarding
   active: boolean("active").default(true),
+  geoScope: text("geo_scope"), // "local" | "national"
+  geoLocation: jsonb("geo_location").$type<{ city?: string; state?: string; country?: string } | null>(), // Location for local scope
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

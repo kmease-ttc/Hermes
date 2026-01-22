@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ROUTES, buildRoute } from "@shared/routes";
+import { GeoScopeSelector, type GeoScopeValue } from "@/components/site/GeoScopeSelector";
 
 interface ScanStatus {
   scanId: string;
@@ -24,6 +27,15 @@ export default function ScanPreview() {
   const params = useParams<{ scanId: string }>();
   const scanId = params.scanId;
   const [, navigate] = useLocation();
+
+  const [geoScope, setGeoScope] = useState<GeoScopeValue>({
+    scope: 'local',
+    city: '',
+    state: '',
+    country: 'United States',
+  });
+  const [email, setEmail] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   const statusQuery = useQuery<ScanStatus>({
     queryKey: ["scan-status", scanId],
@@ -46,7 +58,16 @@ export default function ScanPreview() {
       const res = await fetch("/api/report/free", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scanId }),
+        body: JSON.stringify({ 
+          scanId,
+          geoScope: geoScope.scope,
+          geoLocation: geoScope.scope === 'local' ? {
+            city: geoScope.city,
+            state: geoScope.state,
+            country: geoScope.country || 'United States',
+          } : null,
+          email: email || undefined,
+        }),
       });
       return res.json();
     },
@@ -61,11 +82,22 @@ export default function ScanPreview() {
   const isReady = statusQuery.data?.status === "preview_ready" || statusQuery.data?.status === "completed";
   const isFailed = statusQuery.data?.status === "failed";
 
-  useEffect(() => {
-    if (isReady && !generateReportMutation.isPending && !generateReportMutation.isSuccess) {
-      generateReportMutation.mutate();
+  const validateAndSubmit = () => {
+    setValidationError('');
+    
+    if (geoScope.scope === 'local') {
+      if (!geoScope.city?.trim()) {
+        setValidationError('Please enter your city.');
+        return;
+      }
+      if (!geoScope.state?.trim()) {
+        setValidationError('Please enter your state.');
+        return;
+      }
     }
-  }, [isReady, generateReportMutation.isPending, generateReportMutation.isSuccess]);
+    
+    generateReportMutation.mutate();
+  };
 
   return (
     <MarketingLayout>
@@ -96,11 +128,73 @@ export default function ScanPreview() {
               </div>
             )}
 
+            {/* Scan Complete - Show Geo Scope Selection */}
+            {isReady && !generateReportMutation.isPending && !generateReportMutation.isSuccess && (
+              <div className="space-y-8">
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                  </div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
+                    Scan Complete
+                  </h1>
+                  <p className="text-lg text-slate-600">
+                    One more step to generate your personalized SEO report.
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6">
+                  <GeoScopeSelector 
+                    value={geoScope} 
+                    onChange={setGeoScope} 
+                  />
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="email" className="text-sm text-slate-600">
+                      Email (optional — we'll send you a copy)
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="max-w-md"
+                      data-testid="input-email"
+                    />
+                  </div>
+
+                  {validationError && (
+                    <p className="text-sm text-red-600" data-testid="text-validation-error">
+                      {validationError}
+                    </p>
+                  )}
+
+                  {generateReportMutation.isError && (
+                    <p className="text-sm text-red-600" data-testid="text-error">
+                      Failed to generate report. Please try again.
+                    </p>
+                  )}
+
+                  <Button
+                    variant="primaryGradient"
+                    size="lg"
+                    onClick={validateAndSubmit}
+                    disabled={generateReportMutation.isPending}
+                    className="w-full md:w-auto"
+                    data-testid="button-generate-report"
+                  >
+                    Generate My Report
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Generating Report State */}
-            {isReady && (generateReportMutation.isPending || !generateReportMutation.isSuccess) && (
+            {isReady && generateReportMutation.isPending && (
               <div className="text-center space-y-8">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
-                  <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-100 to-pink-100 flex items-center justify-center mx-auto shadow-lg shadow-violet-500/10">
+                  <Loader2 className="w-10 h-10 text-violet-600 animate-spin" />
                 </div>
                 <div className="space-y-4">
                   <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
@@ -128,31 +222,6 @@ export default function ScanPreview() {
                   </p>
                 </div>
                 <Button variant="primaryGradient" onClick={() => navigate(ROUTES.LANDING)} size="lg" data-testid="button-retry">
-                  Try Again
-                </Button>
-              </div>
-            )}
-
-            {/* Report Generation Failed */}
-            {generateReportMutation.isError && (
-              <div className="text-center space-y-8">
-                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
-                  <AlertTriangle className="w-10 h-10 text-amber-600" />
-                </div>
-                <div className="space-y-4">
-                  <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
-                    Report Generation Failed
-                  </h1>
-                  <p className="text-xl text-slate-600">
-                    We couldn't generate your report. Please try again.
-                  </p>
-                </div>
-                <Button 
-                  variant="primaryGradient" 
-                  onClick={() => generateReportMutation.mutate()} 
-                  size="lg" 
-                  data-testid="button-retry-report"
-                >
                   Try Again
                 </Button>
               </div>

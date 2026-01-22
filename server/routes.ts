@@ -20290,6 +20290,13 @@ Return JSON in this exact format:
 
   const createFreeReportSchema = z.object({
     scanId: z.string().min(1, "scanId is required"),
+    geoScope: z.enum(["local", "national"]).optional(),
+    geoLocation: z.object({
+      city: z.string().optional(),
+      state: z.string().optional(),
+      country: z.string().optional(),
+    }).nullable().optional(),
+    email: z.string().email().optional(),
   });
 
   app.post("/api/report/free", async (req, res) => {
@@ -20304,10 +20311,23 @@ Return JSON in this exact format:
         });
       }
 
-      const { scanId } = parsed.data;
+      const { scanId, geoScope, geoLocation, email } = parsed.data;
+
+      // Update scan request with geo data and email if provided
+      if (geoScope || email) {
+        await db.execute(sql`
+          UPDATE scan_requests 
+          SET 
+            geo_scope = COALESCE(${geoScope || null}, geo_scope),
+            geo_location = COALESCE(${geoLocation ? JSON.stringify(geoLocation) : null}::jsonb, geo_location),
+            email = COALESCE(${email || null}, email),
+            updated_at = NOW()
+          WHERE scan_id = ${scanId}
+        `);
+      }
 
       const scanResult = await db.execute(sql`
-        SELECT scan_id, target_url, normalized_url, status, preview_findings, full_report, score_summary
+        SELECT scan_id, target_url, normalized_url, status, preview_findings, full_report, score_summary, geo_scope, geo_location
         FROM scan_requests 
         WHERE scan_id = ${scanId}
       `);
