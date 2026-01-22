@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { AlertCircle, Loader2, KeyRound, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PasswordRequirements, isPasswordValid } from "@/components/ui/PasswordRequirements";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 export default function ResetPassword() {
@@ -34,8 +35,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 10) {
-      setError("Password must be at least 10 characters");
+    if (!isPasswordValid(password)) {
+      setError("Password does not meet all requirements");
       return;
     }
 
@@ -164,13 +165,14 @@ export default function ResetPassword() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="At least 10 characters"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
                     data-testid="input-reset-password"
                   />
+                  <PasswordRequirements password={password} className="mt-2" />
                 </div>
 
                 <div className="space-y-2">

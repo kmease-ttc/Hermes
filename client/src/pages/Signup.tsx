@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, AlertCircle, Loader2, UserPlus, CheckCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PasswordRequirements, isPasswordValid } from "@/components/ui/PasswordRequirements";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { buildRoute, ROUTES } from "@shared/routes";
@@ -64,8 +65,8 @@ export default function Signup() {
       return;
     }
 
-    if (password.length < 10) {
-      setError("Password must be at least 10 characters");
+    if (!isPasswordValid(password)) {
+      setError("Password does not meet all requirements");
       return;
     }
 
@@ -178,13 +179,14 @@ export default function Signup() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="At least 10 characters"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={signupMutation.isPending}
                     data-testid="input-signup-password"
                   />
+                  <PasswordRequirements password={password} className="mt-2" />
                 </div>
 
                 <div className="space-y-2">
