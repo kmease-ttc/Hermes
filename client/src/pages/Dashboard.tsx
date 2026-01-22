@@ -49,14 +49,15 @@ interface TopPerformer {
   position: number;
 }
 
-interface Agent {
+interface Module {
   id: string;
   name: string;
   description: string;
   includes: string[];
+  tier: "core" | "addon" | "free";
   status: "active" | "locked" | "setup_required";
   ctaLabel: string;
-  ctaAction: string;
+  badge?: string;
 }
 
 function OutcomeCard({ label, value, subtext, delta, deltaType, tint }: { 
@@ -448,98 +449,152 @@ function TopPerformersSection({ performers }: { performers: TopPerformer[] }) {
   );
 }
 
-function AgentsSection({ agents }: { agents: Agent[] }) {
-  return (
-    <section className="space-y-4" data-testid="section-agents">
-      <h2 className="text-xl font-semibold text-gray-900">Agents</h2>
-      <p className="text-sm text-gray-500">Unlock capabilities to automate your SEO workflow</p>
+function ModulesSection({ modules }: { modules: Module[] }) {
+  const coreModule = modules.find(m => m.tier === "core");
+  const addonModules = modules.filter(m => m.tier === "addon");
+  const freeModules = modules.filter(m => m.tier === "free");
+
+  const getBadgeStyle = (tier: Module["tier"], status: Module["status"]) => {
+    if (status === "active") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (tier === "core") return "bg-violet-50 text-violet-700 border-violet-200";
+    if (tier === "free") return "bg-blue-50 text-blue-700 border-blue-200";
+    return "bg-gray-100 text-gray-500 border-gray-200";
+  };
+
+  const renderModuleCard = (mod: Module, isCore: boolean = false) => (
+    <Card 
+      key={mod.id} 
+      className={cn(
+        "rounded-xl border overflow-hidden relative transition-all",
+        mod.status === "active" 
+          ? "bg-white border-violet-200 shadow-sm" 
+          : "bg-gray-50/60 border-gray-200/60 opacity-50"
+      )}
+    >
+      {mod.status === "active" && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500" />
+      )}
+      {mod.badge && (
+        <Badge 
+          variant="outline" 
+          className={cn(
+            "absolute top-3 right-3 text-xs",
+            getBadgeStyle(mod.tier, mod.status)
+          )}
+        >
+          {mod.status === "active" ? "Active" : mod.badge}
+        </Badge>
+      )}
       
-      <div className="grid md:grid-cols-2 gap-4">
-        {agents.map((agent) => (
-          <Card 
-            key={agent.id} 
-            className={cn(
-              "rounded-xl border overflow-hidden relative transition-all",
-              agent.status === "active" 
-                ? "bg-white border-violet-200 shadow-sm" 
-                : "bg-gray-50/60 border-gray-200/60 opacity-50"
-            )}
-          >
-            {agent.status === "active" && (
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500" />
-            )}
-            {agent.status === "locked" && (
-              <Badge variant="outline" className="absolute top-3 right-3 bg-gray-100 text-gray-400 border-gray-200 text-xs">
-                <Lock className="w-3 h-3 mr-1" />
-                Locked
-              </Badge>
-            )}
-            
-            <CardHeader className={cn("pb-3", agent.status === "active" && "ml-1")}>
-              <CardTitle className={cn(
-                "text-base flex items-center gap-2",
-                agent.status === "active" ? "text-gray-900" : "text-gray-500"
+      <CardHeader className={cn("pb-3", mod.status === "active" && "ml-1")}>
+        <CardTitle className={cn(
+          "text-base flex items-center gap-2",
+          mod.status === "active" ? "text-gray-900" : "text-gray-500"
+        )}>
+          <Search className={cn(
+            "w-4 h-4",
+            mod.status === "active" ? "text-violet-600" : "text-gray-400"
+          )} />
+          {mod.name}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className={cn("space-y-3", mod.status === "active" && "ml-1")}>
+        <p className={cn(
+          "text-sm",
+          mod.status === "active" ? "text-gray-500" : "text-gray-400"
+        )}>{mod.description}</p>
+        
+        <div>
+          <p className={cn(
+            "text-xs font-medium mb-1",
+            mod.status === "active" ? "text-gray-600" : "text-gray-400"
+          )}>Includes:</p>
+          <ul className="space-y-1">
+            {mod.includes.map((item, idx) => (
+              <li key={idx} className={cn(
+                "text-xs flex items-center gap-1",
+                mod.status === "active" ? "text-gray-500" : "text-gray-400"
               )}>
-                <Bot className={cn(
-                  "w-4 h-4",
-                  agent.status === "active" ? "text-violet-600" : "text-gray-400"
+                <CheckCircle2 className={cn(
+                  "w-3 h-3",
+                  mod.status === "active" ? "text-emerald-500" : "text-gray-300"
                 )} />
-                {agent.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className={cn("space-y-3", agent.status === "active" && "ml-1")}>
-              <p className={cn(
-                "text-sm",
-                agent.status === "active" ? "text-gray-500" : "text-gray-400"
-              )}>{agent.description}</p>
-              
-              <div>
-                <p className={cn(
-                  "text-xs font-medium mb-1",
-                  agent.status === "active" ? "text-gray-600" : "text-gray-400"
-                )}>Includes:</p>
-                <ul className="space-y-1">
-                  {agent.includes.map((item, idx) => (
-                    <li key={idx} className={cn(
-                      "text-xs flex items-center gap-1",
-                      agent.status === "active" ? "text-gray-500" : "text-gray-400"
-                    )}>
-                      <CheckCircle2 className={cn(
-                        "w-3 h-3",
-                        agent.status === "active" ? "text-emerald-500" : "text-gray-300"
-                      )} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="flex flex-col gap-1">
-                {agent.status === "active" ? (
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow-md transition-all"
-                  >
-                    {agent.ctaLabel}
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      disabled
-                      className="w-full bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
-                    >
-                      {agent.ctaLabel}
-                    </Button>
-                    <span className="text-xs text-gray-400 text-center">Requires setup</span>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        <div className="flex flex-col gap-1">
+          {mod.status === "active" ? (
+            <Button 
+              size="sm" 
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow-md transition-all"
+            >
+              {mod.ctaLabel}
+            </Button>
+          ) : mod.status === "setup_required" ? (
+            <>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="w-full text-violet-600 border-violet-200 hover:bg-violet-50"
+              >
+                {mod.ctaLabel}
+              </Button>
+              <span className="text-xs text-gray-400 text-center">Requires Google API connection</span>
+            </>
+          ) : (
+            <>
+              <Button 
+                size="sm" 
+                variant="outline"
+                disabled
+                className="w-full bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100"
+              >
+                {mod.ctaLabel}
+              </Button>
+              <span className="text-xs text-gray-400 text-center">Upgrade plan to unlock</span>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <section className="space-y-6" data-testid="section-modules">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Your SEO Modules</h2>
+        <p className="text-sm text-gray-500">Start with rankings. Add capabilities as you grow.</p>
       </div>
+      
+      {coreModule && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Core Module</p>
+          <div className="max-w-md">
+            {renderModuleCard(coreModule, true)}
+          </div>
+        </div>
+      )}
+
+      {addonModules.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Paid Add-ons</p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {addonModules.map((mod) => renderModuleCard(mod))}
+          </div>
+        </div>
+      )}
+
+      {freeModules.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Free · Optional</p>
+          <div className="max-w-md">
+            {freeModules.map((mod) => renderModuleCard(mod))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -618,42 +673,56 @@ export default function Dashboard() {
     { url: "/blog/seo-checklist", title: "2024 SEO Checklist", keyword: "seo checklist", position: 2 },
   ];
 
-  const mockAgents: Agent[] = [
+  const mockModules: Module[] = [
     {
-      id: "technical_seo",
-      name: "Technical SEO",
-      description: "Automated crawling and technical issue detection",
-      includes: ["Weekly site crawls", "Issue prioritization", "Fix recommendations"],
-      status: "locked",
-      ctaLabel: "Subscribe",
-      ctaAction: "/pricing"
+      id: "serp_intelligence",
+      name: "SERP Intelligence",
+      description: "Track rankings, keyword movement, and SERP volatility across your target keywords.",
+      includes: ["Weekly ranking updates", "Top 3 / Top 10 tracking", "Ranking deltas & trends"],
+      tier: "core",
+      status: "active",
+      ctaLabel: "View Rankings",
+      badge: "Required"
     },
     {
-      id: "analytics_insights",
-      name: "Analytics Insights",
-      description: "Connect GA4 and Search Console for deeper analysis",
-      includes: ["Traffic analysis", "Ranking tracking", "Performance trends"],
+      id: "authority_engine",
+      name: "Authority Engine",
+      description: "Monitor your Domain Authority, backlink growth, and link velocity over time.",
+      includes: ["Domain Authority score", "Referring domains", "Authority trend"],
+      tier: "addon",
+      status: "locked",
+      ctaLabel: "Add to Plan",
+      badge: "Add-on"
+    },
+    {
+      id: "ai_visibility",
+      name: "AI Visibility Score",
+      description: "Understand how AI models see your content and optimize for LLM-powered search.",
+      includes: ["AI readiness score", "Structured content analysis", "LLM visibility signals"],
+      tier: "addon",
+      status: "locked",
+      ctaLabel: "Add to Plan",
+      badge: "Premium"
+    },
+    {
+      id: "competitive_intel",
+      name: "Competitive Intelligence",
+      description: "Compare your rankings to competitors and discover content gaps.",
+      includes: ["Competitor SERP comparison", "Keyword overlap", "Opportunity discovery"],
+      tier: "addon",
+      status: "locked",
+      ctaLabel: "Add to Plan",
+      badge: "Add-on"
+    },
+    {
+      id: "traffic_monitor",
+      name: "Traffic & Conversions",
+      description: "Connect Google Analytics to see organic traffic and conversion trends.",
+      includes: ["Organic traffic trends", "Conversion tracking", "Basic analytics"],
+      tier: "free",
       status: "setup_required",
-      ctaLabel: "Finish Setup",
-      ctaAction: "/integrations"
-    },
-    {
-      id: "content_optimization",
-      name: "Content Optimization",
-      description: "AI-powered content recommendations",
-      includes: ["Title optimization", "Content gap analysis", "Competitor insights"],
-      status: "locked",
-      ctaLabel: "Upgrade Plan",
-      ctaAction: "/pricing"
-    },
-    {
-      id: "content_automation",
-      name: "Content Automation",
-      description: "Automated content publishing pipeline",
-      includes: ["Weekly publishing schedule", "Content briefs", "Performance tracking"],
-      status: "locked",
-      ctaLabel: "Subscribe",
-      ctaAction: "/pricing"
+      ctaLabel: "Connect Google",
+      badge: "Free"
     }
   ];
 
@@ -715,7 +784,7 @@ export default function Dashboard() {
 
         <TopPerformersSection performers={mockTopPerformers} />
 
-        <AgentsSection agents={mockAgents} />
+        <ModulesSection modules={mockModules} />
 
         <HowItWorksSection />
       </div>
