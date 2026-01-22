@@ -5581,12 +5581,14 @@ Format your response as JSON with these keys:
       const domain = site?.baseUrl?.replace(/^https?:\/\//, "") || site?.displayName || siteId;
 
       const [
+        hermesRecommendations,
         latestSeoRun,
         seoSuggestions,
         kbaseInsights,
         workerResults,
         findings
       ] = await Promise.all([
+        storage.getRecommendationsBySite(siteId),
         storage.getLatestSeoRun(siteId),
         storage.getLatestSeoSuggestions(siteId, 20),
         storage.getLatestSeoKbaseInsights(siteId, 10),
@@ -5594,8 +5596,165 @@ Format your response as JSON with these keys:
         storage.getLatestFindings(siteId, 20)
       ]);
 
-      const asOfDate = latestSeoRun?.startedAt || new Date();
       const generatedAt = new Date().toISOString();
+      const hasHermesRecommendations = hermesRecommendations && hermesRecommendations.length > 0;
+
+      if (hasHermesRecommendations) {
+        const nowRecs = hermesRecommendations.filter((r: any) => r.phase === 'now');
+        const nextRecs = hermesRecommendations.filter((r: any) => r.phase === 'next');
+        const laterRecs = hermesRecommendations.filter((r: any) => r.phase === 'later');
+
+        const allAgents = new Set<string>();
+        hermesRecommendations.forEach((r: any) => {
+          if (r.agentSources && Array.isArray(r.agentSources)) {
+            r.agentSources.forEach((agent: string) => allAgents.add(agent));
+          }
+        });
+
+        const hasDegraded = hermesRecommendations.some((r: any) => r.confidence === 'degraded');
+        const overallConfidence = hasDegraded ? 'degraded' : 'full';
+        const missingInputs = hermesRecommendations
+          .filter((r: any) => r.confidence === 'degraded' && r.missingInputs)
+          .flatMap((r: any) => r.missingInputs || []);
+        const uniqueMissingInputs = [...new Set(missingInputs)];
+
+        let md = `# SEO Action Report — ${domain}\n\n`;
+        md += `**Generated:** ${generatedAt}\n`;
+        md += `**Confidence:** ${overallConfidence}${overallConfidence === 'degraded' ? ` — Missing inputs: ${uniqueMissingInputs.join(', ')}` : ''}\n`;
+        md += `**Recommendations:** ${hermesRecommendations.length} actions across 3 phases\n\n`;
+        md += `---\n\n`;
+
+        const formatRecommendation = (rec: any, idx: number): string => {
+          let section = `### ${idx + 1}. ${rec.action}\n`;
+          section += `**Category:** ${rec.category}\n`;
+          section += `**Confidence:** ${rec.confidence}\n`;
+          section += `**Contributing Agents:** ${rec.agentSources?.join(', ') || 'Unknown'}\n\n`;
+
+          if (rec.steps && Array.isArray(rec.steps) && rec.steps.length > 0) {
+            section += `**Steps:**\n`;
+            rec.steps.forEach((step: string, stepIdx: number) => {
+              section += `${stepIdx + 1}. ${step}\n`;
+            });
+            section += `\n`;
+          }
+
+          if (rec.evidence) {
+            section += `**Evidence:**\n`;
+            if (typeof rec.evidence === 'string') {
+              section += `${rec.evidence}\n\n`;
+            } else {
+              const ev = rec.evidence;
+              if (ev.urls && ev.urls.length > 0) {
+                section += `- URLs: ${ev.urls.slice(0, 3).join(', ')}${ev.urls.length > 3 ? ` (+${ev.urls.length - 3} more)` : ''}\n`;
+              }
+              if (ev.keywords && ev.keywords.length > 0) {
+                section += `- Keywords: ${ev.keywords.slice(0, 5).join(', ')}${ev.keywords.length > 5 ? ` (+${ev.keywords.length - 5} more)` : ''}\n`;
+              }
+              if (ev.inputs) {
+                const inputKeys = Object.keys(ev.inputs).slice(0, 3);
+                section += `- Data sources: ${inputKeys.join(', ')}\n`;
+              }
+              section += `\n`;
+            }
+          }
+
+          if (rec.definitionOfDone) {
+            section += `**Done When:**\n${rec.definitionOfDone}\n\n`;
+          }
+
+          if (rec.dependencies && rec.dependencies.length > 0) {
+            section += `**Dependencies:** ${rec.dependencies.join(', ')}\n\n`;
+          }
+
+          return section;
+        };
+
+        md += `## Execute Now (This Week)\n`;
+        md += `Highest-impact actions to complete immediately.\n\n`;
+        if (nowRecs.length > 0) {
+          nowRecs.forEach((rec: any, idx: number) => {
+            md += formatRecommendation(rec, idx);
+          });
+        } else {
+          md += `*No immediate actions required.*\n\n`;
+        }
+
+        md += `---\n\n`;
+        md += `## Execute Next (2-3 Weeks)\n`;
+        md += `Important actions after immediate priorities.\n\n`;
+        if (nextRecs.length > 0) {
+          nextRecs.forEach((rec: any, idx: number) => {
+            md += formatRecommendation(rec, idx);
+          });
+        } else {
+          md += `*No next-phase actions identified.*\n\n`;
+        }
+
+        md += `---\n\n`;
+        md += `## Execute Later (This Quarter)\n`;
+        md += `Lower priority or dependent actions.\n\n`;
+        if (laterRecs.length > 0) {
+          laterRecs.forEach((rec: any, idx: number) => {
+            md += formatRecommendation(rec, idx);
+          });
+        } else {
+          md += `*No deferred actions identified.*\n\n`;
+        }
+
+        md += `---\n\n`;
+        md += `## Agent Coverage Summary\n\n`;
+        md += `| Agent | Status | Last Active |\n`;
+        md += `|-------|--------|-------------|\n`;
+        
+        const agentLastActive: Record<string, string> = {};
+        hermesRecommendations.forEach((rec: any) => {
+          if (rec.agentSources && rec.createdAt) {
+            rec.agentSources.forEach((agent: string) => {
+              const recDate = new Date(rec.createdAt).toISOString().split('T')[0];
+              if (!agentLastActive[agent] || recDate > agentLastActive[agent]) {
+                agentLastActive[agent] = recDate;
+              }
+            });
+          }
+        });
+
+        for (const agent of allAgents) {
+          const lastActive = agentLastActive[agent] || 'Unknown';
+          const status = lastActive !== 'Unknown' ? 'Active' : 'Inactive';
+          md += `| ${agent} | ${status} | ${lastActive} |\n`;
+        }
+        md += `\n`;
+
+        md += `---\n\n`;
+        md += `*This report was assembled by Hermes from ${allAgents.size} contributing agent${allAgents.size !== 1 ? 's' : ''}.*\n`;
+        md += `*Recommendations are paced to avoid bulk changes that could suppress rankings.*\n`;
+
+        const plainText = md
+          .replace(/#{1,6}\s/g, '')
+          .replace(/\*\*/g, '')
+          .replace(/\*/g, '')
+          .replace(/`{3}[\s\S]*?`{3}/g, (match) => match.replace(/`{3}/g, '---'))
+          .replace(/\|.*\|/g, '')
+          .replace(/---+/g, '---');
+
+        return res.json({
+          title: "SEO Action Report",
+          generated_at: generatedAt,
+          site: { domain, site_id: siteId },
+          confidence: overallConfidence,
+          recommendation_count: hermesRecommendations.length,
+          phases: {
+            now: nowRecs.length,
+            next: nextRecs.length,
+            later: laterRecs.length,
+          },
+          agent_count: allAgents.size,
+          content_md: md,
+          content_txt: plainText,
+        });
+      }
+
+      const asOfDate = latestSeoRun?.startedAt || new Date();
 
       const priorities = seoSuggestions
         .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
