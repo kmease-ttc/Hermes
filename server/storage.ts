@@ -507,8 +507,10 @@ export interface IStorage {
   
   // Crew State
   getCrewState(siteId: string): Promise<CrewState[]>;
+  getCrewStateForAgent(siteId: string, agentId: string): Promise<CrewState | undefined>;
   enableCrewAgent(siteId: string, agentId: string): Promise<CrewState>;
   disableCrewAgent(siteId: string, agentId: string): Promise<void>;
+  updateAgentRunResult(siteId: string, agentId: string, success: boolean): Promise<CrewState>;
   
   // Fix Plans
   createFixPlan(plan: InsertFixPlan): Promise<FixPlan>;
@@ -2452,6 +2454,79 @@ class DBStorage implements IStorage {
       .update(crewState)
       .set({ enabled: false, updatedAt: new Date() })
       .where(and(eq(crewState.siteId, siteId), eq(crewState.agentId, agentId)));
+  }
+
+  async getCrewStateForAgent(siteId: string, agentId: string): Promise<CrewState | undefined> {
+    const [state] = await db
+      .select()
+      .from(crewState)
+      .where(and(eq(crewState.siteId, siteId), eq(crewState.agentId, agentId)))
+      .limit(1);
+    return state;
+  }
+
+  async updateAgentRunResult(
+    siteId: string, 
+    agentId: string, 
+    success: boolean,
+    errorMessage?: string
+  ): Promise<CrewState> {
+    const existing = await this.getCrewStateForAgent(siteId, agentId);
+    
+    const now = new Date();
+    let consecutiveFailures = 0;
+    let health: "healthy" | "degraded" | "error" | "unknown" = "healthy";
+    let degradedAt: Date | null = null;
+    let lastErrorMessage: string | null = null;
+    
+    if (success) {
+      consecutiveFailures = 0;
+      health = "healthy";
+      degradedAt = null;
+      lastErrorMessage = null;
+    } else {
+      consecutiveFailures = (existing?.consecutiveFailures ?? 0) + 1;
+      lastErrorMessage = errorMessage || null;
+      if (consecutiveFailures >= 3) {
+        health = "degraded";
+        degradedAt = existing?.degradedAt || now;
+      } else {
+        health = "error";
+        degradedAt = null;
+      }
+    }
+    
+    if (existing) {
+      const [updated] = await db
+        .update(crewState)
+        .set({ 
+          consecutiveFailures, 
+          health, 
+          degradedAt,
+          lastErrorMessage,
+          lastRunAt: now,
+          updatedAt: now 
+        })
+        .where(and(eq(crewState.siteId, siteId), eq(crewState.agentId, agentId)))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(crewState)
+        .values({ 
+          siteId, 
+          agentId, 
+          enabled: true, 
+          needsConfig: false, 
+          consecutiveFailures, 
+          health,
+          degradedAt,
+          lastErrorMessage,
+          lastRunAt: now 
+        })
+        .returning();
+      return created;
+    }
   }
 
   // Integration Status Cache (SWR)

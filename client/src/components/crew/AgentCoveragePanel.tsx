@@ -5,6 +5,12 @@ import { SERVICE_TO_CREW } from "@shared/registry";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ExternalLink, Loader2, CheckCircle, AlertTriangle, XCircle, Clock, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildRoute } from "@shared/routes";
@@ -54,6 +60,10 @@ function AgentRow({ serviceId, siteId, isSubscribed = true }: AgentRowProps) {
     score, 
     missions, 
     readiness,
+    isDegraded,
+    degradedSince,
+    consecutiveFailures,
+    lastErrorMessage,
   } = useCrewStatus({
     siteId,
     crewId,
@@ -62,14 +72,16 @@ function AgentRow({ serviceId, siteId, isSubscribed = true }: AgentRowProps) {
 
   const isReady = readiness?.isReady !== false;
   const isLocked = !isSubscribed && crew.category === "additional";
-  const status = isLocked ? "Locked" : !isReady ? "Not Configured" : "Active";
+  const status = isLocked ? "Locked" : !isReady ? "Not Configured" : isDegraded ? "Degraded" : "Active";
   
   const hasError = crewStatus?.status === "needs_attention";
-  const freshness = hasError 
-    ? "error" 
-    : crewStatus?.updatedAt 
-      ? getFreshnessFromUpdatedAt(crewStatus.updatedAt)
-      : "error";
+  const freshness = isDegraded 
+    ? "degraded" 
+    : hasError 
+      ? "error" 
+      : crewStatus?.updatedAt 
+        ? getFreshnessFromUpdatedAt(crewStatus.updatedAt)
+        : "error";
   const lastRun = formatRelativeTime(crewStatus?.updatedAt);
   
   const outputSummary = missions?.open 
@@ -78,16 +90,28 @@ function AgentRow({ serviceId, siteId, isSubscribed = true }: AgentRowProps) {
       ? `Score: ${score}/100`
       : "No data";
 
+  const formatDegradedDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  const degradedLabel = isDegraded 
+    ? `Degraded (${consecutiveFailures}x failed${degradedSince ? ` since ${formatDegradedDate(degradedSince)}` : ""})`
+    : "";
+
   const freshnessConfig = {
     fresh: { label: "Fresh", className: "bg-emerald-100 text-emerald-700" },
     stale: { label: "Stale", className: "bg-amber-100 text-amber-700" },
     error: { label: "Error", className: "bg-red-100 text-red-700" },
+    degraded: { label: degradedLabel, className: "bg-orange-100 text-orange-700" },
   };
 
   const statusConfig = {
     "Active": { icon: CheckCircle, className: "text-emerald-600" },
     "Locked": { icon: Lock, className: "text-amber-600" },
     "Not Configured": { icon: AlertTriangle, className: "text-slate-500" },
+    "Degraded": { icon: AlertTriangle, className: "text-orange-600" },
   };
 
   const StatusIcon = statusConfig[status as keyof typeof statusConfig]?.icon || Clock;

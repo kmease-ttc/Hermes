@@ -4,9 +4,22 @@ import { getWorkerServices, getServiceBySlug, ServiceSecretMapping } from "@shar
 import { storage } from "./storage";
 import { InsertSeoWorkerResult, InsertSeoSuggestion, InsertSeoKbaseInsight, InsertSeoRun } from "@shared/schema";
 import { createHash } from "crypto";
+import { socratesLogger } from "./services/socratesLogger";
 
 const TIMEOUT_MS = 30000;
 const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const WORKER_TO_AGENT_MAP: Record<string, string> = {
+  competitive_snapshot: "natasha",
+  serp_intel: "lookout",
+  crawl_render: "scotty",
+  core_web_vitals: "speedster",
+  content_generator: "hemingway",
+  content_qa: "hemingway",
+  content_decay: "sentinel",
+  backlink_authority: "beacon",
+  notifications: "popular",
+};
 
 // Technical SEO Agent Types
 export interface TechnicalFinding {
@@ -183,6 +196,60 @@ async function callWorker(
       summary: `Error: ${error.message}`,
       errorCode: "NETWORK_ERROR",
       errorDetail: error.message,
+    };
+  }
+}
+
+/**
+ * Track worker run result and update agent health state.
+ * Implements 3-consecutive-failure degraded logic per PRD Section 11.
+ * 
+ * @param serviceId - The worker/service identifier (e.g., "serp_intel", "crawl_render")
+ * @param siteId - The site identifier
+ * @param success - Whether the run succeeded
+ * @param errorMessage - Optional error message for failed runs
+ * @returns Object containing degraded status and failure count
+ */
+export async function trackWorkerRunResult(
+  serviceId: string,
+  siteId: string,
+  success: boolean,
+  errorMessage?: string
+): Promise<{ isDegraded: boolean; consecutiveFailures: number; degradedSince: string | null }> {
+  const agentId = WORKER_TO_AGENT_MAP[serviceId] || serviceId;
+  
+  try {
+    const updatedState = await storage.updateAgentRunResult(
+      siteId,
+      agentId,
+      success,
+      errorMessage
+    );
+    
+    const isDegraded = updatedState.health === "degraded" || updatedState.consecutiveFailures >= 3;
+    const degradedSince = updatedState.degradedAt 
+      ? updatedState.degradedAt.toISOString() 
+      : null;
+    
+    if (isDegraded && updatedState.consecutiveFailures === 3) {
+      logger.warn("WorkerOrchestrator", `Agent ${agentId} marked as DEGRADED for site ${siteId}`, {
+        consecutiveFailures: updatedState.consecutiveFailures,
+        degradedSince,
+        lastError: errorMessage,
+      });
+    }
+    
+    return {
+      isDegraded,
+      consecutiveFailures: updatedState.consecutiveFailures,
+      degradedSince,
+    };
+  } catch (error) {
+    logger.error("WorkerOrchestrator", `Failed to track worker run result for ${agentId}`, { error });
+    return {
+      isDegraded: false,
+      consecutiveFailures: 0,
+      degradedSince: null,
     };
   }
 }
@@ -976,6 +1043,11 @@ export async function runWorkerOrchestration(
   
   logger.info("WorkerOrchestrator", "Starting orchestration run", { runId, siteId, domain: resolvedDomain });
   
+  await socratesLogger.logRunStarted(siteId, "orchestrator", runId, {
+    domain: resolvedDomain,
+    timestamp: startedAt.toISOString(),
+  });
+  
   const workerServices = getWorkerServices().filter(s => 
     WORKER_KEYS.includes(s.serviceSlug as any)
   );
@@ -1028,6 +1100,17 @@ export async function runWorkerOrchestration(
   const suggestions = generateSuggestions(runId, siteId, results);
   if (suggestions.length > 0) {
     await storage.saveSeoSuggestions(suggestions);
+    await socratesLogger.logRecommendationsEmitted(
+      siteId,
+      "orchestrator",
+      runId,
+      suggestions.map(s => ({
+        id: s.suggestionId,
+        type: s.suggestionType,
+        title: s.title,
+        severity: s.severity,
+      }))
+    );
   }
   
   const insights = generateKbaseInsights(runId, siteId, results);
@@ -1094,6 +1177,37 @@ export async function runWorkerOrchestration(
     workerStatusesJson,
   });
   
+  // Update agent consecutive failure tracking (skip "skipped" workers as they indicate missing config)
+  const agentUpdates = new Map<string, boolean>();
+  for (const result of results) {
+    if (result.status === "skipped") continue;
+    const agentId = WORKER_TO_AGENT_MAP[result.workerKey];
+    if (!agentId) continue;
+    
+    const isSuccess = result.status === "success";
+    const existingSuccess = agentUpdates.get(agentId);
+    if (existingSuccess === undefined) {
+      agentUpdates.set(agentId, isSuccess);
+    } else {
+      agentUpdates.set(agentId, existingSuccess && isSuccess);
+    }
+  }
+  
+  for (const [agentId, success] of agentUpdates) {
+    try {
+      const updatedState = await storage.updateAgentRunResult(siteId, agentId, success);
+      if (updatedState.health === "degraded") {
+        logger.warn("WorkerOrchestrator", `Agent ${agentId} is now degraded after ${updatedState.consecutiveFailures} consecutive failures`, {
+          siteId,
+          agentId,
+          consecutiveFailures: updatedState.consecutiveFailures,
+        });
+      }
+    } catch (err) {
+      logger.error("WorkerOrchestrator", `Failed to update agent state for ${agentId}`, { error: err });
+    }
+  }
+  
   logger.info("WorkerOrchestrator", "Orchestration complete", {
     runId,
     status: runStatus,
@@ -1104,6 +1218,20 @@ export async function runWorkerOrchestration(
     insightsGenerated: insights.length,
     durationMs: finishedAt.getTime() - startedAt.getTime(),
   });
+  
+  if (runStatus === "failed") {
+    await socratesLogger.logRunError(siteId, "orchestrator", runId, "ORCHESTRATION_FAILED", `All ${failedCount} workers failed`);
+  } else {
+    await socratesLogger.logRunCompleted(siteId, "orchestrator", runId, runStatus as "success" | "partial" | "complete", {
+      successCount,
+      failedCount,
+      skippedCount,
+      suggestionsGenerated: suggestions.length,
+      insightsGenerated: insights.length,
+      ticketsGenerated: tickets.length,
+      durationMs: finishedAt.getTime() - startedAt.getTime(),
+    });
+  }
   
   return {
     runId,

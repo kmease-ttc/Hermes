@@ -36,6 +36,10 @@ export interface CrewStatus {
   primaryMetric: PrimaryMetricData;
   readiness: ReadinessData;
   updatedAt: string;
+  isDegraded?: boolean;
+  degradedSince?: string | null;
+  consecutiveFailures?: number;
+  lastErrorMessage?: string | null;
 }
 
 export interface UseCrewStatusOptions {
@@ -95,5 +99,9 @@ export function useCrewStatus(options: UseCrewStatusOptions) {
     missions: crewStatus?.missions ?? null,
     primaryMetric: crewStatus?.primaryMetric ?? null,
     readiness: crewStatus?.readiness ?? null,
+    isDegraded: crewStatus?.isDegraded ?? false,
+    degradedSince: crewStatus?.degradedSince ?? null,
+    consecutiveFailures: crewStatus?.consecutiveFailures ?? 0,
+    lastErrorMessage: crewStatus?.lastErrorMessage ?? null,
   };
 }

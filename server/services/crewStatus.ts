@@ -50,6 +50,10 @@ export interface CrewStatus {
   primaryMetric: PrimaryMetricData;
   readiness: ReadinessData;
   updatedAt: string;
+  isDegraded?: boolean;
+  degradedSince?: string | null;
+  consecutiveFailures?: number;
+  lastErrorMessage?: string | null;
 }
 
 export interface ComputeCrewStatusOptions {
@@ -366,12 +370,26 @@ export async function computeCrewStatus(
     }
   }
   
-  const status = determineStatusFromScore(scoreValue);
+  let status = determineStatusFromScore(scoreValue);
+  
+  // Check if agent is degraded due to consecutive failures
+  const agentState = await storage.getCrewStateForAgent(siteId, crewId);
+  const isDegraded = agentState?.health === "degraded" || (agentState?.consecutiveFailures ?? 0) >= 3;
+  
+  if (isDegraded) {
+    status = "needs_attention";
+    readiness = {
+      ...readiness,
+      isReady: false,
+      setupHint: readiness.setupHint || `Agent has failed ${agentState?.consecutiveFailures ?? 3}+ times consecutively`,
+    };
+  }
+  
   const tier = determineTierFromStatus(status);
   
   const score: ScoreData = {
     value: scoreValue,
-    status: scoreStatus,
+    status: isDegraded ? "unknown" : scoreStatus,
     updatedAt: now,
   };
   
@@ -385,6 +403,10 @@ export async function computeCrewStatus(
     primaryMetric,
     readiness,
     updatedAt: now,
+    isDegraded,
+    degradedSince: agentState?.degradedAt?.toISOString() ?? null,
+    consecutiveFailures: agentState?.consecutiveFailures ?? 0,
+    lastErrorMessage: agentState?.lastErrorMessage ?? null,
   };
 }
 

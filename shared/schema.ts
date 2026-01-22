@@ -2042,6 +2042,9 @@ export const crewState = pgTable("crew_state", {
   needsConfig: boolean("needs_config").notNull().default(true),
   lastRunAt: timestamp("last_run_at"),
   health: text("health").default("unknown"), // healthy, degraded, error, unknown
+  consecutiveFailures: integer("consecutive_failures").default(0).notNull(),
+  degradedAt: timestamp("degraded_at"), // Set when consecutiveFailures >= 3, cleared on success
+  lastErrorMessage: text("last_error_message"), // Most recent error message for debugging
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
