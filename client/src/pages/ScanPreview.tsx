@@ -37,6 +37,15 @@ interface ScanPreviewData {
     technical: number;
     content: number;
     performance: number;
+    serp?: number;
+    authority?: number;
+    costOfInaction?: {
+      trafficAtRisk: number;
+      clicksLost: number;
+      leadsMin: number;
+      leadsMax: number;
+      pageOneOpportunities: number;
+    };
   };
   totalFindings: number;
   targetUrl: string;
@@ -59,15 +68,22 @@ function getHealthLabel(score: number): { label: string; color: string } {
   return { label: "At Risk", color: "text-red-600" };
 }
 
-function estimateImpact(score: number, findings: number) {
-  const severity = 100 - score;
-  const baseTraffic = Math.round(severity * 35 + findings * 50);
-  const trafficAtRisk = Math.max(200, Math.min(5000, baseTraffic));
-  const clicksLost = Math.round(trafficAtRisk * 0.4);
-  const leadsMin = Math.round(trafficAtRisk * 0.015);
-  const leadsMax = Math.round(trafficAtRisk * 0.04);
+function getImpactFromPreview(scoreSummary: ScanPreviewData["scoreSummary"], totalFindings: number) {
+  // Use real cost of inaction data from API if available
+  if (scoreSummary.costOfInaction) {
+    return scoreSummary.costOfInaction;
+  }
   
-  return { trafficAtRisk, clicksLost, leadsMin, leadsMax };
+  // Fallback to estimates only if API didn't provide data
+  const severity = 100 - scoreSummary.overall;
+  const baseTraffic = Math.round(severity * 35 + totalFindings * 50);
+  const trafficAtRisk = Math.max(200, Math.min(5000, baseTraffic));
+  const clicksLost = Math.round(trafficAtRisk * 1.5);
+  const leadsMin = Math.round(clicksLost * 0.015);
+  const leadsMax = Math.round(clicksLost * 0.04);
+  const pageOneOpportunities = Math.max(3, Math.round(totalFindings * 0.5));
+  
+  return { trafficAtRisk, clicksLost, leadsMin, leadsMax, pageOneOpportunities };
 }
 
 function getCardStatus(score: number): { label: string; color: string; bgColor: string; iconColor: string } {
@@ -226,7 +242,7 @@ export default function ScanPreview() {
   const preview = previewQuery.data;
   const gradeInfo = preview ? getLetterGrade(preview.scoreSummary.overall) : null;
   const healthInfo = preview ? getHealthLabel(preview.scoreSummary.overall) : null;
-  const impact = preview ? estimateImpact(preview.scoreSummary.overall, preview.totalFindings) : null;
+  const impact = preview ? getImpactFromPreview(preview.scoreSummary, preview.totalFindings) : null;
 
   return (
     <MarketingLayout>

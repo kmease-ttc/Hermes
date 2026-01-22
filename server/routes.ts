@@ -19163,6 +19163,76 @@ Return JSON in this exact format:
             authorityScore * 0.15
           );
           
+          // Calculate cost of inaction metrics from real data
+          let trafficAtRisk = 0;
+          let clicksLost = 0;
+          let pageOneOpportunities = 0;
+          
+          // CTR curve by position (industry average)
+          const getCTR = (pos: number): number => {
+            if (pos <= 0) return 0;
+            if (pos === 1) return 0.28;
+            if (pos === 2) return 0.15;
+            if (pos === 3) return 0.10;
+            if (pos === 4) return 0.07;
+            if (pos === 5) return 0.05;
+            if (pos === 6) return 0.04;
+            if (pos === 7) return 0.03;
+            if (pos === 8) return 0.025;
+            if (pos === 9) return 0.020;
+            if (pos === 10) return 0.018;
+            if (pos <= 20) return 0.010;
+            if (pos <= 50) return 0.004;
+            return 0.001;
+          };
+          
+          const CAPTURE_FACTOR = 0.65;
+          const LEAD_CONVERSION_RATE = 0.025;
+          const TARGET_POSITION = 3;
+          
+          // Calculate from real SERP data if available
+          if (serpData.ok && serpData.data?.keywords && Array.isArray(serpData.data.keywords)) {
+            const keywords = serpData.data.keywords;
+            
+            for (const kw of keywords) {
+              const volume = kw.volume || kw.search_volume || 0;
+              const position = kw.position || kw.rank || 100;
+              
+              if (volume > 0) {
+                const currentCTR = getCTR(position);
+                const targetCTR = getCTR(TARGET_POSITION);
+                const currentClicks = volume * currentCTR * CAPTURE_FACTOR;
+                const targetClicks = volume * targetCTR * CAPTURE_FACTOR;
+                const gap = Math.max(0, targetClicks - currentClicks);
+                clicksLost += gap;
+                
+                // Traffic at risk: keywords in top 10 that could slip
+                if (position >= 1 && position <= 10) {
+                  const slippedCTR = getCTR(Math.min(position + 3, 50));
+                  const riskClicks = volume * (currentCTR - slippedCTR) * CAPTURE_FACTOR;
+                  trafficAtRisk += Math.max(0, riskClicks);
+                }
+                
+                // Page-one opportunities: keywords in positions 4-10
+                if (position >= 4 && position <= 10) {
+                  pageOneOpportunities++;
+                }
+              }
+            }
+          } else {
+            // Fallback estimates based on score when no SERP data
+            const severity = 100 - overallScore;
+            trafficAtRisk = Math.round(severity * 35 + findings.length * 50);
+            clicksLost = Math.round(trafficAtRisk * 1.5);
+            pageOneOpportunities = Math.max(3, Math.round(findings.length * 0.5));
+          }
+          
+          // Round the values
+          trafficAtRisk = Math.round(trafficAtRisk);
+          clicksLost = Math.round(clicksLost);
+          const leadsMin = Math.round(clicksLost * LEAD_CONVERSION_RATE * 0.6);
+          const leadsMax = Math.round(clicksLost * LEAD_CONVERSION_RATE * 1.6);
+
           const scoreSummary = {
             overall: Math.min(100, Math.max(0, overallScore)),
             technical: Math.min(100, Math.max(0, technicalScore)),
@@ -19170,6 +19240,13 @@ Return JSON in this exact format:
             performance: Math.min(100, Math.max(0, performanceScore)),
             serp: Math.min(100, Math.max(0, serpScore)),
             authority: Math.min(100, Math.max(0, authorityScore)),
+            costOfInaction: {
+              trafficAtRisk: Math.max(200, trafficAtRisk),
+              clicksLost: Math.max(100, clicksLost),
+              leadsMin: Math.max(5, leadsMin),
+              leadsMax: Math.max(15, leadsMax),
+              pageOneOpportunities: Math.max(3, pageOneOpportunities),
+            },
           };
 
           logger.info("Scan", `Scan ${scanId} completed`, {
