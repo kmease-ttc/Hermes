@@ -20921,6 +20921,61 @@ Return JSON in this exact format:
         }
       }
 
+      // 5) BLOG CONTENT RECOMMENDATIONS - Generate blog topics with recommended titles
+      // Create blog recommendations based on high-intent keywords that don't have dedicated pages
+      const blogTopicTemplates = [
+        { pattern: 'psychiatrist', topics: ['What to Expect at Your First Psychiatrist Visit', 'How to Choose the Right Psychiatrist for You', 'Signs You Should See a Psychiatrist'] },
+        { pattern: 'adhd', topics: ['ADHD in Adults: Symptoms, Diagnosis & Treatment Options', 'Managing ADHD Without Medication: Natural Strategies', 'ADHD vs Anxiety: Understanding the Difference'] },
+        { pattern: 'anxiety', topics: ['Understanding Anxiety Disorders: Types, Symptoms & Treatment', 'Anxiety Management Techniques That Actually Work', 'When to Seek Professional Help for Anxiety'] },
+        { pattern: 'depression', topics: ['Recognizing Depression: Warning Signs & When to Get Help', 'Depression Treatment Options: Finding What Works for You', 'The Connection Between Depression and Physical Health'] },
+        { pattern: 'mental health', topics: ['Mental Health 101: A Complete Guide for Beginners', 'Breaking the Stigma: Talking About Mental Health', 'Self-Care Strategies for Better Mental Health'] },
+        { pattern: 'telehealth', topics: ['Telehealth Psychiatry: What to Know Before Your First Virtual Visit', 'Benefits of Online Mental Health Treatment', 'Is Telepsychiatry Right for You?'] },
+      ];
+
+      // Find keywords that could inspire blog content
+      const allKeywords = Object.values(pageKeywords).flat();
+      const usedBlogTopics = new Set<string>();
+      
+      for (const template of blogTopicTemplates) {
+        const matchingKeywords = allKeywords.filter(kw => 
+          kw.keyword?.toLowerCase().includes(template.pattern)
+        );
+        
+        if (matchingKeywords.length > 0) {
+          // Select a topic deterministically based on week
+          const topicSeed = getVariantSeed(template.pattern, 'blog');
+          const selectedTopic = template.topics[topicSeed % template.topics.length];
+          
+          if (usedBlogTopics.has(selectedTopic)) continue;
+          usedBlogTopics.add(selectedTopic);
+          
+          const blogSlug = `/blog/${selectedTopic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+          const primaryKw = matchingKeywords[0];
+          
+          const blogAction = `Write a comprehensive blog post (1,200–1,500 words) targeting "${primaryKw?.keyword || template.pattern}" searches. Include practical tips, expert insights, and a clear CTA to schedule an appointment.`;
+          const fingerprint = generateFingerprint(blogSlug, 'blog_content', blogAction);
+          
+          if (!completedFingerprints.has(fingerprint)) {
+            recommendations.push({
+              fingerprint,
+              agent: 'scotty',
+              category: 'blog_content',
+              priority: 'medium',
+              page: blogSlug,
+              title: 'Create new blog content',
+              action: blogAction,
+              evidence: {
+                topic: template.pattern,
+                recommended_title: selectedTopic,
+                target_keyword: primaryKw?.keyword || null,
+                keyword_volume: primaryKw?.volume || null,
+                word_count_target: '1,200–1,500',
+              },
+            });
+          }
+        }
+      }
+
       // Sort by priority (high > medium > low)
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
