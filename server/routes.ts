@@ -121,6 +121,18 @@ function generateRunId(): string {
   return `run_${Date.now()}_${randomUUID().slice(0, 8)}`;
 }
 
+function validateGeoScope(geoScope: string | null, geoLocation: any): { valid: boolean; error?: string } {
+  if (!geoScope) {
+    return { valid: false, error: "Geographic scope required" };
+  }
+  if (geoScope === 'local') {
+    if (!geoLocation?.city || !geoLocation?.state) {
+      return { valid: false, error: "City and State required for local scope" };
+    }
+  }
+  return { valid: true };
+}
+
 // Helper: Compute fresh integration summary
 async function computeIntegrationSummary(siteId: string, storageInstance: typeof storage) {
   const [integrations, recentRuns] = await Promise.all([
@@ -2730,16 +2742,19 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
     const siteId = req.body?.siteId || "empathyhealthclinic.com";
     
     try {
-      // Check if site has geo_scope configured
+      // Check if site has geo_scope configured with complete geoLocation for local scope
       const site = await storage.getSiteById(siteId);
-      if (site && !site.geoScope) {
-        logger.warn("API", "Worker orchestration blocked - missing geo_scope", { siteId });
-        return res.status(400).json({
-          ok: false,
-          error: "Geographic scope required. Please configure in Site Settings.",
-          code: "GEO_SCOPE_REQUIRED",
-          siteId,
-        });
+      if (site) {
+        const geoValidation = validateGeoScope(site.geoScope, site.geoLocation);
+        if (!geoValidation.valid) {
+          logger.warn("API", "Worker orchestration blocked - geo validation failed", { siteId, error: geoValidation.error });
+          return res.status(400).json({
+            ok: false,
+            error: geoValidation.error,
+            code: "GEO_LOCATION_INCOMPLETE",
+            siteId,
+          });
+        }
       }
       
       logger.info("API", "Starting worker orchestration", { runId, siteId });
@@ -3456,16 +3471,19 @@ Format your response as JSON with these keys:
     const domain = req.body.domain || process.env.DOMAIN || "example.com";
     
     try {
-      // Check if site has geo_scope configured
+      // Check if site has geo_scope configured with complete geoLocation for local scope
       const site = await storage.getSiteById(siteId);
-      if (site && !site.geoScope) {
-        logger.warn("API", "Technical SEO agent blocked - missing geo_scope", { siteId });
-        return res.status(400).json({
-          ok: false,
-          error: "Geographic scope required. Please configure in Site Settings.",
-          code: "GEO_SCOPE_REQUIRED",
-          siteId,
-        });
+      if (site) {
+        const geoValidation = validateGeoScope(site.geoScope, site.geoLocation);
+        if (!geoValidation.valid) {
+          logger.warn("API", "Technical SEO agent blocked - geo validation failed", { siteId, error: geoValidation.error });
+          return res.status(400).json({
+            ok: false,
+            error: geoValidation.error,
+            code: "GEO_LOCATION_INCOMPLETE",
+            siteId,
+          });
+        }
       }
       
       logger.info("API", "Starting Technical SEO agent run", { siteId, domain });
@@ -9949,15 +9967,19 @@ Keep responses concise and actionable.`;
     try {
       const siteId = req.body?.siteId || (req.query.siteId as string) || "default";
       
-      // Check if site has geo_scope configured
+      // Check if site has geo_scope configured with complete geoLocation for local scope
       const site = await storage.getSiteById(siteId);
-      if (site && !site.geoScope) {
-        logger.warn("API", "SERP run blocked - missing geo_scope", { siteId });
-        return res.status(400).json({ 
-          error: "Geographic scope required. Please configure in Site Settings.",
-          code: "GEO_SCOPE_REQUIRED",
-          siteId,
-        });
+      if (site) {
+        const geoValidation = validateGeoScope(site.geoScope, site.geoLocation);
+        if (!geoValidation.valid) {
+          logger.warn("API", "SERP run blocked - geo validation failed", { siteId, error: geoValidation.error });
+          return res.status(400).json({ 
+            ok: false,
+            error: geoValidation.error,
+            code: "GEO_LOCATION_INCOMPLETE",
+            siteId,
+          });
+        }
       }
       
       if (!serpConnector.isConfigured()) {
@@ -10777,6 +10799,19 @@ Keep responses concise and actionable.`;
       }
 
       const data = parseResult.data;
+
+      // Validate geoScope and geoLocation if being updated
+      if (data.geoScope !== undefined) {
+        const geoValidation = validateGeoScope(data.geoScope, data.geoLocation);
+        if (!geoValidation.valid) {
+          return res.status(400).json({ 
+            ok: false,
+            error: geoValidation.error, 
+            code: "GEO_LOCATION_INCOMPLETE" 
+          });
+        }
+      }
+
       const updated = await storage.updateSite(req.params.siteId, data as any);
       
       await storage.saveAuditLog({
@@ -20355,6 +20390,18 @@ Return JSON in this exact format:
       }
 
       const { scanId, geoScope, geoLocation, email } = parsed.data;
+
+      // Validate geoScope and geoLocation before generating report
+      if (geoScope) {
+        const geoValidation = validateGeoScope(geoScope, geoLocation);
+        if (!geoValidation.valid) {
+          return res.status(400).json({ 
+            ok: false,
+            error: geoValidation.error, 
+            code: "GEO_LOCATION_INCOMPLETE" 
+          });
+        }
+      }
 
       // Update scan request with geo data and email if provided
       if (geoScope || email) {

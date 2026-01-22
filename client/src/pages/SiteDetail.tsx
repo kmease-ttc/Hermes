@@ -74,6 +74,16 @@ export default function SiteDetail() {
   const [geoScopeModalOpen, setGeoScopeModalOpen] = useState(false);
   const [pendingGeoScope, setPendingGeoScope] = useState<GeoScopeValue>(geoScope);
 
+  const isGeoScopeValid = (value: GeoScopeValue) => {
+    if (value.scope === 'local') {
+      return Boolean(value.city?.trim() && value.state?.trim());
+    }
+    return true;
+  };
+  const geoScopeError = pendingGeoScope.scope === 'local' && !isGeoScopeValid(pendingGeoScope) 
+    ? "City and State required for local scope" 
+    : null;
+
   const { data: site, isLoading } = useQuery<Site>({
     queryKey: ['site', siteId],
     queryFn: async () => {
@@ -526,11 +536,17 @@ export default function SiteDetail() {
               Edit Geographic Scope
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <GeoScopeSelector
               value={pendingGeoScope}
               onChange={setPendingGeoScope}
             />
+            {geoScopeError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-200 text-red-700" data-testid="geo-scope-error">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <p className="text-sm">{geoScopeError}</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -543,7 +559,12 @@ export default function SiteDetail() {
             </Button>
             <Button
               type="button"
+              disabled={!!geoScopeError}
               onClick={() => {
+                if (geoScopeError) {
+                  toast({ title: "Validation Error", description: geoScopeError, variant: "destructive" });
+                  return;
+                }
                 setGeoScope(pendingGeoScope);
                 setGeoScopeModalOpen(false);
                 toast({ title: "Geographic scope updated", description: "Don't forget to save the site to persist changes." });
