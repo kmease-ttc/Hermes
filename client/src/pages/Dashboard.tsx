@@ -28,7 +28,9 @@ import {
   Eye,
   Sun,
   Users,
-  LucideIcon
+  LucideIcon,
+  AlertTriangle,
+  MapPin
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useSiteContext } from "@/hooks/useSiteContext";
@@ -835,6 +837,34 @@ export default function Dashboard() {
             </div>
             <SiteSelector />
           </div>
+
+          {/* Geographic Scope Warning */}
+          {selectedSite && !selectedSite.geoScope && (
+            <div 
+              className="flex items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl"
+              data-testid="warning-geo-scope-missing"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-amber-800">Geographic Scope Required</p>
+                  <p className="text-sm text-amber-600">Configure your target location to enable SERP analysis and rankings tracking.</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                onClick={() => navigate(`/sites/${selectedSite.id}`)}
+                data-testid="button-configure-geo-scope"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Configure
+              </Button>
+            </div>
+          )}
           
           <div className="space-y-6">
             <div className="relative">

@@ -105,6 +105,12 @@ const createSiteSchema = z.object({
   ownerName: z.string().optional().nullable(),
   ownerContact: z.string().optional().nullable(),
   status: z.enum(["active", "paused", "onboarding"]).optional(),
+  geoScope: z.enum(["local", "national"]).optional().nullable(),
+  geoLocation: z.object({
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().optional(),
+  }).optional().nullable(),
 });
 
 const updateSiteSchema = createSiteSchema.partial();
@@ -2724,6 +2730,18 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
     const siteId = req.body?.siteId || "empathyhealthclinic.com";
     
     try {
+      // Check if site has geo_scope configured
+      const site = await storage.getSiteById(siteId);
+      if (site && !site.geoScope) {
+        logger.warn("API", "Worker orchestration blocked - missing geo_scope", { siteId });
+        return res.status(400).json({
+          ok: false,
+          error: "Geographic scope required. Please configure in Site Settings.",
+          code: "GEO_SCOPE_REQUIRED",
+          siteId,
+        });
+      }
+      
       logger.info("API", "Starting worker orchestration", { runId, siteId });
       
       const result = await runWorkerOrchestration(runId, siteId);
@@ -3438,6 +3456,18 @@ Format your response as JSON with these keys:
     const domain = req.body.domain || process.env.DOMAIN || "example.com";
     
     try {
+      // Check if site has geo_scope configured
+      const site = await storage.getSiteById(siteId);
+      if (site && !site.geoScope) {
+        logger.warn("API", "Technical SEO agent blocked - missing geo_scope", { siteId });
+        return res.status(400).json({
+          ok: false,
+          error: "Geographic scope required. Please configure in Site Settings.",
+          code: "GEO_SCOPE_REQUIRED",
+          siteId,
+        });
+      }
+      
       logger.info("API", "Starting Technical SEO agent run", { siteId, domain });
       
       const runId = `tech_seo_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -9917,6 +9947,19 @@ Keep responses concise and actionable.`;
 
   app.post("/api/serp/run", async (req, res) => {
     try {
+      const siteId = req.body?.siteId || (req.query.siteId as string) || "default";
+      
+      // Check if site has geo_scope configured
+      const site = await storage.getSiteById(siteId);
+      if (site && !site.geoScope) {
+        logger.warn("API", "SERP run blocked - missing geo_scope", { siteId });
+        return res.status(400).json({ 
+          error: "Geographic scope required. Please configure in Site Settings.",
+          code: "GEO_SCOPE_REQUIRED",
+          siteId,
+        });
+      }
+      
       if (!serpConnector.isConfigured()) {
         return res.status(400).json({ error: "SERP_API_KEY not configured" });
       }

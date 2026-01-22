@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Save, Globe, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Globe, Loader2, MapPin, Pencil, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
+import { GeoScopeSelector, type GeoScopeValue } from "@/components/site/GeoScopeSelector";
 
 interface Site {
   id: number;
@@ -34,6 +36,8 @@ interface Site {
   status: string;
   active: boolean;
   createdAt: string;
+  geoScope: 'local' | 'national' | null;
+  geoLocation: { city?: string; state?: string; country?: string } | null;
 }
 
 export default function SiteDetail() {
@@ -60,6 +64,15 @@ export default function SiteDetail() {
     gscProperty: '',
     adsCustomerId: '',
   });
+
+  const [geoScope, setGeoScope] = useState<GeoScopeValue>({
+    scope: 'national',
+    city: '',
+    state: '',
+    country: 'United States',
+  });
+  const [geoScopeModalOpen, setGeoScopeModalOpen] = useState(false);
+  const [pendingGeoScope, setPendingGeoScope] = useState<GeoScopeValue>(geoScope);
 
   const { data: site, isLoading } = useQuery<Site>({
     queryKey: ['site', siteId],
@@ -91,6 +104,15 @@ export default function SiteDetail() {
         gscProperty: integrations.gsc?.property || '',
         adsCustomerId: integrations.google_ads?.customer_id || '',
       });
+      
+      const loadedGeoScope: GeoScopeValue = {
+        scope: site.geoScope || 'national',
+        city: site.geoLocation?.city || '',
+        state: site.geoLocation?.state || '',
+        country: site.geoLocation?.country || 'United States',
+      };
+      setGeoScope(loadedGeoScope);
+      setPendingGeoScope(loadedGeoScope);
     }
   }, [site]);
 
@@ -114,6 +136,12 @@ export default function SiteDetail() {
           gsc: data.gscProperty ? { property: data.gscProperty } : null,
           google_ads: data.adsCustomerId ? { customer_id: data.adsCustomerId } : null,
         },
+        geoScope: geoScope.scope,
+        geoLocation: geoScope.scope === 'local' ? {
+          city: geoScope.city || undefined,
+          state: geoScope.state || undefined,
+          country: geoScope.country || 'United States',
+        } : null,
       };
 
       const url = isNew ? '/api/sites' : `/api/sites/${siteId}`;
@@ -263,6 +291,64 @@ export default function SiteDetail() {
                   </Select>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-geo-scope">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Geographic Scope
+                  </CardTitle>
+                  <CardDescription>How your search rankings are evaluated</CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPendingGeoScope(geoScope);
+                    setGeoScopeModalOpen(true);
+                  }}
+                  data-testid="button-edit-geo-scope"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!geoScope.scope || geoScope.scope === 'national' ? (
+                geoScope.scope === 'national' ? (
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <Globe className="w-5 h-5 text-slate-600" />
+                    <div>
+                      <p className="font-medium text-slate-900">National</p>
+                      <p className="text-sm text-slate-600">Keyword rankings evaluated nationally</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <p className="font-medium text-amber-900">Not configured</p>
+                      <p className="text-sm text-amber-700">Configure geographic scope to enable SERP analysis</p>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center gap-3 p-4 bg-violet-50 rounded-lg border border-violet-200">
+                  <MapPin className="w-5 h-5 text-violet-600" />
+                  <div>
+                    <p className="font-medium text-violet-900">Local</p>
+                    <p className="text-sm text-violet-700">
+                      {[geoScope.city, geoScope.state, geoScope.country].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -431,6 +517,45 @@ export default function SiteDetail() {
           </div>
         </form>
       </div>
+
+      <Dialog open={geoScopeModalOpen} onOpenChange={setGeoScopeModalOpen}>
+        <DialogContent className="sm:max-w-lg" data-testid="modal-geo-scope">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Edit Geographic Scope
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <GeoScopeSelector
+              value={pendingGeoScope}
+              onChange={setPendingGeoScope}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setGeoScopeModalOpen(false)}
+              data-testid="button-cancel-geo-scope"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setGeoScope(pendingGeoScope);
+                setGeoScopeModalOpen(false);
+                toast({ title: "Geographic scope updated", description: "Don't forget to save the site to persist changes." });
+              }}
+              data-testid="button-save-geo-scope"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
