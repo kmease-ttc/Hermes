@@ -4,10 +4,8 @@ import { buildRoute } from "@shared/routes";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { AgentCard } from "@/components/crew/AgentCard";
-import { CaptainsRecommendations } from "@/components/crew/CaptainsRecommendations";
 import { USER_FACING_AGENTS, getCrewMember } from "@/config/agents";
 import { getMockAgentData } from "@/config/mockAgentInsights";
-import { getMockCaptainRecommendations } from "@/config/mockCaptainRecommendations";
 import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,8 +70,6 @@ export default function CrewPage() {
     : 0;
   const needsAttention = userFacingAgents.filter((a) => a.score < 50).length;
 
-  const captainData = getMockCaptainRecommendations();
-
   return (
     <DashboardLayout className="dashboard-light">
       <div className="space-y-6" data-testid="agents-page">
@@ -86,8 +82,6 @@ export default function CrewPage() {
             Your hired specialists analyzing and improving your site
           </p>
         </div>
-
-        <CaptainsRecommendations data={captainData} />
 
         <div className="flex flex-wrap items-center gap-6 text-sm">
           <div className="flex items-center gap-2">

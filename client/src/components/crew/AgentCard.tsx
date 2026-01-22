@@ -32,24 +32,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function getOpenMissionsColor(count: number): string {
-  if (count === 0) return "#22C55E";
-  if (count <= 2) return "#3B82F6";
-  return "#F59E0B";
-}
-
-function AgentScoreBadge({ score }: { score: number }) {
-  const color = getOpenMissionsColor(score);
-  const label = score === 0 ? "All clear" : `${score} open`;
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-muted bg-background">
-        <span className="text-xs text-muted-foreground">Open missions</span>
-        <span className="text-sm font-bold" style={{ color }}>{label}</span>
-      </div>
-    </div>
-  );
-}
 
 export function AgentCard({ 
   serviceId, 
@@ -153,7 +135,6 @@ export function AgentCard({
               )}
             </div>
           </div>
-          <AgentScoreBadge score={score} />
         </div>
       </CardHeader>
 
