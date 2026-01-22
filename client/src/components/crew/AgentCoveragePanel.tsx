@@ -12,6 +12,7 @@ import { buildRoute } from "@shared/routes";
 interface AgentRowProps {
   serviceId: string;
   siteId: string;
+  isSubscribed?: boolean;
 }
 
 function formatRelativeTime(dateString: string | null | undefined): string {
@@ -41,7 +42,7 @@ function getFreshnessFromUpdatedAt(updatedAt: string | null | undefined): "fresh
   return "error";
 }
 
-function AgentRow({ serviceId, siteId }: AgentRowProps) {
+function AgentRow({ serviceId, siteId, isSubscribed = true }: AgentRowProps) {
   const crewId = SERVICE_TO_CREW[serviceId as keyof typeof SERVICE_TO_CREW] || serviceId;
   const crew = getCrewMember(serviceId);
   const Icon = crew.icon;
@@ -60,10 +61,15 @@ function AgentRow({ serviceId, siteId }: AgentRowProps) {
   });
 
   const isReady = readiness?.isReady !== false;
-  const status = !isReady ? "Not Configured" : "Active";
-  const freshness = crewStatus?.updatedAt 
-    ? getFreshnessFromUpdatedAt(crewStatus.updatedAt)
-    : "error";
+  const isLocked = !isSubscribed && crew.category === "additional";
+  const status = isLocked ? "Locked" : !isReady ? "Not Configured" : "Active";
+  
+  const hasError = crewStatus?.status === "needs_attention";
+  const freshness = hasError 
+    ? "error" 
+    : crewStatus?.updatedAt 
+      ? getFreshnessFromUpdatedAt(crewStatus.updatedAt)
+      : "error";
   const lastRun = formatRelativeTime(crewStatus?.updatedAt);
   
   const outputSummary = missions?.open 
@@ -146,7 +152,7 @@ function AgentRow({ serviceId, siteId }: AgentRowProps) {
             variant="ghost"
             size="sm"
             className="text-xs h-7"
-            onClick={() => window.open(buildRoute.agent("seo_kbase"), "_blank")}
+            onClick={() => window.open(`${buildRoute.agent(crewId)}?tab=logs`, "_blank")}
             data-testid={`button-logs-${serviceId}`}
           >
             <ExternalLink className="w-3 h-3 mr-1" />
@@ -196,7 +202,7 @@ function AgentRow({ serviceId, siteId }: AgentRowProps) {
           variant="ghost"
           size="sm"
           className="text-xs h-7"
-          onClick={() => window.open(buildRoute.agent("seo_kbase"), "_blank")}
+          onClick={() => window.open(`${buildRoute.agent(crewId)}?tab=logs`, "_blank")}
           data-testid={`button-logs-${serviceId}`}
         >
           <ExternalLink className="w-3 h-3 mr-1" />
@@ -207,7 +213,11 @@ function AgentRow({ serviceId, siteId }: AgentRowProps) {
   );
 }
 
-export function AgentCoveragePanel() {
+interface AgentCoveragePanelProps {
+  subscriptions?: Record<string, boolean>;
+}
+
+export function AgentCoveragePanel({ subscriptions = {} }: AgentCoveragePanelProps) {
   const { siteId, isLoading: siteLoading } = useSiteContext();
 
   if (siteLoading) {
@@ -259,7 +269,12 @@ export function AgentCoveragePanel() {
             </thead>
             <tbody>
               {USER_FACING_AGENTS.map((serviceId) => (
-                <AgentRow key={serviceId} serviceId={serviceId} siteId={siteId} />
+                <AgentRow 
+                  key={serviceId} 
+                  serviceId={serviceId} 
+                  siteId={siteId} 
+                  isSubscribed={subscriptions[serviceId] !== false}
+                />
               ))}
             </tbody>
           </table>

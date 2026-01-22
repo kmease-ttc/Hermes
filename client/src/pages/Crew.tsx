@@ -182,7 +182,7 @@ export default function CrewPage() {
           </div>
 
           <div className="pt-4">
-            <AgentCoveragePanel />
+            <AgentCoveragePanel subscriptions={subscriptions} />
           </div>
         </div>
       </div>
