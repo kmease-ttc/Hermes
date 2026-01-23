@@ -165,7 +165,7 @@ export default function Pricing() {
                     <div 
                       className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                         plan.iconBg === "gradient" 
-                          ? "bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400" 
+                          ? "bg-gradient-to-br from-primary via-pink-500 to-gold" 
                           : plan.iconBg
                       }`}
                     >
@@ -224,7 +224,7 @@ export default function Pricing() {
             >
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                 <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400"
+                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-primary via-pink-500 to-gold"
                 >
                   <Sparkles className="w-7 h-7 text-white" />
                 </div>

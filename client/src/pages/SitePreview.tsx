@@ -207,7 +207,7 @@ export default function SitePreview() {
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-lg mx-auto">
             <MarketingCard className="text-center py-12" hover={false}>
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400 flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-pink-500 to-gold flex items-center justify-center mx-auto mb-6 animate-pulse">
                 <Loader2 className="h-10 w-10 text-white animate-spin" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-generating-title">

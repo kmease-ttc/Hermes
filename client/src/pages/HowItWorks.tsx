@@ -60,7 +60,7 @@ export default function HowItWorks() {
             <div className="bg-primary-soft/60 border border-primary/30 rounded-2xl p-8 mb-20">
               <div className="flex items-center gap-5">
                 <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400"
+                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-primary via-pink-500 to-gold"
                 >
                   <CheckCircle2 className="w-7 h-7 text-white" />
                 </div>
@@ -141,7 +141,7 @@ export default function HowItWorks() {
               }}
             >
               <div className="flex items-start gap-5">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-100 via-pink-100 to-amber-50 border border-border">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-primary/10 via-pink-100 to-gold/10 border border-border">
                   <FileX className="w-7 h-7 text-primary" />
                 </div>
                 <div>
@@ -155,7 +155,7 @@ export default function HowItWorks() {
 
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-500 to-pink-500">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-pink-500">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What Arclo does automatically</h2>
@@ -190,7 +190,7 @@ export default function HowItWorks() {
 
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-500 to-amber-500">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-500 to-gold">
                   <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What you control</h2>
@@ -230,7 +230,7 @@ export default function HowItWorks() {
 
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-500 to-orange-500">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-gold to-progress">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What results to expect</h2>
@@ -313,7 +313,7 @@ export default function HowItWorks() {
               </h2>
               <Link href={ROUTES.SCAN}>
                 <button 
-                  className="inline-flex items-center justify-center h-14 px-12 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 gap-3 mx-auto focus:outline-none focus:ring-4 focus:ring-violet-200"
+                  className="inline-flex items-center justify-center h-14 px-12 text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-primary via-pink-500 to-gold shadow-[0_14px_30px_rgba(139,92,246,0.20)] hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)] hover:-translate-y-0.5 transition-all duration-200 gap-3 mx-auto focus:outline-none focus:ring-4 focus:ring-primary/20"
                   style={{ textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
                   data-testid="button-fix-my-seo"
                 >

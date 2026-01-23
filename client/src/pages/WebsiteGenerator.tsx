@@ -181,7 +181,7 @@ export default function WebsiteGenerator() {
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-lg mx-auto">
             <MarketingCard className="text-center py-12">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400 flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-pink-500 to-gold flex items-center justify-center mx-auto mb-6 animate-pulse">
                 <Loader2 className="h-10 w-10 text-white animate-spin" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -229,7 +229,7 @@ export default function WebsiteGenerator() {
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight">
-              Build your website in <span className="bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 bg-clip-text text-transparent">minutes</span>
+              Build your website in <span className="bg-gradient-to-r from-primary via-pink-500 to-gold bg-clip-text text-transparent">minutes</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-lg mx-auto">
               Answer a few questions and we'll generate a fast, SEO-ready site for your business.
@@ -270,7 +270,7 @@ function ProgressIndicator({ currentStep }: { currentStep: WizardStep }) {
     <div className="flex items-center justify-center gap-3">
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
         currentStep === 1 
-          ? "bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-lg"
+          ? "bg-gradient-to-r from-primary via-pink-500 to-gold text-white shadow-lg"
           : "bg-muted text-muted-foreground"
       }`}>
         <span className="text-sm font-semibold">1</span>
@@ -279,7 +279,7 @@ function ProgressIndicator({ currentStep }: { currentStep: WizardStep }) {
       <div className="w-8 h-0.5 bg-border" />
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
         currentStep === 2 
-          ? "bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-lg"
+          ? "bg-gradient-to-r from-primary via-pink-500 to-gold text-white shadow-lg"
           : "bg-muted text-muted-foreground"
       }`}>
         <span className="text-sm font-semibold">2</span>
@@ -670,7 +670,7 @@ function GenerationStepItem({
         isComplete 
           ? "bg-semantic-success/10" 
           : isActive 
-            ? "bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400" 
+            ? "bg-gradient-to-br from-primary via-pink-500 to-gold" 
             : "bg-muted"
       }`}>
         {isComplete ? (
