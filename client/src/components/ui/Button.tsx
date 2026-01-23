@@ -32,9 +32,9 @@ export function Button({
 
   const styles: Record<ButtonVariant, string> = {
     primary:
-      "bg-brand-gradient text-white shadow-sm hover:opacity-95 focus:ring-brand-pink/60 focus:ring-offset-surface-primary",
+      "bg-brand-gradient text-white shadow-card hover:opacity-95 focus:ring-brand-pink/60 focus:ring-offset-surface-primary",
     secondary:
-      "bg-surface-primary text-text-primary shadow-sm ring-1 ring-surface-border hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
+      "bg-surface-primary text-text-primary shadow-card ring-1 ring-surface-border hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
     ghost:
       "text-text-primary hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
     danger:

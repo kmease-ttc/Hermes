@@ -16,24 +16,16 @@ function cx(...xs: Array<string | false | undefined>) {
 
 const toneClasses: Record<NonNullable<CardProps["tone"]>, string> = {
   default: "bg-surface-primary",
-  soft: "bg-surface-soft",
+  soft: "bg-surface-primary",
   brand: "bg-surface-primary",
 };
 
-export function Card({
-  title,
-  description,
-  rightSlot,
-  children,
-  footer,
-  className,
-  tone = "default",
-}: CardProps) {
+export function Card({ title, description, rightSlot, children, footer, className, tone = "default" }: CardProps) {
   return (
     <div
       className={cx(
-        "relative overflow-hidden rounded-2xl border border-surface-border shadow-sm",
-        "transition-shadow hover:shadow-md",
+        "relative overflow-hidden rounded-2xl border border-surface-border shadow-card",
+        "transition-shadow hover:shadow-cardHover",
         toneClasses[tone],
         className
       )}

@@ -6,17 +6,17 @@ type BannerProps = {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
-  tone?: "info" | "warning";
+  tone?: "warning" | "info";
 };
 
 export function Banner({ title, description, actionLabel, onAction, tone = "info" }: BannerProps) {
-  const styles =
+  const shell =
     tone === "warning"
-      ? "bg-amber-50 border-amber-200"
-      : "bg-violet-50 border-violet-200";
+      ? "border-brand-orange/30 bg-brand-orange/10"
+      : "border-brand-purple/25 bg-brand-purple/10";
 
   return (
-    <div className={`flex items-center justify-between gap-4 rounded-2xl border px-6 py-5 ${styles}`}>
+    <div className={`flex items-center justify-between gap-4 rounded-2xl border px-6 py-5 shadow-card ${shell}`}>
       <div className="min-w-0">
         <div className="text-sm font-semibold text-text-primary">{title}</div>
         {description ? <div className="mt-1 text-sm text-text-secondary">{description}</div> : null}

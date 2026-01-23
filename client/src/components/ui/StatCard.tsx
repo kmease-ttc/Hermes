@@ -6,15 +6,39 @@ type StatCardProps = {
   value: string | number;
   hint?: string;
   icon?: React.ReactNode;
-  tone?: "default" | "soft" | "brand";
+  tone?: "default" | "brand";
+  accent?: "purple" | "pink" | "orange" | "green" | "blue";
 };
 
-export function StatCard({ label, value, hint, icon, tone = "soft" }: StatCardProps) {
+const accentRing: Record<NonNullable<StatCardProps["accent"]>, string> = {
+  purple: "ring-brand-purple/25",
+  pink: "ring-brand-pink/25",
+  orange: "ring-brand-orange/25",
+  green: "ring-brand-green/25",
+  blue: "ring-brand-blue/25",
+};
+
+const accentBg: Record<NonNullable<StatCardProps["accent"]>, string> = {
+  purple: "bg-brand-purple/10",
+  pink: "bg-brand-pink/10",
+  orange: "bg-brand-orange/10",
+  green: "bg-brand-green/10",
+  blue: "bg-brand-blue/10",
+};
+
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon,
+  tone = "default",
+  accent = "purple",
+}: StatCardProps) {
   return (
-    <Card tone={tone}>
+    <Card tone={tone === "brand" ? "brand" : "default"}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+          <div className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
             {label}
           </div>
           <div className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">
@@ -22,8 +46,9 @@ export function StatCard({ label, value, hint, icon, tone = "soft" }: StatCardPr
           </div>
           {hint ? <div className="mt-1 text-xs text-text-secondary">{hint}</div> : null}
         </div>
+
         {icon ? (
-          <div className="rounded-xl bg-surface-primary p-2 shadow-sm ring-1 ring-surface-border">
+          <div className={`rounded-xl p-2 shadow-sm ring-1 ${accentRing[accent]} ${accentBg[accent]}`}>
             {icon}
           </div>
         ) : null}

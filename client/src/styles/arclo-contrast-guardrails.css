@@ -1,0 +1,28 @@
+/* src/styles/arclo-contrast-guardrails.css
+   Drop-in guardrails to prevent washed-out UI.
+   Safe: does NOT change layout, only contrast and accidental opacity.
+*/
+
+:root {
+  --arclo-text-primary: #0F172A;
+  --arclo-text-secondary: #475569;
+}
+
+body {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+main, .app-main, #root {
+  opacity: 1;
+  filter: none;
+}
+
+/* Prevent accidental low-contrast globals */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--arclo-text-primary);
+}
+
+p, label, small, span {
+  color: inherit;
+}

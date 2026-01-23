@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { DataCard } from "@/components/ui/DataCard";
 import { EmptyStateInline } from "@/components/ui/EmptyStateInline";
 import { ConfigureOverlay } from "@/components/overlays";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Banner } from "@/components/ui/Banner";
 import { 
   TrendingUp, 
   TrendingDown,
@@ -827,43 +829,23 @@ export default function Dashboard() {
     <DashboardLayout className="dashboard-light">
       <div className="space-y-8 max-w-5xl mx-auto">
         <header className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-foreground">SEO Performance Overview</h1>
-                <span className="text-xs font-medium text-brand bg-brand-soft px-2 py-1 rounded">Weekly Report</span>
-              </div>
-              <p className="text-muted-foreground">Updated weekly · Rankings are the north star</p>
-            </div>
-            <SiteSelector />
-          </div>
+          <PageHeader
+            title="SEO Performance Overview"
+            highlight="SEO"
+            badgeText="Weekly Report"
+            subtitle="Updated weekly · Rankings are the north star"
+            rightSlot={<SiteSelector />}
+          />
 
           {/* Geographic Scope Warning */}
           {selectedSite && !selectedSite.geoScope && (
-            <div 
-              className="flex items-center justify-between gap-4 p-4 bg-gold-soft border border-gold rounded-xl"
-              data-testid="warning-geo-scope-missing"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gold-soft flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-gold" />
-                </div>
-                <div>
-                  <p className="font-medium text-gold">Geographic Scope Required</p>
-                  <p className="text-sm text-gold">Configure your target location to enable SERP analysis and rankings tracking.</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-gold text-gold hover:bg-gold-soft"
-                onClick={() => navigate(`/sites/${selectedSite.id}`)}
-                data-testid="button-configure-geo-scope"
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                Configure
-              </Button>
-            </div>
+            <Banner
+              tone="warning"
+              title="Geographic Scope Required"
+              description="Configure your target location to enable SERP analysis and rankings tracking."
+              actionLabel="Configure"
+              onAction={() => navigate(`/sites/${selectedSite.id}`)}
+            />
           )}
           
           <div className="space-y-6">
