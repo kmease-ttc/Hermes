@@ -5,19 +5,26 @@ type PageHeaderProps = {
   subtitle?: string;
   badgeText?: string;
   rightSlot?: React.ReactNode;
-  /** Optional: wrap a word/phrase in gradient for emphasis */
   highlight?: string;
+  glow?: boolean;
 };
 
-function GradientText({ text }: { text: string }) {
-  return (
-    <span className="bg-brand-gradient bg-clip-text text-transparent">
-      {text}
-    </span>
-  );
+function cx(...xs: Array<string | false | undefined>) {
+  return xs.filter(Boolean).join(" ");
 }
 
-export function PageHeader({ title, subtitle, badgeText, rightSlot, highlight }: PageHeaderProps) {
+function GradientText({ text }: { text: string }) {
+  return <span className="bg-brand-gradient bg-clip-text text-transparent">{text}</span>;
+}
+
+export function PageHeader({
+  title,
+  subtitle,
+  badgeText,
+  rightSlot,
+  highlight,
+  glow = true,
+}: PageHeaderProps) {
   const renderTitle = () => {
     if (!highlight) return title;
     const idx = title.toLowerCase().indexOf(highlight.toLowerCase());
@@ -37,16 +44,26 @@ export function PageHeader({ title, subtitle, badgeText, rightSlot, highlight }:
   };
 
   return (
-    <div className="mb-6">
+    <div className="relative mb-7">
+      {glow ? (
+        <div
+          aria-hidden
+          className={cx(
+            "pointer-events-none absolute -left-16 -top-10 h-44 w-44 rounded-full blur-3xl opacity-30",
+            "bg-brand-gradient"
+          )}
+        />
+      ) : null}
+
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
               {renderTitle()}
             </h1>
 
             {badgeText ? (
-              <span className="inline-flex items-center rounded-full border border-surface-border bg-surface-soft px-2.5 py-1 text-xs font-medium text-text-primary">
+              <span className="inline-flex items-center rounded-full bg-surface-primary px-3 py-1 text-xs font-medium text-text-primary shadow-sm ring-1 ring-surface-border">
                 <span className="mr-2 h-2 w-2 rounded-full bg-brand-gradient" />
                 {badgeText}
               </span>
@@ -54,15 +71,13 @@ export function PageHeader({ title, subtitle, badgeText, rightSlot, highlight }:
           </div>
 
           {subtitle ? (
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
               {subtitle}
             </p>
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          {rightSlot}
-        </div>
+        <div className="flex shrink-0 items-center gap-3">{rightSlot}</div>
       </div>
     </div>
   );

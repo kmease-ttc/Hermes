@@ -1,0 +1,38 @@
+/* src/styles/arclo-base.css
+   Global contrast guardrails.
+*/
+
+html, body {
+  background: rgb(var(--surface-primary));
+  color: rgb(var(--text-primary));
+}
+
+/* Prevent accidental global washout from inherited opacity */
+body {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Links */
+a {
+  color: rgb(var(--brand-purple));
+}
+a:hover {
+  color: rgb(var(--brand-pink));
+}
+
+/* Selection */
+::selection {
+  background: rgba(var(--brand-pink), 0.20);
+}
+
+/* Ensure form controls inherit readable text */
+input, textarea, select, button {
+  color: inherit;
+}
+
+/* If any legacy layer uses CSS variables like --foreground with alpha, override them */
+:root {
+  --foreground: rgb(var(--text-primary));
+  --muted-foreground: rgb(var(--text-secondary));
+}

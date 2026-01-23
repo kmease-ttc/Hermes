@@ -1,0 +1,29 @@
+/* src/styles/arclo-tokens.css
+   Brand + surface + text tokens.
+   IMPORTANT: keep primary text fully opaque (no rgba alpha).
+*/
+
+:root {
+  /* Brand */
+  --brand-purple: 124 58 237; /* #7C3AED */
+  --brand-pink: 236 72 153;   /* #EC4899 */
+  --brand-orange: 245 158 11; /* #F59E0B */
+
+  /* Surfaces */
+  --surface-primary: 255 255 255; /* #FFFFFF */
+  --surface-soft: 249 250 251;    /* #F9FAFB */
+  --surface-border: 229 231 235;  /* #E5E7EB */
+
+  /* Text (NO ALPHA) */
+  --text-primary: 15 23 42;       /* #0F172A */
+  --text-secondary: 71 85 105;    /* #475569 */
+  --text-inverse: 255 255 255;    /* #FFFFFF */
+
+  /* Hero accents */
+  --hero-halo: 124 58 237;        /* violet glow */
+}
+
+/* Utility: brand gradient for non-Tailwind contexts */
+.arclo-brand-gradient {
+  background: linear-gradient(90deg, rgb(var(--brand-purple)) 0%, rgb(var(--brand-pink)) 50%, rgb(var(--brand-orange)) 100%);
+}
