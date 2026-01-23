@@ -36,17 +36,17 @@ const statusConfig = {
   good: {
     label: "All Passing",
     icon: CheckCircle,
-    className: "text-green-600 border-green-500/30 bg-green-500/10",
+    className: "text-semantic-success border-semantic-success-border bg-semantic-success-soft",
   },
   "needs-improvement": {
     label: "Needs Attention",
     icon: AlertTriangle,
-    className: "text-yellow-600 border-yellow-500/30 bg-yellow-500/10",
+    className: "text-semantic-warning border-semantic-warning-border bg-semantic-warning-soft",
   },
   poor: {
     label: "Needs Attention",
     icon: XCircle,
-    className: "text-red-600 border-red-500/30 bg-red-500/10",
+    className: "text-semantic-danger border-semantic-danger-border bg-semantic-danger-soft",
   },
   unknown: {
     label: "No Data",

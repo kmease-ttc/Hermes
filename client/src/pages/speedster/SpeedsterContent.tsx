@@ -100,9 +100,9 @@ function VitalCard({ vital }: { vital: VitalMetric }) {
   const Icon = vital.icon;
   
   const statusConfig = {
-    'good': { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-600', label: 'Good' },
-    'needs-improvement': { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-600', label: 'Needs Work' },
-    'poor': { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-600', label: 'Poor' },
+    'good': { bg: 'bg-semantic-success-soft', border: 'border-semantic-success-border', text: 'text-semantic-success', label: 'Good' },
+    'needs-improvement': { bg: 'bg-semantic-warning-soft', border: 'border-semantic-warning-border', text: 'text-semantic-warning', label: 'Needs Work' },
+    'poor': { bg: 'bg-semantic-danger-soft', border: 'border-semantic-danger-border', text: 'text-semantic-danger', label: 'Poor' },
     'unknown': { bg: 'bg-muted', border: 'border-border', text: 'text-muted-foreground', label: 'No Data' },
   };
   
@@ -146,7 +146,7 @@ function VitalCard({ vital }: { vital: VitalMetric }) {
               {formatValue()}
             </span>
             {vital.trend !== undefined && vital.trend !== 0 && (
-              <span className={cn("text-sm flex items-center gap-1", vital.trend < 0 ? "text-green-600" : "text-red-600")}>
+              <span className={cn("text-sm flex items-center gap-1", vital.trend < 0 ? "text-semantic-success" : "text-semantic-danger")}>
                 {vital.trend < 0 ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
                 {Math.abs(vital.trend).toFixed(1)}%
               </span>
@@ -160,7 +160,7 @@ function VitalCard({ vital }: { vital: VitalMetric }) {
                 <span>Needs Work</span>
                 <span>Poor</span>
               </div>
-              <div className="h-2 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 relative">
+              <div className="h-2 rounded-full bg-gradient-to-r from-semantic-success via-semantic-warning to-semantic-danger relative">
                 <div 
                   className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-foreground shadow-md"
                   style={{ left: `${getThresholdPosition(vital.value, vital.thresholds.good, vital.thresholds.needsImprovement)}%` }}
@@ -541,9 +541,9 @@ export default function SpeedsterContent() {
     : 'needs-improvement';
   
   const statusColors = {
-    'good': 'text-green-600',
-    'needs-improvement': 'text-yellow-600',
-    'poor': 'text-red-600',
+    'good': 'text-semantic-success',
+    'needs-improvement': 'text-semantic-warning',
+    'poor': 'text-semantic-danger',
     'unknown': 'text-muted-foreground',
   };
 
@@ -557,7 +557,7 @@ export default function SpeedsterContent() {
     avatar: crewMember.avatar ? (
       <img src={crewMember.avatar} alt={crewMember.nickname} className="w-7 h-7 object-contain" />
     ) : (
-      <Zap className="w-7 h-7 text-emerald-500" />
+      <Zap className="w-7 h-7 text-semantic-success" />
     ),
     accentColor: crewMember.color,
     capabilities: crewMember.capabilities || ["LCP Tracking", "CLS Tracking", "INP Tracking"],
@@ -761,7 +761,7 @@ export default function SpeedsterContent() {
       content: allAdditionalMetricsMissing ? (
         <div className="p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/20">
           <div className="flex flex-col items-center text-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
+            <AlertTriangle className="w-8 h-8 text-semantic-warning" />
             <div>
               <h4 className="font-medium text-foreground">Additional Metrics Unavailable</h4>
               <p className="text-sm text-muted-foreground mt-1">
@@ -815,7 +815,7 @@ export default function SpeedsterContent() {
           return (
             <div className="p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/20">
               <div className="flex flex-col items-center text-center gap-3">
-                <FileWarning className="w-8 h-8 text-yellow-500" />
+                <FileWarning className="w-8 h-8 text-semantic-warning" />
                 <div>
                   <h4 className="font-medium text-foreground">Issue Breakdown Unavailable</h4>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -870,8 +870,8 @@ export default function SpeedsterContent() {
                 <div className="text-2xl font-bold text-foreground">{totalIssues}</div>
                 <div className="text-xs text-muted-foreground">Issues Found</div>
               </div>
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
-                <div className="text-2xl font-bold text-red-600">{impactedPages}</div>
+              <div className="p-3 rounded-lg bg-semantic-danger-soft border border-semantic-danger-border text-center">
+                <div className="text-2xl font-bold text-semantic-danger">{impactedPages}</div>
                 <div className="text-xs text-muted-foreground">Pages Impacted</div>
               </div>
             </div>
@@ -939,14 +939,14 @@ export default function SpeedsterContent() {
             {topUrls.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                  <FileWarning className="w-4 h-4 text-orange-500" />
+                  <FileWarning className="w-4 h-4 text-semantic-warning" />
                   Top Affected URLs
                 </h4>
                 <div className="space-y-1 text-sm">
                   {topUrls.slice(0, 5).map((url: any, i: number) => (
                     <div key={i} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50">
                       <span className="truncate flex-1 text-muted-foreground">{url.path || url.url}</span>
-                      <span className="text-red-500 text-xs ml-2">LCP: {url.lcp?.toFixed(2) || '—'}s</span>
+                      <span className="text-semantic-danger text-xs ml-2">LCP: {url.lcp?.toFixed(2) || '—'}s</span>
                     </div>
                   ))}
                 </div>
@@ -1013,7 +1013,7 @@ export default function SpeedsterContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <BarChart3 className="w-5 h-5 text-semantic-info" />
               <div>
                 <CardTitle className="text-base">Industry Benchmarks</CardTitle>
                 <CardDescription>
@@ -1037,9 +1037,9 @@ export default function SpeedsterContent() {
                 };
                 
                 const comparisonColors = {
-                  better: 'text-green-600 bg-green-500/10',
-                  average: 'text-yellow-600 bg-yellow-500/10',
-                  worse: 'text-red-600 bg-red-500/10',
+                  better: 'text-semantic-success bg-semantic-success-soft',
+                  average: 'text-semantic-warning bg-semantic-warning-soft',
+                  worse: 'text-semantic-danger bg-semantic-danger-soft',
                 };
                 
                 const percentileLabels: Record<string, string> = {
@@ -1141,7 +1141,7 @@ export default function SpeedsterContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-emerald-500" />
+              <Lightbulb className="w-5 h-5 text-semantic-success" />
               <CardTitle className="text-base">Optimization Opportunities</CardTitle>
             </div>
             <CardDescription>Suggestions to improve performance</CardDescription>
@@ -1157,7 +1157,7 @@ export default function SpeedsterContent() {
                     )}
                   </div>
                   {opp.savings_ms && (
-                    <Badge variant="secondary" className="text-green-600">
+                    <Badge variant="secondary" className="text-semantic-success">
                       Save {(opp.savings_ms / 1000).toFixed(1)}s
                     </Badge>
                   )}
@@ -1199,7 +1199,7 @@ export default function SpeedsterContent() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              <AlertTriangle className="w-5 h-5 text-semantic-warning" />
               Cooldown Active
             </DialogTitle>
             <DialogDescription>
@@ -1208,9 +1208,9 @@ export default function SpeedsterContent() {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+            <div className="p-3 rounded-lg bg-semantic-warning-soft border border-semantic-warning-border">
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-yellow-600" />
+                <Clock className="w-4 h-4 text-semantic-warning" />
                 <span>
                   {fixPlan?.cooldown.nextAllowedAt 
                     ? `Next recommended: ${new Date(fixPlan.cooldown.nextAllowedAt).toLocaleDateString()}`
@@ -1251,7 +1251,7 @@ export default function SpeedsterContent() {
                   setShowFixModal(true);
                 }
               }}
-              className="bg-yellow-600 hover:bg-yellow-700"
+              className="bg-semantic-warning hover:bg-semantic-warning/90"
               disabled={!overrideReason.trim()}
             >
               Override & Continue
@@ -1265,7 +1265,7 @@ export default function SpeedsterContent() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-green-600" />
+              <Zap className="w-5 h-5 text-semantic-success" />
               Execute Fix Plan
             </DialogTitle>
             <DialogDescription>
@@ -1276,7 +1276,7 @@ export default function SpeedsterContent() {
           {executePlanMutation.isPending || fixMutation.isPending ? (
             <div className="py-8 space-y-4">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-semantic-success" />
                 <div className="text-center">
                   <p className="font-medium">Creating PR...</p>
                   <p className="text-sm text-muted-foreground">
@@ -1287,10 +1287,10 @@ export default function SpeedsterContent() {
             </div>
           ) : fixResult?.status === 'success' ? (
             <div className="py-4 space-y-4">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-semantic-success-soft border border-semantic-success-border">
+                <CheckCircle className="w-6 h-6 text-semantic-success" />
                 <div>
-                  <p className="font-medium text-green-600">Pull Request Created</p>
+                  <p className="font-medium text-semantic-success">Pull Request Created</p>
                   <p className="text-sm text-muted-foreground">
                     {fixResult.filesChanged} files changed
                   </p>
@@ -1298,8 +1298,8 @@ export default function SpeedsterContent() {
               </div>
               
               {fixResult.consultedSocrates && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-lime-500/10 border border-lime-500/30">
-                  <Badge className="bg-lime-500/20 text-lime-600 border-lime-500/30">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-semantic-success-soft border border-semantic-success-border">
+                  <Badge className="bg-semantic-success-soft text-semantic-success border-semantic-success-border">
                     Consulted Socrates
                   </Badge>
                   {fixResult.priorLearningsUsed !== undefined && fixResult.priorLearningsUsed > 0 && (
@@ -1332,10 +1332,10 @@ export default function SpeedsterContent() {
             </div>
           ) : fixResult?.status === 'blocked' ? (
             <div className="py-4 space-y-4">
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                <AlertTriangle className="w-6 h-6 text-yellow-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-semantic-warning-soft border border-semantic-warning-border">
+                <AlertTriangle className="w-6 h-6 text-semantic-warning mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-600">Integration Required</p>
+                  <p className="font-medium text-semantic-warning">Integration Required</p>
                   <p className="text-sm text-muted-foreground">{fixResult.error}</p>
                 </div>
               </div>
@@ -1346,7 +1346,7 @@ export default function SpeedsterContent() {
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {fixResult.blockedBy.map((blocker, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="w-2 h-2 rounded-full bg-semantic-warning" />
                         {blocker}
                       </li>
                     ))}
@@ -1368,10 +1368,10 @@ export default function SpeedsterContent() {
             </div>
           ) : fixResult?.status === 'error' ? (
             <div className="py-4 space-y-4">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-                <XCircle className="w-6 h-6 text-red-600" />
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-semantic-danger-soft border border-semantic-danger-border">
+                <XCircle className="w-6 h-6 text-semantic-danger" />
                 <div>
-                  <p className="font-medium text-red-600">Failed to Create PR</p>
+                  <p className="font-medium text-semantic-danger">Failed to Create PR</p>
                   <p className="text-sm text-muted-foreground">{fixResult.error}</p>
                 </div>
               </div>
@@ -1418,25 +1418,25 @@ export default function SpeedsterContent() {
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {metrics['vitals.lcp'] && metrics['vitals.lcp'] > 2.5 && (
                       <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="w-2 h-2 rounded-full bg-semantic-danger" />
                         LCP: {metrics['vitals.lcp'].toFixed(2)}s (target: ≤2.5s)
                       </li>
                     )}
                     {metrics['vitals.cls'] && metrics['vitals.cls'] > 0.1 && (
                       <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="w-2 h-2 rounded-full bg-semantic-warning" />
                         CLS: {metrics['vitals.cls'].toFixed(3)} (target: ≤0.1)
                       </li>
                     )}
                     {metrics['vitals.inp'] && metrics['vitals.inp'] > 200 && (
                       <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="w-2 h-2 rounded-full bg-semantic-warning" />
                         INP: {Math.round(metrics['vitals.inp'])}ms (target: ≤200ms)
                       </li>
                     )}
                     {performanceScore !== null && performanceScore < 90 && (
                       <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="w-2 h-2 rounded-full bg-semantic-warning" />
                         Performance Score: {performanceScore} (target: ≥90)
                       </li>
                     )}
@@ -1470,7 +1470,7 @@ export default function SpeedsterContent() {
                       });
                     }
                   }}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-semantic-success hover:bg-semantic-success/90"
                   disabled={executePlanMutation.isPending}
                 >
                   <Zap className="w-4 h-4 mr-2" />

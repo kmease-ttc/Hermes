@@ -193,11 +193,11 @@ const MOCK_SENTINEL_DATA: SentinelData = {
 function getSeverityColor(severity: "critical" | "warning" | "mild"): string {
   switch (severity) {
     case "critical":
-      return "bg-red-500/10 border-red-500/30";
+      return "bg-semantic-danger-soft border-semantic-danger-border";
     case "warning":
-      return "bg-amber-500/10 border-amber-500/30";
+      return "bg-semantic-warning-soft border-semantic-warning-border";
     case "mild":
-      return "bg-blue-500/10 border-blue-500/30";
+      return "bg-semantic-info-soft border-semantic-info-border";
     default:
       return "bg-muted/50 border-muted";
   }
@@ -206,11 +206,11 @@ function getSeverityColor(severity: "critical" | "warning" | "mild"): string {
 function getSeverityIcon(severity: "critical" | "warning" | "mild") {
   switch (severity) {
     case "critical":
-      return <Flame className="w-4 h-4 text-red-500" />;
+      return <Flame className="w-4 h-4 text-semantic-danger" />;
     case "warning":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-warning" />;
     case "mild":
-      return <Info className="w-4 h-4 text-blue-500" />;
+      return <Info className="w-4 h-4 text-semantic-info" />;
     default:
       return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
   }
@@ -218,9 +218,9 @@ function getSeverityIcon(severity: "critical" | "warning" | "mild") {
 
 function getSeverityBadge(severity: "critical" | "warning" | "mild") {
   const variants = {
-    critical: "bg-red-500/20 text-red-400 border-red-500/30",
-    warning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    mild: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    critical: "bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border",
+    warning: "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border",
+    mild: "bg-semantic-info-soft text-semantic-info border-semantic-info-border",
   };
   return variants[severity] || "";
 }
@@ -274,12 +274,12 @@ function DecayingContentTable({ content, onFix }: { content: DecayingContent[]; 
                       <Target className="w-3 h-3" />
                       {item.primaryKeywords.slice(0, 2).join(", ")}
                     </span>
-                    <span className="flex items-center gap-1 text-red-400">
+                    <span className="flex items-center gap-1 text-semantic-danger">
                       <ArrowDownRight className="w-3 h-3" />
                       #{item.previousRank} → #{item.currentRank} ({item.rankChange})
                     </span>
                     <span className="flex items-center gap-1">
-                      <TrendingDown className="w-3 h-3 text-red-400" />
+                      <TrendingDown className="w-3 h-3 text-semantic-danger" />
                       -{item.estimatedTrafficLoss.toLocaleString()} visits/mo
                     </span>
                   </div>
@@ -323,19 +323,19 @@ function DecayingContentTable({ content, onFix }: { content: DecayingContent[]; 
     <div className="space-y-6">
       {renderGroup(
         "Critical Decay",
-        <Flame className="w-4 h-4 text-red-500" />,
+        <Flame className="w-4 h-4 text-semantic-danger" />,
         groupedContent.critical,
         "High-traffic pages losing rankings - fix immediately"
       )}
       {renderGroup(
         "Warning",
-        <AlertTriangle className="w-4 h-4 text-amber-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />,
         groupedContent.warning,
         "Moderate decline detected"
       )}
       {renderGroup(
         "Mild Decay",
-        <Info className="w-4 h-4 text-blue-500" />,
+        <Info className="w-4 h-4 text-semantic-info" />,
         groupedContent.mild,
         "Early warning signals"
       )}
@@ -385,13 +385,13 @@ function TrendChart({ data, dataKey, label, color }: { data: any[]; dataKey: str
           {values.length > 1 && trend !== 0 && (
             <>
               {trend > 0 ? (
-                <TrendingUp className="w-3 h-3 text-red-500" />
+                <TrendingUp className="w-3 h-3 text-semantic-danger" />
               ) : (
                 <TrendingDown className="w-3 h-3 text-semantic-success" />
               )}
               <span className={cn(
                 "text-xs font-medium",
-                trend > 0 ? "text-red-500" : "text-semantic-success"
+                trend > 0 ? "text-semantic-danger" : "text-semantic-success"
               )}>
                 {trend > 0 ? "+" : ""}{isTrafficMetric ? trend.toLocaleString() : trend}
               </span>
@@ -843,7 +843,7 @@ export default function SentinelContent() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{mission.label}</span>
                       {mission.badge && (
-                        <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-400">
+                        <Badge variant="secondary" className="text-xs bg-semantic-warning-soft text-semantic-warning">
                           {mission.badge}
                         </Badge>
                       )}

@@ -35,11 +35,11 @@ export function DataCard({
   const showPlaceholder = status !== "active";
 
   const tintStyles = {
-    amber: { accent: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-    purple: { accent: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
-    blue: { accent: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200" },
-    green: { accent: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-    red: { accent: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
+    amber: { accent: "text-gold", bg: "bg-gold-soft", border: "border-gold-border" },
+    purple: { accent: "text-purple", bg: "bg-purple-soft", border: "border-purple-border" },
+    blue: { accent: "text-semantic-info", bg: "bg-semantic-info-soft", border: "border-semantic-info-border" },
+    green: { accent: "text-semantic-success", bg: "bg-semantic-success-soft", border: "border-semantic-success-border" },
+    red: { accent: "text-semantic-danger", bg: "bg-semantic-danger-soft", border: "border-semantic-danger-border" },
   };
 
   const style = tintStyles[tint];
@@ -114,7 +114,7 @@ export function DataCard({
           size="sm"
           className={cn(
             "mt-3 gap-1 text-xs p-0 h-auto font-medium",
-            status === "setup_required" ? "text-amber-600 hover:text-amber-700" : "text-muted-foreground hover:text-foreground"
+            status === "setup_required" ? "text-gold hover:text-gold" : "text-muted-foreground hover:text-foreground"
           )}
         >
           {ctaText}

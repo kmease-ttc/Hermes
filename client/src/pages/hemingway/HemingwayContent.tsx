@@ -303,11 +303,11 @@ function getEmptyTrendsMeta(): MetaStatus {
 function getSeverityColor(severity: "critical" | "warning" | "minor"): string {
   switch (severity) {
     case "critical":
-      return "bg-red-500/10 border-red-500/30";
+      return "bg-semantic-danger-soft border-semantic-danger-border";
     case "warning":
-      return "bg-amber-500/10 border-amber-500/30";
+      return "bg-semantic-warning-soft border-semantic-warning-border";
     case "minor":
-      return "bg-blue-500/10 border-blue-500/30";
+      return "bg-semantic-info-soft border-semantic-info-border";
     default:
       return "bg-muted/50 border-muted";
   }
@@ -316,11 +316,11 @@ function getSeverityColor(severity: "critical" | "warning" | "minor"): string {
 function getSeverityIcon(severity: "critical" | "warning" | "minor") {
   switch (severity) {
     case "critical":
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-semantic-danger" />;
     case "warning":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-warning" />;
     case "minor":
-      return <Info className="w-4 h-4 text-blue-500" />;
+      return <Info className="w-4 h-4 text-semantic-info" />;
     default:
       return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
   }
@@ -328,9 +328,9 @@ function getSeverityIcon(severity: "critical" | "warning" | "minor") {
 
 function getSeverityBadge(severity: "critical" | "warning" | "minor") {
   const variants = {
-    critical: "bg-red-500/20 text-red-400 border-red-500/30",
-    warning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    minor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    critical: "bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border",
+    warning: "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border",
+    minor: "bg-semantic-info-soft text-semantic-info border-semantic-info-border",
   };
   return variants[severity] || "";
 }
@@ -483,19 +483,19 @@ function PagesNeedingImprovementTable({
     <div className="space-y-6">
       {renderGroup(
         "Critical",
-        <XCircle className="w-4 h-4 text-red-500" />,
+        <XCircle className="w-4 h-4 text-semantic-danger" />,
         groupedFindings.critical,
         "Quality score <60 or Grade >11 - fix immediately"
       )}
       {renderGroup(
         "Warning",
-        <AlertTriangle className="w-4 h-4 text-amber-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />,
         groupedFindings.warning,
         "Quality 60-79 or Grade 9-11"
       )}
       {renderGroup(
         "Minor",
-        <Info className="w-4 h-4 text-blue-500" />,
+        <Info className="w-4 h-4 text-semantic-info" />,
         groupedFindings.minor,
         "Small improvements possible"
       )}
@@ -548,11 +548,11 @@ function TrendChart({
               {trendIsGood ? (
                 <TrendingUp className="w-3 h-3 text-semantic-success" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3 h-3 text-semantic-danger" />
               )}
               <span className={cn(
                 "text-xs font-medium",
-                trendIsGood ? "text-semantic-success" : "text-red-500"
+                trendIsGood ? "text-semantic-success" : "text-semantic-danger"
               )}>
                 {trend > 0 ? "+" : ""}{trend.toFixed(1)}
               </span>
@@ -1196,9 +1196,9 @@ export default function HemingwayContent() {
   const customMetrics = (
     <div className="space-y-4">
       {isPreviewMode && (
-        <div className="flex items-center gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
-          <Plug className="w-4 h-4 text-amber-500" />
-          <span className="text-sm text-amber-200">
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-semantic-warning-border bg-semantic-warning-soft">
+          <Plug className="w-4 h-4 text-semantic-warning" />
+          <span className="text-sm text-semantic-warning">
             Preview Mode — Connect Hemingway worker for live data
           </span>
           <Button

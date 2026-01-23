@@ -670,14 +670,14 @@ function AccomplishmentsSection() {
 
   const getIcon = (type: string, color: string) => {
     const colorClasses = {
-      emerald: "text-emerald-500",
-      purple: "text-purple-500",
-      amber: "text-amber-500",
+      emerald: "text-semantic-success",
+      purple: "text-primary",
+      amber: "text-gold",
     };
     const bgClasses = {
-      emerald: "bg-emerald-500/15 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]",
-      purple: "bg-purple-500/15 shadow-[0_0_12px_-3px_rgba(139,92,246,0.4)]",
-      amber: "bg-amber-500/15 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]",
+      emerald: "bg-semantic-success-soft shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]",
+      purple: "bg-primary-soft shadow-[0_0_12px_-3px_rgba(139,92,246,0.4)]",
+      amber: "bg-gold-soft shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]",
     };
     const iconClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.emerald;
     const bgClass = bgClasses[color as keyof typeof bgClasses] || bgClasses.emerald;
@@ -712,14 +712,14 @@ function AccomplishmentsSection() {
   }
 
   return (
-    <div className="p-5 rounded-2xl border-2 border-emerald-500/25 shadow-[0_0_24px_-6px_rgba(16,185,129,0.30)] bg-card/60 backdrop-blur-sm mb-8" data-testid="accomplishments-section">
+    <div className="p-5 rounded-2xl border-2 border-semantic-success-border shadow-[0_0_24px_-6px_rgba(16,185,129,0.30)] bg-card/60 backdrop-blur-sm mb-8" data-testid="accomplishments-section">
       {/* Header with celebratory badge */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Your Wins</h2>
           <p className="text-sm text-muted-foreground">Business improvements this week</p>
         </div>
-        <Badge className="text-xs bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)]">
+        <Badge className="text-xs bg-semantic-success-soft text-semantic-success border border-semantic-success-border shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)]">
           {accomplishments.length} wins this week
         </Badge>
       </div>
@@ -789,16 +789,16 @@ function AccomplishmentsSection() {
           <Separator className="my-5" />
 
           {/* Next Win Teaser */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <Target className="w-4 h-4 text-purple-500" />
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Target className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">Next win:</span> Complete 'Unlock Analytics Insights' to track traffic and conversion trends.
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 text-purple-500/50" />
+            <ChevronRight className="w-4 h-4 text-primary/50" />
           </div>
         </CardContent>
       </div>
@@ -965,10 +965,10 @@ function FreshnessIndicator({ health, healthReason }: { health?: HealthStatus; h
   
   const config: Record<HealthStatus, { label: string; color: string; bgColor: string; icon?: React.ReactNode }> = {
     live: { label: "Live", color: "text-semantic-success", bgColor: "bg-semantic-success/15" },
-    stale: { label: "Stale", color: "text-amber-500", bgColor: "bg-amber-500/15" },
+    stale: { label: "Stale", color: "text-gold", bgColor: "bg-gold-soft" },
     not_configured: { label: "Configure", color: "text-muted-foreground", bgColor: "bg-muted/30" },
     error: { label: "Error", color: "text-semantic-danger", bgColor: "bg-semantic-danger/15" },
-    sample: { label: "Sample", color: "text-blue-400", bgColor: "bg-blue-500/15" },
+    sample: { label: "Sample", color: "text-semantic-info", bgColor: "bg-semantic-info-soft" },
   };
   
   const { label, color, bgColor } = config[effectiveHealth];
@@ -1084,7 +1084,7 @@ function CapabilityCard({ capability }: {
                 </Badge>
               )}
               {status === 'setup' && (
-                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-500 border-0 flex items-center gap-1">
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-gold-soft text-gold border-0 flex items-center gap-1">
                   <Settings className="w-2.5 h-2.5" />
                   Setup
                 </Badge>
@@ -1128,7 +1128,7 @@ function CapabilityCard({ capability }: {
             
             {/* Setup message */}
             {status === 'setup' && (
-              <p className="text-[10px] text-amber-500/80 mt-2">Configure to unlock tracking</p>
+              <p className="text-[10px] text-gold/80 mt-2">Configure to unlock tracking</p>
             )}
             
             {/* Value proposition for locked */}
@@ -1151,10 +1151,10 @@ function CapabilityCard({ capability }: {
             ) : status === 'setup' ? (
               <>
                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500/60" />
+                  <Sparkles className="w-3 h-3 text-gold/60" />
                   Ready to configure
                 </span>
-                <span className="text-[11px] font-medium text-amber-500 flex items-center gap-1">
+                <span className="text-[11px] font-medium text-gold flex items-center gap-1">
                   Configure <ArrowRight className="w-3 h-3" />
                 </span>
               </>
@@ -1501,7 +1501,7 @@ function TasksOverviewSection({
   };
   
   return (
-    <div data-testid="tasks-overview-section" className="p-5 rounded-2xl border-2 border-amber-500/25 shadow-[0_0_24px_-6px_rgba(245,158,11,0.30)] bg-card/60 backdrop-blur-sm mb-8">
+    <div data-testid="tasks-overview-section" className="p-5 rounded-2xl border-2 border-gold-border shadow-[0_0_24px_-6px_rgba(245,158,11,0.30)] bg-card/60 backdrop-blur-sm mb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
@@ -1510,7 +1510,7 @@ function TasksOverviewSection({
             Complete these to improve traffic, rankings, and conversions.
           </p>
         </div>
-        <Badge className="text-xs bg-amber-500/15 text-amber-600 border border-amber-500/30 shadow-[0_0_8px_-2px_rgba(245,158,11,0.3)]">
+        <Badge className="text-xs bg-gold-soft text-gold border border-gold-border shadow-[0_0_8px_-2px_rgba(245,158,11,0.3)]">
           {totalOpenTasks} open
         </Badge>
       </div>
@@ -1518,7 +1518,7 @@ function TasksOverviewSection({
       {/* Featured Next Action Card */}
       {featuredTask && (
         <Card 
-          className="mb-4 bg-gradient-to-br from-amber-500/8 via-transparent to-transparent border border-amber-500/20 cursor-pointer hover:border-amber-500/40 transition-all"
+          className="mb-4 bg-gradient-to-br from-gold/8 via-transparent to-transparent border border-gold/20 cursor-pointer hover:border-gold/40 transition-all"
           onClick={() => onReview?.(featuredTask)}
           data-testid="featured-task-card"
         >
@@ -1551,7 +1551,7 @@ function TasksOverviewSection({
                       {featuredCrew.nickname}
                     </span>
                   )}
-                  <Badge className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 border-0">
+                  <Badge className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gold-soft text-gold border-0">
                     Next Action
                   </Badge>
                 </div>
@@ -1593,7 +1593,7 @@ function TasksOverviewSection({
             return (
               <Card 
                 key={task.id || idx} 
-                className="bg-card/80 backdrop-blur-sm border-border rounded-xl hover:border-amber-500/30 transition-all cursor-pointer group"
+                className="bg-card/80 backdrop-blur-sm border-border rounded-xl hover:border-gold/30 transition-all cursor-pointer group"
                 onClick={() => onReview?.(task)}
                 data-testid={`task-card-${task.id || idx}`}
               >
@@ -1624,7 +1624,7 @@ function TasksOverviewSection({
                           {crew.nickname}
                         </span>
                       )}
-                      <h4 className="text-sm font-semibold text-foreground mb-1 group-hover:text-amber-600 transition-colors">
+                      <h4 className="text-sm font-semibold text-foreground mb-1 group-hover:text-gold transition-colors">
                         {getOutcomeTitle(task.title)}
                       </h4>
                       <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
@@ -1633,7 +1633,7 @@ function TasksOverviewSection({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-xs h-6 px-0 text-amber-600 hover:text-amber-700 hover:bg-transparent p-0"
+                        className="text-xs h-6 px-0 text-gold hover:text-gold/80 hover:bg-transparent p-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           onReview?.(task);
@@ -1782,11 +1782,11 @@ function PrimaryActionCardRow({
   return (
     <div className="grid gap-4 md:grid-cols-3 mb-8" data-testid="primary-action-row">
       {/* Card 1: Fix Everything - DOMINANT with strong purple glow */}
-      <Card className="md:col-span-1 relative overflow-hidden group transition-all hover:scale-[1.02] bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-amber-500/5 border-2 border-purple-500/30 shadow-[0_0_40px_-8px_rgba(139,92,246,0.45)]" data-testid="card-fix-everything">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
+      <Card className="md:col-span-1 relative overflow-hidden group transition-all hover:scale-[1.02] bg-gradient-to-br from-primary/10 via-pink-500/5 to-gold/5 border-2 border-primary/30 shadow-[0_0_40px_-8px_rgba(139,92,246,0.45)]" data-testid="card-fix-everything">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
         <CardContent className="p-6 relative">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shadow-lg">
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -1800,7 +1800,7 @@ function PrimaryActionCardRow({
           <Button 
             onClick={onFixEverything}
             disabled={isExecuting || autoFixableCount === 0}
-            className="w-full text-white rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 hover:opacity-90"
+            className="w-full text-white rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-primary via-pink-500 to-gold hover:opacity-90"
             data-testid="button-fix-everything-primary"
           >
             {isExecuting ? (
@@ -1818,11 +1818,11 @@ function PrimaryActionCardRow({
       </Card>
 
       {/* Card 2: Send Reports - CONSOLIDATED with purple glow */}
-      <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-2 border-purple-500/25 shadow-[0_0_24px_-6px_rgba(139,92,246,0.30)]" data-testid="card-send-reports">
+      <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-2 border-primary/25 shadow-[0_0_24px_-6px_rgba(139,92,246,0.30)]" data-testid="card-send-reports">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <Send className="w-5 h-5 text-purple-500" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Send className="w-5 h-5 text-primary" />
             </div>
             <h3 className="text-base font-semibold text-foreground">Send Reports</h3>
           </div>
@@ -1833,7 +1833,7 @@ function PrimaryActionCardRow({
             <Link href={ROUTES.WEBSITE_REPORT} className="block">
               <Button 
                 variant="outline"
-                className="w-full h-14 rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/50 px-5 transition-all"
+                className="w-full h-14 rounded-xl border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50 px-5 transition-all"
                 data-testid="button-business-report"
               >
                 <div className="flex items-center justify-between w-full">
@@ -1844,14 +1844,14 @@ function PrimaryActionCardRow({
                       <span className="text-[11px] text-muted-foreground font-normal">For owners, stakeholders, weekly summaries</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-purple-400/50 flex-shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-primary/50 flex-shrink-0" />
                 </div>
               </Button>
             </Link>
             <Link href={ROUTES.DEVELOPER_REPORT} className="block">
               <Button 
                 variant="outline"
-                className="w-full h-14 rounded-xl border-purple-500/30 text-purple-400 hover:bg-purple-500/5 hover:border-purple-500/50 px-5 transition-all"
+                className="w-full h-14 rounded-xl border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50 px-5 transition-all"
                 data-testid="button-technical-report"
               >
                 <div className="flex items-center justify-between w-full">
@@ -1862,7 +1862,7 @@ function PrimaryActionCardRow({
                       <span className="text-[11px] text-muted-foreground font-normal">For developers and agencies</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-purple-400/50 flex-shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-primary/50 flex-shrink-0" />
                 </div>
               </Button>
             </Link>
@@ -1871,11 +1871,11 @@ function PrimaryActionCardRow({
       </Card>
 
       {/* Card 3: Run Diagnostics - GREEN GLOW */}
-      <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-2 border-emerald-500/25 shadow-[0_0_24px_-6px_rgba(16,185,129,0.30)]" data-testid="card-run-diagnostics">
+      <Card className="transition-all hover:scale-[1.01] bg-card/80 backdrop-blur-sm border-2 border-semantic-success-border shadow-[0_0_24px_-6px_rgba(16,185,129,0.30)]" data-testid="card-run-diagnostics">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <Play className="w-5 h-5 text-emerald-500" />
+            <div className="w-10 h-10 rounded-xl bg-semantic-success/10 flex items-center justify-center">
+              <Play className="w-5 h-5 text-semantic-success" />
             </div>
             <h3 className="text-base font-semibold text-foreground">Run Diagnostics</h3>
           </div>
@@ -1885,7 +1885,7 @@ function PrimaryActionCardRow({
           <Button 
             onClick={onRunDiagnostics}
             disabled={isRunningDiagnostics}
-            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+            className="w-full rounded-xl bg-semantic-success hover:bg-semantic-success/90 text-white"
             data-testid="button-run-diagnostics-card"
           >
             {isRunningDiagnostics ? (

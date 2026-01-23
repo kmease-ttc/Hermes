@@ -73,7 +73,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="marketing-theme min-h-screen flex flex-col text-slate-700 marketing-hero-wash">
+    <div className="marketing-theme min-h-screen flex flex-col text-muted-foreground marketing-hero-wash">
       <header className="sticky top-0 z-50 w-full border-b border-[#CBD5E1] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link href={ROUTES.LANDING}>
@@ -84,22 +84,22 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
           
           <nav className="flex items-center gap-4 md:gap-6">
             <Link href={ROUTES.EXAMPLES} className="hidden md:block">
-              <span className="text-sm text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium" data-testid="link-examples">
+              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium" data-testid="link-examples">
                 Examples
               </span>
             </Link>
             <Link href={ROUTES.HOW_IT_WORKS} className="hidden md:block">
-              <span className="text-sm text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium" data-testid="link-how-it-works">
+              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium" data-testid="link-how-it-works">
                 How It Works
               </span>
             </Link>
             <Link href={ROUTES.PRICING} className="hidden md:block">
-              <span className="text-sm text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium" data-testid="link-pricing">
+              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium" data-testid="link-pricing">
                 Pricing
               </span>
             </Link>
             <Link href="/login" className="hidden md:block">
-              <span className="text-sm text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium" data-testid="link-login">
+              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium" data-testid="link-login">
                 Log In
               </span>
             </Link>
@@ -107,7 +107,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
               <Button 
                 variant="outline"
                 size="sm" 
-                className="gap-2 font-medium border-violet-200 text-violet-700 hover:bg-violet-50"
+                className="gap-2 font-medium border-purple text-brand hover:bg-purple-soft"
                 data-testid="button-generate-site"
               >
                 <Sparkles className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
-              className="md:hidden p-2 text-slate-700 hover:text-slate-950 transition-colors"
+              className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
               data-testid="button-mobile-menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -152,22 +152,22 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
         >
           <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
             <Link href={ROUTES.EXAMPLES} onClick={closeMobileMenu}>
-              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-examples">
+              <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border" data-testid="mobile-link-examples">
                 Examples
               </span>
             </Link>
             <Link href={ROUTES.HOW_IT_WORKS} onClick={closeMobileMenu}>
-              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-how-it-works">
+              <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border" data-testid="mobile-link-how-it-works">
                 How It Works
               </span>
             </Link>
             <Link href={ROUTES.PRICING} onClick={closeMobileMenu}>
-              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-pricing">
+              <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border" data-testid="mobile-link-pricing">
                 Pricing
               </span>
             </Link>
             <Link href="/login" onClick={closeMobileMenu}>
-              <span className="block py-3 text-lg text-slate-700 hover:text-slate-950 transition-colors cursor-pointer font-medium border-b border-slate-100" data-testid="mobile-link-login">
+              <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border" data-testid="mobile-link-login">
                 Log In
               </span>
             </Link>
@@ -176,7 +176,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="w-full gap-2 font-medium border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="w-full gap-2 font-medium border-purple text-brand hover:bg-purple-soft"
                   data-testid="mobile-button-generate-site"
                 >
                   <Sparkles className="h-4 w-4" />

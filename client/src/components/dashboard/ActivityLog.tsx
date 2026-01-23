@@ -25,16 +25,16 @@ const TYPE_CONFIG = {
   content: {
     icon: FileText,
     label: "Content",
-    bgColor: "bg-violet-100",
-    textColor: "text-violet-600",
-    borderColor: "border-violet-200",
+    bgColor: "bg-purple-soft",
+    textColor: "text-purple",
+    borderColor: "border-purple-border",
   },
   technical: {
     icon: Zap,
     label: "Technical",
-    bgColor: "bg-amber-100",
-    textColor: "text-amber-600",
-    borderColor: "border-amber-200",
+    bgColor: "bg-gold-soft",
+    textColor: "text-gold",
+    borderColor: "border-gold-border",
   },
   seo: {
     icon: Search,
@@ -100,8 +100,8 @@ function KPITile({ label, value, change, changeType = "neutral", icon: Icon }: K
 
   return (
     <div className="flex items-center gap-3 p-4 bg-muted rounded-lg border border-border">
-      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-100 via-pink-100 to-amber-50 flex items-center justify-center">
-        <Icon className="w-5 h-5 text-violet-600" />
+      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-soft via-pink-100 to-gold-soft flex items-center justify-center">
+        <Icon className="w-5 h-5 text-purple" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-muted-foreground truncate">{label}</p>
@@ -129,7 +129,7 @@ export function ActivityLog({ activities = SAMPLE_ACTIVITIES, showKPIs = true }:
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 text-violet-500" />
+            <RefreshCw className="w-5 h-5 text-purple" />
             Activity Log
           </CardTitle>
           <span className="text-xs text-muted-foreground/60">What Arclo has done</span>
@@ -190,7 +190,7 @@ export function ActivityLog({ activities = SAMPLE_ACTIVITIES, showKPIs = true }:
                   <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
                 </div>
                 {activity.link && (
-                  <button className="text-violet-600 hover:text-violet-700 p-1" data-testid={`activity-link-${activity.id}`}>
+                  <button className="text-primary hover:text-purple p-1" data-testid={`activity-link-${activity.id}`}>
                     <ArrowUpRight className="w-4 h-4" />
                   </button>
                 )}
@@ -201,7 +201,7 @@ export function ActivityLog({ activities = SAMPLE_ACTIVITIES, showKPIs = true }:
 
         <div className="text-center pt-2">
           <button 
-            className="text-sm text-violet-600 hover:text-violet-700 font-medium"
+            className="text-sm text-primary hover:text-purple font-medium"
             data-testid="button-view-all-activity"
           >
             View all activity →

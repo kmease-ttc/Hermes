@@ -20,9 +20,9 @@ export function IconBadge({ icon: Icon, size = "lg" }: IconBadgeProps) {
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-2xl shadow-[0_8px_24px_rgba(139,92,246,0.12)] flex items-center justify-center bg-gradient-to-br from-violet-100 via-pink-100 to-amber-50 border border-slate-200`}
+      className={`${sizeClasses[size]} rounded-2xl shadow-[0_8px_24px_rgba(139,92,246,0.12)] flex items-center justify-center bg-gradient-to-br from-primary/20 via-pink-100 to-gold/20 border border-border`}
     >
-      <Icon className={`${iconSizes[size]} text-violet-700`} strokeWidth={2} />
+      <Icon className={`${iconSizes[size]} text-brand`} strokeWidth={2} />
     </div>
   );
 }

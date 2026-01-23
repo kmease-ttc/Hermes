@@ -44,8 +44,8 @@ function OptionCard({
     <Card
       className={`flex flex-col h-full ${
         highlighted
-          ? "border-[#D4AF37] bg-[#D4AF37]/5 ring-1 ring-[#D4AF37]/30"
-          : "border-gray-700 bg-gray-900/50"
+          ? "border-gold bg-gold-soft ring-1 ring-gold/30"
+          : "border-border bg-card"
       }`}
       data-testid={testId}
     >
@@ -53,7 +53,7 @@ function OptionCard({
         <div className="flex items-start justify-between mb-3">
           <div
             className={`p-2 rounded-lg ${
-              highlighted ? "bg-[#D4AF37]/20 text-[#D4AF37]" : "bg-gray-800 text-gray-400"
+              highlighted ? "bg-gold-soft text-gold" : "bg-secondary text-muted-foreground"
             }`}
           >
             {icon}
@@ -70,7 +70,7 @@ function OptionCard({
         </h3>
         <p
           className={`text-2xl font-bold mb-4 ${
-            highlighted ? "text-[#D4AF37]" : "text-white"
+            highlighted ? "text-gold" : "text-foreground"
           }`}
           data-testid={`${testId}-price`}
         >
@@ -81,10 +81,10 @@ function OptionCard({
           {bullets.map((bullet, index) => (
             <li
               key={index}
-              className="flex items-start gap-2 text-sm text-gray-400"
+              className="flex items-start gap-2 text-sm text-muted-foreground"
               data-testid={`${testId}-bullet-${index}`}
             >
-              <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <Check className="w-4 h-4 text-success mt-0.5 shrink-0" />
               <span>{bullet}</span>
             </li>
           ))}

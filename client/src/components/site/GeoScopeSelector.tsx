@@ -50,16 +50,16 @@ export function GeoScopeSelector({ value, onChange }: GeoScopeSelectorProps) {
           htmlFor="scope-local"
           className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
             value.scope === 'local'
-              ? 'border-violet-500 bg-violet-50/50'
+              ? 'border-purple bg-purple-soft'
               : 'border-border hover:border-border bg-card'
           }`}
         >
           <RadioGroupItem value="local" id="scope-local" className="mt-0.5" data-testid="radio-local" />
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-violet-600" />
+              <MapPin className="w-4 h-4 text-primary" />
               <span className="font-medium text-foreground">Local</span>
-              <span className="text-xs px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full">
+              <span className="text-xs px-2 py-0.5 bg-purple-soft text-purple rounded-full">
                 Recommended for most businesses
               </span>
             </div>
@@ -73,7 +73,7 @@ export function GeoScopeSelector({ value, onChange }: GeoScopeSelectorProps) {
           htmlFor="scope-national"
           className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
             value.scope === 'national'
-              ? 'border-violet-500 bg-violet-50/50'
+              ? 'border-purple bg-purple-soft'
               : 'border-border hover:border-border bg-card'
           }`}
         >
@@ -101,7 +101,7 @@ export function GeoScopeSelector({ value, onChange }: GeoScopeSelectorProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city" className="text-sm text-muted-foreground">
-                City <span className="text-red-500">*</span>
+                City <span className="text-semantic-danger">*</span>
               </Label>
               <Input
                 id="city"
@@ -115,7 +115,7 @@ export function GeoScopeSelector({ value, onChange }: GeoScopeSelectorProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="state" className="text-sm text-muted-foreground">
-                State <span className="text-red-500">*</span>
+                State <span className="text-semantic-danger">*</span>
               </Label>
               <Input
                 id="state"

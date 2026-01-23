@@ -33,17 +33,17 @@ export function UnlockOverlay({
       className={cn(
         "absolute inset-0 z-10 flex items-center justify-center",
         "bg-gradient-to-br from-violet-950/95 via-background/95 to-purple-950/95",
-        "backdrop-blur-sm rounded-xl border border-violet-500/20",
+        "backdrop-blur-sm rounded-xl border border-purple-border",
         className
       )}
       data-testid={`unlock-overlay-${feature.toLowerCase().replace(/\s+/g, '-')}`}
     >
       <div className="text-center px-6 py-4 max-w-xs">
-        <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4 ring-2 ring-violet-500/30">
-          <Lock className="w-5 h-5 text-violet-300" />
+        <div className="w-12 h-12 rounded-full bg-purple-soft flex items-center justify-center mx-auto mb-4 ring-2 ring-purple-border">
+          <Lock className="w-5 h-5 text-purple" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 text-violet-400" />
+          <Sparkles className="w-4 h-4 text-purple" />
           Unlock {feature}
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
@@ -53,7 +53,7 @@ export function UnlockOverlay({
           onClick={onUnlock}
           variant="purple"
           size="sm"
-          className="shadow-lg shadow-violet-500/25"
+          className="shadow-lg shadow-purple-glow"
           data-testid={`unlock-button-${feature.toLowerCase().replace(/\s+/g, '-')}`}
         >
           Unlock

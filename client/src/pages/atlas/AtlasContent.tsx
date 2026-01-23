@@ -344,11 +344,11 @@ function getAtlasMeta(result: AtlasApiResult): MetaStatus {
 function getSeverityColor(severity: "critical" | "warning" | "info"): string {
   switch (severity) {
     case "critical":
-      return "bg-red-500/10 border-red-500/30";
+      return "bg-semantic-danger-soft border-semantic-danger-border";
     case "warning":
-      return "bg-amber-500/10 border-amber-500/30";
+      return "bg-semantic-warning-soft border-semantic-warning-border";
     case "info":
-      return "bg-blue-500/10 border-blue-500/30";
+      return "bg-semantic-info-soft border-semantic-info-border";
     default:
       return "bg-muted/50 border-muted";
   }
@@ -357,11 +357,11 @@ function getSeverityColor(severity: "critical" | "warning" | "info"): string {
 function getSeverityIcon(severity: "critical" | "warning" | "info") {
   switch (severity) {
     case "critical":
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-semantic-danger" />;
     case "warning":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-warning" />;
     case "info":
-      return <Info className="w-4 h-4 text-blue-500" />;
+      return <Info className="w-4 h-4 text-semantic-info" />;
     default:
       return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
   }
@@ -370,22 +370,22 @@ function getSeverityIcon(severity: "critical" | "warning" | "info") {
 function getValidationBadge(status: "valid" | "errors" | "warnings") {
   switch (status) {
     case "valid":
-      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Valid</Badge>;
+      return <Badge className="bg-semantic-success-soft text-semantic-success border-semantic-success-border">Valid</Badge>;
     case "errors":
-      return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Errors</Badge>;
+      return <Badge className="bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border">Errors</Badge>;
     case "warnings":
-      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Warnings</Badge>;
+      return <Badge className="bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border">Warnings</Badge>;
   }
 }
 
 function getEntityStatusBadge(status: "complete" | "partial" | "missing") {
   switch (status) {
     case "complete":
-      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Complete</Badge>;
+      return <Badge className="bg-semantic-success-soft text-semantic-success border-semantic-success-border">Complete</Badge>;
     case "partial":
-      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Partial</Badge>;
+      return <Badge className="bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border">Partial</Badge>;
     case "missing":
-      return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Missing</Badge>;
+      return <Badge className="bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border">Missing</Badge>;
   }
 }
 
@@ -506,19 +506,19 @@ function FindingsTable({
     <div className="space-y-6">
       {renderGroup(
         "Critical",
-        <XCircle className="w-4 h-4 text-red-500" />,
+        <XCircle className="w-4 h-4 text-semantic-danger" />,
         groupedFindings.critical,
         "Major AI visibility issues - fix immediately"
       )}
       {renderGroup(
         "Warning",
-        <AlertTriangle className="w-4 h-4 text-amber-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />,
         groupedFindings.warning,
         "Moderate issues affecting discoverability"
       )}
       {renderGroup(
         "Info",
-        <Info className="w-4 h-4 text-blue-500" />,
+        <Info className="w-4 h-4 text-semantic-info" />,
         groupedFindings.info,
         "Opportunities for improvement"
       )}
@@ -560,14 +560,14 @@ function StructuredDataTable({ items }: { items: StructuredDataItem[] }) {
               {item.errors.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {item.errors.map((err, j) => (
-                    <p key={j} className="text-xs text-red-400">• {err}</p>
+                    <p key={j} className="text-xs text-semantic-danger">• {err}</p>
                   ))}
                 </div>
               )}
               {item.warnings.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {item.warnings.map((warn, j) => (
-                    <p key={j} className="text-xs text-amber-400">• {warn}</p>
+                    <p key={j} className="text-xs text-semantic-warning">• {warn}</p>
                   ))}
                 </div>
               )}
@@ -666,9 +666,9 @@ function SummaryTable({ items }: { items: SummaryItem[] }) {
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   {item.hasSummary ? (
-                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <CheckCircle2 className="w-3 h-3 text-semantic-success" />
                   ) : (
-                    <XCircle className="w-3 h-3 text-red-500" />
+                    <XCircle className="w-3 h-3 text-semantic-danger" />
                   )}
                   Summary
                 </span>
@@ -677,9 +677,9 @@ function SummaryTable({ items }: { items: SummaryItem[] }) {
                 )}
                 <span className="flex items-center gap-1">
                   {item.hasEntities ? (
-                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <CheckCircle2 className="w-3 h-3 text-semantic-success" />
                   ) : (
-                    <XCircle className="w-3 h-3 text-red-500" />
+                    <XCircle className="w-3 h-3 text-semantic-danger" />
                   )}
                   Entities
                 </span>
@@ -687,7 +687,7 @@ function SummaryTable({ items }: { items: SummaryItem[] }) {
               {item.issues.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {item.issues.map((issue, j) => (
-                    <p key={j} className="text-xs text-amber-400">• {issue}</p>
+                    <p key={j} className="text-xs text-semantic-warning">• {issue}</p>
                   ))}
                 </div>
               )}
@@ -695,11 +695,11 @@ function SummaryTable({ items }: { items: SummaryItem[] }) {
           </div>
           <div className="ml-4">
             {item.hasSummary && item.hasEntities ? (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Ready</Badge>
+              <Badge className="bg-semantic-success-soft text-semantic-success border-semantic-success-border">Ready</Badge>
             ) : item.hasSummary ? (
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Partial</Badge>
+              <Badge className="bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border">Partial</Badge>
             ) : (
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Missing</Badge>
+              <Badge className="bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border">Missing</Badge>
             )}
           </div>
         </div>
@@ -744,9 +744,9 @@ function LlmVisibilityTable({ items }: { items: LlmVisibilityItem[] }) {
               <span className="text-xs font-medium w-8">{item.confidenceScore}%</span>
             </div>
             {item.canAnswer ? (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Can Answer</Badge>
+              <Badge className="bg-semantic-success-soft text-semantic-success border-semantic-success-border">Can Answer</Badge>
             ) : (
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Cannot Answer</Badge>
+              <Badge className="bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border">Cannot Answer</Badge>
             )}
           </div>
         </div>
@@ -808,11 +808,11 @@ function TrendChart({
               {trendIsGood ? (
                 <TrendingUp className="w-3 h-3 text-semantic-success" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3 h-3 text-semantic-danger" />
               )}
               <span className={cn(
                 "text-xs font-medium",
-                trendIsGood ? "text-semantic-success" : "text-red-500"
+                trendIsGood ? "text-semantic-success" : "text-semantic-danger"
               )}>
                 {trend > 0 ? "+" : ""}{trend.toFixed(0)}%
               </span>
@@ -1404,16 +1404,16 @@ export default function AtlasContent() {
   const customMetrics = (
     <div className="space-y-4">
       {showPreviewBanner && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5" data-testid="preview-mode-banner">
-          <Plug className="w-5 h-5 text-amber-500 shrink-0" />
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-semantic-warning-border bg-semantic-warning-soft" data-testid="preview-mode-banner">
+          <Plug className="w-5 h-5 text-semantic-warning shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-200">Preview Mode — Worker Not Connected</p>
-            <p className="text-xs text-amber-300/80">Showing sample data. Connect the Atlas worker for real insights.</p>
+            <p className="text-sm font-medium text-semantic-warning">Preview Mode — Worker Not Connected</p>
+            <p className="text-xs text-semantic-warning/80">Showing sample data. Connect the Atlas worker for real insights.</p>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="border-amber-500/50 text-amber-300 hover:bg-amber-500/10"
+            className="border-semantic-warning-border text-semantic-warning hover:bg-semantic-warning-soft"
             onClick={() => navigate("/settings/integrations")}
             data-testid="button-configure-atlas"
           >

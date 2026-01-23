@@ -308,37 +308,37 @@ function getEmptyActionsMeta(): MetaStatus {
 function getImpactBadgeColor(impact: "Low" | "Med" | "High") {
   switch (impact) {
     case "High":
-      return "bg-red-500/10 text-red-400 border-red-500/30";
+      return "bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border";
     case "Med":
-      return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      return "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border";
     case "Low":
-      return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+      return "bg-semantic-info-soft text-semantic-info border-semantic-info-border";
   }
 }
 
 function getEffortBadgeColor(effort: "S" | "M" | "L") {
   switch (effort) {
     case "S":
-      return "bg-green-500/10 text-green-400 border-green-500/30";
+      return "bg-semantic-success-soft text-semantic-success border-semantic-success-border";
     case "M":
-      return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      return "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border";
     case "L":
-      return "bg-red-500/10 text-red-400 border-red-500/30";
+      return "bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border";
   }
 }
 
 function getStatusBadge(status: DraperAction["status"]) {
   switch (status) {
     case "queued":
-      return <Badge variant="outline" className="bg-slate-500/10 text-slate-400 border-slate-500/30"><Clock className="w-3 h-3 mr-1" />Queued</Badge>;
+      return <Badge variant="outline" className="bg-muted text-muted-foreground border-border"><Clock className="w-3 h-3 mr-1" />Queued</Badge>;
     case "running":
-      return <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Running</Badge>;
+      return <Badge variant="outline" className="bg-semantic-info-soft text-semantic-info border-semantic-info-border"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Running</Badge>;
     case "done":
-      return <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Done</Badge>;
+      return <Badge variant="outline" className="bg-semantic-success-soft text-semantic-success border-semantic-success-border"><CheckCircle2 className="w-3 h-3 mr-1" />Done</Badge>;
     case "failed":
-      return <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+      return <Badge variant="outline" className="bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
     case "cancelled":
-      return <Badge variant="outline" className="bg-gray-500/10 text-gray-400 border-gray-500/30"><Ban className="w-3 h-3 mr-1" />Cancelled</Badge>;
+      return <Badge variant="outline" className="bg-muted text-muted-foreground border-border"><Ban className="w-3 h-3 mr-1" />Cancelled</Badge>;
   }
 }
 

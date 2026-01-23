@@ -126,10 +126,10 @@ export function CrewMissionStatusWidget({
   const scoreColor = scoreValue === null 
     ? "text-muted-foreground" 
     : scoreValue >= 90 
-      ? "text-green-500" 
+      ? "text-semantic-success" 
       : scoreValue >= 50 
         ? "text-gold" 
-        : "text-red-500";
+        : "text-semantic-danger";
 
   return (
     <>
@@ -158,10 +158,10 @@ export function CrewMissionStatusWidget({
                     scoreValue === null 
                       ? "bg-muted/60 ring-muted-foreground/30"
                       : scoreValue >= 90 
-                        ? "bg-green-500/15 ring-green-500/40" 
+                        ? "bg-semantic-success-soft ring-semantic-success-border" 
                         : scoreValue >= 50 
                           ? "bg-gold/15 ring-gold/40" 
-                          : "bg-red-500/15 ring-red-500/40"
+                          : "bg-semantic-danger-soft ring-semantic-danger-border"
                   )}
                 >
                   <span className={cn("text-2xl font-bold leading-none", scoreColor)}>

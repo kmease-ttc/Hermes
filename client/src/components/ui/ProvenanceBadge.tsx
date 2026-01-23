@@ -25,7 +25,7 @@ export function ProvenanceBadge({
       <Tooltip>
         <TooltipTrigger asChild>
           <span 
-            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30 ${className}`}
+            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gold-soft text-gold border border-gold-border ${className}`}
             data-testid="provenance-badge"
           >
             Sample
@@ -52,7 +52,7 @@ export function ProvenanceBadgeInline({
 
   return (
     <span 
-      className="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-amber-500/20 text-amber-400"
+      className="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-gold-soft text-gold"
       title={reason}
       data-testid="provenance-badge-inline"
     >

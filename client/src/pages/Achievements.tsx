@@ -462,7 +462,7 @@ export default function Achievements() {
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-yellow-500" />
+                  <Award className="w-4 h-4 text-gold" />
                   Tier Milestones
                 </h4>
                 <p className="text-sm text-muted-foreground">
@@ -471,7 +471,7 @@ export default function Achievements() {
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-success" />
+                  <Zap className="w-4 h-4 text-semantic-success" />
                   Automatic Updates
                 </h4>
                 <p className="text-sm text-muted-foreground">

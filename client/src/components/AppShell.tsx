@@ -150,7 +150,7 @@ export default function AppShell({ children, lightMode = false }: AppShellProps)
         lightMode ? "bg-muted" : "bg-background"
       )}>
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-gold" />
           <p className={lightMode ? "text-muted-foreground" : "text-muted-foreground"}>Loading...</p>
         </div>
       </div>
@@ -209,11 +209,11 @@ export default function AppShell({ children, lightMode = false }: AppShellProps)
                       lightMode 
                         ? cn(
                             "text-foreground focus:bg-secondary focus:text-foreground",
-                            site.siteId === activeWebsiteId && "bg-secondary text-amber-600"
+                            site.siteId === activeWebsiteId && "bg-secondary text-gold"
                           )
                         : cn(
                             "text-foreground/80 focus:bg-secondary focus:text-foreground",
-                            site.siteId === activeWebsiteId && "bg-secondary text-amber-500"
+                            site.siteId === activeWebsiteId && "bg-secondary text-gold"
                           )
                     )}
                     data-testid={`menu-item-site-${site.siteId}`}
@@ -287,10 +287,10 @@ export default function AppShell({ children, lightMode = false }: AppShellProps)
               <DropdownMenuItem 
                 onClick={logout}
                 className={cn(
-                  "cursor-pointer text-red-500",
+                  "cursor-pointer text-destructive",
                   lightMode 
-                    ? "focus:bg-secondary focus:text-red-600" 
-                    : "focus:bg-secondary focus:text-red-300"
+                    ? "focus:bg-secondary focus:text-destructive" 
+                    : "focus:bg-secondary focus:text-destructive"
                 )}
                 data-testid="menu-item-logout"
               >

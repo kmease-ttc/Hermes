@@ -33,8 +33,8 @@ interface MarketingCalloutProps {
 
 export function MarketingCallout({ children, variant = "brand", className = "" }: MarketingCalloutProps) {
   const variants = {
-    brand: "bg-violet-50/60 border-violet-200",
-    muted: "bg-slate-50 border-slate-200",
+    brand: "bg-purple-soft border-purple",
+    muted: "bg-muted border-border",
   };
 
   return (

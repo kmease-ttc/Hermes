@@ -9,32 +9,32 @@ const EXAMPLES = [
     industry: "Plumbing",
     city: "Austin, TX",
     icon: Wrench,
-    color: "from-blue-500 to-blue-600",
-    bgColor: "bg-blue-50",
+    color: "from-info to-info",
+    bgColor: "bg-info-soft",
   },
   {
     id: "hvac",
     industry: "HVAC",
     city: "Denver, CO",
     icon: Wind,
-    color: "from-orange-500 to-orange-600",
-    bgColor: "bg-orange-50",
+    color: "from-gold to-gold",
+    bgColor: "bg-gold-soft",
   },
   {
     id: "dental",
     industry: "Dental Clinic",
     city: "Seattle, WA",
     icon: Stethoscope,
-    color: "from-teal-500 to-teal-600",
-    bgColor: "bg-teal-50",
+    color: "from-success to-success",
+    bgColor: "bg-success-soft",
   },
   {
     id: "landscaping",
     industry: "Landscaping",
     city: "Phoenix, AZ",
     icon: Trees,
-    color: "from-green-500 to-green-600",
-    bgColor: "bg-green-50",
+    color: "from-success to-success",
+    bgColor: "bg-success-soft",
   },
 ];
 
@@ -42,10 +42,10 @@ export function ExamplesPreview() {
   return (
     <section className="px-5 md:px-6 py-12 md:py-16">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-950 mb-4 tracking-tight">
+        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-4 tracking-tight">
           See What Arclo Builds
         </h2>
-        <p className="text-center text-slate-600 mb-10 max-w-xl mx-auto">
+        <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
           Real examples of websites generated for local businesses.
         </p>
         
@@ -53,7 +53,7 @@ export function ExamplesPreview() {
           {EXAMPLES.map((example) => (
             <Card 
               key={example.id}
-              className="bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 overflow-hidden"
+              className="bg-card border border-border shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 overflow-hidden"
               data-testid={`card-example-${example.id}`}
             >
               <div className={`h-32 ${example.bgColor} flex items-center justify-center`}>
@@ -62,10 +62,10 @@ export function ExamplesPreview() {
                 </div>
               </div>
               <CardContent className="p-4 text-center">
-                <h3 className="font-semibold text-slate-900 mb-1">{example.industry}</h3>
-                <p className="text-sm text-slate-500 mb-3">{example.city}</p>
+                <h3 className="font-semibold text-foreground mb-1">{example.industry}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{example.city}</p>
                 <Link href={`${ROUTES.EXAMPLES}?demo=${example.id}`}>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-700 cursor-pointer">
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:opacity-80 cursor-pointer">
                     View demo <ExternalLink className="h-3 w-3" />
                   </span>
                 </Link>
@@ -76,7 +76,7 @@ export function ExamplesPreview() {
         
         <div className="text-center mt-8">
           <Link href={ROUTES.EXAMPLES}>
-            <span className="text-sm font-medium text-violet-600 hover:text-violet-700 underline-offset-2 hover:underline cursor-pointer" data-testid="link-see-all-examples">
+            <span className="text-sm font-medium text-brand hover:opacity-80 underline-offset-2 hover:underline cursor-pointer" data-testid="link-see-all-examples">
               See all examples →
             </span>
           </Link>

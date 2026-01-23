@@ -35,28 +35,28 @@ export function BrandButton({
   const variantClasses = {
     primary: `
       rounded-xl text-white
-      bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500
+      bg-gradient-to-r from-primary via-pink-500 to-gold
       shadow-[0_14px_30px_rgba(139,92,246,0.20)]
       hover:shadow-[0_18px_40px_rgba(236,72,153,0.22)]
       hover:-translate-y-0.5
-      focus:outline-none focus:ring-4 focus:ring-violet-200
+      focus:outline-none focus:ring-4 focus:ring-primary/20
     `,
     secondary: `
-      rounded-xl text-slate-900 bg-white
-      border border-slate-200
-      hover:border-slate-300 hover:bg-slate-50
+      rounded-xl text-foreground bg-white
+      border border-border
+      hover:border-border hover:bg-muted
       shadow-sm
     `,
     accent: `
       rounded-xl text-white
-      bg-gradient-to-r from-emerald-500 to-cyan-500
+      bg-gradient-to-r from-success to-info
       shadow-[0_14px_30px_rgba(16,185,129,0.20)]
       hover:shadow-[0_18px_40px_rgba(6,182,212,0.22)]
       hover:-translate-y-0.5
-      focus:outline-none focus:ring-4 focus:ring-emerald-200
+      focus:outline-none focus:ring-4 focus:ring-success/20
     `,
     link: `
-      text-violet-600 hover:text-pink-600
+      text-brand hover:text-pink-500
       font-medium
     `,
   };

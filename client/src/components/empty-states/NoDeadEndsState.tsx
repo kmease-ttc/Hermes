@@ -30,22 +30,22 @@ const iconMap: Record<ActionKind, React.ReactNode> = {
 };
 
 const statusColors: Record<string, string> = {
-  needs_setup: "border-amber-500/30 bg-amber-500/5",
-  needs_config: "border-amber-500/30 bg-amber-500/5",
-  needs_permissions: "border-amber-500/30 bg-amber-500/5",
-  integration_down: "border-red-500/30 bg-red-500/5",
-  not_implemented: "border-blue-500/30 bg-blue-500/5",
-  error: "border-red-500/30 bg-red-500/5",
+  needs_setup: "border-gold-border bg-gold-soft",
+  needs_config: "border-gold-border bg-gold-soft",
+  needs_permissions: "border-gold-border bg-gold-soft",
+  integration_down: "border-semantic-danger-border bg-semantic-danger-soft",
+  not_implemented: "border-semantic-info-border bg-semantic-info-soft",
+  error: "border-semantic-danger-border bg-semantic-danger-soft",
   empty: "border-muted bg-muted/5",
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
-  needs_setup: <Plug className="w-8 h-8 text-amber-500" />,
-  needs_config: <Settings className="w-8 h-8 text-amber-500" />,
-  needs_permissions: <AlertCircle className="w-8 h-8 text-amber-500" />,
-  integration_down: <AlertCircle className="w-8 h-8 text-red-500" />,
-  not_implemented: <HelpCircle className="w-8 h-8 text-blue-500" />,
-  error: <AlertCircle className="w-8 h-8 text-red-500" />,
+  needs_setup: <Plug className="w-8 h-8 text-gold" />,
+  needs_config: <Settings className="w-8 h-8 text-gold" />,
+  needs_permissions: <AlertCircle className="w-8 h-8 text-gold" />,
+  integration_down: <AlertCircle className="w-8 h-8 text-semantic-danger" />,
+  not_implemented: <HelpCircle className="w-8 h-8 text-semantic-info" />,
+  error: <AlertCircle className="w-8 h-8 text-semantic-danger" />,
   empty: <FileText className="w-8 h-8 text-muted-foreground" />,
 };
 

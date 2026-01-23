@@ -14,11 +14,11 @@ const plans = [
     period: "/month",
     description: "Perfect for small businesses getting started with SEO",
     icon: Zap,
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-200",
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-600",
-    accentColor: "text-amber-600",
+    bgColor: "bg-gold-soft",
+    borderColor: "border-gold/30",
+    iconBg: "bg-gold/15",
+    iconColor: "text-gold",
+    accentColor: "text-gold",
     features: [
       "1 website",
       "Weekly automated scans",
@@ -35,11 +35,11 @@ const plans = [
     period: "/month",
     description: "Everything runs automatically. Just answer a few questions and we handle the rest.",
     icon: Rocket,
-    bgColor: "bg-violet-50",
-    borderColor: "border-violet-200",
+    bgColor: "bg-primary-soft",
+    borderColor: "border-primary/30",
     iconBg: "gradient",
     iconColor: "text-white",
-    accentColor: "text-violet-600",
+    accentColor: "text-primary",
     features: [
       "Professional website in 60 seconds",
       "Daily automated SEO improvements",
@@ -57,11 +57,11 @@ const plans = [
     period: "",
     description: "For agencies and large organizations",
     icon: Building2,
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
-    accentColor: "text-green-600",
+    bgColor: "bg-semantic-success/10",
+    borderColor: "border-semantic-success/30",
+    iconBg: "bg-semantic-success/15",
+    iconColor: "text-semantic-success",
+    accentColor: "text-semantic-success",
     features: [
       "Unlimited websites",
       "Real-time monitoring",
@@ -126,7 +126,7 @@ export default function Pricing() {
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-6xl font-bold text-[#020617] mb-6 tracking-tight">
+              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 tracking-tight">
                 Simple,{" "}
                 <span 
                   className="bg-clip-text text-transparent"
@@ -138,7 +138,7 @@ export default function Pricing() {
                 </span>
                 {" "}pricing
               </h1>
-              <p className="text-xl text-[#334155] max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Choose the plan that fits your needs. All plans include our core autonomous SEO features.
               </p>
             </div>
@@ -172,7 +172,7 @@ export default function Pricing() {
                       <plan.icon className={`w-5 h-5 ${plan.iconColor}`} />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900">
+                      <h2 className="text-lg font-bold text-foreground">
                         {plan.name}
                       </h2>
                       <p className={`text-sm font-medium ${plan.accentColor}`}>
@@ -181,7 +181,7 @@ export default function Pricing() {
                     </div>
                   </div>
                   
-                  <p className="text-slate-600 text-sm mb-4">
+                  <p className="text-muted-foreground text-sm mb-4">
                     {plan.description}
                   </p>
                   
@@ -189,7 +189,7 @@ export default function Pricing() {
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
                         <Check className={`w-4 h-4 ${plan.accentColor} shrink-0 mt-0.5`} />
-                        <span className="text-slate-700 text-sm">{feature}</span>
+                        <span className="text-foreground text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -208,7 +208,7 @@ export default function Pricing() {
                     ) : (
                       <Button 
                         variant="outline"
-                        className={`w-full ${plan.borderColor} bg-white/50 hover:bg-white text-slate-700`}
+                        className={`w-full ${plan.borderColor} bg-card/50 hover:bg-card text-foreground`}
                         data-testid={`button-${plan.name.toLowerCase()}-cta`}
                       >
                         {plan.cta}
@@ -220,7 +220,7 @@ export default function Pricing() {
             </div>
 
             <div 
-              className="rounded-lg p-8 md:p-12 bg-violet-50 border border-violet-200"
+              className="rounded-lg p-8 md:p-12 bg-primary-soft border border-primary/30"
             >
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                 <div 
@@ -229,17 +229,17 @@ export default function Pricing() {
                   <Sparkles className="w-7 h-7 text-white" />
                 </div>
                 <div className="text-center md:text-left flex-1">
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  <h3 className="text-xl font-bold text-foreground mb-2">
                     Need a custom solution?
                   </h3>
-                  <p className="text-slate-600">
+                  <p className="text-muted-foreground">
                     We work with agencies and enterprises to create tailored SEO automation solutions.
                   </p>
                 </div>
                 <Link href="/contact">
                   <Button 
                     variant="outline" 
-                    className="border-violet-300 text-violet-700 hover:bg-violet-100 bg-white"
+                    className="border-primary/40 text-primary hover:bg-primary-soft bg-white"
                     data-testid="button-contact-sales"
                   >
                     Talk to Sales
@@ -251,14 +251,14 @@ export default function Pricing() {
             <div className="mt-20">
               <div className="text-center mb-12">
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                    <HelpCircle className="w-5 h-5 text-slate-600" />
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground">
                     Frequently Asked Questions
                   </h2>
                 </div>
-                <p className="text-slate-600 max-w-xl mx-auto">
+                <p className="text-muted-foreground max-w-xl mx-auto">
                   Everything you need to know about getting started
                 </p>
               </div>
@@ -267,23 +267,23 @@ export default function Pricing() {
                 {faqs.map((faq, index) => (
                   <div
                     key={index}
-                    className="rounded-lg border border-slate-200 bg-white overflow-hidden"
+                    className="rounded-lg border border-border bg-card overflow-hidden"
                     data-testid={`faq-item-${index}`}
                   >
                     <button
                       onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                      className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+                      className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-muted transition-colors"
                       data-testid={`faq-button-${index}`}
                     >
-                      <span className="font-medium text-slate-900">{faq.question}</span>
+                      <span className="font-medium text-foreground">{faq.question}</span>
                       <ChevronDown 
-                        className={`w-5 h-5 text-slate-400 transition-transform ${
+                        className={`w-5 h-5 text-muted-foreground transition-transform ${
                           openFaq === index ? "rotate-180" : ""
                         }`}
                       />
                     </button>
                     {openFaq === index && (
-                      <div className="px-5 pb-4 text-slate-600 text-sm">
+                      <div className="px-5 pb-4 text-muted-foreground text-sm">
                         {faq.answer}
                       </div>
                     )}

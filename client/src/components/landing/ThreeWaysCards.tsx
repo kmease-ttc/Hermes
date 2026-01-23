@@ -36,7 +36,7 @@ export function ThreeWaysCards() {
   return (
     <section className="px-5 md:px-6 py-12 md:py-16">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-950 mb-8 tracking-tight">
+        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-8 tracking-tight">
           Three ways to use Arclo
         </h2>
         
@@ -44,22 +44,22 @@ export function ThreeWaysCards() {
           {WAYS.map((way) => (
             <Card 
               key={way.title} 
-              className={`bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 ${way.highlighted ? 'ring-2 ring-violet-400/50' : ''}`}
+              className={`bg-card border border-border shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 ${way.highlighted ? 'ring-2 ring-brand/50' : ''}`}
             >
               <CardContent className="p-6 flex flex-col h-full">
                 <div className="flex items-center gap-2 mb-4">
-                  <way.icon className="h-5 w-5 text-violet-600" />
-                  <h3 className="font-semibold text-slate-900">{way.title}</h3>
+                  <way.icon className="h-5 w-5 text-brand" />
+                  <h3 className="font-semibold text-foreground">{way.title}</h3>
                   {way.badge && (
                     <Badge 
                       variant="secondary" 
-                      className={`ml-auto text-xs ${way.highlighted ? 'bg-violet-100 text-violet-700 border-violet-200' : 'bg-slate-100 text-slate-500'}`}
+                      className={`ml-auto text-xs ${way.highlighted ? 'bg-brand-soft text-brand border-brand' : 'bg-muted text-muted-foreground'}`}
                     >
                       {way.badge}
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-slate-500 mb-6 flex-1">{way.description}</p>
+                <p className="text-sm text-muted-foreground mb-6 flex-1">{way.description}</p>
                 <Link href={way.href}>
                   <BrandButton 
                     variant={way.highlighted ? "primary" : "secondary"}

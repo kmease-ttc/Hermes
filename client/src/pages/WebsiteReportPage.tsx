@@ -253,7 +253,7 @@ export default function WebsiteReportPage() {
                 <Button 
                   onClick={handleSend}
                   disabled={sending}
-                  className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 text-white hover:opacity-90"
+                  className="w-full bg-gradient-to-r from-primary via-pink-500 to-gold text-white hover:opacity-90"
                   data-testid="button-send-report"
                 >
                   {sending ? (

@@ -81,11 +81,11 @@ export default function UseCases() {
       <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-950 mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 tracking-tight">
               Built for{" "}
               <span className="marketing-gradient-text">every team</span>
             </h1>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Arclo helps teams of all sizes automate their SEO. See how different organizations use the platform.
             </p>
           </div>
@@ -96,12 +96,12 @@ export default function UseCases() {
                 <div className="flex justify-start mb-5">
                   <IconBadge icon={useCase.icon} size="sm" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-950 mb-2">{useCase.title}</h3>
-                <p className="text-slate-500 mb-4">{useCase.description}</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">{useCase.title}</h3>
+                <p className="text-muted-foreground mb-4">{useCase.description}</p>
                 <ul className="space-y-2">
                   {useCase.benefits.map((benefit, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
-                      <span className="text-violet-500 mt-1">•</span>
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="text-primary mt-1">•</span>
                       <span>{benefit}</span>
                     </li>
                   ))}
@@ -112,7 +112,7 @@ export default function UseCases() {
 
           <div className="text-center mt-20">
             <MarketingCard hover={false} className="max-w-xl mx-auto">
-              <h2 className="text-2xl font-bold text-slate-950 mb-6 tracking-tight">
+              <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
                 Ready to automate your SEO?
               </h2>
               <Link href={ROUTES.SCAN}>
@@ -120,7 +120,7 @@ export default function UseCases() {
                   Fix my SEO automatically
                 </BrandButton>
               </Link>
-              <p className="mt-4 text-xs text-slate-400">
+              <p className="mt-4 text-xs text-muted-foreground">
                 No credit card • Runs in the background • Cancel anytime
               </p>
             </MarketingCard>

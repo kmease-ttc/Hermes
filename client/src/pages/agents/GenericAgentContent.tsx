@@ -143,9 +143,9 @@ export default function GenericAgentContent({ agentId }: GenericAgentContentProp
               <Badge 
                 variant="secondary"
                 className={
-                  finding.severity === 'critical' ? 'bg-red-500/20 text-red-600' :
-                  finding.severity === 'high' ? 'bg-amber-500/20 text-amber-600' :
-                  'bg-blue-500/20 text-blue-600'
+                  finding.severity === 'critical' ? 'bg-semantic-danger-soft text-semantic-danger' :
+                  finding.severity === 'high' ? 'bg-semantic-warning-soft text-semantic-warning' :
+                  'bg-semantic-info-soft text-semantic-info'
                 }
               >
                 {finding.value}

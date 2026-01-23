@@ -79,8 +79,8 @@ export default function ManagedSite() {
       <MarketingLayout>
         <div className="py-20 px-4">
           <div className="max-w-lg mx-auto text-center">
-            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+            <div className="w-16 h-16 rounded-full bg-semantic-success-soft flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-8 h-8 text-semantic-success" />
             </div>
             <h1 className="text-3xl font-bold mb-4" data-testid="text-thank-you-title">
               Thank You!

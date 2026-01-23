@@ -482,7 +482,7 @@ export default function SERPContent() {
     if (!priority) return <span className="text-muted-foreground">—</span>;
     
     const label = priority >= 5 ? 'Critical' : priority >= 4 ? 'High' : priority >= 3 ? 'Medium' : priority >= 2 ? 'Low' : 'Very Low';
-    const color = priority >= 5 ? 'bg-red-500' : priority >= 4 ? 'bg-orange-500' : priority >= 3 ? 'bg-yellow-500' : priority >= 2 ? 'bg-blue-500' : 'bg-gray-500';
+    const color = priority >= 5 ? 'bg-semantic-danger' : priority >= 4 ? 'bg-semantic-warning' : priority >= 3 ? 'bg-semantic-gold' : priority >= 2 ? 'bg-semantic-info' : 'bg-muted';
     
     const badge = (
       <Badge className={`${color} text-white text-xs`}>
@@ -549,9 +549,9 @@ export default function SERPContent() {
 
   const getPositionColor = (pos: number | null) => {
     if (!pos) return 'text-muted-foreground';
-    if (pos === 1) return 'text-yellow-500 font-bold'; // Gold for #1
-    if (pos <= 3) return 'text-slate-400 font-bold'; // Silver for top 3
-    if (pos <= 10) return 'text-amber-600 font-semibold'; // Bronze for top 10
+    if (pos === 1) return 'text-semantic-gold font-bold';
+    if (pos <= 3) return 'text-muted-foreground font-bold';
+    if (pos <= 10) return 'text-semantic-warning font-semibold';
     if (pos <= 20) return 'text-semantic-warning';
     if (pos <= 50) return 'text-muted-foreground';
     return 'text-semantic-danger';
@@ -569,7 +569,7 @@ export default function SERPContent() {
         return (
           <Tooltip>
             <TooltipTrigger>
-              <Badge className="bg-green-600 text-white text-xs gap-1">
+              <Badge className="bg-semantic-success text-white text-xs gap-1">
                 <DollarSign className="h-3 w-3" />
                 High Value
               </Badge>
@@ -586,7 +586,7 @@ export default function SERPContent() {
       return (
         <Tooltip>
           <TooltipTrigger>
-            <Badge className="bg-green-600 text-white text-xs gap-1">
+            <Badge className="bg-semantic-success text-white text-xs gap-1">
               <ShoppingCart className="h-3 w-3" />
               Commercial
             </Badge>
@@ -599,7 +599,7 @@ export default function SERPContent() {
       return (
         <Tooltip>
           <TooltipTrigger>
-            <Badge className="bg-blue-500 text-white text-xs gap-1">
+            <Badge className="bg-semantic-info text-white text-xs gap-1">
               <Target className="h-3 w-3" />
               Navigate
             </Badge>
@@ -947,13 +947,13 @@ export default function SERPContent() {
     {
       id: "near-wins",
       label: "Near Wins",
-      icon: <Trophy className="w-4 h-4 text-amber-500" />,
+      icon: <Trophy className="w-4 h-4 text-semantic-warning" />,
       content: (
         <TooltipProvider>
           {nearWinsData?.nearWins && nearWinsData.nearWins.length > 0 ? (
             <div className="space-y-4">
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4">
-                <p className="text-sm text-amber-200 flex items-center gap-2">
+              <div className="bg-semantic-warning-soft border border-semantic-warning-border rounded-lg p-3 mb-4">
+                <p className="text-sm text-semantic-warning flex items-center gap-2">
                   <Trophy className="w-4 h-4" />
                   <span><strong>{nearWinsData.count}</strong> keywords are 1-2 spots away from #1!</span>
                 </p>
@@ -970,14 +970,14 @@ export default function SERPContent() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/40">
+                            <Badge variant="outline" className="bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border">
                               #{nw.position}
                             </Badge>
                             <span className="font-medium">{nw.keyword}</span>
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             {nw.volume && <span>{nw.volume.toLocaleString()} searches/mo</span>}
-                            <span className="text-amber-400">
+                            <span className="text-semantic-warning">
                               {nw.spotsToNumber1} spot{nw.spotsToNumber1 > 1 ? 's' : ''} to #1
                             </span>
                           </div>
@@ -1017,8 +1017,8 @@ export default function SERPContent() {
                           ) : comp.numberOneCompetitor ? (
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <Crown className="h-4 w-4 text-yellow-500" />
-                                <span className="text-sm font-medium text-yellow-400">
+                                <Crown className="h-4 w-4 text-semantic-gold" />
+                                <span className="text-sm font-medium text-semantic-gold">
                                   #{comp.numberOneCompetitor.position}: {comp.numberOneCompetitor.domain}
                                 </span>
                               </div>
@@ -1107,9 +1107,9 @@ export default function SERPContent() {
                       <td className={`py-2 text-center ${getPositionColor(kw.currentPosition)}`}>
                         {kw.currentPosition ? (
                           <span className="flex items-center justify-center gap-1">
-                            {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
-                            {kw.currentPosition >= 2 && kw.currentPosition <= 3 && <Trophy className="h-4 w-4 text-slate-400" />}
-                            {kw.currentPosition >= 4 && kw.currentPosition <= 10 && <Trophy className="h-4 w-4 text-amber-600" />}
+                            {kw.currentPosition === 1 && <Crown className="h-4 w-4 text-semantic-gold" />}
+                            {kw.currentPosition >= 2 && kw.currentPosition <= 3 && <Trophy className="h-4 w-4 text-muted-foreground" />}
+                            {kw.currentPosition >= 4 && kw.currentPosition <= 10 && <Trophy className="h-4 w-4 text-semantic-warning" />}
                             #{kw.currentPosition}
                           </span>
                         ) : '—'}

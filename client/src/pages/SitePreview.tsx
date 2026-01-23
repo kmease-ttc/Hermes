@@ -54,13 +54,13 @@ function GenerationStepItem({
   return (
     <div className="flex items-center gap-3">
       {isCompleted ? (
-        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+        <CheckCircle2 className="h-5 w-5 text-semantic-success flex-shrink-0" />
       ) : isCurrent ? (
-        <Loader2 className="h-5 w-5 text-violet-500 animate-spin flex-shrink-0" />
+        <Loader2 className="h-5 w-5 text-primary animate-spin flex-shrink-0" />
       ) : (
-        <div className="h-5 w-5 rounded-full border-2 border-slate-200 flex-shrink-0" />
+        <div className="h-5 w-5 rounded-full border-2 border-border flex-shrink-0" />
       )}
-      <span className={`text-sm ${isCurrent ? "text-slate-900 font-medium" : isCompleted ? "text-green-600" : "text-slate-400"}`}>
+      <span className={`text-sm ${isCurrent ? "text-foreground font-medium" : isCompleted ? "text-semantic-success" : "text-muted-foreground"}`}>
         {label}
       </span>
     </div>
@@ -182,9 +182,9 @@ export default function SitePreview() {
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-lg mx-auto text-center">
             <MarketingCard hover={false}>
-              <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-slate-950 mb-2">Site Not Found</h2>
-              <p className="text-slate-500 mb-6">
+              <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-foreground mb-2">Site Not Found</h2>
+              <p className="text-muted-foreground mb-6">
                 The site you're looking for doesn't exist or the link is invalid.
               </p>
               <BrandButton 
@@ -210,10 +210,10 @@ export default function SitePreview() {
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400 flex items-center justify-center mx-auto mb-6 animate-pulse">
                 <Loader2 className="h-10 w-10 text-white animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-950 mb-2" data-testid="text-generating-title">
+              <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-generating-title">
                 {businessName ? `Building ${businessName}...` : "Generating your website..."}
               </h2>
-              <p className="text-slate-500 mb-8">This usually takes about a minute.</p>
+              <p className="text-muted-foreground mb-8">This usually takes about a minute.</p>
 
               <div className="space-y-4 text-left max-w-xs mx-auto">
                 {GENERATION_STEPS.map((step) => (
@@ -238,13 +238,13 @@ export default function SitePreview() {
         <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
           <div className="max-w-lg mx-auto">
             <MarketingCard className="text-center py-12" hover={false}>
-              <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
-                <XCircle className="h-10 w-10 text-red-500" />
+              <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
+                <XCircle className="h-10 w-10 text-destructive" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-950 mb-2" data-testid="text-failed-title">
+              <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-failed-title">
                 Something went wrong
               </h2>
-              <p className="text-slate-500 mb-6">
+              <p className="text-muted-foreground mb-6">
                 {error || "We couldn't generate your website. Please try again."}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -274,14 +274,14 @@ export default function SitePreview() {
   return (
     <MarketingLayout>
       <div className="flex flex-col min-h-[calc(100vh-64px)]">
-        <div className="bg-white border-b border-slate-200 py-4 px-4 md:px-6">
+        <div className="bg-card border-b border-border py-4 px-4 md:px-6">
           <div className="container mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm font-medium text-green-600" data-testid="text-ready-badge">Your site is ready!</span>
+                <CheckCircle2 className="h-5 w-5 text-semantic-success" />
+                <span className="text-sm font-medium text-semantic-success" data-testid="text-ready-badge">Your site is ready!</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-bold text-slate-950" data-testid="text-site-title">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground" data-testid="text-site-title">
                 {businessName || "Your New Website"}
               </h1>
             </div>
@@ -323,7 +323,7 @@ export default function SitePreview() {
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100">
+        <div className="flex-1 bg-muted">
           {previewUrl ? (
             <iframe
               src={previewUrl}
@@ -334,21 +334,21 @@ export default function SitePreview() {
           ) : (
             <div className="flex items-center justify-center h-full min-h-[600px]">
               <div className="text-center">
-                <Loader2 className="h-8 w-8 text-slate-400 animate-spin mx-auto mb-3" />
-                <p className="text-slate-500">Loading preview...</p>
+                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mx-auto mb-3" />
+                <p className="text-muted-foreground">Loading preview...</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="bg-white border-t border-slate-200 py-6 px-4 md:px-6">
+        <div className="bg-card border-t border-border py-6 px-4 md:px-6">
           <div className="container mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <h3 className="text-lg font-semibold text-slate-950 mb-1">
+                <h3 className="text-lg font-semibold text-foreground mb-1">
                   Love your new site?
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Claim it now to get your own domain and start ranking on Google.
                 </p>
               </div>

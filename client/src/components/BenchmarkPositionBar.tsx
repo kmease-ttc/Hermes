@@ -49,17 +49,17 @@ export function BenchmarkPositionBar({
       <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground">
         {direction === "lower-is-better" ? (
           <>
-            <span className="text-green-600 font-medium">p25</span>
-            <span className="text-yellow-600 font-medium">p50</span>
-            <span className="text-orange-600 font-medium">p75</span>
-            <span className="text-red-600 font-medium">p90</span>
+            <span className="text-semantic-success font-medium">p25</span>
+            <span className="text-semantic-warning font-medium">p50</span>
+            <span className="text-gold font-medium">p75</span>
+            <span className="text-semantic-danger font-medium">p90</span>
           </>
         ) : (
           <>
-            <span className="text-red-600 font-medium">p90</span>
-            <span className="text-orange-600 font-medium">p75</span>
-            <span className="text-yellow-600 font-medium">p50</span>
-            <span className="text-green-600 font-medium">p25</span>
+            <span className="text-semantic-danger font-medium">p90</span>
+            <span className="text-gold font-medium">p75</span>
+            <span className="text-semantic-warning font-medium">p50</span>
+            <span className="text-semantic-success font-medium">p25</span>
           </>
         )}
       </div>

@@ -5,9 +5,9 @@ export default function CrewPalette() {
   const userFacingAgents = USER_FACING_AGENTS.map(id => getCrewMember(id));
   
   return (
-    <div className="min-h-screen bg-slate-950 p-8">
-      <h1 className="text-2xl font-bold text-white mb-2">Crew Color Palette</h1>
-      <p className="text-slate-400 mb-8">Dev tool for checking color distinctness and brightness consistency</p>
+    <div className="min-h-screen bg-background p-8">
+      <h1 className="text-2xl font-bold text-foreground mb-2">Crew Color Palette</h1>
+      <p className="text-muted-foreground mb-8">Dev tool for checking color distinctness and brightness consistency</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {userFacingAgents.map((agent) => {
@@ -32,8 +32,8 @@ export default function CrewPalette() {
                     <Icon className="w-5 h-5" style={{ color: colors.accent }} />
                   </div>
                   <div>
-                    <div className="font-semibold text-white">{agent.nickname}</div>
-                    <div className="text-sm text-slate-400">{agent.role}</div>
+                    <div className="font-semibold text-foreground">{agent.nickname}</div>
+                    <div className="text-sm text-muted-foreground">{agent.role}</div>
                   </div>
                 </div>
                 
@@ -43,17 +43,17 @@ export default function CrewPalette() {
                       className="w-6 h-6 rounded"
                       style={{ backgroundColor: colors.accent }}
                     />
-                    <span className="text-slate-300 font-mono">{colors.accent}</span>
-                    <span className="text-slate-500">accent</span>
+                    <span className="text-foreground font-mono">{colors.accent}</span>
+                    <span className="text-muted-foreground">accent</span>
                   </div>
                   
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-6 h-6 rounded border border-slate-700"
+                      className="w-6 h-6 rounded border border-border"
                       style={{ backgroundColor: colors.accentSoft }}
                     />
-                    <span className="text-slate-300 font-mono text-xs">{colors.accentSoft.slice(0, 20)}...</span>
-                    <span className="text-slate-500">soft</span>
+                    <span className="text-foreground font-mono text-xs">{colors.accentSoft.slice(0, 20)}...</span>
+                    <span className="text-muted-foreground">soft</span>
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -64,8 +64,8 @@ export default function CrewPalette() {
                         border: `2px solid ${colors.accentBorder}` 
                       }}
                     />
-                    <span className="text-slate-300 font-mono text-xs">{colors.accentBorder.slice(0, 20)}...</span>
-                    <span className="text-slate-500">border</span>
+                    <span className="text-foreground font-mono text-xs">{colors.accentBorder.slice(0, 20)}...</span>
+                    <span className="text-muted-foreground">border</span>
                   </div>
                 </div>
                 
@@ -102,7 +102,7 @@ export default function CrewPalette() {
       </div>
       
       <div className="mt-12">
-        <h2 className="text-xl font-bold text-white mb-4">All Cards Side-by-Side</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">All Cards Side-by-Side</h2>
         <div className="flex flex-wrap gap-2">
           {userFacingAgents.map((agent) => {
             const colors = getCrewColorSet(agent.service_id);
@@ -124,7 +124,7 @@ export default function CrewPalette() {
       </div>
       
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-white mb-4">Solid Accents</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">Solid Accents</h2>
         <div className="flex flex-wrap gap-2">
           {userFacingAgents.map((agent) => {
             const colors = getCrewColorSet(agent.service_id);

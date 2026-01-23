@@ -29,7 +29,7 @@ export default function DevLineage() {
   const services = Object.entries(SERVICES);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -48,35 +48,35 @@ export default function DevLineage() {
         </div>
 
         {error && (
-          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-8">
-            <p className="text-red-300">Error loading metrics: {String(error)}</p>
+          <div className="bg-destructive/20 border border-destructive rounded-lg p-4 mb-8">
+            <p className="text-destructive">Error loading metrics: {String(error)}</p>
           </div>
         )}
 
         {data && (
           <div className="mb-8 grid grid-cols-4 gap-4">
-            <Card className="bg-slate-900 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-emerald-400">{data.coverage.present}</div>
-                <div className="text-sm text-slate-400">Metrics Present</div>
+                <div className="text-2xl font-bold text-semantic-success">{data.coverage.present}</div>
+                <div className="text-sm text-muted-foreground">Metrics Present</div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-yellow-400">{data.coverage.missing.length}</div>
-                <div className="text-sm text-slate-400">Metrics Missing</div>
+                <div className="text-2xl font-bold text-gold">{data.coverage.missing.length}</div>
+                <div className="text-sm text-muted-foreground">Metrics Missing</div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-400">{data.coverage.stale.length}</div>
-                <div className="text-sm text-slate-400">Stale (&gt;24h)</div>
+                <div className="text-2xl font-bold text-gold">{data.coverage.stale.length}</div>
+                <div className="text-sm text-muted-foreground">Stale (&gt;24h)</div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900 border-slate-700">
+            <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-sky-400">{data.coverage.total}</div>
-                <div className="text-sm text-slate-400">Total Canonical</div>
+                <div className="text-2xl font-bold text-info">{data.coverage.total}</div>
+                <div className="text-sm text-muted-foreground">Total Canonical</div>
               </CardContent>
             </Card>
           </div>
@@ -84,7 +84,7 @@ export default function DevLineage() {
 
         <div className="space-y-8">
           {crewMembers.map(([crewId, crew]) => (
-            <Card key={crewId} className="bg-slate-900 border-slate-700">
+            <Card key={crewId} className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-3">
                   <div 
@@ -95,7 +95,7 @@ export default function DevLineage() {
                   </div>
                   <div>
                     <span className="text-xl">{crew.name}</span>
-                    <span className="text-sm text-slate-400 ml-2">({crewId})</span>
+                    <span className="text-sm text-muted-foreground ml-2">({crewId})</span>
                   </div>
                   <Badge 
                     variant="outline" 
@@ -116,22 +116,22 @@ export default function DevLineage() {
                       (Date.now() - new Date(sourceTimestamp).getTime()) > 24 * 60 * 60 * 1000;
                     
                     return (
-                      <div key={serviceId} className="border border-slate-700 rounded-lg p-4 ml-12">
+                      <div key={serviceId} className="border border-border rounded-lg p-4 ml-12">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-200">{service.name}</span>
-                            <span className="text-xs text-slate-500">{serviceId}</span>
+                            <span className="font-semibold text-foreground">{service.name}</span>
+                            <span className="text-xs text-muted-foreground">{serviceId}</span>
                           </div>
                           {sourceTimestamp ? (
                             <Badge 
                               variant="outline" 
-                              className={isStale ? 'border-yellow-500 text-yellow-500' : 'border-emerald-500 text-emerald-500'}
+                              className={isStale ? 'border-gold text-gold' : 'border-semantic-success text-semantic-success'}
                             >
                               {isStale ? <Clock className="w-3 h-3 mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
                               {new Date(sourceTimestamp).toLocaleString()}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="border-slate-500 text-slate-500">
+                            <Badge variant="outline" className="border-muted-foreground text-muted-foreground">
                               <AlertCircle className="w-3 h-3 mr-1" />
                               No data
                             </Badge>
@@ -151,20 +151,20 @@ export default function DevLineage() {
                                 className={`p-2 rounded text-sm ${
                                   hasValue 
                                     ? isThisStale 
-                                      ? 'bg-yellow-900/30 border border-yellow-700' 
-                                      : 'bg-emerald-900/30 border border-emerald-700'
-                                    : 'bg-slate-800/50 border border-slate-700'
+                                      ? 'bg-gold/20 border border-gold/50' 
+                                      : 'bg-semantic-success/20 border border-semantic-success/50'
+                                    : 'bg-secondary/50 border border-border'
                                 }`}
                               >
                                 <div className="flex items-center gap-1">
                                   {hasValue ? (
-                                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                    <CheckCircle className="w-3 h-3 text-semantic-success" />
                                   ) : (
-                                    <AlertCircle className="w-3 h-3 text-slate-500" />
+                                    <AlertCircle className="w-3 h-3 text-muted-foreground" />
                                   )}
-                                  <code className="text-xs text-slate-300">{metricKey}</code>
+                                  <code className="text-xs text-muted-foreground">{metricKey}</code>
                                 </div>
-                                <div className={`text-right font-mono ${hasValue ? 'text-white' : 'text-slate-500'}`}>
+                                <div className={`text-right font-mono ${hasValue ? 'text-foreground' : 'text-muted-foreground'}`}>
                                   {hasValue ? (
                                     typeof value === 'number' 
                                       ? value.toLocaleString(undefined, { maximumFractionDigits: 3 })
@@ -184,7 +184,7 @@ export default function DevLineage() {
           ))}
         </div>
 
-        <div className="mt-8 text-xs text-slate-500">
+        <div className="mt-8 text-xs text-muted-foreground">
           <p>Registry source: shared/registry.ts</p>
           <p>Metrics API: /api/metrics/latest</p>
           {data && <p>Site ID: {data.siteId} | Collected: {data.collectedAt}</p>}

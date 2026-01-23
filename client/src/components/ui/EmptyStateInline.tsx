@@ -40,7 +40,7 @@ export function EmptyStateInline({
             onClick={onCtaClick}
             variant="outline"
             size="sm"
-            className="text-violet-600 border-violet-200 hover:bg-violet-50"
+            className="text-primary border-purple-border hover:bg-purple-soft"
             data-testid="empty-state-cta"
           >
             {ctaText}

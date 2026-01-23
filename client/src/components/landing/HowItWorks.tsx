@@ -33,7 +33,7 @@ export function HowItWorks() {
           {STEPS.map((step) => (
             <Card key={step.number} className="bg-gradient-to-b from-card to-muted border border-border text-center shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1" data-testid={`step-card-${step.number}`}>
               <CardContent className="p-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400 flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary via-pink-500 to-gold flex items-center justify-center mx-auto mb-4">
                   <span className="text-xl font-bold text-white">{step.number}</span>
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">{step.title}</h3>

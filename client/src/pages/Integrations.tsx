@@ -1958,11 +1958,11 @@ export default function Integrations() {
                           key={integration.integrationId}
                           className={cn(
                             "transition-all hover:shadow-md cursor-pointer",
-                            runState === "last_run_success" && "border-l-4 border-l-green-500",
-                            runState === "last_run_failed" && "border-l-4 border-l-red-500",
-                            runState === "stale" && "border-l-4 border-l-yellow-500",
-                            runState === "never_ran" && configState === "blocked" && "border-l-4 border-l-orange-400",
-                            runState === "never_ran" && configState !== "blocked" && "border-l-4 border-l-gray-300",
+                            runState === "last_run_success" && "border-l-4 border-l-semantic-success",
+                            runState === "last_run_failed" && "border-l-4 border-l-semantic-danger",
+                            runState === "stale" && "border-l-4 border-l-semantic-warning",
+                            runState === "never_ran" && configState === "blocked" && "border-l-4 border-l-semantic-warning",
+                            runState === "never_ran" && configState !== "blocked" && "border-l-4 border-l-border",
                           )}
                           onClick={() => {
                             const catalogService = catalogServices.find(s => s.slug === integration.integrationId);

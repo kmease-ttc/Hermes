@@ -36,11 +36,11 @@ export default function NotFound() {
             </span>
           </div>
           
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Page not found
           </h1>
           
-          <p className="text-lg text-slate-600 mb-10">
+          <p className="text-lg text-muted-foreground mb-10">
             The page you're looking for doesn't exist or may have moved.
           </p>
           
@@ -63,7 +63,7 @@ export default function NotFound() {
               <Button 
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto gap-2 font-medium border-slate-300 text-slate-700 hover:bg-slate-50"
+                className="w-full sm:w-auto gap-2 font-medium border-border text-foreground hover:bg-muted"
                 data-testid="button-analyze-website"
               >
                 <Search className="w-4 h-4" />
@@ -75,7 +75,7 @@ export default function NotFound() {
               <Button 
                 variant="ghost"
                 size="lg"
-                className="w-full sm:w-auto gap-2 font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                className="w-full sm:w-auto gap-2 font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
                 data-testid="button-see-examples"
               >
                 <Eye className="w-4 h-4" />

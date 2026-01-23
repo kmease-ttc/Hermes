@@ -110,10 +110,10 @@ export default function Examples() {
       <section className="px-5 md:px-6 py-12 md:py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold text-slate-950 mb-4 tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
               Real Examples of Arclo-Built Sites
             </h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               See what Arclo creates for local service businesses. Each site is fully optimized for search engines and designed to convert visitors into customers.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function Examples() {
             {EXAMPLES.map((example) => (
               <Card 
                 key={example.id}
-                className="bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden group flex flex-col h-full"
+                className="bg-card border border-border shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden group flex flex-col h-full"
                 data-testid={`card-example-${example.id}`}
               >
                 <div className="relative h-44 overflow-hidden shrink-0">
@@ -140,14 +140,14 @@ export default function Examples() {
                   </div>
                 </div>
                 <CardContent className="p-5 flex flex-col flex-1">
-                  <h3 className="font-semibold text-slate-900 mb-1 min-h-[1.5rem]">{example.business}</h3>
-                  <p className="text-sm text-slate-500 mb-3">{example.industry}</p>
+                  <h3 className="font-semibold text-foreground mb-1 min-h-[1.5rem]">{example.business}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{example.industry}</p>
                   
                   <div className="flex flex-wrap gap-1 mb-4 max-h-14 overflow-hidden">
                     {example.services.map((service) => (
                       <span 
                         key={service}
-                        className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full"
+                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full"
                       >
                         {service}
                       </span>
@@ -171,11 +171,11 @@ export default function Examples() {
             ))}
           </div>
           
-          <div className="text-center mt-16 py-12 px-6 bg-slate-50 rounded-2xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-950 mb-4">
+          <div className="text-center mt-16 py-12 px-6 bg-muted rounded-2xl">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
               Ready to see what's holding you back?
             </h2>
-            <p className="text-slate-600 mb-6 max-w-lg mx-auto">
+            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
               Start with a free website analysis. We'll show you exactly what to fix — or generate a better site for you.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -194,7 +194,7 @@ export default function Examples() {
                 <Button 
                   variant="outline"
                   size="lg"
-                  className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="gap-2 border-primary/30 text-primary hover:bg-primary-soft"
                   data-testid="button-examples-generate"
                 >
                   <Sparkles className="h-4 w-4" />
@@ -202,7 +202,7 @@ export default function Examples() {
                 </Button>
               </Link>
             </div>
-            <p className="text-sm text-slate-400 mt-4">
+            <p className="text-sm text-muted-foreground mt-4">
               Free preview. No credit card required.
             </p>
           </div>

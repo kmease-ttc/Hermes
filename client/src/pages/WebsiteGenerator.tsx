@@ -184,10 +184,10 @@ export default function WebsiteGenerator() {
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400 flex items-center justify-center mx-auto mb-6 animate-pulse">
                 <Loader2 className="h-10 w-10 text-white animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-950 mb-2">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
                 Generating your website...
               </h2>
-              <p className="text-slate-500 mb-8">This usually takes about a minute.</p>
+              <p className="text-muted-foreground mb-8">This usually takes about a minute.</p>
 
               <div className="space-y-4 text-left max-w-xs mx-auto">
                 <GenerationStepItem 
@@ -228,10 +228,10 @@ export default function WebsiteGenerator() {
       <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-950 mb-3 tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight">
               Build your website in <span className="bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 bg-clip-text text-transparent">minutes</span>
             </h1>
-            <p className="text-lg text-slate-600 max-w-lg mx-auto">
+            <p className="text-lg text-muted-foreground max-w-lg mx-auto">
               Answer a few questions and we'll generate a fast, SEO-ready site for your business.
             </p>
           </div>
@@ -271,16 +271,16 @@ function ProgressIndicator({ currentStep }: { currentStep: WizardStep }) {
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
         currentStep === 1 
           ? "bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-lg"
-          : "bg-slate-100 text-slate-600"
+          : "bg-muted text-muted-foreground"
       }`}>
         <span className="text-sm font-semibold">1</span>
         <span className="text-sm font-medium">Business Info</span>
       </div>
-      <div className="w-8 h-0.5 bg-slate-200" />
+      <div className="w-8 h-0.5 bg-border" />
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
         currentStep === 2 
           ? "bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 text-white shadow-lg"
-          : "bg-slate-100 text-slate-600"
+          : "bg-muted text-muted-foreground"
       }`}>
         <span className="text-sm font-semibold">2</span>
         <span className="text-sm font-medium">Branding</span>
@@ -300,17 +300,17 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-1">Tell us about your business</h2>
-        <p className="text-sm text-slate-500">This information helps us create the perfect website for you.</p>
+        <h2 className="text-xl font-semibold text-foreground mb-1">Tell us about your business</h2>
+        <p className="text-sm text-muted-foreground">This information helps us create the perfect website for you.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <Label htmlFor="businessName" className="text-slate-700 font-medium">
-            Business name <span className="text-red-500">*</span>
+          <Label htmlFor="businessName" className="text-foreground font-medium">
+            Business name <span className="text-destructive">*</span>
           </Label>
           <div className="relative mt-1.5">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="businessName"
               value={formData.businessName}
@@ -323,8 +323,8 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div className="md:col-span-2">
-          <Label htmlFor="businessCategory" className="text-slate-700 font-medium">
-            Business type <span className="text-red-500">*</span>
+          <Label htmlFor="businessCategory" className="text-foreground font-medium">
+            Business type <span className="text-destructive">*</span>
           </Label>
           <Select 
             value={formData.businessCategory} 
@@ -342,11 +342,11 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div>
-          <Label htmlFor="city" className="text-slate-700 font-medium">
-            City <span className="text-slate-400">(optional)</span>
+          <Label htmlFor="city" className="text-foreground font-medium">
+            City <span className="text-muted-foreground">(optional)</span>
           </Label>
           <div className="relative mt-1.5">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="city"
               value={formData.city}
@@ -359,11 +359,11 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div>
-          <Label htmlFor="email" className="text-slate-700 font-medium">
-            Email <span className="text-red-500">*</span>
+          <Label htmlFor="email" className="text-foreground font-medium">
+            Email <span className="text-destructive">*</span>
           </Label>
           <div className="relative mt-1.5">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="email"
               type="email"
@@ -377,11 +377,11 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div>
-          <Label htmlFor="phone" className="text-slate-700 font-medium">
-            Phone <span className="text-slate-400">(optional)</span>
+          <Label htmlFor="phone" className="text-foreground font-medium">
+            Phone <span className="text-muted-foreground">(optional)</span>
           </Label>
           <div className="relative mt-1.5">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="phone"
               type="tel"
@@ -395,11 +395,11 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div>
-          <Label htmlFor="existingWebsite" className="text-slate-700 font-medium">
-            Existing website <span className="text-slate-400">(optional)</span>
+          <Label htmlFor="existingWebsite" className="text-foreground font-medium">
+            Existing website <span className="text-muted-foreground">(optional)</span>
           </Label>
           <div className="relative mt-1.5">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="existingWebsite"
               value={formData.existingWebsite}
@@ -412,8 +412,8 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div className="md:col-span-2">
-          <Label htmlFor="description" className="text-slate-700 font-medium">
-            One-line description <span className="text-slate-400">(optional)</span>
+          <Label htmlFor="description" className="text-foreground font-medium">
+            One-line description <span className="text-muted-foreground">(optional)</span>
           </Label>
           <Input
             id="description"
@@ -426,8 +426,8 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
         </div>
 
         <div className="md:col-span-2">
-          <Label htmlFor="services" className="text-slate-700 font-medium">
-            Primary services <span className="text-slate-400">(comma-separated, optional)</span>
+          <Label htmlFor="services" className="text-foreground font-medium">
+            Primary services <span className="text-muted-foreground">(comma-separated, optional)</span>
           </Label>
           <Textarea
             id="services"
@@ -441,7 +441,7 @@ function Step1BusinessInfo({ formData, updateField, error, onNext }: Step1Props)
       </div>
 
       {error && (
-        <p className="text-sm text-red-600" data-testid="text-error">{error}</p>
+        <p className="text-sm text-destructive" data-testid="text-error">{error}</p>
       )}
 
       <div className="pt-2">
@@ -473,12 +473,12 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-1">Choose your style</h2>
-        <p className="text-sm text-slate-500">Select your preferred look and feel for your website.</p>
+        <h2 className="text-xl font-semibold text-foreground mb-1">Choose your style</h2>
+        <p className="text-sm text-muted-foreground">Select your preferred look and feel for your website.</p>
       </div>
 
       <div>
-        <Label className="text-slate-700 font-medium mb-3 block">
+        <Label className="text-foreground font-medium mb-3 block">
           Style preference
         </Label>
         <RadioGroup
@@ -492,24 +492,24 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
               htmlFor={`style-${pref.value}`}
               className={`flex flex-col items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 formData.stylePreference === pref.value
-                  ? "border-violet-400 bg-violet-50 shadow-md"
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-primary bg-primary-soft shadow-md"
+                  : "border-border hover:border-muted-foreground hover:bg-muted"
               }`}
               data-testid={`style-${pref.value}`}
             >
               <RadioGroupItem value={pref.value} id={`style-${pref.value}`} className="sr-only" />
               <Palette className={`h-6 w-6 mb-2 ${
-                formData.stylePreference === pref.value ? "text-violet-600" : "text-slate-400"
+                formData.stylePreference === pref.value ? "text-primary" : "text-muted-foreground"
               }`} />
-              <span className="font-semibold text-slate-900 text-sm">{pref.label}</span>
-              <span className="text-xs text-slate-500 text-center mt-1 leading-tight">{pref.description}</span>
+              <span className="font-semibold text-foreground text-sm">{pref.label}</span>
+              <span className="text-xs text-muted-foreground text-center mt-1 leading-tight">{pref.description}</span>
             </Label>
           ))}
         </RadioGroup>
       </div>
 
       <div>
-        <Label className="text-slate-700 font-medium mb-3 block">
+        <Label className="text-foreground font-medium mb-3 block">
           Color theme
         </Label>
         <RadioGroup
@@ -523,8 +523,8 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
               htmlFor={`color-${theme.value}`}
               className={`flex flex-col items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 formData.colorTheme === theme.value
-                  ? "border-violet-400 bg-violet-50 shadow-md"
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-primary bg-primary-soft shadow-md"
+                  : "border-border hover:border-muted-foreground hover:bg-muted"
               }`}
               data-testid={`color-${theme.value}`}
             >
@@ -538,7 +538,7 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
                   />
                 ))}
               </div>
-              <span className="font-semibold text-slate-900 text-sm">{theme.label}</span>
+              <span className="font-semibold text-foreground text-sm">{theme.label}</span>
             </Label>
           ))}
         </RadioGroup>
@@ -546,17 +546,17 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <Label className="text-slate-700 font-medium mb-3 block">
-            Logo <span className="text-slate-400">(optional)</span>
+          <Label className="text-foreground font-medium mb-3 block">
+            Logo <span className="text-muted-foreground">(optional)</span>
           </Label>
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-violet-300 transition-colors">
+          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
             {formData.logoUrl ? (
               <div className="space-y-2">
-                <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto" />
-                <p className="text-sm text-green-600 font-medium">Logo uploaded</p>
+                <CheckCircle2 className="h-8 w-8 text-semantic-success mx-auto" />
+                <p className="text-sm text-semantic-success font-medium">Logo uploaded</p>
                 <button 
                   onClick={() => updateField("logoUrl", "")}
-                  className="text-xs text-slate-500 hover:text-red-500"
+                  className="text-xs text-muted-foreground hover:text-destructive"
                 >
                   Remove
                 </button>
@@ -572,7 +572,7 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
                     updateField("logoUrl", file.uploadURL.split("?")[0]);
                   }
                 }}
-                buttonClassName="bg-slate-100 hover:bg-slate-200 text-slate-700 border-0"
+                buttonClassName="bg-muted hover:bg-secondary text-foreground border-0"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Logo
@@ -582,17 +582,17 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
         </div>
 
         <div>
-          <Label className="text-slate-700 font-medium mb-3 block">
-            Hero image <span className="text-slate-400">(optional)</span>
+          <Label className="text-foreground font-medium mb-3 block">
+            Hero image <span className="text-muted-foreground">(optional)</span>
           </Label>
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-violet-300 transition-colors">
+          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
             {formData.heroImageUrl ? (
               <div className="space-y-2">
-                <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto" />
-                <p className="text-sm text-green-600 font-medium">Image uploaded</p>
+                <CheckCircle2 className="h-8 w-8 text-semantic-success mx-auto" />
+                <p className="text-sm text-semantic-success font-medium">Image uploaded</p>
                 <button 
                   onClick={() => updateField("heroImageUrl", "")}
-                  className="text-xs text-slate-500 hover:text-red-500"
+                  className="text-xs text-muted-foreground hover:text-destructive"
                 >
                   Remove
                 </button>
@@ -608,7 +608,7 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
                     updateField("heroImageUrl", file.uploadURL.split("?")[0]);
                   }
                 }}
-                buttonClassName="bg-slate-100 hover:bg-slate-200 text-slate-700 border-0"
+                buttonClassName="bg-muted hover:bg-secondary text-foreground border-0"
               >
                 <Image className="h-4 w-4 mr-2" />
                 Upload Hero Image
@@ -619,7 +619,7 @@ function Step2Branding({ formData, updateField, error, onBack, onSubmit, getUplo
       </div>
 
       {error && (
-        <p className="text-sm text-red-600" data-testid="text-error">{error}</p>
+        <p className="text-sm text-destructive" data-testid="text-error">{error}</p>
       )}
 
       <div className="flex gap-3 pt-2">
@@ -668,21 +668,21 @@ function GenerationStepItem({
     <div className="flex items-center gap-3">
       <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
         isComplete 
-          ? "bg-green-100" 
+          ? "bg-semantic-success/10" 
           : isActive 
             ? "bg-gradient-to-br from-violet-500 via-pink-500 to-amber-400" 
-            : "bg-slate-100"
+            : "bg-muted"
       }`}>
         {isComplete ? (
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CheckCircle2 className="h-4 w-4 text-semantic-success" />
         ) : isActive ? (
           <Loader2 className="h-3 w-3 text-white animate-spin" />
         ) : (
-          <div className="w-2 h-2 rounded-full bg-slate-300" />
+          <div className="w-2 h-2 rounded-full bg-muted-foreground/50" />
         )}
       </div>
       <span className={`text-sm ${
-        isComplete ? "text-green-600" : isActive ? "text-slate-900 font-medium" : "text-slate-400"
+        isComplete ? "text-semantic-success" : isActive ? "text-foreground font-medium" : "text-muted-foreground"
       }`}>
         {label}
       </span>

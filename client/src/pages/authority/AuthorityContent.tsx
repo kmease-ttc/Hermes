@@ -619,7 +619,7 @@ export default function AuthorityContent() {
     avatar: crewMember.avatar ? (
       <img src={crewMember.avatar} alt={crewMember.nickname} className="w-7 h-7 object-contain" />
     ) : (
-      <Radio className="w-7 h-7 text-amber-500" />
+      <Radio className="w-7 h-7 text-semantic-warning" />
     ),
     accentColor: crewMember.color,
     capabilities: crewMember.capabilities || ["Link Tracking", "Authority Metrics", "Competitor Comparison"],

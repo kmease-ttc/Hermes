@@ -65,7 +65,7 @@ function getPositionBadge(position: number | null) {
   }
   if (position === 1) {
     return (
-      <Badge className="bg-yellow-500 text-black flex items-center gap-1">
+      <Badge className="bg-gold text-foreground flex items-center gap-1">
         <Crown className="h-3 w-3" />
         {position}
       </Badge>
@@ -182,9 +182,9 @@ export default function KeywordRankings() {
               <div className="text-sm text-muted-foreground">Total Ranking</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/30">
+          <Card className="bg-gradient-to-br from-gold/10 to-gold/5 border-gold-border">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-yellow-500 flex items-center gap-1" data-testid="stat-top-1">
+              <div className="text-2xl font-bold text-gold flex items-center gap-1" data-testid="stat-top-1">
                 <Crown className="h-5 w-5" />
                 {data?.summary.numberOne ?? '-'}
               </div>

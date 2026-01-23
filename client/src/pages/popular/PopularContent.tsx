@@ -350,13 +350,13 @@ function getEmptyTrendsMeta(): MetaStatus {
 function getSeverityColor(severity: CanonicalIssue["severity"]): string {
   switch (severity) {
     case "critical":
-      return "bg-red-500/10 border-red-500/30";
+      return "bg-semantic-danger-soft border-semantic-danger-border";
     case "high":
-      return "bg-orange-500/10 border-orange-500/30";
+      return "bg-semantic-warning-soft border-semantic-warning-border";
     case "medium":
-      return "bg-amber-500/10 border-amber-500/30";
+      return "bg-semantic-gold-soft border-semantic-gold-border";
     case "low":
-      return "bg-blue-500/10 border-blue-500/30";
+      return "bg-semantic-info-soft border-semantic-info-border";
     default:
       return "bg-muted/50 border-muted";
   }
@@ -365,13 +365,13 @@ function getSeverityColor(severity: CanonicalIssue["severity"]): string {
 function getSeverityBadgeClass(severity: CanonicalIssue["severity"]): string {
   switch (severity) {
     case "critical":
-      return "bg-red-500/20 text-red-400 border-red-500/30";
+      return "bg-semantic-danger-soft text-semantic-danger border-semantic-danger-border";
     case "high":
-      return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+      return "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border";
     case "medium":
-      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      return "bg-semantic-gold-soft text-semantic-gold border-semantic-gold-border";
     case "low":
-      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      return "bg-semantic-info-soft text-semantic-info border-semantic-info-border";
     default:
       return "";
   }
@@ -380,13 +380,13 @@ function getSeverityBadgeClass(severity: CanonicalIssue["severity"]): string {
 function getSeverityIcon(severity: CanonicalIssue["severity"]) {
   switch (severity) {
     case "critical":
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-semantic-danger" />;
     case "high":
-      return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-warning" />;
     case "medium":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-gold" />;
     case "low":
-      return <Info className="w-4 h-4 text-blue-500" />;
+      return <Info className="w-4 h-4 text-semantic-info" />;
     default:
       return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
   }
@@ -408,11 +408,11 @@ function CorroborationBadge({ check }: { check: CorroborationCheck }) {
     <div
       className={cn(
         "flex items-center gap-2 px-2 py-1 rounded-md text-xs border",
-        isPositive && "bg-green-500/10 border-green-500/30 text-green-400",
+        isPositive && "bg-semantic-success-soft border-semantic-success-border text-semantic-success",
         isPending && "bg-muted/50 border-muted text-muted-foreground",
-        hasIssue && "bg-red-500/10 border-red-500/30 text-red-400",
+        hasIssue && "bg-semantic-danger-soft border-semantic-danger-border text-semantic-danger",
         check.status === "no_data" && "bg-muted/30 border-muted text-muted-foreground",
-        check.status === "error" && "bg-red-500/10 border-red-500/30 text-red-400"
+        check.status === "error" && "bg-semantic-danger-soft border-semantic-danger-border text-semantic-danger"
       )}
     >
       {isPositive && <CheckCircle2 className="w-3 h-3" />}
@@ -468,7 +468,7 @@ function IssueCard({
 
             <div className="flex items-center gap-3 text-sm mb-2">
               {confirmedDrop !== undefined && (
-                <span className="flex items-center gap-1 text-red-400">
+                <span className="flex items-center gap-1 text-semantic-danger">
                   <TrendingDown className="w-3 h-3" />
                   {confirmedDrop}% confirmed drop
                 </span>
@@ -600,25 +600,25 @@ function DetectedDropsTab({
     <div className="space-y-6 p-4">
       {renderGroup(
         "Critical",
-        <XCircle className="w-4 h-4 text-red-500" />,
+        <XCircle className="w-4 h-4 text-semantic-danger" />,
         groupedIssues.critical,
         "Significant drops requiring immediate attention"
       )}
       {renderGroup(
         "High",
-        <AlertTriangle className="w-4 h-4 text-orange-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />,
         groupedIssues.high,
         "Notable drops to investigate"
       )}
       {renderGroup(
         "Medium",
-        <AlertTriangle className="w-4 h-4 text-amber-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-gold" />,
         groupedIssues.medium,
         "Moderate changes to monitor"
       )}
       {renderGroup(
         "Low",
-        <Info className="w-4 h-4 text-blue-500" />,
+        <Info className="w-4 h-4 text-semantic-info" />,
         groupedIssues.low,
         "Minor fluctuations"
       )}
@@ -647,7 +647,7 @@ function RootCausesTab({ issues }: { issues: CanonicalIssue[] }) {
         <Card key={issue.id} className="bg-card/50">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <BrainCircuit className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <BrainCircuit className="w-5 h-5 text-semantic-warning shrink-0 mt-0.5" />
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-semibold text-sm">{issue.displayTitle}</span>
@@ -723,7 +723,7 @@ function ActionsTab({ issues }: { issues: CanonicalIssue[] }) {
           className="flex items-start gap-3 p-3 rounded-lg border bg-card/50"
           data-testid={`action-${action.id}`}
         >
-          <div className="p-2 rounded-md bg-amber-500/10 text-amber-500">
+          <div className="p-2 rounded-md bg-semantic-warning-soft text-semantic-warning">
             {actionTypeIcons[action.actionType] || <ListChecks className="w-4 h-4" />}
           </div>
           <div className="flex-1 min-w-0">

@@ -203,11 +203,11 @@ const MOCK_SCOTTY_DATA: ScottyData = {
 function getSeverityColor(severity: string): string {
   switch (severity) {
     case "critical":
-      return "text-red-500 bg-red-500/10 border-red-500/30";
+      return "text-semantic-danger bg-semantic-danger-soft border-semantic-danger-border";
     case "warning":
-      return "text-amber-500 bg-amber-500/10 border-amber-500/30";
+      return "text-semantic-warning bg-semantic-warning-soft border-semantic-warning-border";
     case "info":
-      return "text-blue-500 bg-blue-500/10 border-blue-500/30";
+      return "text-semantic-info bg-semantic-info-soft border-semantic-info-border";
     default:
       return "text-muted-foreground bg-muted/50";
   }
@@ -216,11 +216,11 @@ function getSeverityColor(severity: string): string {
 function getSeverityIcon(severity: string) {
   switch (severity) {
     case "critical":
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-semantic-danger" />;
     case "warning":
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      return <AlertTriangle className="w-4 h-4 text-semantic-warning" />;
     case "info":
-      return <Info className="w-4 h-4 text-blue-500" />;
+      return <Info className="w-4 h-4 text-semantic-info" />;
     default:
       return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
   }
@@ -302,19 +302,19 @@ function FindingsTable({ findings, onFix }: { findings: TechnicalFinding[]; onFi
     <div className="space-y-6">
       {renderGroup(
         "Critical Issues",
-        <XCircle className="w-4 h-4 text-red-500" />,
+        <XCircle className="w-4 h-4 text-semantic-danger" />,
         groupedFindings.critical,
         "Blocking SEO - fix immediately"
       )}
       {renderGroup(
         "Warnings",
-        <AlertTriangle className="w-4 h-4 text-amber-500" />,
+        <AlertTriangle className="w-4 h-4 text-semantic-warning" />,
         groupedFindings.warning,
         "May impact rankings"
       )}
       {renderGroup(
         "Informational",
-        <Info className="w-4 h-4 text-blue-500" />,
+        <Info className="w-4 h-4 text-semantic-info" />,
         groupedFindings.info,
         "Optimization opportunities"
       )}
@@ -366,11 +366,11 @@ function TrendChart({ data, dataKey, label, color }: { data: any[]; dataKey: str
               {trend > 0 ? (
                 <TrendingUp className="w-3 h-3 text-semantic-success" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3 h-3 text-semantic-danger" />
               )}
               <span className={cn(
                 "text-xs font-medium",
-                trend > 0 ? "text-semantic-success" : "text-red-500"
+                trend > 0 ? "text-semantic-success" : "text-semantic-danger"
               )}>
                 {trend > 0 ? "+" : ""}{trend}
               </span>
