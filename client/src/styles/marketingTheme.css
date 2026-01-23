@@ -5,14 +5,14 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 62px 0 10px;
+  padding: 96px 0 10px;
 }
 
 .arclo-h1{
   font-size: clamp(40px, 5.2vw, 64px);
   line-height: 1.02;
   letter-spacing: -0.04em;
-  margin: 0;
+  margin: 0 0 22px 0;
   color: var(--arclo-text);
   font-weight: 820;
 }
@@ -25,7 +25,8 @@
 }
 
 .arclo-sub{
-  margin-top: 14px;
+  margin-top: 0;
+  margin-bottom: 26px;
   font-size: 18px;
   line-height: 1.5;
   max-width: 720px;
@@ -34,7 +35,8 @@
 }
 
 .arclo-steps{
-  margin-top: 26px;
+  margin-top: 0;
+  margin-bottom: 32px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -67,7 +69,8 @@
 }
 
 .arclo-cta{
-  margin-top: 28px;
+  margin-top: 0;
+  margin-bottom: 28px;
   width: min(860px, 100%);
   display:flex;
   align-items: center;
@@ -109,14 +112,15 @@
   height: 46px;
   padding: 0 18px;
   border-radius: 14px;
-  background: rgba(11,18,32,.04);
-  border: 1px solid rgba(11,18,32,.16);
-  color: rgba(11,18,32,.86);
-  box-shadow: 0 12px 22px rgba(2,6,23,.08);
+  background: rgba(59,130,246,0.10);
+  border: 1px solid rgba(59,130,246,0.22);
+  color: #1D4ED8;
+  box-shadow: 0 12px 22px rgba(2,6,23,.06);
+  font-weight: 600;
 }
 
 .arclo-secondary-cta:hover{
-  background: rgba(11,18,32,.06);
+  background: rgba(59,130,246,0.16);
   transform: translateY(-1px);
 }
 

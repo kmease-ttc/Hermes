@@ -105,25 +105,24 @@ html, body {
 }
 
 .arclo-btn-primary{
-  background: var(--arclo-gradient-primary);
-  background-clip: padding-box;
-  -webkit-background-clip: padding-box;
+  background: linear-gradient(90deg, #6D28D9 0%, #D946EF 40%, #F59E0B 100%);
   color: var(--arclo-btn-text);
   box-shadow: var(--arclo-btn-shadow);
-  border: none;
-  outline: none;
+  border: none !important;
+  outline: none !important;
+  overflow: hidden;
 }
 
-.arclo-btn-primary:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+.arclo-btn-primary:hover{ filter: brightness(1.04); transform: translateY(-1px); }
 
 .arclo-btn-secondary{
-  background: rgba(255,255,255,.65);
-  border-color: var(--arclo-btn-secondary-border);
-  color: var(--arclo-text);
-  box-shadow: 0 10px 18px rgba(2,6,23,.08);
+  background: rgba(59,130,246,0.10);
+  border: 1px solid rgba(59,130,246,0.22);
+  color: #1D4ED8;
+  box-shadow: 0 10px 18px rgba(2,6,23,.06);
 }
 
-.arclo-btn-secondary:hover{ background: rgba(255,255,255,.85); transform: translateY(-1px); }
+.arclo-btn-secondary:hover{ background: rgba(59,130,246,0.16); transform: translateY(-1px); }
 
 .arclo-pill-row{
   display:flex;
@@ -136,22 +135,27 @@ html, body {
 .arclo-trust-pill{
   display:flex;
   align-items:center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 12px 18px;
   border-radius: 999px;
-  background: rgba(255,255,255,.72);
+  background: rgba(255,255,255,.85);
   border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 10px 22px rgba(2,6,23,.08);
-  color: var(--arclo-text-2);
-  font-weight: 560;
+  box-shadow: 0 10px 30px rgba(15,23,42,.06);
+  color: #334155;
+  font-weight: 600;
+  font-size: 14px;
 }
 
-.arclo-trust-pill .dot{
-  width: 10px;
-  height: 10px;
+.arclo-trust-icon{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
-  background: var(--arclo-gradient-primary);
-  box-shadow: 0 0 0 6px rgba(124,58,237,.10);
+  background: linear-gradient(135deg, rgba(109,40,217,0.08) 0%, rgba(245,158,11,0.08) 100%);
+  border: 1px solid rgba(109,40,217,0.12);
+  color: #6D28D9;
 }
 
 @media (max-width: 920px){

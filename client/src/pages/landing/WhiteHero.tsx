@@ -1,4 +1,5 @@
 import React from "react";
+import { Building2, CalendarX, ClipboardList, Sparkles } from "lucide-react";
 
 /**
  * White Hero (high-contrast) — matches the approved "clean white" mock.
@@ -7,6 +8,14 @@ import React from "react";
  * - Reduced copy (no redundant paragraph)
  * - Clear primary vs secondary CTAs
  */
+
+const TRUST_PILLS = [
+  { icon: Building2, text: "Built for your business" },
+  { icon: CalendarX, text: "Cancel anytime" },
+  { icon: ClipboardList, text: "Changes tracked" },
+  { icon: Sparkles, text: "Best practices, automated" },
+];
+
 export default function WhiteHero() {
   return (
     <div className="arclo-hero-wrap">
@@ -83,10 +92,14 @@ export default function WhiteHero() {
           <button className="arclo-btn arclo-secondary-cta">Generate a Free Website</button>
 
           <div className="arclo-pill-row" aria-label="Trust factors">
-            <div className="arclo-trust-pill"><span className="dot" /> Built for service businesses</div>
-            <div className="arclo-trust-pill"><span className="dot" /> Cancel anytime</div>
-            <div className="arclo-trust-pill"><span className="dot" /> Your changes logged</div>
-            <div className="arclo-trust-pill"><span className="dot" /> SEO best practices, automated</div>
+            {TRUST_PILLS.map((pill) => (
+              <div key={pill.text} className="arclo-trust-pill">
+                <span className="arclo-trust-icon">
+                  <pill.icon size={14} strokeWidth={2.5} />
+                </span>
+                <span>{pill.text}</span>
+              </div>
+            ))}
           </div>
 
           <div className="arclo-hairline" />
