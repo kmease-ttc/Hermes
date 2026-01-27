@@ -54,6 +54,7 @@ import FreeReport from "@/pages/FreeReport";
 import ManagedSite from "@/pages/ManagedSite";
 import SelectSite from "@/pages/SelectSite";
 import Examples from "@/pages/Examples";
+import ExamplePreview from "@/pages/ExamplePreview";
 import SharedReport from "@/pages/SharedReport";
 import WebsiteReportPage from "@/pages/WebsiteReportPage";
 import DeveloperReportPage from "@/pages/DeveloperReportPage";
@@ -124,6 +125,7 @@ function Router() {
       <Route path={ROUTES.HOW_IT_WORKS} component={HowItWorks} />
       <Route path={ROUTES.USE_CASES} component={UseCases} />
       <Route path={ROUTES.PRICING} component={Pricing} />
+      <Route path={ROUTES.EXAMPLE_PREVIEW} component={ExamplePreview} />
       <Route path={ROUTES.EXAMPLES} component={Examples} />
       <Route path={ROUTES.CREATE_SITE} component={CreateSite} />
       <Route path={ROUTES.WEBSITE_GENERATOR} component={WebsiteGenerator} />

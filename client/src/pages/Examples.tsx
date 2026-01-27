@@ -3,9 +3,9 @@ import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { SEOHead } from "@/components/marketing/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ROUTES } from "@shared/routes";
+import { ROUTES, buildRoute } from "@shared/routes";
 import { BrandButton } from "@/components/marketing/BrandButton";
-import { Sparkles, Search } from "lucide-react";
+import { Sparkles, Search, Eye } from "lucide-react";
 
 import plumbingImage from "@assets/generated_images/plumbing_hero_diverse_female.png";
 import hvacImage from "@assets/generated_images/hvac_hero_diverse_asian_woman.png";
@@ -120,32 +120,36 @@ export default function Examples() {
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
             {EXAMPLES.map((example) => (
-              <Card 
+              <Card
                 key={example.id}
                 className="bg-card border border-border shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden group flex flex-col h-full"
                 data-testid={`card-example-${example.id}`}
               >
-                <div className="relative h-44 overflow-hidden shrink-0">
-                  <img 
-                    src={example.image}
-                    alt={example.altText}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <span className="text-white text-sm font-medium drop-shadow-md">
-                      {example.imageLabel} · {example.city}
-                    </span>
+                <Link href={buildRoute.examplePreview(example.id)} className="block">
+                  <div className="relative h-44 overflow-hidden shrink-0">
+                    <img
+                      src={example.image}
+                      alt={example.altText}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <span className="text-white text-sm font-medium drop-shadow-md">
+                        {example.imageLabel} · {example.city}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
                 <CardContent className="p-5 flex flex-col flex-1">
-                  <h3 className="font-semibold text-foreground mb-1 min-h-[1.5rem]">{example.business}</h3>
+                  <Link href={buildRoute.examplePreview(example.id)} className="block">
+                    <h3 className="font-semibold text-foreground mb-1 min-h-[1.5rem] hover:text-primary transition-colors">{example.business}</h3>
+                  </Link>
                   <p className="text-sm text-muted-foreground mb-3">{example.industry}</p>
-                  
+
                   <div className="flex flex-wrap gap-1 mb-4 max-h-14 overflow-hidden">
                     {example.services.map((service) => (
-                      <span 
+                      <span
                         key={service}
                         className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full"
                       >
@@ -153,10 +157,19 @@ export default function Examples() {
                       </span>
                     ))}
                   </div>
-                  
-                  <div className="mt-auto">
+
+                  <div className="mt-auto flex flex-col gap-2">
+                    <Link href={buildRoute.examplePreview(example.id)}>
+                      <span
+                        className="w-full flex items-center justify-center gap-1 text-sm font-medium text-foreground h-10 rounded-lg transition-colors cursor-pointer border border-border hover:bg-muted"
+                        data-testid={`button-preview-${example.id}`}
+                      >
+                        <Eye className="h-3 w-3" />
+                        Preview site
+                      </span>
+                    </Link>
                     <Link href={ROUTES.WEBSITE_GENERATOR}>
-                      <span 
+                      <span
                         className="w-full flex items-center justify-center gap-1 text-sm font-medium text-white h-10 rounded-lg transition-colors cursor-pointer"
                         style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
                         data-testid={`button-generate-like-${example.id}`}
