@@ -65,6 +65,9 @@ import { CREW, METRIC_KEYS } from "@shared/registry";
 import { CREW_KPI_CONTRACTS } from "@shared/crew/kpiSchemas";
 import { computeHealthStatus, computeDelta, type HealthStatus, type DeltaInfo } from "@shared/crew/kpiSnapshot";
 import { normalizeWorkerOutputToKpis } from "./crew/kpiNormalizers";
+import { submitJob } from "./agents/submitJob";
+import { jobQueue } from "@shared/schema";
+import { desc } from "drizzle-orm";
 
 const createSiteSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -21696,6 +21699,88 @@ Return JSON in this exact format:
     } catch (error: any) {
       logger.error("InternalAPI", "Test authority failed", { error: error.message });
       res.status(500).json({ error: "Test failed", details: error.message });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JOB QUEUE TEST ENDPOINTS - Verify Hermes can enqueue jobs
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Test endpoint to submit a job to the queue
+  app.post("/api/jobs/submit", async (req, res) => {
+    try {
+      const { service, action, params, websiteId, priority } = req.body;
+
+      if (!service || !action) {
+        res.status(400).json({
+          error: "Missing required fields",
+          required: ["service", "action"]
+        });
+        return;
+      }
+
+      const result = await submitJob({
+        service,
+        action,
+        params: params || {},
+        websiteId,
+        priority,
+      });
+
+      logger.info("JobQueue", `Job submitted: ${result.jobId}`, {
+        service,
+        action,
+        websiteId
+      });
+
+      res.json({
+        ok: true,
+        message: "Job enqueued successfully",
+        ...result,
+      });
+    } catch (error: any) {
+      logger.error("JobQueue", "Failed to submit job", { error: error.message });
+      res.status(500).json({
+        ok: false,
+        error: "Failed to submit job",
+        details: error.message
+      });
+    }
+  });
+
+  // Test endpoint to view recent jobs in the queue
+  app.get("/api/jobs/queue", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+
+      const jobs = await db.select({
+        jobId: jobQueue.jobId,
+        runId: jobQueue.runId,
+        service: jobQueue.service,
+        action: jobQueue.action,
+        websiteId: jobQueue.websiteId,
+        status: jobQueue.status,
+        priority: jobQueue.priority,
+        createdAt: jobQueue.createdAt,
+        claimedAt: jobQueue.claimedAt,
+        completedAt: jobQueue.completedAt,
+      })
+        .from(jobQueue)
+        .orderBy(desc(jobQueue.createdAt))
+        .limit(limit);
+
+      res.json({
+        ok: true,
+        count: jobs.length,
+        jobs,
+      });
+    } catch (error: any) {
+      logger.error("JobQueue", "Failed to fetch jobs", { error: error.message });
+      res.status(500).json({
+        ok: false,
+        error: "Failed to fetch jobs",
+        details: error.message
+      });
     }
   });
 

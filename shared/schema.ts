@@ -3148,3 +3148,44 @@ export const insertHermesRecommendationSchema = createInsertSchema(hermesRecomme
 });
 export type InsertHermesRecommendation = z.infer<typeof insertHermesRecommendationSchema>;
 export type HermesRecommendation = typeof hermesRecommendations.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// JOB QUEUE - Unified job queue for Hermes → Worker communication
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const JobQueueStatuses = {
+  QUEUED: 'queued',
+  CLAIMED: 'claimed',
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+} as const;
+export type JobQueueStatus = typeof JobQueueStatuses[keyof typeof JobQueueStatuses];
+
+export const jobQueue = pgTable("job_queue", {
+  id: serial("id").primaryKey(),
+  jobId: text("job_id").notNull().unique(), // UUID for job identification
+  runId: text("run_id").notNull(), // UUID grouping related jobs in a single run
+  service: text("service").notNull(), // e.g., 'rank-tracker', 'content-analyzer'
+  action: text("action").notNull(), // e.g., 'run', 'check', 'sync'
+  websiteId: text("website_id"), // nullable - site context
+  params: jsonb("params").$type<Record<string, any>>().default({}), // action-specific parameters
+  status: text("status").notNull().default("queued"), // queued, claimed, running, completed, failed
+  priority: integer("priority").default(50), // 1-100, higher = more urgent
+  claimedBy: text("claimed_by"), // worker instance ID that claimed the job
+  claimedAt: timestamp("claimed_at"), // when the job was claimed
+  result: jsonb("result").$type<Record<string, any>>(), // output from worker
+  errorMessage: text("error_message"), // error details if failed
+  attempts: integer("attempts").default(0), // retry tracking
+  maxAttempts: integer("max_attempts").default(3),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"), // when worker started processing
+  completedAt: timestamp("completed_at"), // when job finished (success or failure)
+});
+
+export const insertJobQueueSchema = createInsertSchema(jobQueue).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertJobQueue = z.infer<typeof insertJobQueueSchema>;
+export type JobQueue = typeof jobQueue.$inferSelect;
