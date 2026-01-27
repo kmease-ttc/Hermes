@@ -44,6 +44,7 @@ export const ROUTES = {
   USE_CASES: "/use-cases",
   PRICING: "/pricing",
   EXAMPLES: "/examples",
+  EXAMPLE_PREVIEW: "/examples/:exampleId",
   MANAGED_SITE: "/managed-site",
   CREATE_SITE: "/create-site",
   WEBSITE_GENERATOR: "/tools/website-generator",
@@ -109,6 +110,7 @@ export const buildRoute = {
   freeReport: (reportId: string) => `/report/free/${reportId}`,
   freeReportShare: (reportId: string, shareToken: string) => `/report/free/${reportId}/share/${shareToken}`,
   sharedReport: (token: string) => `/share/${token}`,
+  examplePreview: (exampleId: string) => `/examples/${exampleId}`,
   sitePreview: (siteId: string, token?: string) => token ? `/preview/${siteId}?token=${token}` : `/preview/${siteId}`,
   
   // App route builders
@@ -262,6 +264,7 @@ const DYNAMIC_ROUTE_PATTERNS = [
   /^\/report\/free\/[a-zA-Z0-9_-]+$/,
   /^\/report\/free\/[a-zA-Z0-9_-]+\/share\/[a-zA-Z0-9_-]+$/,
   /^\/share\/[a-zA-Z0-9_-]+$/,
+  /^\/examples\/[a-zA-Z0-9_-]+$/,
   
   // App dynamic routes
   /^\/app\/agents\/[a-zA-Z0-9_-]+$/,
