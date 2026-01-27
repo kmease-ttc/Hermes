@@ -42,9 +42,12 @@ export function BrandButton({
       focus:outline-none focus:ring-4 focus:ring-primary/20
     `,
     secondary: `
-      rounded-xl text-foreground bg-white
-      border border-border
-      hover:border-border hover:bg-muted
+      rounded-xl font-semibold
+      bg-gradient-to-r from-primary via-pink-500 to-gold
+      bg-clip-text text-transparent
+      border border-primary/30
+      hover:border-pink-500/40 hover:shadow-[0_8px_20px_rgba(139,92,246,0.12)]
+      hover:-translate-y-0.5
       shadow-sm
     `,
     accent: `
