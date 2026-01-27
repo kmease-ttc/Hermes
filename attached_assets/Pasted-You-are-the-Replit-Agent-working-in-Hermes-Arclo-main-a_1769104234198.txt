@@ -1,0 +1,242 @@
+You are the Replit Agent working in **Hermes (Arclo main app)**.
+
+Your job is to **accept the other side of the equation** so the SERP & Keyword Intelligence Service (Worker) can stop generating generic recommendations and instead render **page-specific, varied, copy/paste-ready actions**.
+
+Hermes remains the **source of truth for page reality**.
+Worker remains the **renderer + prioritizer**.
+
+Do NOT move report generation into Hermes.
+Do NOT change auth again.
+
+---
+
+# GOAL (plain English)
+
+Hermes must tell the Worker:
+
+* what pages actually exist
+* what is wrong with each page
+* what kind of fix makes sense *for that page*
+* what has already been done
+* what is allowed (licensed / unlocked)
+
+So the Worker can stop guessing.
+
+---
+
+# A) AUTH (DO NOT CHANGE)
+
+All endpoints below:
+
+* Require header: `X-ARCLO-API-KEY`
+* Validate against: `process.env.SEO_SCHEDULER_API_KEY`
+
+Do NOT use `TRAFFIC_DOCTOR_API_KEY` for internal auth.
+That key is only for Hermes → Traffic Doctor API calls.
+
+---
+
+# B) REQUIRED NEW ENDPOINT (this is the missing piece)
+
+## Page-Specific Recommendations Endpoint
+
+### Endpoint
+
+`GET /api/internal/site/recommendations?domain=example.com&week=YYYY-MM-DD`
+
+Auth:
+`X-ARCLO-API-KEY`
+
+### Purpose
+
+Hermes returns **already-analyzed, page-specific recommendation objects** so the Worker does NOT invent generic actions.
+
+Hermes is responsible for:
+
+* choosing *what kind* of recommendation applies to a page
+* choosing *how big* the fix should be
+* ensuring recommendations differ per page
+
+Worker is responsible for:
+
+* ordering
+* grouping
+* rendering
+* unlock/configure state
+* email/UI formatting
+
+---
+
+# C) RESPONSE SHAPE (MUST MATCH)
+
+```json
+{
+  "domain": "empathyhealthclinic.com",
+  "generated_at": "2026-01-22T19:30:00Z",
+  "recommendations": [
+    {
+      "fingerprint": "sha1...",
+      "agent": "scotty",
+      "category": "content",
+      "priority": "high",
+      "page": "/adhd-psychiatry",
+      "title": "Add FAQs that match search intent",
+      "action": "Add 4 FAQs (total 8) focused on diagnosis, treatment options, telehealth, and cost. Add FAQ schema.",
+      "evidence": {
+        "word_count": 620,
+        "faq_count": 4,
+        "schema": ["FAQPage"],
+        "links_in": 2,
+        "rank": 7,
+        "primary_keyword": "adhd psychiatrist orlando"
+      }
+    }
+  ]
+}
+```
+
+---
+
+# D) HOW HERMES GENERATES THESE (MANDATORY LOGIC)
+
+Hermes MUST derive recommendations from **real page data**, not templates.
+
+Minimum page inputs Hermes already has or can compute:
+
+* url
+* title length
+* h1 present?
+* h2/h3 counts
+* word_count
+* faq_count
+* schema types
+* internal_links_in
+* internal_links_out
+* indexable / canonical
+* page_type (money / hub / blog)
+* last_modified
+* primary keyword + rank (if available)
+
+---
+
+## 1) FAQ VARIANCE RULES (NO MORE “6–10 FAQs”)
+
+Hermes decides **exact counts**, not ranges.
+
+Example logic:
+
+* faq_count == 0 → recommend adding **5–7** FAQs
+* faq_count 1–3 → add **3–5**
+* faq_count 4–6 → add **2–4**
+* faq_count ≥7 → do NOT recommend adding; recommend tightening / aligning instead
+
+Final output MUST say:
+
+> “Add 4 FAQs (total 8) focused on: …”
+
+Never output “6–10 FAQs”.
+
+---
+
+## 2) CONTENT EXPANSION VARIANCE
+
+Based on word_count:
+
+* <450 → add **600–900 words** (new sections)
+* 450–900 → add **250–500 words**
+* 900–1500 → add **150–300 words**
+* > 1500 → do NOT add words; recommend restructure / intent alignment
+
+Output MUST name sections:
+
+> “Add ‘Cost & insurance’ and ‘What to expect’ sections (~600–900 words).”
+
+---
+
+## 3) INTERNAL LINK VARIANCE
+
+Based on internal_links_in:
+
+* 0 → add **6–10 links from 3 hub pages**
+* 1–2 → add **4–6 links from top pages**
+* 3–5 → add **2–4 links + fix anchor text**
+* ≥6 → do NOT add links; recommend anchor optimization or deeper linking
+
+If Hermes knows link sources:
+
+> “Add links from /psychiatry, /telepsychiatry, / to this page.”
+
+---
+
+## 4) TITLE / META VARIANCE
+
+Only recommend title changes if something is wrong:
+
+* too long
+* keyword not front-loaded
+* missing city
+* intent mismatch
+
+If title is fine → do NOT recommend title change.
+
+---
+
+## 5) DETERMINISTIC VARIATION (NO RANDOM FLIP-FLOP)
+
+For any “choose X” logic:
+Use deterministic selection:
+
+```
+variant_seed = hash(domain + page + category + week_start_date) % N
+```
+
+This ensures:
+
+* Page A ≠ Page B
+* Same page ≈ same recommendation for the week
+* Changes week-to-week are controlled
+
+---
+
+# E) COMPLETED-WORK SUPPRESSION (REQUIRED)
+
+Before returning a recommendation:
+
+* Fetch completed fingerprints from Hermes DB
+* If fingerprint exists → DO NOT return it again
+
+Fingerprint format:
+
+```
+sha1(domain | page | category | normalized_action)
+```
+
+---
+
+# F) WHAT WORKER WILL DO WITH THIS
+
+Worker will:
+
+* fetch `/site/recommendations`
+* replace generic templates with these objects
+* render them into:
+
+  * “What To Do Next”
+  * Pages to Optimize
+  * Blog Topics
+* apply unlock/configure state using `/site/state`
+
+Hermes does **not** render UI here.
+Hermes only supplies truth.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+* Hermes returns page-specific recommendations
+* No two content recommendations are identical unless page state is identical
+* FAQ / link / word targets vary correctly
+* Worker no longer emits generic “3–5 links / 200–400 words” copy
+* Recommendations are copy/paste-ready into Replit
+
+Implement this endpoint now in Hermes.

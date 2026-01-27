@@ -1,0 +1,114 @@
+Fix regression: Bounce Rate, Conversion Rate, Monthly Sessions disappeared (homepage + Popular). Restore them from existing DB data and prevent silent hiding.
+
+What’s happening (likely)
+
+* The KPI cards are being conditionally hidden when the value is undefined/NaN/empty (or when meta.status != "ok"), so they “disappear” instead of showing a state.
+* Or the dashboard endpoint stopped returning these 3 fields due to a schema/mapping change (Popular summary no longer included in the dashboard model).
+* Or website scoping changed (websiteId vs domain), so queries return 0 rows even though DB has data.
+
+Non-negotiable behavior
+
+* Those 3 KPI cards must always render.
+* If data is missing, show an actionable empty state (Connect GA4 / Fix Popular pipeline / Rerun Popular).
+* Popular should be the source of those KPIs and they should appear:
+
+  1. on Popular’s page
+  2. on the homepage Key Metrics panel
+
+Implementation plan (do in this order)
+
+1. Locate the homepage Key Metrics data source
+
+* Find the client component that renders the Key Metrics cards on /dashboard.
+* Identify the API endpoint it calls (likely something like /api/dashboard, /api/dashboard/overview, /api/overview).
+* Add a temporary log to print the received payload keys for:
+
+  * bounceRate
+  * conversionRate
+  * monthlySessions
+    If these keys are missing in the payload, the problem is server-side.
+
+2. Restore/standardize the dashboard response model
+   Create/confirm a single endpoint that returns a canonical model for the homepage:
+
+GET /api/dashboard/overview
+Response:
+{
+website: { id, domain },
+keyMetrics: {
+conversionRate: { data: { value, trendPct }, meta: { status, actions, reason_code } },
+bounceRate: { data: { value, trendPct }, meta: { status, actions, reason_code } },
+monthlySessions: { data: { value, trendPct }, meta: { status, actions, reason_code } },
+marketSov: { data: { value, trendPct }, meta: { status, actions, reason_code } }
+},
+crews: [...]
+}
+
+Important: keyMetrics for conversion/bounce/sessions MUST come from Popular’s stored KPI table(s), not computed ad-hoc on the homepage.
+
+3. Confirm DB has the metrics and fix the query scoping
+
+* Search server for Popular KPI storage/read code (rg for “bounce”, “conversion”, “monthlySessions”, “ga4_sessions”).
+* Identify the table(s) holding these KPIs (likely a daily rollup table).
+* Fix scoping mismatch:
+
+  * If writes are keyed by domain but reads now use websiteId (or vice versa), add a dual fallback:
+
+    * query by websiteId first; if 0 rows, query by domain.
+* Fix date window filters:
+
+  * ensure dates are stored/queried as ISO (YYYY-MM-DD) or timestamps
+  * avoid yyyymmdd strings in comparisons
+
+4. Stop KPI cards from disappearing (UI)
+   In the KPI card component(s):
+
+* Remove any logic like:
+
+  * if (!value) return null
+  * if (Number.isNaN(value)) return null
+* Replace with:
+
+  * Always render the card shell
+  * If meta.status != "ok", render an inline NoDeadEndsState inside the card:
+
+    * message: “Popular hasn’t produced Bounce Rate yet”
+    * CTA: “Run Popular” or “Connect GA4”
+  * Treat 0 as a valid value (do not hide)
+
+5. Ensure Popular page uses the same underlying KPIs
+
+* Popular page should call either:
+
+  * GET /api/crew/popular/summary (which reads from DB), or
+  * use the same /api/dashboard/overview model and drill into keyMetrics
+* Do not have two competing sources that can diverge.
+
+6. Add an explicit “Rerun Popular” action when KPIs are missing/stale
+
+* Add an action on the missing KPI state to trigger Popular’s job:
+  POST /api/crew/popular/run (or existing orchestrator enqueue endpoint)
+* After enqueue, refresh the overview endpoint.
+
+Quick sanity checks to run
+
+* On /dashboard, the 4 KPI cards appear every time (even if empty state).
+* On Popular page, Bounce/Conversion/Monthly Sessions appear and match homepage.
+* The API response includes keyMetrics with meta.status for each metric.
+* No more “silent disappearing” KPI cards.
+
+Most common root causes to look for immediately
+
+* A fallback default got introduced: value ?? undefined then hidden
+* A refactor renamed fields (bounce_rate -> bounceRate) but UI still expects old keys
+* A website scoping change (DOMAIN config vs websiteId in DB)
+* A date parsing/formatting bug that makes last_30_days query return no rows
+
+Deliverable
+
+* One PR that:
+
+  1. restores dashboard keyMetrics payload (server)
+  2. fixes Popular KPI query scoping and date filtering (server)
+  3. removes “hide if missing” logic and replaces with NoDeadEndsState (client)
+  4. adds a lightweight test asserting /api/dashboard/overview includes the 3 KPIs (even if status != ok)

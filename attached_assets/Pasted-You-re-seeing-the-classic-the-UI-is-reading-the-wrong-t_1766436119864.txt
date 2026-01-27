@@ -1,0 +1,202 @@
+You’re seeing the classic “**the UI is reading the wrong truth**” problem:
+
+* You *can* see web traffic in the dashboard ⇒ **the app is fetching some GA4/GSC data somewhere**
+* But Google Data Connector still shows **9 missing** ⇒ the **Google connector run record is not being updated with `actualOutputs` + metrics**, or the output-slug mapping doesn’t match what the UI expects.
+
+So the fix is not “add more code to fetch.” The fix is: **make the connector’s run output contract match the catalog** and ensure **Refresh writes a new run (or updates the latest run)**.
+
+Here are developer instructions to fix it cleanly.
+
+---
+
+# Developer Instructions: Fix “9 Missing” for Google Data Connector
+
+## Goal
+
+When Google Data Connector is tested/refreshed:
+
+1. It actually calls GA4/GSC fetches (or verifies tokens + makes a lightweight call)
+2. It records `actualOutputs` and `metrics` in `service_runs.outputs_json`
+3. The UI computes missing outputs correctly from:
+
+   * `expectedOutputs` (catalog)
+   * `actualOutputs` (run record)
+
+Right now step (2) is failing or mismatched.
+
+---
+
+## 1) Confirm the expected output slugs (single source of truth)
+
+In `shared/servicesCatalog.ts`, the Google Data Connector should have expectedOutputs like:
+
+```ts
+expectedOutputs: [
+  "gsc_impressions",
+  "gsc_clicks",
+  "gsc_ctr",
+  "gsc_position",
+  "gsc_queries",
+  "gsc_pages",
+  "ga4_sessions",
+  "ga4_users",
+  "ga4_conversions"
+]
+```
+
+Important: **names must be unique and stable**. Don’t use generic “clicks” for both GA4 and GSC.
+
+If your catalog currently uses generic names, switch to namespaced slugs now. This avoids constant confusion later.
+
+---
+
+## 2) Ensure the Google connector “Refresh/Test” writes a new run with actualOutputs
+
+When the user clicks Refresh/Test on Google Data Connector, the server must:
+
+* Create a new `service_runs` row (or update the current running one)
+* Populate:
+
+```json
+outputs_json: {
+  "actualOutputs": [...],
+  "metrics": {...},
+  "highlights": [...],
+  "missingReason": {...optional}
+}
+```
+
+**Never leave `actualOutputs` undefined**, because the UI will assume “everything missing.”
+
+---
+
+## 3) Implement actualOutputs mapping based on returned data (not assumptions)
+
+### In the Google connector test/refresh code:
+
+After each fetch succeeds, push the corresponding slug into `actualOutputs`.
+
+Example logic:
+
+* If GSC query call returns rows => add:
+
+  * `gsc_impressions`, `gsc_clicks`, `gsc_ctr`, `gsc_position`, `gsc_queries`
+* If GSC pages call returns rows => add:
+
+  * `gsc_pages` and include page count in metrics
+* If GA4 traffic call returns sessions/users => add:
+
+  * `ga4_sessions`, `ga4_users`
+* If GA4 conversions are available => add:
+
+  * `ga4_conversions`
+
+### Metrics
+
+Also store counts so the UI has something to display:
+
+```json
+metrics: {
+  "gsc_rows_queries": 500,
+  "gsc_rows_pages": 200,
+  "ga4_sessions": 1234,
+  "ga4_users": 890,
+  "ga4_conversions": 12
+}
+```
+
+---
+
+## 4) Fix the “Refresh” button behavior: it must re-run and persist
+
+Right now you click Refresh and the UI still shows “9 missing,” which suggests one of these:
+
+* Refresh is only re-fetching the UI state and **not creating a new run**
+* Refresh creates a run, but the Integrations table is showing an old run
+* The query for “latest run” is broken (wrong sort field, wrong site_id, wrong service_slug)
+* actualOutputs are being written, but with the wrong key name (e.g., `receivedOutputs` vs `actualOutputs`)
+
+### Required backend behavior
+
+* `POST /api/services/google_data_connector/test-connection?site_id=...`
+
+  * MUST write run with `finished_at`
+* Integrations list query must select:
+
+  * latest run by `finished_at desc`, not `started_at`, and filtered by site
+
+---
+
+## 5) Fix slug mismatch (this is the #1 cause)
+
+If your run writes:
+
+* `"impressions"` but the catalog expects `"gsc_impressions"`
+  then the UI will still show missing.
+
+So we need a single translation layer.
+
+### Add a helper mapping function (server side)
+
+`normalizeGoogleOutputs(result) => { actualOutputs, metrics }`
+
+Where it maps whatever internal data names you have to the catalog slugs.
+
+Example:
+
+* internal `gsc.queryRows` => `gsc_impressions...`
+* internal `ga4.traffic.sessions` => `ga4_sessions`
+
+---
+
+## 6) Make the “Missing” badge clickable and explain WHY
+
+Once the data is correct, you’ll still sometimes have missing outputs (e.g., conversions not configured). That’s fine — but must be explained.
+
+UI behavior:
+
+* Clicking “9 missing” opens a popover:
+
+  * Missing outputs list
+  * Likely reason (rule based)
+  * CTA button
+
+Example:
+
+* Missing: ga4_conversions
+* Reason: “No conversion events configured or scope missing”
+* CTA: “Open GA4 setup”
+
+---
+
+## 7) Quick sanity checks for dev (fast to verify)
+
+After implementing, dev should test:
+
+1. Run Google connector test
+2. Check DB row in `service_runs` for that service:
+
+   * `outputs_json.actualOutputs` is present and non-empty
+3. Refresh Integrations page:
+
+   * Missing count drops (or stays but now reflects real missing)
+4. If traffic is visible in dashboard:
+
+   * confirm that same connector run shows `ga4_sessions` and `ga4_users` present
+
+---
+
+## 8) Most likely immediate fix (given your symptoms)
+
+Since you can see traffic in the dashboard, the connector is fetching GA4.
+
+So the failure is almost certainly:
+
+* The connector run is not writing `actualOutputs` **or**
+* It’s writing slugs that don’t match the catalog.
+
+Fix those two and “9 missing” will resolve.
+
+---
+
+If you paste (or screenshot) what the Google connector currently stores in `service_runs.outputs_json` for its latest run, I can tell you in one message exactly which of the two it is and what the mapping should be.

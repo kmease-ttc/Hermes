@@ -1,0 +1,247 @@
+Perfect. This is the moment to **lock the model** and stop iterating by taste.
+
+Below is a **clear, repeatable image model + sourcing system** you can apply to *every remaining example* so they all feel consistent, credible, and portfolio-grade — without drifting back into weird stock or interior décor.
+
+---
+
+# Example Images — Final Model & Rollout Instructions
+
+## This Is the Model We’re Using (Lock This In)
+
+The HVAC example you just aligned on establishes the correct pattern:
+
+**Model = “Calm professional service + environment + trust”**
+
+Not:
+
+* Interiors
+* Decor
+* Isolated equipment
+* Action-heavy repair shots
+
+Yes:
+
+* Real technicians
+* Real environments
+* Calm posture
+* Marketing-hero framing
+
+This model now applies to **every industry card**.
+
+---
+
+## The Universal Image Formula (Use This Everywhere)
+
+Every example image must satisfy **all 4 criteria**:
+
+1. **Human present OR implied**
+
+   * Technician, professional, or crew
+   * OR environment that clearly implies service (yard, home exterior, clinic lobby)
+
+2. **Calm, not mid-action**
+
+   * Standing
+   * Inspecting
+   * Light interaction
+   * No tools raised, no strain, no “work face”
+
+3. **Environment > object**
+
+   * Home exterior, yard, clinic, storefront
+   * Not close-ups of equipment or tools
+
+4. **Hero-ready**
+
+   * Works as a homepage hero
+   * Has negative space
+   * Could support a headline + CTA overlay
+
+If any image fails one of these → reject it.
+
+---
+
+## Industry-by-Industry Image Playbook
+
+### Plumbing
+
+**Use:**
+
+* Technician standing outside home
+* Technician by truck in driveway
+* Calm residential exterior
+
+**Avoid:**
+
+* Pipes
+* Sinks
+* Under-sink shots
+* Crawlspaces
+
+**Search terms:**
+
+* `plumber residential exterior`
+* `plumbing technician home`
+* `plumber service professional`
+
+---
+
+### HVAC (Locked – Use This as Reference)
+
+**Use:**
+
+* Technician near outdoor unit
+* Technician beside home exterior
+* Seasonal cues (snow / sun)
+
+**Avoid:**
+
+* Indoor mechanical rooms
+* Gauges / wiring close-ups
+* Interiors without context
+
+**Search terms:**
+
+* `hvac technician residential exterior`
+* `heating cooling technician home`
+* `hvac service professional`
+
+---
+
+### Dental Clinic
+
+**Use:**
+
+* Modern clinic lobby
+* Dentist or staff smiling, facing camera
+* Clean, welcoming environment
+
+**Avoid:**
+
+* Open mouths
+* Tools
+* Procedures
+* Chairs without people (feels empty)
+
+**Search terms:**
+
+* `modern dental clinic interior`
+* `dentist office lobby`
+* `dentist smiling office`
+
+---
+
+### Landscaping
+
+**Use:**
+
+* Finished yard
+* Crew standing with arms relaxed
+* Wide outdoor shots
+
+**Avoid:**
+
+* Shovels
+* Dirt
+* Close-ups of plants
+* Mid-digging shots
+
+**Search terms:**
+
+* `landscaping crew residential`
+* `finished landscaped yard`
+* `landscaping service exterior`
+
+---
+
+### Any New Trade (General Rule)
+
+When adding new industries later (electricians, roofing, etc.):
+
+> Default to **professional standing calmly in environment**, not doing the task.
+
+---
+
+## Crop & Framing Rules (Critical)
+
+All images must be normalized the same way:
+
+* **Aspect ratio:** 16:9
+* **Crop:** medium-wide
+* **Subject placement:** left or right third
+* **Negative space:** required
+* **No extreme close-ups**
+
+If you can’t imagine placing a headline over it, it’s wrong.
+
+---
+
+## Overlay Rules (Do Not Skip)
+
+Every image gets a **contextual overlay**:
+
+```
+{Industry} Website · {City, State}
+```
+
+Optional second line (lighter):
+
+```
+{Service category}
+```
+
+This does two things:
+
+* Anchors the image as a **website preview**
+* Prevents “is this just a photo?” confusion
+
+---
+
+## Source Strategy (So This Scales)
+
+### Preferred (Long-Term)
+
+* Replace all images with **real Arclo-generated site screenshots**
+* Screenshot above-the-fold hero
+* This becomes the permanent system
+
+### Interim (Now)
+
+* Use curated stock photos that meet the model
+* Save them locally under:
+
+  ```
+  /examples/{industry}/{slug}.jpg
+  ```
+* Do **not** hotlink random URLs
+
+---
+
+## Acceptance Checklist (Use This Before Commit)
+
+Before approving an image, ask:
+
+* Does this look like a real business website hero?
+* Would a homeowner trust this company?
+* Is it calm and professional?
+* Is the industry instantly obvious?
+* Does it match the HVAC example vibe?
+
+If the answer to any is “no” → replace.
+
+---
+
+## One Rule to Rule Them All
+
+> **If the image sells comfort, trust, and professionalism — it belongs.
+> If it sells labor, tools, or effort — it does not.**
+
+---
+
+If you want next steps, we can:
+
+* Batch-curate **exact Unsplash IDs** for every remaining industry
+* Create a **shared ExampleImage contract** so devs can’t regress
+* Or start replacing these with **real generated site screenshots** now that the layout is stable
+
+This model is solid. Now we just apply it consistently.

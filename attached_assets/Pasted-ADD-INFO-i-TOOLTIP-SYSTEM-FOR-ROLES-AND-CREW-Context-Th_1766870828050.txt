@@ -1,0 +1,136 @@
+ADD INFO (“i”) TOOLTIP SYSTEM FOR ROLES AND CREW
+
+Context:
+The ship layout and crew placement are correct. We need lightweight, non-intrusive tooltips that explain what each ROLE does and what each CREW MEMBER contributes.
+
+Tooltips must add clarity without adding visual noise.
+
+---
+
+### 1) ROLE SLOT TOOLTIP (EMPTY SLOTS)
+
+For every EMPTY role slot on the ship:
+
+Visual:
+- Add a small circular “i” icon (info indicator)
+- Position:
+  - Top-right corner of the role bay
+  - Slightly inset so it doesn’t touch the edge
+- Style:
+  - Muted (text-muted color)
+  - Subtle border
+  - Hover state: brighter
+
+Behavior:
+- Hovering the “i” shows a tooltip describing the ROLE
+- Tooltip content explains:
+  - What this role is responsible for
+  - What kind of value it unlocks
+  - Example outcome
+
+Example (SERP Tracking):
+Title: SERP Tracking  
+Text: “Tracks keyword rankings and explains why positions change over time.”
+
+---
+
+### 2) ROLE SLOT TOOLTIP (FILLED SLOTS)
+
+For FILLED role slots:
+- Keep the role tooltip available
+- The “i” icon remains visible but slightly dimmer
+- Tooltip content remains ROLE-focused (not crew-focused)
+
+This ensures users always understand what the role does, even when staffed.
+
+---
+
+### 3) CREW MEMBER TOOLTIP (BOT AVATAR)
+
+For each CREW MEMBER avatar:
+
+Behavior:
+- Hovering the avatar (or long-press on mobile) shows a second tooltip
+
+Tooltip content explains:
+- Crew name
+- What they specifically do within the role
+- What data/actions they handle
+
+Example (Natasha):
+Title: Natasha — Competitive Intelligence  
+Text: “Monitors competitors, identifies content gaps, and flags emerging threats.”
+
+This differentiates:
+- ROLE = responsibility
+- CREW = execution
+
+---
+
+### 4) TOOLTIP STYLE (NON-NEGOTIABLE)
+
+Tooltips must:
+- Use a dark surface (bg-surface-2)
+- Have subtle border (border-subtle)
+- Rounded corners
+- Max width ~260px
+- Small arrow pointing to trigger
+- High contrast text (text-primary + text-secondary)
+
+Do NOT:
+- Use bright backgrounds
+- Use large shadows
+- Animate excessively
+
+Tooltips should feel “professional SaaS,” not playful.
+
+---
+
+### 5) MOBILE BEHAVIOR
+
+- On mobile:
+  - Tapping the “i” opens the tooltip
+  - Tapping outside closes it
+- Tooltips must not push layout or cause scroll jumps
+
+---
+
+### 6) CONTENT SOURCE
+
+Define tooltip copy in a single config file:
+
+- roleTooltips.ts
+- crewTooltips.ts
+
+This allows copy updates without touching layout code.
+
+Each role entry:
+- title
+- description
+- exampleOutcome (optional)
+
+Each crew entry:
+- name
+- shortDescription
+- handledSignals (optional)
+
+---
+
+### 7) WHAT NOT TO CHANGE
+
+- Do NOT change ship layout
+- Do NOT resize tiles
+- Do NOT add new UI panels
+- Do NOT add persistent text labels inside tiles
+
+Tooltips are the ONLY new explanatory surface.
+
+---
+
+### ACCEPTANCE CRITERIA
+
+This task is complete when:
+- Every role slot has an info tooltip
+- Every crew avatar has a tooltip
+- Tooltips are readable, subtle, and consistent
+- Users can understand the ship without additional documentation

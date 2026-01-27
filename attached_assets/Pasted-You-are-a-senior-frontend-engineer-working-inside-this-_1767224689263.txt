@@ -1,0 +1,132 @@
+You are a senior frontend engineer working inside this Replit project.
+
+Goal (comprehensive UI standardization)
+Make ALL crew pages use ONE consistent design standard for:
+
+1. Key Metrics styling (glass cards) — but the accent/highlight color must match the crew/worker’s color (not a universal purple).
+2. Mission widget styling — gold outline + consistent layout + includes the score element everywhere (not just Speedster).
+3. Ensure Lookout and any other outliers match the same Missions format.
+
+Crews that MUST be verified and fixed (explicit list)
+
+* Natasha
+* Lookout
+* Popular
+* Scotty
+* Speedster
+* Sentinel
+* Hemingway
+* Beacon
+* Atlas
+* Draper
+* Socrates
+
+Non-negotiables
+
+* No per-page copy/paste styling hacks.
+* Create/update shared components + a single registry so every crew page renders identically.
+* Mission widget must have the same gold outline treatment and internal structure across all crews.
+* Mission widget must display the score element consistently for every crew (it is currently missing outside Speedster).
+* Key Metrics cards must be glass-styled everywhere, but accent color must match each crew/worker color (Socrates should not be purple if his worker color is green).
+
+Phase 1 — Establish shared design tokens (single source of truth)
+
+1. Create/confirm a Crew UI registry (if it already exists, extend it):
+
+* client/src/crew/crewRegistry.ts (or wherever crew metadata lives)
+
+Add UI theme fields per crew:
+
+* accentColor (hex or tailwind token)  // used by Key Metrics card highlights
+* missionAccent (use gold across all crews) // mission widget outline/tint
+* iconColor (optional)
+
+Populate accentColor to match each worker’s current brand color used in the left nav icon / crew badge.
+Example: Natasha purple, Socrates green, Scotty orange, etc.
+Do NOT hardcode colors in components; they must come from the registry.
+
+Phase 2 — Key Metrics: make it consistent but color per crew
+2) Update shared Key Metrics components (must be shared):
+
+* KeyMetricsGrid
+* KeyMetricCard
+
+Requirements:
+
+* Keep the Speedster/Natasha “glass” layout as the canonical structure (padding, border, shadow, blur).
+* Replace “default purple” accent behavior with “accentColor from crew registry”.
+* KeyMetricsGrid must accept a prop: accentColor (or crewId and it resolves internally).
+* Ensure:
+
+  * border glow
+  * top highlight line
+  * icon tint
+    all use accentColor.
+
+3. Update all crew pages to pass the crewId (or accentColor) to KeyMetricsGrid
+
+* Every crew page should already have crewId available via CrewDashboardShell; use that.
+* Ensure Socrates picks up green again (matching his worker color), while Natasha stays purple.
+
+Phase 3 — Missions: unify format + gold outline + score everywhere
+4) Identify the shared Missions widget used on crew pages
+
+* There should be exactly ONE shared component, e.g.:
+
+  * client/src/components/missions/MissionsWidget.tsx (or MissionOverview)
+
+5. Enforce the canonical Missions widget format across all crews
+   Mission widget requirements (must match Speedster format):
+
+* Gold outline/tint on the mission card container (same as core format)
+* Same structure:
+
+  * Title (“Missions” or “Mission Overview”)
+  * Status pill
+  * “Next:” line
+  * NEXT ACTIONS section
+  * RECENTLY COMPLETED section (if stubbed, keep it consistent)
+* All spacing/typography identical across crews.
+
+6. Add the missing score element to Missions widget for ALL crews
+
+* The score element (the circular score indicator / “Performance score” style element) must show consistently for every crew’s Missions widget, not just Speedster.
+* Implement Score display in the shared Missions widget:
+
+  * Accept score prop (number | null)
+  * Render it aligned with the mission header area (not vertically centered to the entire card).
+  * Use the same gold/yellow styling for the score ring across all crews (this is mission UI, not key metrics).
+* Ensure every crew page passes its score to the Missions widget.
+
+  * If score comes from crew header already, reuse the same score source.
+  * If score is missing for certain crews, render “—” but keep layout consistent.
+
+7. Fix Lookout specifically (format mismatch)
+
+* Ensure Lookout uses the same MissionsWidget component.
+* Remove any bespoke mission rendering and replace with the shared widget.
+
+Phase 4 — Apply to Mission Control (optional if already done)
+8) If Mission Control uses missions:
+
+* Ensure it uses the same shared MissionsWidget styling for consistency.
+* Keep Blockers unchanged.
+
+Verification checklist (must do before finishing)
+For each crew in the explicit list above:
+
+* Open the crew page and verify:
+
+  * Key Metrics show glass cards and accent color matches the crew/worker (Socrates green, Natasha purple, etc.)
+  * Missions widget has gold outline/tint
+  * Missions widget uses the same layout as Speedster
+  * Missions widget shows the score element (or “—” placeholder) with consistent alignment
+  * Lookout matches the format (no bespoke layout)
+* Provide a short “before/after” confirmation in the final response listing each crew and whether it matches.
+
+Deliverables
+
+* Updated crew registry with accentColor mapping
+* Shared KeyMetricsGrid/KeyMetricCard updated to use per-crew accent
+* Shared MissionsWidget updated to include score + gold outline consistently
+* Confirmation that all listed crews now match the standard

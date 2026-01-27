@@ -1,0 +1,220 @@
+Here’s a concrete “dev brief” plus a drop-in HTML template they can start from.
+
+---
+
+### 1. Goal
+
+Redesign the “Your Website Preview is Ready!” email so it:
+
+* Looks like the Arclo marketing site (modern SaaS feel)
+* Clearly explains what happened and what to do next
+* Works well on mobile and in common email clients
+
+---
+
+### 2. Implementation steps
+
+1. **Find the existing template**
+
+   * Locate the function that sends this email (e.g. `sendSitePreviewEmail`, `sendPreviewReadyEmail`).
+   * It will either:
+
+     * Build a string of HTML directly, or
+     * Load a template file (e.g. in `shared/emailTemplates` or `server/emails`).
+
+2. **Replace the current HTML body with the template below**
+
+   * Keep the subject line logic as-is (or update it to match: `Your Arclo website preview is ready ✨`).
+   * Inject dynamic values:
+
+     * `{{userName}}` (optional)
+     * `{{siteName}}` or `{{businessName}}`
+     * `{{previewUrl}}`
+     * `{{expiresAt}}` (e.g. “7 days”)
+
+3. **Make sure the sender matches the brand**
+
+   * `from: "Arclo <no-reply@arclo.pro>"` (or whatever verified sender you’re using in SendGrid).
+   * Reply-to: `support@arclo.pro`.
+
+4. **Test**
+
+   * Send test emails to Gmail (web + mobile), Apple Mail, and Outlook.
+   * Verify:
+
+     * Button works.
+     * Layout is centered and responsive.
+     * Text is legible in dark mode (no very light gray on white).
+
+---
+
+### 3. HTML email template (drop-in)
+
+Have the function that sends the email interpolate the variables in `{{doubleBraces}}`.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Arclo Website Preview is Ready</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Fallback styles for clients that honor <style> tags.
+       All important layout is also inlined below. */
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100% !important;
+        padding: 24px 16px !important;
+      }
+      .card {
+        padding: 24px 20px !important;
+      }
+      .hero-title {
+        font-size: 24px !important;
+        line-height: 1.3 !important;
+      }
+      .hero-subtitle {
+        font-size: 15px !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f7fb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#f5f7fb; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <!-- Outer container -->
+        <table class="container" role="presentation" width="600" border="0" cellspacing="0" cellpadding="0" style="width:600px; max-width:100%; background-color:transparent; padding:24px;">
+          <tr>
+            <td align="center" style="padding-bottom:16px;">
+              <!-- Logo / brand -->
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center">
+                    <!-- If you have a logo URL, drop it in here -->
+                    <img src="https://arclo.pro/logo-email.png" alt="Arclo" width="120" style="display:block; border:0; outline:none; text-decoration:none; margin-bottom:8px;">
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="font-size:12px; color:#8b94b2; letter-spacing:0.08em; text-transform:uppercase;">
+                    AI Website Engine
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td>
+              <table class="card" role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#ffffff; border-radius:20px; box-shadow:0 18px 45px rgba(15,23,42,0.10); padding:32px 32px 28px;">
+                <!-- Title -->
+                <tr>
+                  <td align="left" style="padding-bottom:8px;">
+                    <div class="hero-kicker" style="font-size:12px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:#6366f1; margin-bottom:4px;">
+                      Your Website Preview is Ready
+                    </div>
+                    <div class="hero-title" style="font-size:26px; line-height:1.3; font-weight:700; color:#0f172a;">
+                      Great news{{userName ? ", " + userName : ""}} — your Arclo site is live in preview.
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Subtitle -->
+                <tr>
+                  <td align="left" style="padding-bottom:20px;">
+                    <p class="hero-subtitle" style="margin:0; font-size:15px; line-height:1.6; color:#4b5563;">
+                      We’ve finished generating your preview website for
+                      <strong>{{siteName}}</strong>. Review the content, make sure everything looks right, and then claim your site with one click.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Preview "card" / image placeholder (optional) -->
+                <tr>
+                  <td align="center" style="padding-bottom:24px;">
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width:100%; border-radius:14px; overflow:hidden; background:linear-gradient(135deg,#4f46e5,#ec4899);">
+                      <tr>
+                        <td align="center" style="padding:18px 20px;">
+                          <p style="margin:0; font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#e0e7ff;">
+                            Preview Ready
+                          </p>
+                          <p style="margin:8px 0 0; font-size:16px; line-height:1.5; color:#f9fafb;">
+                            “{{siteName}}” is ready to view. Content, layout, and on-page SEO have been generated for you.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Primary CTA -->
+                <tr>
+                  <td align="center" style="padding-bottom:16px;">
+                    <a href="{{previewUrl}}"
+                       style="display:inline-block; padding:12px 26px; border-radius:999px; background:linear-gradient(135deg,#4f46e5,#8b5cf6); color:#ffffff; font-size:15px; font-weight:600; text-decoration:none;">
+                      View Your Preview
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Secondary info -->
+                <tr>
+                  <td align="center" style="padding-bottom:24px;">
+                    <p style="margin:0; font-size:13px; line-height:1.6; color:#6b7280;">
+                      This preview link will be active for <strong>{{expiresAt}}</strong>.<br />
+                      Once you’re happy with it, you can publish or request changes directly from the preview page.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- “What’s next” list -->
+                <tr>
+                  <td align="left" style="padding-bottom:20px;">
+                    <p style="margin:0 0 8px; font-size:14px; font-weight:600; color:#111827;">
+                      What you can do next:
+                    </p>
+                    <ul style="margin:0; padding-left:18px; font-size:13px; line-height:1.7; color:#4b5563;">
+                      <li>Review your homepage copy, images, and layout.</li>
+                      <li>Check that your services, locations, and contact info are correct.</li>
+                      <li>Reply to this email if you’d like us to tweak the tone or content.</li>
+                    </ul>
+                  </td>
+                </tr>
+
+                <!-- Support -->
+                <tr>
+                  <td align="left" style="border-top:1px solid #e5e7eb; padding-top:16px;">
+                    <p style="margin:0; font-size:12px; line-height:1.7; color:#9ca3af;">
+                      Need help or see something off? Just reply to this email or contact us at
+                      <a href="mailto:support@arclo.pro" style="color:#6366f1; text-decoration:none;">support@arclo.pro</a>.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:16px;">
+              <p style="margin:0; font-size:11px; color:#9ca3af;">
+                Arclo · Autonomous SEO &amp; Website Generation · arclo.pro
+              </p>
+              <p style="margin:4px 0 0; font-size:11px; color:#9ca3af;">
+                You’re receiving this email because you requested an AI-generated website preview.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+If you want, we can also do a separate, lighter “request received” email (when they first hit Generate) with the same visual style but a “We’re building your preview now, this usually takes under 5 minutes” message so the experience feels consistent end-to-end.

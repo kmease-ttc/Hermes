@@ -1,0 +1,167 @@
+You are a senior frontend engineer polishing the **Send Reports** action card. The functionality is correct, but the **button spacing, sizing, and hierarchy are visually off**, reducing clarity and perceived quality. Fix this with a strict layout system.
+
+This is a **UI-only spacing and alignment fix**.
+
+---
+
+## CORE ISSUE
+
+The two actions:
+
+* Send Business Report
+* Send Technical Report
+
+are visually:
+
+* too close together
+* not clearly separated as distinct actions
+* lacking consistent padding and internal alignment
+* feeling like text rows instead of buttons
+
+They should feel like **two intentional choices**, not list items.
+
+---
+
+## TARGET VISUAL STANDARD
+
+These two actions should look like:
+
+* Equal-weight action buttons
+* Clear vertical separation
+* Large, comfortable click targets
+* Consistent internal spacing
+* Calm, premium, glassy
+
+Think: *“I can confidently click either one.”*
+
+---
+
+## REQUIRED LAYOUT CHANGES
+
+### 1) Wrap both actions in a vertical action stack
+
+Create a container with:
+
+* `flex flex-col`
+* `gap-4` (or equivalent 16–20px spacing)
+
+Do NOT rely on margins between buttons — use a controlled gap.
+
+---
+
+### 2) Normalize button height and padding
+
+Each report button must have:
+
+* Minimum height: **56px**
+* Padding:
+
+  * Horizontal: 20–24px
+  * Vertical: 14–16px
+* Rounded corners consistent with other cards
+* Full-width inside the card
+
+This ensures:
+
+* Equal visual weight
+* Good accessibility
+* Premium feel
+
+---
+
+### 3) Internal button layout (important)
+
+Inside each button:
+
+**Left side**
+
+* Icon
+* Title (primary text)
+* Subtitle (secondary text)
+
+**Right side**
+
+* Optional chevron or arrow (subtle)
+
+Implementation:
+
+* Use `flex items-center justify-between`
+* Left content is `flex items-center gap-3`
+* Text stack is `flex flex-col leading-tight`
+
+Do NOT center text vertically without structure — it causes misalignment.
+
+---
+
+### 4) Increase separation from card description
+
+Add **more top spacing** between:
+
+* The card description text
+* The first report button
+
+Recommendation:
+
+* 20–24px margin-top after description
+
+This visually groups:
+
+* Explanation
+* Then actions
+
+---
+
+### 5) Subtle hover / focus affordance
+
+On hover/focus:
+
+* Slight background lift (very subtle)
+* Border glow intensifies slightly
+* Cursor clearly indicates clickability
+
+Do NOT add:
+
+* Color changes
+* Animations
+* New shadows
+
+Subtlety is key.
+
+---
+
+## WHAT NOT TO DO
+
+* Do NOT stack buttons without spacing
+* Do NOT make them text-only links
+* Do NOT reduce font size
+* Do NOT change color tokens
+* Do NOT add new icons or copy
+
+This is strictly about **spacing, sizing, and alignment**.
+
+---
+
+## ACCEPTANCE CHECKLIST
+
+Before marking done, verify:
+
+* The two buttons feel like **two clear choices**
+* There is comfortable vertical spacing between them
+* Both buttons are the same height
+* Click targets feel large and intentional
+* The card feels as polished as **Fix Everything For Me**
+
+If the buttons still feel “tight” or “crowded”, increase spacing again.
+
+---
+
+## GUIDING PRINCIPLE
+
+> **Spacing is hierarchy.**
+
+If users hesitate or misclick, the spacing is wrong.
+Fix that first.
+
+---
+
+Once this is done, this card will fully match the quality of the rest of the dashboard.

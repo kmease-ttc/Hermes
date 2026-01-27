@@ -1,0 +1,144 @@
+Got it. Here’s a clean, copy-pasteable prompt you can give directly to Hermes (or your Replit agent) to implement this in the UI, aligned with the Agent Contracts PRD and your onboarding flow.
+
+⸻
+
+Prompt for Hermes — Add Geographic Scope Input to UI
+
+Objective
+Add a required Geographic Scope input to the site analysis flow so ranking analysis correctly distinguishes between local and national intent.
+
+This input must be collected before any SERP analysis runs and persisted as part of site configuration.
+
+⸻
+
+Context (Do Not Skip)
+	•	Rankings like “psychiatrist near me” must be evaluated locally, not nationally.
+	•	Agents now require geo_scope as a mandatory input per the Agent Contracts & Interfaces PRD.
+	•	Hermes is responsible for supplying geographic context to all agents.
+	•	This input must be low-friction and understandable to non-technical users.
+
+⸻
+
+UI Placement (Required)
+
+Add the Geographic Scope selection to the Analyze Site flow, at the same step where:
+	•	We collect the user’s email address
+	•	We trigger the initial SEO report
+
+This should appear before the analysis begins.
+
+⸻
+
+UI Specification
+
+1. Control Type
+Use a radio button group (not a dropdown).
+
+Label:
+
+How should we evaluate your search rankings?
+
+Options:
+	•	Local (recommended for most businesses)
+Helper text:
+“Use this if customers find you in a specific city or area.”
+	•	National
+Helper text:
+“Use this if you serve customers across the entire country.”
+
+Default selection:
+	•	Local
+
+⸻
+
+2. Conditional Fields (Local Only)
+If Local is selected, show the following required fields:
+	•	City (text input)
+	•	State / Region (text input or dropdown)
+	•	Country (default: United States)
+
+Copy hint:
+
+“Example: Orlando, FL”
+
+Validation:
+	•	City and State are required for local scope
+	•	Country defaults to US but can be changed
+
+⸻
+
+Data Model (Must Match Agent Contract)
+
+Persist this configuration as part of the site object:
+
+{
+  "geo_scope": "local",
+  "geo_location": {
+    "city": "Orlando",
+    "state": "FL",
+    "country": "US"
+  }
+}
+
+OR
+
+{
+  "geo_scope": "national"
+}
+
+
+⸻
+
+Enforcement Rules (Hard)
+	•	Analysis must not run without geo_scope
+	•	Absence of geo_scope is a blocking validation error
+	•	Hermes must pass geo_scope to all agents
+	•	Agents must not infer or override this value
+
+⸻
+
+UX Principles (Non-Negotiable)
+	•	No SEO jargon
+	•	No “advanced settings” framing
+	•	No long explanations
+	•	Calm, confidence-building copy
+
+The user should understand this as:
+
+“Are customers finding me locally or everywhere?”
+
+⸻
+
+Dashboard Behavior (Follow-Up)
+
+Once configured:
+	•	Show the selected scope in Site Settings
+	•	Allow users to change it later
+	•	Changing scope triggers:
+	•	A new analysis run
+	•	Clear messaging that rankings may shift
+
+⸻
+
+Acceptance Criteria
+	•	Users can clearly select Local vs National
+	•	Local businesses stop seeing false “ranking drops”
+	•	Agents receive correct geographic context
+	•	Trust is preserved when rankings fluctuate
+	•	UI feels simple and intentional
+
+⸻
+
+Reference Docs
+	•	Agent Contracts & Interfaces PRD
+	•	Onboarding & First-Week Experience PRD
+	•	Mission Control PRD
+
+⸻
+
+If you want, next I can:
+	•	Write the exact React/Tailwind component
+	•	Add copy variants for onboarding vs settings
+	•	Extend this for multi-location businesses later
+
+Just say the word.

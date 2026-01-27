@@ -1,0 +1,91 @@
+DEV INSTRUCTIONS — FIX “RECENTLY COMPLETED” UI (LOW CONTRAST / GRAY CARDS)
+
+Issue (from screenshot)
+The “Recently Completed” section uses gray cards with washed-out text/icons that don’t match the rest of the dashboard. The cards read as disabled and the icon chips don’t pop.
+
+Goal
+Make these “completed update” cards look active, readable, and consistent with the app’s dark header + white panel style.
+
+⸻
+
+	1.	Update the card surface + border (stop using flat gray)
+Current: medium-gray background with minimal separation.
+Fix:
+
+	•	Use a white card surface (or near-white) with a subtle border + shadow.
+	•	If you want a “muted completed” look, do it with a thin accent strip or icon chip—not by turning the whole card gray.
+
+Recommended styling (Tailwind-ish; adapt to your tokens)
+Card container:
+	•	bg-white
+	•	border border-slate-200
+	•	shadow-sm
+	•	rounded-xl
+	•	px-5 py-4
+Hover (optional):
+	•	hover:shadow-md hover:border-slate-300
+
+Spacing:
+	•	Ensure consistent gap between icon + text: gap-3
+
+⸻
+
+	2.	Fix typography contrast (title + subtext)
+Title text is currently too low contrast.
+
+Title:
+	•	text-slate-900 font-medium (or semibold if needed)
+
+Timestamp/subtext:
+	•	text-slate-500 text-sm
+
+Make sure the text is never “white on gray” inside a gray card (that’s what’s killing readability).
+
+⸻
+
+	3.	Make the icon chip intentionally branded (not muddy)
+Right now the green icon sits on a gray/green chip that feels dull.
+
+Fix:
+	•	Use a light tinted background with a clear icon color.
+	•	Keep the chip consistent across cards.
+
+Icon chip:
+	•	Container: h-9 w-9 rounded-full bg-emerald-500/15 flex items-center justify-center
+	•	Icon: text-emerald-600 (or text-emerald-500)
+
+If your brand color is purple, use purple instead and reserve green strictly for “success.”
+
+⸻
+
+	4.	Card layout: keep it simple and consistent
+Each card should have:
+
+	•	Left: icon chip
+	•	Right: title (1 line) + timestamp (1 line)
+
+Implementation detail
+	•	Title should clamp instead of wrapping awkwardly:
+	•	line-clamp-1
+	•	If the title needs to wrap, allow 2 lines max:
+	•	line-clamp-2
+
+⸻
+
+	5.	Optional: add a subtle “Completed” affordance without killing contrast
+If you still want these to feel “completed,” add one of:
+
+	•	A small checkmark badge on the top-right (subtle)
+	•	A 2px left border accent:
+	•	border-l-4 border-l-emerald-400/60
+Do NOT gray out the entire card.
+
+⸻
+
+Acceptance criteria
+	•	At 100% zoom, the title text is immediately readable without squinting.
+	•	Cards no longer look disabled.
+	•	Icon is clearly visible and consistent with the rest of the dashboard style.
+	•	Visual style matches the “white panel on dark background” pattern used elsewhere.
+
+If you tell me what component file this section lives in (or paste it), I’ll give you the exact className diff to apply.

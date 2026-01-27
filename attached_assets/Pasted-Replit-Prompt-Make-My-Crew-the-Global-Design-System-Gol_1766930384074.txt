@@ -1,0 +1,156 @@
+Replit Prompt: Make “My Crew” the Global Design System (Gold + Purple Accents), Without Breaking Key Metrics
+
+Objective
+The “My Crew” page has the best visual language in the product: premium, cohesive, space-themed, and readable. The rest of the app (Mission Control, Integrations, Agents, etc.) has drifted into mixed styles (some sections feel “Christmassy” and inconsistent). Make the **My Crew styling the canonical design system** for the entire app.
+
+Important: Do NOT redesign everything. Standardize the core primitives (background, panels, chips, buttons, typography) so every page feels like My Crew.
+
+Key exception:
+
+* Keep the “Key Metrics” cards styling exactly as it is (they look great). Do not restyle those cards except to ensure surrounding backgrounds/padding match.
+
+---
+
+## 1) Establish the Canonical Theme Tokens (Single Source of Truth)
+
+Create a single shared theme file (CSS variables or Tailwind tokens) sourced from the My Crew page:
+
+A) Background
+
+* Use the My Crew blue “space” gradient as the global app background.
+* Keep the subtle vignette and depth.
+* Remove flat black canvases across the app.
+
+B) Surfaces / Panels (My Crew glass)
+Define these tokens:
+
+* `surface.panel` (main section containers)
+* `surface.card` (cards inside panels)
+* `surface.cardActive`
+* `surface.cardDisabled`
+* `surface.cardHighlightGold` (the gold-accented ones)
+* `surface.borderSubtle`
+* `surface.shadowSoft`
+* `surface.glowSubtle`
+
+C) Accent Colors (avoid “Christmassy”)
+Primary accents:
+
+* Gold (existing)
+* Purple (new secondary accent — lighter shade for variation)
+
+Rules:
+
+* Gold = “featured / included / primary highlight”
+* Purple = “secondary action / interactive focus / primary CTA alternate”
+* Green/Red remain semantic only (success/error) but should be toned down and used sparingly.
+
+---
+
+## 2) Standardize the Visual Primitives Across the App
+
+Update shared components so every page uses the same primitives as My Crew:
+
+A) Panels
+
+* All major sections should use the same “My Crew panel” styling:
+
+  * dark translucent background
+  * subtle border
+  * inner glow
+  * consistent radius/shadow
+
+B) Cards
+
+* Use My Crew card treatment everywhere EXCEPT Key Metrics:
+
+  * active/available card = normal glass
+  * disabled card = grayed-out (muted opacity, dashed border)
+  * highlighted card = gold-accent border/glow
+* Keep the “grayed out / gold highlight / normal” patterns intact and re-usable.
+
+C) Chips / Badges
+
+* Reuse the filled-glass chip style from My Crew:
+
+  * translucent bg + solid text color
+* Ensure chip colors do not create a red/green holiday vibe:
+
+  * reserve red/green only for alert/good statuses
+  * use gold/purple for product states and actions
+
+D) Buttons
+Create button variants modeled on My Crew:
+
+* Primary: Purple gradient CTA (for “Run Diagnostics”, “Approve”, “Run QA”)
+* Secondary: Gold CTA (for “Add crew” style actions)
+* Tertiary: dark glass button (for “Review”, “Refresh”, “Export Prompt”)
+  Buttons must share:
+* same height, radius, padding
+* consistent hover lift + glow
+* no mismatched purple styles between pages
+
+---
+
+## 3) Page-by-Page Alignment (Scope)
+
+A) Mission Control
+
+* Keep Key Metrics section unchanged.
+* Everything else (Recommendations, Action Queue, Crew Summary, Benchmarks, Knowledge Base) must use My Crew panels + card styling.
+* Crew Summary cards should be re-skinned to match My Crew crew tiles:
+
+  * same glass, highlight, disabled states
+  * gold/purple accents as appropriate
+* Reduce “Christmas” feel by removing mixed saturated red/green accents where they aren’t semantic.
+
+B) Integrations
+
+* Apply My Crew panel + card styling.
+* Use the same purple gradient for primary buttons.
+* Ensure statuses use toned semantic chips, not neon.
+
+C) Agents Page
+
+* Convert agent cards to match My Crew card language:
+
+  * subtle glass
+  * colored accents used sparingly (agent color for progress/score only)
+  * tooltips and badges match chip system
+
+D) Sites/Settings/Other pages
+
+* Apply global background + panel primitives.
+* Replace any remaining flat/white sections with the My Crew surface tokens.
+
+---
+
+## 4) Protect What Already Works (Do Not Touch)
+
+Do NOT change:
+
+* Key Metrics cards styling
+* Sparkline charts styling
+* Their color logic
+
+Only ensure the surrounding container and spacing uses the My Crew theme.
+
+---
+
+## 5) Acceptance Criteria
+
+* The entire app feels like My Crew (same space gradient, same panel/card language).
+* Gold and Purple are the primary accent system used across pages (variation without chaos).
+* Disabled/active/highlight card states are consistent and reusable everywhere.
+* Mission Control no longer feels like a patchwork of styles.
+* Key Metrics stays exactly as it is and still looks great.
+* No “Christmassy” vibe: red/green only appear for true semantic Good/Alert states.
+
+Deliverables
+
+* Central theme tokens (background, surfaces, borders, shadows, accents)
+* Shared UI primitives updated (Panel, Card, Chip, Button)
+* Mission Control / Integrations / Agents updated to use these primitives
+* Key Metrics untouched
+
+If you want the fastest implementation path: start by extracting My Crew panel/card/button classes into shared components, then swap Mission Control (excluding Key Metrics), then Integrations, then Agents.

@@ -1,0 +1,107 @@
+Here’s a single, clean prompt you can give directly to your Replit agent / AI editor to make the right additions to the pricing page—without changing the structure, adding new plans, or introducing SEO jargon.
+
+This prompt assumes the agent can read and modify the existing /pricing page.
+
+⸻
+
+PROMPT: Enhance Pricing Page to Clarify “Getting Found on Google” (Plain Language, No Jargon)
+
+You are improving the existing Arclo pricing page.
+Do not redesign the page or add new plans.
+Do not introduce technical SEO jargon (keywords, schema, internal links, etc.).
+
+Your goal is to make it crystal clear that Arclo already helps businesses get found on Google, in language a non-technical local business owner understands.
+
+Constraints
+	•	Keep the page simple and scannable.
+	•	No new pricing tiers.
+	•	No add-ons.
+	•	No SEO buzzwords.
+	•	Focus on outcomes: customers, searches, visibility, calls, leads.
+	•	Assume the reader is a plumber, HVAC tech, baker, or florist.
+
+⸻
+
+1. Add a New Section Below the Pricing Cards
+
+Insert a new section directly below the pricing plans with the heading:
+
+“How Arclo Helps Customers Find You on Google”
+
+Section copy:
+
+Arclo is designed to help your business show up when people search for what you offer.
+
+We handle everything automatically — you don’t need to pick keywords, manage SEO, or update your site.
+
+Bullet points (exact intent, wording can be lightly refined):
+	•	We create pages for the services you offer
+	•	We create pages for the areas and cities you serve
+	•	We improve and expand those pages over time
+	•	We adjust things automatically based on what’s working
+	•	We keep your site fresh so Google continues to trust it
+
+End the section with a reassurance line:
+
+You focus on running your business. Arclo handles the rest.
+
+⸻
+
+2. Add a Subtle Tooltip or “Learn More” on the Grow Plan
+
+On the Grow plan (the primary plan), find the bullet that mentions showing up on Google or getting more customers.
+
+Add a small “Learn more” or tooltip next to it.
+
+Tooltip content (plain language):
+
+We focus on the searches real customers use — like your services and your location.
+
+Arclo builds and improves pages around those searches automatically, so more people can find you.
+
+Do not mention keywords, rankings, or SEO mechanics.
+
+⸻
+
+3. Slightly Strengthen the Partner Plan Positioning (No New Features)
+
+Without adding new bullets, adjust the tone of the Partner plan description to emphasize scale and intensity, not technical detail.
+
+Add or refine one line to communicate:
+
+Designed for businesses that want faster, more aggressive growth across more services or locations.
+
+Keep this high-level and outcome-focused.
+
+⸻
+
+4. Optional FAQ at the Bottom of the Page
+
+If there is already an FAQ section, add this question.
+If not, add a very small FAQ block at the bottom.
+
+Q: Do I need to choose keywords or manage SEO myself?
+A:
+
+No. Arclo focuses on your services and your location and handles everything automatically.
+
+You don’t need to understand SEO — you’ll just see more customers finding you.
+
+⸻
+
+5. Final Validation Checklist
+
+Before finishing, confirm:
+	•	No technical SEO terms appear anywhere in the new copy.
+	•	The page still feels simple and uncluttered.
+	•	A non-technical business owner could clearly answer:
+	•	“Does this help people find me on Google?”
+	•	“Do I need to manage anything myself?” (answer should feel like “no”)
+
+Only make these additions if they improve clarity without increasing complexity.
+
+⸻
+
+If you want, next I can:
+	•	rewrite the entire pricing page copy end-to-end in this same voice, or
+	•	generate an A/B test variant of the pricing page that emphasizes “customers” even more strongly.

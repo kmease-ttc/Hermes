@@ -1,0 +1,184 @@
+Below is an updated, consolidated agent prompt / developer instruction set that includes everything you just called out:
+	•	Preview iframe and “open in new tab” must show the same site + same assets (hero image + logo mismatch fix)
+	•	Header must not cover the preview content (fix layout/offset)
+	•	Conversion CTAs must be above the fold on the preview/claim page
+	•	Keep the other fixes: remove “Trusted by…”, improve placeholders, industry-correct hero images, real logos, palette-driven accents
+
+No code. This is written as instructions for the Replit agent.
+
+⸻
+
+ARCLO AGENT INSTRUCTIONS — PREVIEW CONSISTENCY + CONVERSION OPTIMIZATION (VNext)
+
+Primary Goal
+
+When a user reaches the “Preview Ready” page, the site preview must look identical to the site that opens in a new tab, and the page must be optimized to convert (clear, above-the-fold CTA to claim/purchase).
+
+⸻
+
+1) Preview and New Tab Must Match (Asset Consistency)
+
+Problem
+
+The preview iframe shows different hero image/logo than the live preview opened in a new tab.
+
+Required behavior
+	1.	The preview iframe must load the exact same URL and exact same build as “Open Preview in New Tab.”
+	2.	The preview iframe must never display a “placeholder build” while the real site shows the final build.
+
+Implementation rules for the agent
+	•	Treat the preview site as a single immutable artifact:
+	•	One siteId
+	•	One buildId (or versionId)
+	•	One set of final assets: heroImageUrl, logoUrl, and palette config
+	•	Both “iframe preview” and “new tab” must reference the same buildId.
+
+Asset pipeline requirement
+	•	After hero and logo are generated and uploaded, the agent must:
+	1.	Save final asset URLs to the site config (single source of truth)
+	2.	Trigger a rebuild/redeploy of the preview site
+	3.	Wait until the deployed preview site serves the updated config
+	4.	Only then mark the UI as “Preview Ready”
+
+No partial states
+	•	Do not show “Preview Ready” until:
+	•	hero image is final and industry-correct
+	•	logo is final
+	•	preview site has been rebuilt with those assets
+	•	If needed, show “Finalizing your preview…” for a few seconds while the deploy catches up.
+
+⸻
+
+2) Fix the Header Overlapping the Preview (Layout Offset)
+
+Problem
+
+On the preview/claim page, the header overlays the top of the preview content, hiding text.
+
+Required behavior
+	1.	The preview content area must start below the header (no overlap).
+	2.	The preview should look correct at first glance with no scrolling.
+
+Agent instructions
+	•	If the header is fixed/sticky:
+	•	Add a consistent top offset/padding to the page content equal to the header height.
+	•	The offset must be responsive (desktop and mobile header heights may differ).
+	•	Validate: when the preview page loads, the preview card title and the top of the preview frame are fully visible.
+
+⸻
+
+3) Conversion CTAs Must Be Above the Fold (Preview/Claim Page)
+
+Problem
+
+The next step (claim/purchase) CTAs are too far down; conversion elements need to be above the fold.
+
+Required behavior (above the fold on desktop)
+
+The first viewport must contain:
+	1.	The preview image/frame (or at least the hero portion)
+	2.	The “What we already did for you” bullets (short list)
+	3.	The primary CTA: Claim / Continue / Purchase (whatever your flow is)
+	4.	The secondary CTA: “Not now” or “Tell us why” (optional)
+
+Agent instructions to restructure the page
+	•	In the right-hand sidebar:
+	•	Move “Ready to claim your website?” and the primary CTA button to the very top of the sidebar.
+	•	Keep the checkbox list shorter (5–7 items max) so it doesn’t push CTAs down.
+	•	If necessary, compress spacing and reduce font sizes slightly in the sidebar to keep CTA visible without scrolling.
+
+CTA copy requirement (plain language)
+
+Use benefit-driven text:
+	•	Button: “Claim My Website” or “Launch My Website”
+	•	Supporting line: “Love this preview? Claim it and we’ll keep improving it automatically.”
+
+⸻
+
+4) Hero Image Must Match the Industry (and Never Be “Coding” for HVAC)
+
+Problem
+
+The preview sometimes shows a non-industry image even though the live new-tab view is correct.
+
+Required behavior
+	1.	The hero image is generated from an industry template prompt, not generic prompts.
+	2.	A relevance check must run before accepting the hero.
+	3.	If the hero fails relevance, regenerate with stronger constraints or fallback to curated industry imagery.
+
+Agent instructions
+	•	For HVAC, explicitly forbid:
+	•	coding
+	•	laptops
+	•	office desks
+	•	corporate interiors
+	•	Add a simple “industry relevance check” step:
+	•	If image is wrong, reject and regenerate.
+
+Most important: the hero image that passes the check is what gets written to the site config, and both iframe/new tab must use it via the single buildId.
+
+⸻
+
+5) Logo Must Be Visible Everywhere (Preview + New Tab)
+
+Problem
+
+Logo shows up in the full site but not in the preview iframe.
+
+Required behavior
+	•	The logo must be part of the same site config used by both views.
+	•	The logo must not be swapped out by a preview-only placeholder or default.
+
+Agent instructions
+	•	Logo generation is required.
+	•	Save logoUrl into the site config before deploy.
+	•	If logo generation fails:
+	•	use a text wordmark fallback (business name + palette styling)
+	•	still deploy
+	•	but schedule a logo regeneration retry in the background (without blocking the preview)
+
+⸻
+
+6) Remove “Trusted by [X] Customers” Pill Completely
+
+Required behavior
+	•	Remove the “Trusted by…” element entirely from all templates.
+	•	Replace with a row of 3 credibility badges that match the industry OR remove the element completely.
+
+Also ensure there are no hard-coded purple accents left behind.
+
+⸻
+
+7) Replace the Bullseye Placeholder Illustration
+
+Required behavior
+	•	Replace generic placeholder icons with:
+	•	industry-matching icons/illustrations, or
+	•	a simple generated flat illustration that matches palette colors
+
+Agent instructions:
+	•	Create an “illustration pack” per industry (HVAC, plumbing, bakery, etc.)
+	•	Use those icons consistently in “Our Approach” and “Services” sections.
+
+⸻
+
+8) Final “Preview Ready” Quality Gate
+
+Before marking Preview Ready, the agent must confirm:
+	1.	Preview iframe URL == New tab URL (same buildId/version)
+	2.	Hero image is industry-correct and present in both
+	3.	Logo is present in both
+	4.	Header does not overlap any preview content
+	5.	Primary CTA to claim/purchase is visible above the fold
+	6.	No “Trusted by…” pill exists
+	7.	Placeholder imagery looks intentional (no bullseye)
+
+If any check fails:
+	•	do not show “Preview Ready”
+	•	show “Finalizing preview…”
+	•	fix and redeploy
+	•	then mark ready
+
+⸻
+
+If you want, paste me the exact file/page name for this “Preview Ready” screen (or the component names) and I’ll rewrite this into a tighter “step-by-step agent task list” in the exact order your agent should execute it.

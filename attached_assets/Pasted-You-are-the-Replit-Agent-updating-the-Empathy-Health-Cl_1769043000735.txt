@@ -1,0 +1,200 @@
+You are the Replit Agent updating the **Empathy Health Clinic single-site SEO email report**.
+
+Implement a **“Cost of Inaction” calculator + UI** that produces 4 top metrics:
+
+1. **Traffic at risk / mo (est.)**
+2. **Clicks lost / mo (est.)**
+3. **Leads missed / mo (est.)**
+4. **Page-one opportunities**
+
+These 4 metrics must render as a metric row **ABOVE** the existing row:
+
+* Authority (DA)
+* Ranking in Top 20
+* Not Ranked
+
+We will NOT assume “rank #1 = 100% of search volume.” You must apply CTR curves and a capture factor.
+
+Do not add external dependencies. Use existing keyword volume + rank inputs.
+
+---
+
+# Part A — Calculator (how to compute each metric)
+
+## Inputs (already available)
+
+* `keyword_volumes.csv` (keyword → monthly_volume)
+* `serp_ranks_empathyhealthclinic_com.csv` (keyword → current_rank or “Not ranking”)
+* Optional: `serp_ranks_7day.csv` / `serp_ranks_prev.csv` for deltas (not required for this calculator)
+
+## Add configurable assumptions (constants with safe defaults)
+
+Create a small config object in the email script (and later move to settings):
+
+* `CAPTURE_FACTOR = 0.65`
+  (reduces overcounting due to SERP features, map pack, ads, imperfect relevance)
+* `LEAD_CONVERSION_RATE = 0.025`
+  (2.5% of organic clicks become leads; healthcare default)
+* `TARGET_PAGE_ONE_POSITION = 3`
+  (we estimate opportunity using CTR at position #3 to be conservative)
+
+These values MUST be printed in a tooltip/footnote as “Estimates based on assumptions.”
+
+## CTR curve (industry average, conservative)
+
+Implement a rank → CTR function. Use these fixed values:
+
+Positions:
+1: 0.28
+2: 0.15
+3: 0.10
+4: 0.07
+5: 0.05
+6: 0.04
+7: 0.03
+8: 0.025
+9: 0.020
+10: 0.018
+
+Buckets:
+11–20: 0.010
+21–50: 0.004
+Not ranking / >50: 0.001
+
+Function:
+`ctr_for_rank(rank)`:
+
+* if rank is int 1–10 → use table
+* if 11–20 → 0.010
+* if 21–50 → 0.004
+* else → 0.001
+
+## Derived values per keyword
+
+For each tracked keyword k:
+
+* `V = monthly_volume(k)` (0 if missing)
+* `R = current_rank(k)` (bucket if missing)
+* `CTR_now = ctr_for_rank(R)`
+* `CTR_target = ctr_for_rank(TARGET_PAGE_ONE_POSITION)` (position 3)
+
+Compute:
+
+* `current_clicks = V * CTR_now * CAPTURE_FACTOR`
+* `target_clicks = V * CTR_target * CAPTURE_FACTOR`
+* `clicks_gap = max(target_clicks - current_clicks, 0)`
+
+Important:
+
+* Only compute on keywords with known volume > 0.
+* CAPTURE_FACTOR applies to both current and target.
+
+## Metric 1 — Clicks lost / mo (est.)
+
+`CLICKS_LOST = round(sum(clicks_gap))`
+
+This is “estimated additional clicks per month if we pushed opportunities toward page one (pos #3).”
+
+## Metric 2 — Traffic at risk / mo (est.)
+
+This should not be identical to clicks lost. Make it “traffic we may lose if positions slip.”
+
+Compute a “risk” set:
+
+* Keywords currently ranking in positions **1–10** only.
+
+For each keyword in risk set:
+
+* `CTR_now = ctr_for_rank(R)`
+* `CTR_down = ctr_for_rank(min(R+3, 50))` (simulate slipping ~3 spots, capped to 50 bucket)
+* `risk_clicks = max(V * (CTR_now - CTR_down) * CAPTURE_FACTOR, 0)`
+
+`TRAFFIC_AT_RISK = round(sum(risk_clicks))`
+
+This produces a realistic “don’t mess up winners” number.
+
+## Metric 3 — Leads missed / mo (est.)
+
+`LEADS_MISSED = round(CLICKS_LOST * LEAD_CONVERSION_RATE)`
+
+This is a proxy. Must be labeled “est.”
+
+## Metric 4 — Page-one opportunities
+
+Count keywords currently ranking in positions **4–10**:
+`PAGE_ONE_OPPS = count(4 <= R <= 10)`
+
+If rank missing / not ranking, do not include.
+
+---
+
+# Part B — Email UI Instructions
+
+## Placement
+
+Render two metric rows:
+
+### Row 1 (new, top)
+
+* Traffic at risk / mo (est.)
+* Clicks lost / mo (est.)
+* Leads missed / mo (est.)
+* Page-one opportunities
+
+### Row 2 (existing)
+
+* Authority (DA)
+* Ranking in Top 20
+* Not Ranked
+
+## Visual styling (match infographic)
+
+* 4 cards in row 1: compact, colored lightly like the example image
+
+  * Traffic at risk: light red tint
+  * Clicks lost: light orange tint
+  * Leads missed: light yellow tint
+  * Page-one opportunities: light blue/purple tint (neutral “opportunity” feel)
+* Keep row 2 calmer/neutral.
+
+## Copy (must match exactly)
+
+Row 1 labels:
+
+* “Traffic at risk / mo”
+* “Clicks lost / mo”
+* “Leads missed / mo”
+* “Page-one opportunities”
+
+Row 2 labels:
+
+* “Authority (DA)”
+* “Ranking in top 20”
+* “Not ranked”
+
+## Estimation disclosure (required)
+
+For the first three cards (traffic/clicks/leads), add a small inline “Est.” indicator next to the label, e.g.:
+“Clicks lost / mo (Est.)”
+
+Add a small tooltip/footnote line under row 1 (small text):
+“Estimates use industry CTR by rank, a capture factor (0.65), and a lead rate (2.5%).”
+
+Do NOT over-explain inside each card.
+
+## Formatting rules
+
+* Round big numbers with commas (1,255)
+* No decimals in card values
+* If volume data missing across most keywords, show “—” for the first three metrics and keep Page-one opportunities count (it uses rank only).
+
+---
+
+# Part C — Output checks (acceptance)
+
+* The three “est.” metrics must NOT equal raw search volume.
+* CTR curve must be applied (e.g., a keyword with 1,900/mo at rank #8 should produce far less than 1,900 clicks).
+* Row 1 appears above Row 2.
+* Email still renders correctly in common clients (no JS, no fancy CSS that breaks email).
+
+Implement now in `build_multi_site_email.py` (or the current single-site email generator file) and regenerate the preview HTML.

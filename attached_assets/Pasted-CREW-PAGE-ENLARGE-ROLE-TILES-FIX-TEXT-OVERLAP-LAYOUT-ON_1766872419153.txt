@@ -1,0 +1,119 @@
+CREW PAGE – ENLARGE ROLE TILES + FIX TEXT OVERLAP (LAYOUT ONLY)
+
+Context:
+The ship layout and role semantics are correct. The remaining issue is SCALE and SPACING.
+Crew tiles are too small, text is colliding with frames, and empty role slots feel cramped.
+
+Goal:
+Make all crew tiles and empty role frames noticeably larger, ensure all labels fit cleanly inside frames, and eliminate any overlap between tiles.
+
+This is a layout and sizing pass only. Do NOT change logic, roles, or interactions.
+
+---
+
+### 1) TILE SIZE (NON-NEGOTIABLE)
+
+Increase the size of ALL role tiles (filled and empty).
+
+Target sizing:
+- Default crew tile size: **160–180px square** on desktop
+- Major Tom may remain slightly larger (up to ~190px), but NOT dramatically different
+- Empty role slots must be the SAME SIZE as filled slots
+
+Implementation guidance:
+- Replace any hard-coded sizes (e.g., 120px, 132px) with a larger value
+- Prefer responsive sizing:
+  - width/height: clamp(140px, 14vw, 180px)
+
+Result:
+- Bots appear large and prominent
+- Frames feel intentional, not cramped
+
+---
+
+### 2) TEXT & BADGE CONTAINMENT (CRITICAL FIX)
+
+Fix all cases where:
+- “Active” badge overlaps the avatar
+- Crew name sits outside or below the frame
+- Empty slot labels spill outside the frame
+
+Rules:
+- Crew name MUST appear inside the frame
+- Badge (Active / Included) must not overlap avatar
+- Empty slot text (“Empty slot”, role name) must fit inside the frame
+
+Recommended internal layout (top → bottom):
+- Top-right: status badge (small, inset)
+- Center: bot avatar (largest element)
+- Bottom: crew name OR “Empty slot” text (muted)
+
+No text should render outside the tile bounds.
+
+---
+
+### 3) EMPTY SLOT FRAMES
+
+Empty role slots must:
+- Use the same frame size as filled slots
+- Show:
+  - Role icon (centered)
+  - Role name (inside frame)
+  - Info “i” icon
+- Use dashed or subtle border to differentiate from filled slots
+
+Do NOT shrink empty slots.
+
+---
+
+### 4) SPACING & NON-OVERLAP (VERY IMPORTANT)
+
+Eliminate all overlap between tiles.
+
+Minimum spacing:
+- Horizontal gap: **32px**
+- Vertical gap: **40px**
+
+Implementation guidance:
+- Spread tiles further apart using x/y percentage adjustments
+- Use more vertical real estate — do not compress to fit above fold
+- It is OK if the ship becomes taller
+
+Acceptance rule:
+- At desktop widths ≥ 1280px, NO tiles may overlap under any condition
+
+---
+
+### 5) SHIP CANVAS REAL ESTATE
+
+We have unused space on the left and right of the ship.
+
+Rules:
+- Expand tile positions outward slightly to use available horizontal space
+- Do NOT keep all tiles tightly centered
+- Maintain symmetry where possible
+
+The ship should feel spacious and balanced, not stacked.
+
+---
+
+### 6) WHAT NOT TO CHANGE
+
+- Do NOT change role list
+- Do NOT change click behavior
+- Do NOT change modals or tooltips
+- Do NOT move Mission Status or lower sections
+- Do NOT add new UI elements
+
+This is a pure sizing and spacing pass.
+
+---
+
+### ACCEPTANCE CRITERIA
+
+This task is complete when:
+- All crew bots are visually larger and easier to read
+- All text and badges fit cleanly inside frames
+- Empty role slots match filled slot size
+- No frames overlap
+- The ship feels spacious, calm, and intentional

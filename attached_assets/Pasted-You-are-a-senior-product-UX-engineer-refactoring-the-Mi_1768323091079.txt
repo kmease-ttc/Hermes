@@ -1,0 +1,244 @@
+You are a senior product + UX engineer refactoring the **Mission Control dashboard**. The current UI separates **Key Metrics** and **Crew**, which forces users to mentally map metrics → agents. This is unnecessary cognitive load.
+
+Your task is to **collapse Key Metrics and Crew into ONE unified section** that shows:
+
+* All core KPIs
+* Which capabilities are active
+* What’s left to do
+* Whether things are improving
+
+This section becomes the **primary operational view of the product**.
+
+Do NOT remove crew dashboards yet. This is Mission Control only.
+
+---
+
+## CORE DECISION (LOCK THIS IN)
+
+* ❌ Remove the separate **Crew grid** from Mission Control
+* ❌ Remove the separate **Key Metrics** section
+* ✅ Replace both with a single section: **Capabilities & Performance** (working name)
+
+This section answers:
+
+> “What parts of my growth engine are working, and what do I need to do next?”
+
+---
+
+## NEW SECTION: “Capabilities & Performance”
+
+### Section goals
+
+For every capability (crew), show at a glance:
+
+1. The **core KPI**
+2. Whether it’s **active or locked**
+3. How many **tasks** are open
+4. A simple **trend signal**
+5. A clear path to **review or enable**
+
+---
+
+## DATA MODEL (VERY IMPORTANT)
+
+Each crew MUST define a **Core KPI**. No exceptions.
+
+### Core KPI examples (define these explicitly)
+
+* **Scotty (Technical SEO)**
+  KPI: Pages with issues / Completion rate
+
+* **Speedster (Performance)**
+  KPI: Performance Score (or worst LCP)
+
+* **Sentinel (Content Decay)**
+  KPI: Pages losing traffic
+
+* **Hemingway (Content Strategy)**
+  KPI: Content Quality Score
+
+* **Popular (Analytics)**
+  KPI: Monthly Sessions
+
+* **Lookout (Rank Tracking)**
+  KPI: Keywords up/down
+
+* **Atlas (AI Optimization)**
+  KPI: AI readiness score
+
+* **Draper (Paid Ads)**
+  KPI: Conversions / CPA (locked until setup)
+
+* **Socrates (Knowledge Base)**
+  KPI: Insights generated
+
+These KPIs must be visible even if the crew is not active (sample/locked state).
+
+---
+
+## CARD LAYOUT (PER CREW / CAPABILITY)
+
+Each capability is rendered as a **Capability Card** in a grid.
+
+### Card structure (top → bottom)
+
+**1) Header**
+
+* Crew avatar
+* Crew name
+* Status badge:
+
+  * Active (green)
+  * Locked (neutral)
+  * Setup required (gold)
+
+**2) Core KPI (BIG)**
+
+* Large number or score
+* Label underneath
+* If locked:
+
+  * Show blurred/sample value
+  * Label “Sample”
+
+**3) Trend indicator**
+
+* Simple, not chart-heavy:
+
+  * ↑ Improving
+  * → Stable
+  * ↓ Needs attention
+* If no data yet:
+
+  * “No trend yet”
+
+**4) Task count**
+
+* “X tasks open”
+* If zero:
+
+  * “All caught up”
+
+**5) Action CTA**
+
+* If active:
+
+  * “Review” → navigates to crew dashboard
+* If locked:
+
+  * “Enable” → integration/setup flow
+* If setup required:
+
+  * “Configure”
+
+Entire card should also be clickable to navigate to the crew dashboard.
+
+---
+
+## VISUAL RULES (CRITICAL)
+
+### Active vs inactive highlighting
+
+* **Active capabilities**:
+
+  * Colored glow (crew color)
+  * Slightly elevated
+* **Inactive / locked**:
+
+  * Neutral glass
+  * No glow
+* **Setup required**:
+
+  * Gold outline/badge
+
+This makes it immediately obvious what’s working for the user.
+
+---
+
+## TRENDING DATA (KEEP IT LIGHT)
+
+Do NOT add charts here.
+
+Trend is a **signal**, not analysis.
+
+Allowed:
+
+* Arrow + word (Improving / Stable / Declining)
+* Small color cue (green / neutral / gold)
+
+This is enough to create motion and value perception.
+
+---
+
+## NAVIGATION CHANGE (IMPORTANT)
+
+### Mission Control
+
+* Clicking a capability card navigates to:
+
+  * `/crew/{crewId}`
+
+### Left-hand Crew Navigation
+
+For now:
+
+* Keep it
+* But visually de-emphasize it
+
+Later (not now):
+
+* You may remove it entirely once this experience proves sufficient
+
+Do NOT remove left nav yet.
+
+---
+
+## WHAT TO REMOVE FROM MISSION CONTROL
+
+* ❌ Separate Key Metrics section
+* ❌ Separate Crew section
+* ❌ Any duplicated KPI or task counts outside the unified section
+
+Mission Control should have:
+
+1. Primary Action Cards (Fix Everything / Send Reports / Run Diagnostics)
+2. Recommended Actions
+3. Your Wins
+4. **Capabilities & Performance (NEW unified section)**
+
+---
+
+## ACCEPTANCE CHECKLIST
+
+Before finishing, verify:
+
+* Every crew has exactly ONE core KPI
+* All KPIs are visible in one grid
+* Active capabilities are clearly highlighted
+* Locked capabilities still show enticing sample data
+* Task counts are visible per capability
+* Clicking a card takes you to the crew dashboard
+* Mission Control feels simpler, not more complex
+
+If a user can answer:
+
+> “What’s working? What’s not? What should I click next?”
+
+…without scanning multiple sections, this is correct.
+
+---
+
+## GUIDING PRINCIPLE
+
+> **Users don’t care about agents.
+> They care about engines.**
+
+This refactor turns Arclo from:
+
+* “A bunch of tools”
+
+into:
+
+* **“A unified growth engine with moving parts.”**
+
+Implement this next.

@@ -1,0 +1,126 @@
+You are modifying UI. You MUST follow these visual and accessibility constraints exactly. If you violate them, the task is considered failed even if functionality works.
+
+---
+
+## NON-NEGOTIABLE VISUAL RULES
+
+### 1. Contrast (hard requirement)
+
+All text must meet **WCAG AA contrast minimums**.
+
+* Normal text: **contrast ratio ≥ 4.5:1**
+* Large text (≥18px or ≥14px bold): **≥ 3:1**
+* Numeric KPIs must be readable at a glance.
+
+If a color combination fails contrast:
+
+* You must change the text color (not just the background).
+* Prefer dark text on light backgrounds.
+
+**Default safe choices**
+
+* Primary text: `#111827` (near-black)
+* Secondary text: `#374151`
+* Muted text: `#6B7280`
+* Card background: `#FFFFFF`
+* Page background: `#F9FAFB`
+
+Do NOT invent pastel-on-pastel combinations for text.
+
+---
+
+### 2. KPI / Number Visibility (critical)
+
+All numeric values (counts, rankings, deltas):
+
+* Must use **font-weight ≥ 600**
+* Must use **font-size ≥ 20px**
+* Must use **high-contrast color** (near-black or strong semantic color)
+
+Never render numbers in:
+
+* low-opacity text
+* light gradients
+* pale green / pale purple on white
+
+If I cannot read the number in one second, it is wrong.
+
+---
+
+### 3. Cards must be visually bounded
+
+Every card must have **at least one** of the following:
+
+* Border: `1px solid #E5E7EB`
+* OR shadow: `0 1px 3px rgba(0,0,0,0.08)`
+* OR clearly darker background than the page
+
+Cards may NOT “blend into” the page.
+
+---
+
+### 4. Background gradients (restricted)
+
+Gradients are allowed **only** for:
+
+* section headers
+* decorative separators
+
+Gradients are **NOT allowed** behind:
+
+* body text
+* numeric KPIs
+* tables
+* lists
+
+If text sits on a gradient, it must be:
+
+* white `#FFFFFF`
+* AND pass contrast checks
+
+---
+
+### 5. Locked / Disabled states
+
+Locked cards must still be readable.
+
+Rules:
+
+* Do NOT reduce opacity below **0.7**
+* Do NOT blur text
+* Use a badge or overlay instead:
+
+  * “Locked”
+  * “Subscribe to unlock”
+
+The user must be able to read *what they’re missing*.
+
+---
+
+## REQUIRED SELF-CHECK BEFORE CLAIMING “DONE”
+
+Before you say the UI is complete, you MUST verify:
+
+1. Can all numbers be read clearly on a laptop at normal brightness?
+2. Is every section distinguishable from the background?
+3. Does any text disappear on white or light gray?
+4. Can I screenshot this and annotate it without squinting?
+
+If the answer to any is “no”, fix it first.
+
+---
+
+## FAILURE CONDITIONS
+
+The following automatically fail the task:
+
+* Text rendered in light gray on white
+* Pastel text on pastel backgrounds
+* KPIs that require zooming to read
+* “Looks nice” but unreadable UI
+
+Clarity beats aesthetics.
+
+---
+
+Proceed with UI changes only after enforcing these rules.

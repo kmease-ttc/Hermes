@@ -1,0 +1,240 @@
+Yes — do it. An internal “Admin / Launch Dashboard” page is exactly the right move for how you work: one place to see funnel health, failures, and what users are doing.
+
+Below are developer instructions for that page (human-readable, no code), plus a short list of additional services worth connecting.
+
+⸻
+
+1) What this Admin page should do
+
+Create a private page:
+/admin (or /admin/launch) that gives you:
+	1.	Funnel conversion at a glance
+	2.	Generation reliability (stalls, timeouts, retries)
+	3.	Top drop-off points
+	4.	Recent sessions (Clarity links)
+	5.	Search Console + indexing health snapshot
+	6.	Alerts when something breaks
+
+This page should answer:
+
+“Are we healthy? If not, where is it breaking and why?”
+
+⸻
+
+2) Access & Security (non-negotiable)
+	•	Restrict /admin to admin users only (you and anyone you explicitly flag).
+	•	Do not rely on “hidden route” security.
+	•	If user is not admin:
+	•	redirect to homepage or show 404.
+	•	Never expose user PII on the page (email OK for internal use; avoid addresses/phone numbers unless needed).
+
+⸻
+
+3) What to show on the Admin dashboard (sections + exact metrics)
+
+A) “Funnel Health” (top of page)
+
+Show a simple funnel with counts and conversion rates for the last:
+	•	24 hours
+	•	7 days
+	•	30 days
+
+Funnel steps
+	1.	Landing page view
+	2.	Click “Generate My Free Site”
+	3.	Intake form completed
+	4.	Build started
+	5.	Preview ready
+	6.	Click “Launch My Website”
+	7.	Checkout opened
+	8.	Payment success / subscription started
+
+For each step show:
+	•	count
+	•	step-to-step conversion %
+	•	time-to-next-step median
+
+⸻
+
+B) “Generation Reliability”
+
+This should be the most actionable panel.
+
+Show:
+	•	% of builds that succeed
+	•	% that timeout
+	•	average time to preview ready
+	•	p95 time to preview ready (long tail matters)
+	•	counts of retries (“Try Again” clicks)
+	•	counts of “Start Fresh” clicks
+
+Also show last 20 builds in a table:
+	•	siteId
+	•	business name
+	•	industry
+	•	startedAt
+	•	current status (generating / preview_ready / failed)
+	•	phase stuck in (content / hero / logo / deploy)
+	•	total duration
+	•	error reason (if failed)
+	•	links: “open preview”, “open logs” (if available)
+
+⸻
+
+C) “Conversion Blockers”
+
+A list of the most common drop-offs and friction signals.
+
+Show:
+	•	% of users who reach preview but do not click “Launch My Website”
+	•	% who click “Launch” but do not reach checkout
+	•	% who open checkout but do not complete payment
+	•	rage-click rate on key pages (Clarity)
+	•	most common “Not for me — tell us why” reasons (if collected)
+
+⸻
+
+D) “Clarity Quick Links”
+
+Embed or link:
+	•	last 20 Clarity session recordings filtered to:
+	•	people who reached preview
+	•	people who hit timeout screen
+	•	people who clicked launch but didn’t finish
+
+If possible, show:
+	•	session ID
+	•	page path
+	•	duration
+	•	link to recording
+
+⸻
+
+E) “SEO Health Snapshot” (lightweight)
+
+This should not be deep SEO analysis—just “are we alive?”
+
+Show:
+	•	pages indexed count
+	•	sitemap status (last submitted / last read)
+	•	top queries (last 7 / 28 days) and impressions
+	•	top pages by impressions
+
+If API integration is too heavy right now:
+	•	show a manual “last checked” note + quick links to GSC pages.
+
+⸻
+
+F) “Alerts”
+
+Above the fold show red/yellow/green flags such as:
+	•	Build success rate below X% (e.g., 90%)
+	•	Average preview time above X seconds (e.g., 45s)
+	•	Timeouts in last hour > N
+	•	Payment failures > N
+	•	Delete site errors spiking (your recent bug)
+
+Also: a “recent incidents” log with timestamps.
+
+⸻
+
+4) Where this data comes from (implementation guidance)
+
+To build this dashboard, you need a clean event stream.
+
+Instrument these events (if not already)
+	•	landing_view
+	•	generate_click
+	•	intake_submit
+	•	build_started
+	•	content_done
+	•	hero_done
+	•	logo_done
+	•	deploy_done
+	•	preview_ready
+	•	preview_view
+	•	launch_click
+	•	checkout_open
+	•	payment_success
+	•	payment_failed
+	•	timeout_shown
+	•	try_again_click
+	•	start_fresh_click
+	•	delete_site_click
+	•	delete_site_success
+	•	delete_site_failed
+	•	not_for_me_click + reason
+
+Store events in your DB (or a lightweight analytics store) so the admin dashboard can query them reliably even if GA is delayed.
+
+Use GA/Clarity for validation and recordings, but the admin dashboard should rely on first-party event tracking for accuracy.
+
+⸻
+
+5) UX requirements for the Admin page
+	•	Single page, scrollable sections
+	•	Default timeframe = last 7 days
+	•	Dropdown to switch: 24h / 7d / 30d
+	•	Everything readable in under 60 seconds
+	•	No dense charts; simple counts + deltas
+	•	Include export button for CSV on builds + events (optional)
+
+⸻
+
+6) Prompt for your developer / Replit agent (copy/paste)
+
+PROMPT: Build /admin Launch Dashboard
+
+Create a private admin-only page /admin that summarizes Arclo’s funnel, build reliability, and conversion health in one place.
+
+Requirements:
+	1.	Access control: admin-only route; non-admin gets 404 or redirect.
+	2.	Add sections:
+	•	Funnel Health (landing → generate → preview → launch → checkout → payment)
+	•	Generation Reliability (success rate, timeouts, avg + p95 time to preview, retry clicks)
+	•	Conversion Blockers (preview→launch dropoff, launch→checkout dropoff, checkout→payment dropoff, “not for me” reasons)
+	•	Clarity Quick Links (recent sessions filtered to preview/timeout/launch)
+	•	SEO Health Snapshot (indexing count, sitemap status, top queries/pages OR links to GSC if no API)
+	•	Alerts (red/yellow/green thresholds + recent incidents list)
+	3.	Add time range selector: 24h / 7d / 30d.
+	4.	Implement first-party event tracking in our DB for all key events so the dashboard is accurate and near real-time (do not rely solely on GA).
+	5.	Add a “Recent Builds” table with: siteId, name, industry, status, phase, duration, error reason, links to preview and logs.
+	6.	Acceptance: I can open /admin and immediately answer: where people drop off, whether generation is healthy, and whether conversion is improving.
+
+Deliver:
+	•	The admin page
+	•	The event schema
+	•	The list of tracked events
+	•	Thresholds used for alerts
+
+⸻
+
+7) Other services worth connecting (short list)
+
+You already have Clarity + GA + GSC — that’s great.
+
+If you add only 2 more things, make it:
+
+A) Error monitoring (high ROI)
+
+Connect something like:
+	•	Sentry (frontend + backend)
+or a similar error tracking tool.
+
+Why:
+	•	You’ll catch the exact stack trace for timeouts, delete failures, broken routes, etc.
+	•	You’ll know before users tell you.
+
+B) Uptime monitoring (simple)
+	•	Better Uptime / UptimeRobot / Pingdom
+
+Why:
+	•	You’ll know if production is down or endpoints are failing.
+
+Optional later:
+	•	PostHog (if you want first-party product analytics without GA)
+	•	Stripe webhooks + dashboard view (if billing is central)
+
+⸻
+
+If you want, I can also write the exact threshold values for alerts (what should be “red” vs “yellow”) based on your current performance targets.

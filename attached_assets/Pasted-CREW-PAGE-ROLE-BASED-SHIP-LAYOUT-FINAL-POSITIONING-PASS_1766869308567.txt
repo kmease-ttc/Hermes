@@ -1,0 +1,161 @@
+CREW PAGE – ROLE-BASED SHIP LAYOUT (FINAL POSITIONING PASS)
+
+Context:
+We are building the “My Crew” page in Hermes. The ship visualization is now coded and functional. This prompt is ONLY to fix layout, spacing, and role semantics. Do NOT generate new images. Do NOT redesign the page structure.
+
+Goal:
+Convert the current crew tiles into ROLE SLOTS that live inside a ship layout, with clear spacing, no overlap, and correct semantics:
+- You add a CREW MEMBER to a ROLE
+- Not a crew member floating independently
+
+This is the final positioning pass before we lock layout and apply a static ship background image later.
+
+---
+
+### 1. ROLE-FIRST SEMANTICS (IMPORTANT)
+
+Each position on the ship is a ROLE SLOT, not a bot slot.
+
+Examples:
+- “Competitive Intelligence” is a ROLE
+- Natasha is a CREW MEMBER that can fill that role
+
+Implementation:
+- Every tile represents a ROLE SLOT
+- The role slot has:
+  - Role name (always visible)
+  - Role icon when empty
+  - Crew avatar when filled
+
+Empty slot state:
+- Show a subtle role icon (e.g. eye for Competitive Intelligence)
+- Show an info (“i”) indicator
+- Text: “Empty slot”
+- Hover: “Assign a crew member”
+
+Filled slot state:
+- Show crew avatar
+- Show crew name
+- Badge: Active / Included / Selected
+
+Do NOT render crew avatars in empty slots.
+
+---
+
+### 2. REQUIRED ROLE SLOTS (CANONICAL LIST)
+
+Use these exact role slots and labels:
+
+TOP / COMMAND
+- Mission Control (Captain)
+  - Filled by: Major Tom (always included)
+
+INTELLIGENCE
+- Competitive Intelligence
+  - Filled by: Natasha
+- SERP Tracking
+  - Filled by: Lookout
+- Analytics & Signals
+  - Filled by: Popular
+
+ENGINEERING
+- Technical SEO
+  - Filled by: Scotty
+- Performance Monitoring
+  - Filled by: Speedster
+
+CONTENT SYSTEMS
+- Content Decay
+  - Filled by: Sentinel
+- Content Strategy
+  - Filled by: Hemingway
+
+AUTHORITY
+- Domain Authority
+  - Filled by: Beacon
+
+GROWTH
+- Paid Ads
+  - Filled by: Draper
+
+---
+
+### 3. SPACING & NON-OVERLAP (NON-NEGOTIABLE)
+
+Fix current overlap issues.
+
+Rules:
+- NO tiles may overlap at any screen size ≥ 1280px
+- Minimum spacing:
+  - Horizontal gap ≥ 24px
+  - Vertical gap ≥ 32px
+- Increase vertical spread so the ship reads top → bottom
+
+Implementation guidance:
+- Use fixed x/y percentages for slots
+- Spread roles vertically across the full ship height
+- Prefer more vertical height over compactness
+
+This layout should feel calm and readable, not dense.
+
+---
+
+### 4. TILE SHAPE & SIZE
+
+- Tiles must be square
+- Desktop size: 120–140px
+- Major Tom / Mission Control may be 10–15% larger
+- Role label is part of the tile (not floating outside)
+
+---
+
+### 5. INTERACTION RULES
+
+Clicking an EMPTY role slot:
+- Opens crew selection modal
+- Shows which crew members can fill that role
+
+Clicking a FILLED role slot:
+- Opens crew details modal
+
+Hover state (empty):
+- Role icon highlights
+- Tooltip: “Assign a crew member to this role”
+
+Hover state (filled):
+- Subtle glow
+- Tooltip: “View role details”
+
+---
+
+### 6. VISUAL HIERARCHY
+
+- Ship is a background canvas (already implemented)
+- Role slots sit ON TOP of the ship
+- No role tiles outside the ship bounds
+- No role tiles touching ship edges
+
+The ship must still be the dominant visual.
+
+---
+
+### 7. WHAT NOT TO CHANGE
+
+- Do NOT change Mission Status card
+- Do NOT move Active Capabilities / Set Bonuses (they stay below the fold)
+- Do NOT add pricing yet
+- Do NOT add new roles
+- Do NOT add animations beyond hover/selection states
+
+---
+
+### 8. ACCEPTANCE CRITERIA
+
+This task is complete when:
+- All role slots are clearly visible and labeled
+- No tiles overlap
+- Empty slots clearly indicate “this role exists”
+- Crew members are visually assigned to roles (not floating)
+- Layout looks intentional and ready for a static ship background image
+
+After this pass, we will lock positions and apply a static ship image behind the layout.

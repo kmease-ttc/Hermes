@@ -1,0 +1,65 @@
+You are working in a Replit project (Hermes SEO / Arclo). Implement the new white landing page hero design using the provided zip file: `arclo-white-home-hero-files.zip`.
+
+Goal
+- Make the homepage (route “/”) match the clean white hero mock:
+  - High contrast headline + subhead
+  - CTA row: input + primary gradient button
+  - Secondary button: “Generate a Free Website”
+  - Trust factors row as pill badges (high visibility)
+  - Premium clean SaaS spacing + typography (Inter)
+- This should NOT break the dashboard or app routes.
+
+Implementation Steps
+1) Unzip `arclo-white-home-hero-files.zip`.
+2) Copy files into the repo exactly matching these paths:
+   - `src/pages/landing/WhiteHero.tsx`
+   - `src/pages/landing/LandingPage.tsx`
+   - `src/styles/arclo-tokens.css`
+   - `src/styles/arclo-base.css`
+   - `src/styles/marketingTheme.css`
+   - `README_APPLY.md`
+3) Ensure global CSS loads the 3 new stylesheet imports FIRST.
+   - In `src/index.css` (or whichever global stylesheet is loaded in `main.tsx`), add at the very top:
+     @import "./styles/arclo-tokens.css";
+     @import "./styles/arclo-base.css";
+     @import "./styles/marketingTheme.css";
+   - Make sure there are no duplicate imports of these three files elsewhere.
+4) Wire the landing page to the root route `/`:
+   - Find the router config (likely `src/App.tsx` or `src/pages/...`).
+   - Ensure “/” renders `<LandingPage />`.
+   - Do not change dashboard routes like `/app/dashboard`.
+5) Confirm the hero matches these copy requirements EXACTLY:
+   Headline:
+   “Autonomous SEO that grows traffic — without guesswork.”
+   Subheadline:
+   “Weekly fixes you can approve, apply, and track.”
+   Steps line:
+   “Scan your site → Identify what’s holding rankings back → Apply fixes week-by-week”
+   CTA:
+   - Input placeholder: “Enter your website (example.com)”
+   - Primary button: “Analyze My Website”
+   - Secondary button: “Generate a Free Website”
+   Microcopy:
+   “Free scan • No credit card • Takes ~60 seconds”
+   Trust pills:
+   “Built for service businesses” / “Cancel anytime” / “Your changes logged” / “SEO best practices, automated”
+6) Validate contrast:
+   - No washed-out text
+   - The “traffic” word has a subtle gradient highlight
+   - Trust pills readable on white background
+7) Run the app and visually confirm:
+   - `/` looks like the white premium mock
+   - No layout shift / nav spacing issues
+   - Dashboard (`/app/dashboard`) still works unchanged
+
+Deliverables
+- Commit changes
+- Reply with:
+  - List of modified/added files
+  - Confirmation that `/` is updated
+  - Screenshot or description of the updated page
+
+Constraints
+- Keep changes minimal and localized to landing/marketing UI.
+- Do not refactor unrelated components.
+- Do not change business logic, auth, or API calls.

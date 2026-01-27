@@ -1,0 +1,197 @@
+You are a senior Content Quality + SEO engineer working in the Hermes SEO / Arclo codebase.
+
+Goal
+Fully implement **Hemingway (Content Quality & Readability)** so the page is complete, data-driven, and aligned with the global KPI style guide (same as Natasha, Lookout, Scotty, Sentinel).
+
+Hemingway’s mission
+“Ensure all content is clear, readable, credible, and aligned with search intent so it converts and sustains rankings.”
+
+Hemingway is **not a writer**. He is a **quality gate**.
+
+---
+
+## Part A — KPI / Metrics section (top of page)
+
+Use the **standard KPI components** and **Hemingway crew accent color**.
+
+Hemingway KPIs must be:
+
+1. **Content Quality Score**
+
+* Definition: Weighted score combining readability, structure, clarity, and SEO hygiene.
+* Source: content analysis worker.
+* Value: 0–100
+* Status:
+
+  * Green ≥ 80
+  * Gold 60–79
+  * Red < 60
+
+2. **Readability Grade**
+
+* Definition: Average Flesch-Kincaid or equivalent grade across indexed pages.
+* Value: numeric (e.g., 7.8)
+* Status:
+
+  * Green ≤ 8
+  * Gold 9–11
+  * Red > 11
+
+3. **Pages Needing Improvement**
+
+* Definition: Count of pages below quality threshold.
+* Value: integer
+* Status:
+
+  * Green = 0–3
+  * Gold = 4–10
+  * Red > 10
+
+4. **E-E-A-T Coverage**
+
+* Definition: % of pages meeting E-E-A-T heuristics (author, credentials, citations, trust signals).
+* Value: percent
+* Status:
+
+  * Green ≥ 80%
+  * Gold 60–79%
+  * Red < 60%
+
+No blanks. No placeholders.
+
+---
+
+## Part B — Missions section
+
+Hemingway missions should feel **editorial + diagnostic**, not generative.
+
+Include:
+
+1. **Analyze Content Quality**
+
+* Action: runs quality analysis across all indexed pages.
+* Output:
+
+  * readability
+  * structure
+  * clarity
+  * trust signals
+  * intent alignment
+
+2. **Identify Weak Pages**
+
+* Action: surfaces pages below quality thresholds.
+* Output: prioritized list by impact.
+
+3. **Improve Content Quality**
+
+* Action: queues improvements via content agents or deployer.
+* Must support:
+
+  * single-page fix
+  * bulk fixes
+
+---
+
+## Part C — Findings tab (default)
+
+This is Hemingway’s core.
+
+Render a table of **Pages Needing Improvement**, grouped by severity:
+
+Each row must include:
+
+* URL
+* Primary keyword
+* Readability grade
+* Quality score
+* Issues detected (tags):
+
+  * too complex
+  * thin content
+  * poor structure
+  * weak E-E-A-T
+* Recommended action
+* **Fix** button (if deployable)
+
+Severity:
+
+* Critical
+* Warning
+* Minor
+
+---
+
+## Part D — Content Quality Breakdown tab
+
+Show diagnostic visuals:
+
+1. **Readability distribution**
+
+* Histogram of grade levels.
+
+2. **Quality score distribution**
+
+* Bars or donut.
+
+3. **Common issues**
+
+* % of pages with:
+
+  * long sentences
+  * passive voice
+  * missing headings
+  * missing author info
+  * missing citations
+
+---
+
+## Part E — Trends tab (quality over time)
+
+Track and render:
+
+* Avg quality score over time
+* Avg readability grade over time
+* Pages improved vs pages regressed
+* E-E-A-T coverage over time
+
+Use the same snapshot pattern as Natasha/Sentinel.
+
+If no history:
+
+* Empty state + “Run Hemingway analysis to start tracking.”
+
+---
+
+## Part F — Controls / Fixes
+
+Fix buttons should:
+
+* Queue quality improvements
+* Show progress + completion
+* Clearly label:
+
+  * auto-fixable (structure, headings, clarity)
+  * advisory (tone, expertise depth)
+
+---
+
+## Part G — Validation rules
+
+* Hemingway KPIs must never be blank.
+* Scores must be deterministic (same input = same score).
+* Hemingway must not modify keywords or rankings directly.
+* Fixes must flow through deployer / content agents, not inline edits.
+
+---
+
+## Acceptance criteria
+
+* Hemingway page feels as complete and authoritative as Scotty and Sentinel.
+* KPIs immediately communicate content quality health.
+* Findings table is populated after one run.
+* Trends provide real signal over time.
+* Styling matches the global KPI standard with Hemingway crew colors.
+
+Commit message
+`feat(hemingway): fully implement content quality and readability dashboard`

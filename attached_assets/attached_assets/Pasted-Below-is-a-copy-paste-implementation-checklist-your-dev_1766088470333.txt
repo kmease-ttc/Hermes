@@ -1,0 +1,286 @@
+Below is a **copy/paste implementation checklist** your dev team can apply across **all sites on the shared framework** to make sure **crawlers (Googlebot, Bingbot, etc.) can reliably see the full site content** “out of the box.”
+
+This matches the approach we landed on for Empathy Health Clinic: **pre-render every route to static HTML snapshots + serve those snapshots to bots and first-hit crawlers**, with **asset injection + fail-fast validation** so you never publish broken/un-styled pages again.
+
+---
+
+## Goal
+
+1. **Every important URL returns crawlable HTML** (real content in the HTML response, not an empty div requiring JS).
+2. **Bots get fast, stable responses** (no flaky hydration / asset issues / missing CSS).
+3. **Publishing fails if snapshots are missing or invalid** (quality gate).
+4. **Humans still get the normal app experience** (SPA/React/etc. continues to work).
+
+---
+
+## A. Required Architecture Pattern (What we’re implementing)
+
+### 1) Build produces two outputs
+
+* **`dist/public/`**: normal production assets (index.html, JS, CSS, images)
+* **`dist/prerendered/`**: static HTML snapshots for each route (e.g., `/index.html`, `/orlando/psychiatrist/index.html`, etc.)
+
+### 2) Runtime serves snapshots for bots (and optionally for first-hit requests)
+
+* If request matches a known route snapshot, return the **snapshot HTML**.
+* Otherwise fall back to normal app entrypoint.
+
+### 3) Snapshot HTML must include production assets
+
+Every prerendered HTML file must include:
+
+* `<link rel="stylesheet" ... href="/assets/...css">`
+* `<script type="module" ... src="/assets/...js"></script>`
+  …and any other required head tags (canonical, meta, schema).
+
+### 4) Publishing is blocked if snapshots fail validation
+
+If any snapshot is missing or missing required assets/meta, **fail the build**.
+
+---
+
+## B. Implementation Work Items (Do these on every site)
+
+### 1) Standardize build + prerender pipeline
+
+* Add a single command for CI/publish:
+
+  * `npm run build && npm run prerender && npm run validate:prerender`
+* Ensure prerender runs against the **built** production output, not dev server.
+
+**Acceptance criteria**
+
+* `dist/public/index.html` exists before prerender runs
+* `dist/prerendered/` contains a snapshot for every route in the route list
+* `validate:prerender` fails on any missing/invalid snapshot
+
+---
+
+### 2) Create/standardize the route list generator
+
+You need a deterministic list of URLs to snapshot:
+
+* From your internal route config (best)
+* Or from a “routes manifest” (JSON) you generate at build time
+* Or from sitemap generation logic (if it already exists)
+
+**Acceptance criteria**
+
+* One canonical list used by:
+
+  * prerender script
+  * sitemap generation
+  * validation
+
+---
+
+### 3) Prerender via headless browser (Puppeteer/Playwright)
+
+Use Puppeteer (or Playwright) to:
+
+* Load each route
+* Wait for the app to fully render (network idle + specific selector)
+* Extract final HTML
+* Write it to `dist/prerendered/<route>/index.html`
+
+**Critical**: enforce a max timeout and fail on errors.
+
+**Acceptance criteria**
+
+* Prerender does not silently skip routes
+* Any route that throws/hydration-errors causes the script to exit non-zero
+
+---
+
+### 4) Inject production CSS/JS into every snapshot (the “we broke CSS” fix)
+
+Do **not** rely on whatever the prerendered DOM happens to contain.
+Instead:
+
+* Read `dist/public/index.html`
+* Extract the production `<link rel="stylesheet" ...>` tag(s)
+* Extract the production `<script ... src="/assets/...">` tag(s)
+* Ensure every snapshot includes those tags in `<head>` (or correct location)
+
+**Acceptance criteria**
+
+* Every file in `dist/prerendered/**/*.html` includes the exact production CSS + JS tags
+* No snapshot can ship without assets
+
+---
+
+### 5) Add `validate-prerender` quality gate (fail-fast)
+
+Create a script (TS preferred) that verifies for every route snapshot:
+
+* File exists
+* Has `<title>` and meta description (or at minimum title)
+* Contains production CSS link tag(s)
+* Contains production JS script tag(s)
+* Contains an H1 (optional but recommended)
+* Does **not** contain known fatal errors (“Element type is invalid”, “ReferenceError”, etc.)
+* (Optional) Contains canonical tag matching the route
+
+**Acceptance criteria**
+
+* Script exits with non-zero if any file fails checks
+* Output lists the exact failing routes and why
+
+---
+
+### 6) Serve snapshots in production for bots (middleware)
+
+In your Node server (Express/Fastify/etc.), add middleware:
+
+**Logic**
+
+* If request is GET and Accept includes `text/html`
+* Determine if user-agent is a crawler OR just serve snapshots for everyone (recommended for stability)
+* Map URL path → snapshot file path under `dist/prerendered`
+* If snapshot exists, serve it
+* Else serve normal `dist/public/index.html` and assets as usual
+
+**Crawler detection**
+
+* Keep it simple:
+
+  * `Googlebot`, `Bingbot`, `DuckDuckBot`, `Slurp`, `YandexBot`, `facebookexternalhit`, `Twitterbot`, `LinkedInBot`
+* Don’t overcomplicate; the safer approach is:
+
+  * Serve snapshots for all HTML requests where snapshot exists (humans still hydrate fine)
+
+**Acceptance criteria**
+
+* `curl -A "Googlebot" https://yoursite.com/some-route` returns HTML containing real page content (not empty shell)
+* No redirect loops
+* No “Destination not accessible” due to bot-blocking / challenge pages
+
+---
+
+### 7) Ensure correct status codes + headers
+
+* Existing pages: `200`
+* Not found: `404` (and not a “soft 404” that returns 200 with “not found” content)
+* Gone content you want removed: `410` (optional)
+* Set caching:
+
+  * HTML snapshots: short cache (or no-cache) if you update often
+  * Assets: long cache with hashes (normal Vite behavior)
+
+**Acceptance criteria**
+
+* Googlebot receives 200 + HTML with content for valid pages
+* Invalid pages return real 404
+
+---
+
+### 8) Sitemaps and robots.txt match the snapshot universe
+
+* Generate sitemap from the same route manifest used for prerender
+* Ensure `robots.txt`:
+
+  * is valid plain text
+  * references the sitemap URL(s)
+  * does not accidentally block key paths
+
+**Acceptance criteria**
+
+* Sitemap only contains canonical URLs you intend to index
+* Robots doesn’t block `/assets/` or core content routes
+* No invalid robots formatting
+
+---
+
+### 9) Canonicals + www/non-www + trailing slash normalization
+
+Pick one canonical host format and enforce it:
+
+* https + (www or non-www) + trailing slash policy
+
+**Acceptance criteria**
+
+* Every indexed page has a self-referencing canonical
+* Only one version resolves (others 301 to canonical)
+
+---
+
+### 10) Add a “visual smoke test” in CI (optional but strong)
+
+Automate a quick check that catches “unstyled plain text” regressions:
+
+* After prerender + asset injection:
+
+  * Use headless browser to load:
+
+    * homepage
+    * one location page
+    * one blog page
+  * Assert:
+
+    * CSS is applied (e.g., computed font-family != default, or presence of known Tailwind class effect)
+    * no console errors
+
+**Acceptance criteria**
+
+* CI fails if CSS isn’t loading or if major runtime errors occur
+
+---
+
+## C. Standard Files/Commands to Add (recommended naming)
+
+* `scripts/prerender-puppeteer.ts`
+* `scripts/validate-prerender.ts`
+* `npm run prerender`
+* `npm run validate:prerender`
+* `npm run build:publish` (runs build → prerender → validate)
+
+---
+
+## D. “Done” Definition (How you know it works)
+
+Run these checks on any site after publish:
+
+1. **Googlebot HTML check**
+
+* `curl -A "Googlebot" -L https://SITE.com/target-route | head`
+* You should see:
+
+  * `<title>…`
+  * `<h1>…`
+  * meaningful body copy in the HTML response
+
+2. **No broken styling**
+
+* Load homepage + a deep page in an incognito window
+* Should render styled immediately (no “plain text” look)
+
+3. **Snapshot validation passes**
+
+* `npx tsx scripts/validate-prerender.ts` returns success
+
+4. **Sitemap matches**
+
+* Sitemap includes the route
+* Robots references sitemap and doesn’t block it
+
+---
+
+## E. Quick “copy/paste” instruction block for your dev team
+
+Implement the following across every site repo:
+
+1. Create `scripts/prerender-puppeteer.ts` to prerender all routes into `dist/prerendered/`.
+2. Create `scripts/validate-prerender.ts` to fail build if:
+
+   * any snapshot missing
+   * snapshot missing production CSS/JS tags
+   * snapshot missing title (and optionally H1/canonical)
+3. In prerender script, read `dist/public/index.html` and inject the **exact** production CSS + JS tags into every snapshot.
+4. Add server middleware: if snapshot exists for requested path, serve it (at minimum for bots; ideally for all HTML requests).
+5. Use one route manifest to drive: prerender + sitemap + validation.
+6. Update publish pipeline to run: `build → prerender → validate` and abort publish on any failure.
+7. Verify with `curl -A Googlebot` that real HTML content is returned for deep routes.
+
+---
+
+If you want, paste the name of **one other site repo** (or its folder structure / server entry file name), and I’ll tailor the exact filenames/entrypoints to match your framework conventions (Express vs Fastify, Vite vs Next-like, etc.) while keeping this same standardized approach.

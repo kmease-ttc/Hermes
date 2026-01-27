@@ -1,0 +1,214 @@
+You are a senior AI/SEO systems engineer working in the Hermes SEO / Arclo Replit codebase.
+
+Goal
+Fully implement **Atlas (AI Optimization)** to the same “complete, serious, operational” standard as Scotty, Sentinel, and Hemingway.
+
+Atlas’s mission
+“Maximize discoverability and conversion from AI assistants/LLMs (ChatGPT, Gemini, Perplexity) by ensuring:
+
+* content is LLM-friendly (clear entities, summaries, citations)
+* structured data is correct and complete
+* pages are chunkable and retrievable
+* AI visibility signals are tracked over time”
+
+Atlas is **not a content writer**. Atlas is an **AI discoverability optimizer**.
+
+---
+
+## Part A — KPI / Metrics section (top of page)
+
+Use the standard KPI components and **Atlas crew accent color**.
+
+Atlas KPIs must be:
+
+1. **AI Visibility Score**
+
+* Definition: 0–100 score measuring how well the site is structured for AI retrieval and summarization.
+* Inputs:
+
+  * structured data coverage
+  * entity extraction completeness
+  * summary presence/quality
+  * LLM “answerability” checks
+* Value: 0–100
+
+2. **Structured Data Coverage**
+
+* Definition: % of eligible pages with valid schema (Organization, LocalBusiness/MedicalBusiness, Physician, FAQ, Article as applicable).
+* Value: percent (0–100)
+* Source: schema validator worker
+
+3. **Entity Coverage**
+
+* Definition: % of key entities present and consistently expressed (clinic name, providers, services, location, insurance, contact).
+* Value: percent
+
+4. **LLM Answerability**
+
+* Definition: % of target questions that can be answered from your pages with high confidence.
+* Value: percent
+* Source: LLM evaluation worker (or deterministic heuristics if not implemented yet)
+
+No blanks. If no data exists, show 0 and CTA “Run AI Readiness Scan”.
+
+---
+
+## Part B — Missions section
+
+Atlas missions must map to real, fixable actions:
+
+1. **AI Readiness Scan**
+
+* Runs a full scan of:
+
+  * entity extraction
+  * page summarization
+  * schema validation
+  * FAQ extraction
+  * chunking quality
+* Produces findings and next actions.
+
+2. **Improve Structured Data**
+
+* Generates deployable schema fixes:
+
+  * add missing schema blocks
+  * fix invalid fields
+  * ensure consistent NAP
+* Fix button queues SEO_DEPLOYER actions.
+
+3. **Improve LLM Summaries**
+
+* Ensures each key page has:
+
+  * 2–3 sentence page summary
+  * bullets for services/insurance/location
+  * “When to contact us” guidance
+* Fix button queues content patch actions.
+
+4. **Entity Optimization**
+
+* Normalizes entity references sitewide:
+
+  * clinic name consistency
+  * provider names/credentials
+  * location/service mentions
+* Fix button queues changes.
+
+---
+
+## Part C — Findings tab (default)
+
+Render findings grouped by severity:
+
+### Critical
+
+* invalid schema (errors)
+* missing Organization/LocalBusiness schema on core pages
+* missing provider schema where applicable
+* contradictory NAP/phone/address
+
+### Warnings
+
+* thin summaries
+* missing FAQ blocks where intent calls for it
+* weak entity mentions on high-intent pages
+
+### Informational
+
+* opportunities to add Q&A blocks
+* opportunities to add citations or references
+
+Each row includes:
+
+* URL
+* Issue
+* Severity
+* Impact estimate
+* Fix button (if deployable)
+
+No empty rendering crashes. Add safe empty-state UI.
+
+---
+
+## Part D — Tabs to include
+
+1. **Structured Data**
+
+* List schema types detected
+* Show validation status
+* Show errors/warnings per URL
+* “Fix schema” actions
+
+2. **Entity Optimization**
+
+* Key entities checklist:
+
+  * Clinic identity
+  * Providers
+  * Services
+  * Locations
+  * Insurance
+* Show missing/inconsistent flags per URL
+
+3. **AI Summaries**
+
+* Show per-page summary status:
+
+  * present/absent
+  * length ok
+  * includes key entities
+* Fix actions
+
+4. **LLM Visibility**
+
+* Show “target questions” and whether the site can answer them
+* This can start as a heuristic:
+
+  * question → best URL → confidence score
+* Later can plug into evaluation worker.
+
+---
+
+## Part E — Trends
+
+Track over time using the snapshot pattern:
+
+* AI Visibility Score trend
+* Structured data coverage %
+* Entity coverage %
+* Answerability %
+
+If no history:
+
+* empty state + CTA to run scan.
+
+---
+
+## Part F — Data + integration requirements
+
+1. Ensure Atlas reads from (or adds) services:
+
+* Schema validation worker (existing or implement minimal)
+* Content summary evaluator (can be in-app initially)
+* Entity extractor (can be heuristic initially; upgrade later)
+
+2. Persist findings and snapshots
+
+* Use DB tables similar to Sentinel/Hemingway:
+
+  * `ai_findings`
+  * `ai_snapshots`
+
+---
+
+## Acceptance criteria
+
+* Atlas page loads with no missing widgets or blank KPIs.
+* KPI styling matches standard and uses Atlas accent color.
+* “AI Readiness Scan” generates findings and populates tables.
+* Fix buttons queue deployer tasks where appropriate.
+* Trends show after at least 1–2 runs.
+
+Commit message
+`feat(atlas): implement AI optimization dashboard with schema, entities, summaries, and visibility trends`

@@ -1,0 +1,254 @@
+This is a good instinct. You’re basically converging on **two layers of intelligence** with a single surface:
+
+1. **Agent-level intelligence (what each agent sees + recommends)**
+2. **Captain-level synthesis (what Hermes concludes by combining agents)**
+
+You can do this **without creating two pages or two mental models** if you structure the Agents page correctly.
+
+Below is a concrete proposal that maps cleanly to what you described and fits what you already have.
+
+---
+
+## 1. Rename + Reframe the Page
+
+**Rename**
+
+* `Crew Manifest` → **Agents**
+* Subtitle: *Your hired specialists working on your site*
+
+This immediately shifts the mental model from “internal system” → “value to me.”
+
+---
+
+## 2. Filter Out Non–End-User Agents
+
+You’re 100% right here.
+
+### Hide entirely from the Agents page
+
+These should exist operationally, but not visually:
+
+* Vault
+* Herald (Notifications)
+* Internal connectors / infra agents
+* Auth, Secrets, Telemetry-only services
+
+Rule of thumb:
+
+> If the agent doesn’t *find*, *analyze*, or *recommend* something the user can act on → it doesn’t appear.
+
+---
+
+## 3. One Agent = One Card = One Line of Value
+
+Each agent card should answer **four questions instantly**:
+
+1. What do you do?
+2. What did you find?
+3. When did you last run?
+4. What should I do next?
+
+### Base Card Structure (all agents)
+
+```
+[ Agent Name ]          [ Status ]
+
+What I watch:
+- Plain-English scope (1 line)
+
+What I found:
+- 1–3 concrete findings (numbers > words)
+
+Last checked:
+- Timestamp / relative time
+
+Recommendation:
+- One specific next action
+```
+
+No tabs. No chips. No internal jargon.
+
+---
+
+## 4. Example: BlogWriter Agent
+
+Instead of “Writer” or “Blog Writer,” make it outcome-driven.
+
+**BlogWriter**
+Status: Healthy / Needs Attention
+
+**What I watch**
+
+* Blog cadence, quality, and topical coverage
+
+**What I found**
+
+* 18 total blog posts
+* 6 ranking on page 1
+* Last post published 21 days ago
+
+**Last checked**
+
+* 2 hours ago
+
+**Recommendation**
+
+* Write a blog this week targeting:
+
+  * “Telepsychiatry Florida”
+  * “ADHD treatment Orlando”
+  * “Online psychiatrist without insurance”
+
+This immediately tells the user:
+
+* Is this working?
+* Is it stale?
+* What should I do *this week*?
+
+---
+
+## 5. Example: Technical SEO (Scotty)
+
+**Scotty – Technical SEO**
+
+**What I watch**
+
+* Crawlability, rendering, and index health
+
+**What I found**
+
+* 14 pages blocked by robots.txt
+* 3 pages failing JS render
+* 2 orphaned high-value pages
+
+**Last checked**
+
+* 1 hour ago
+
+**Recommendation**
+
+* Fix blocked pages:
+
+  * `/psychiatrist-orlando`
+  * `/telepsychiatry`
+* Re-render JS on blog templates
+
+---
+
+## 6. Example: Domain Authority / Backlinks (Beacon)
+
+**Beacon – Authority & Backlinks**
+
+**What I watch**
+
+* Domain authority and link growth
+
+**What I found**
+
+* Domain Authority: 28 (+2 this month)
+* 5 new backlinks this week
+* 2 links from low-quality domains
+
+**Last checked**
+
+* 30 minutes ago
+
+**Recommendation**
+
+* Disavow 2 spam domains
+* Acquire 3 local healthcare links
+
+---
+
+## 7. Introduce “Captain’s Recommendations” (Without a New Page)
+
+This is the second concept you’re circling, and it’s the right one.
+
+### Where it lives
+
+**Top of the Agents page**, above the agent list.
+
+### What it is
+
+A **synthesis panel** powered by Hermes that only exists *because* multiple agents exist.
+
+Label it clearly as different:
+
+**Captain’s Recommendations**
+*Insights based on 6 active agents*
+
+### What it contains (max 3 items)
+
+Each item should:
+
+* Reference multiple agents implicitly
+* Be higher-order than any single agent
+
+**Example**
+
+**Priority Actions This Week**
+
+1. Publish a new blog on “Telepsychiatry Florida”
+
+   * Blog cadence is slipping (BlogWriter)
+   * Keyword demand is rising (SERP Analyst)
+   * Pages are technically healthy (Scotty)
+
+2. Fix indexing on `/psychiatrist-orlando`
+
+   * High conversion page (GA4)
+   * Currently blocked from crawl (Technical SEO)
+
+3. Acquire 2 local backlinks
+
+   * Authority growth has plateaued (Beacon)
+   * Local competitors gained links this month
+
+This is where “the more agents you hire, the smarter the system gets” becomes obvious without you ever saying it.
+
+---
+
+## 8. Intelligence Scales With Agent Count (Implicitly)
+
+You don’t need to explain this explicitly in UI.
+
+It becomes obvious because:
+
+* Captain’s Recommendations only appear if ≥2 agents
+* Recommendations get richer as more agents contribute
+* A single agent = only that agent’s card, no synthesis
+
+You can subtly reinforce it with copy:
+
+> *Captain’s Recommendations improve as more agents are active.*
+
+---
+
+## 9. Implementation Notes (Important)
+
+* **Do not show raw metrics unless they answer a question**
+* **Never show empty cards** — if an agent has no data, show:
+
+  * “No findings yet” + “Run first scan”
+* **Recommendations must always exist**, even if simple:
+
+  * “Keep monitoring”
+  * “No action needed this week”
+
+---
+
+## 10. Net Result
+
+You end up with:
+
+* One page
+* One mental model
+* Clear user value
+* Clear differentiation from “SEO dashboards”
+* A natural path to upsell more agents without selling
+
+If you want, next step we can:
+
+* Redesign the exact card layout (visual hierarchy)
+* Define the data contract each agent must return
+* Write the Hermes synthesis rules for Captain’s Recommendations

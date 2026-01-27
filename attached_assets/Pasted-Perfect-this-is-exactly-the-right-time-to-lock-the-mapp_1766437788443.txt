@@ -1,0 +1,284 @@
+Perfect — this is exactly the right time to **lock the mapping once and remove ambiguity forever**.
+
+Below are **clear, copy-paste developer instructions** that explicitly map **Bitwarden secret names → Service Inventory entries** on the Integrations page, including how to handle naming mismatches like *Content QA / Policy Validator*.
+
+This eliminates fuzzy guessing, prevents “Needs Config” confusion, and makes the dashboard truthful.
+
+---
+
+# Developer Instructions: Canonical Mapping of Bitwarden Secrets → Services
+
+## Goal
+
+Hermes must **explicitly map** each Bitwarden secret to a **single service** shown on the Integrations page.
+
+There should be:
+
+* **no fuzzy matching**
+* **no guessing based on substrings**
+* **no implicit naming assumptions**
+
+Everything must be declared in one place.
+
+---
+
+## 1) Create a single mapping file (source of truth)
+
+Create or update:
+
+```
+shared/serviceSecretMap.ts
+```
+
+This file explicitly maps:
+
+* `service_slug` (used internally + in Integrations)
+* `display_name` (what the UI shows)
+* `bitwarden_secret_name` (exact match)
+* `service_type`
+
+---
+
+## 2) Canonical mapping table (USE THIS EXACTLY)
+
+```ts
+export const SERVICE_SECRET_MAP = [
+  {
+    serviceSlug: "audit_log_observability",
+    displayName: "Audit Log & Observability",
+    bitwardenSecret: "SEO_Audit_Log",
+    type: "infrastructure"
+  },
+
+  {
+    serviceSlug: "backlinks_authority",
+    displayName: "Backlink & Authority Signals",
+    bitwardenSecret: "SEO_Backlinks",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "content_generator",
+    displayName: "Content Generator",
+    bitwardenSecret: "SEO_Blog_Writer",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "competitive_intel",
+    displayName: "Competitive Intelligence",
+    bitwardenSecret: "SEO_Competitive_Intel",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "content_decay_monitor",
+    displayName: "Content Decay Monitor",
+    bitwardenSecret: "SEO_CONTENT_DECAY_MONITOR_API_KEY",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "content_qa_policy_validator",
+    displayName: "Content QA / Policy Validator",
+    bitwardenSecret: "SEO_Content_QA",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "content_validator",
+    displayName: "Content Validator",
+    bitwardenSecret: "SEO_Content_Validator",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "google_data_connector",
+    displayName: "Google Data Connector (GSC + GA4)",
+    bitwardenSecret: "SEO_Google_Connector",
+    type: "connector"
+  },
+
+  {
+    serviceSlug: "notifications_service",
+    displayName: "Notifications Service",
+    bitwardenSecret: "SEO_Notifications",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "scheduler_job_runner",
+    displayName: "Orchestrator / Job Runner",
+    bitwardenSecret: "SEO_SCHEDULER_API_KEY",
+    type: "infrastructure"
+  },
+
+  {
+    serviceSlug: "serp_keyword_intel",
+    displayName: "Worker: SERP & Keyword Intelligence Service",
+    bitwardenSecret: "SEO_SERP_&_Keyword",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "technical_crawler",
+    displayName: "Crawl & Render Service",
+    bitwardenSecret: "SEO_TECHNICAL_CRAWLER_API_KEY",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "core_web_vitals_monitor",
+    displayName: "Core Web Vitals Monitor",
+    bitwardenSecret: "SEO_Vital_Monitor",
+    type: "worker"
+  },
+
+  {
+    serviceSlug: "google_ads",
+    displayName: "Google Ads",
+    bitwardenSecret: null,
+    type: "planned"
+  },
+
+  {
+    serviceSlug: "site_change_executor",
+    displayName: "Site Change Executor",
+    bitwardenSecret: null,
+    type: "planned"
+  }
+];
+```
+
+---
+
+## 3) How Hermes must use this mapping (non-negotiable)
+
+### Rule 1 — Never infer service ↔ secret names
+
+Hermes must **only** look up secrets via `SERVICE_SECRET_MAP`.
+
+❌ No fuzzy string matching
+❌ No `includes("content")` logic
+❌ No guessing from slugs
+
+---
+
+### Rule 2 — “Configured” means secret exists (not outputs returned)
+
+For any service with a mapped Bitwarden secret:
+
+* If secret exists in Bitwarden:
+
+  * `configState = READY`
+* If secret does **not** exist:
+
+  * `configState = NEEDS_CONFIG`
+* If service is `planned`:
+
+  * `configState = BLOCKED`
+
+Whether the service actually **returns data** is a *separate concern* handled by `actualOutputs`.
+
+---
+
+### Rule 3 — UI labels must come from mapping, not code names
+
+The Integrations page must use:
+
+* `displayName` from the mapping
+* `serviceSlug` internally
+* **never** derive names from secret keys
+
+This avoids:
+
+> “SEO_Content_QA vs Content QA / Policy Validator” confusion
+
+---
+
+## 4) Update the Integrations backend logic
+
+### When building the service inventory:
+
+1. Load `SERVICE_SECRET_MAP`
+2. For each entry:
+
+   * Check Bitwarden for `bitwardenSecret`
+   * Set:
+
+     * `secretPresent`
+     * `configState`
+     * `blockingReason` (if missing)
+
+### Do NOT:
+
+* mark services “Needs Config” just because outputs are missing
+* treat API_KEY-only secrets as failures (connection vs execution are separate)
+
+---
+
+## 5) Update UI messaging (this is important)
+
+### GOOD status messages
+
+* ✅ **Ready** — Secret present, service can be called
+* 🟡 **Ready, no runs yet** — Hasn’t executed
+* 🟡 **Ready, missing outputs** — Ran, partial data
+* 🔴 **Blocked** — Not built / not enabled
+* ⚠️ **Needs Config** — Secret missing
+
+### BAD status messages (remove)
+
+* “Needs Config” when secret exists
+* “Disconnected” when worker just hasn’t run
+* “Missing outputs” without listing *what*
+
+---
+
+## 6) Why this fixes your exact problem
+
+Right now:
+
+* Google works because it has a clean mapping
+* Others look broken because Hermes is trying to *infer* instead of *map*
+
+After this:
+
+* **Every worker with a Bitwarden secret shows Ready**
+* Missing data becomes a **service execution issue**, not a config issue
+* You can finally answer:
+
+  > “Which services are wired vs which ones need work?”
+
+---
+
+## 7) Acceptance checklist (use this to verify)
+
+For Empathy Health Clinic:
+
+* ✅ All services with secrets show **Ready**
+* ✅ Google Ads + Site Change Executor show **Blocked**
+* ✅ Content QA / Policy Validator maps cleanly to `SEO_Content_QA`
+* ✅ SERP & Keyword Intelligence maps to `SEO_SERP_&_Keyword`
+* ✅ No service says “Needs Config” unless the secret is missing
+* ✅ Missing outputs are shown **only after runs**
+
+---
+
+## Final note (important mindset shift)
+
+From this point forward:
+
+* **Bitwarden = wiring**
+* **Service Runs = behavior**
+* **Missing outputs = work to do**
+
+Those three things must never be conflated again.
+
+If you want, next I can:
+
+* generate a **validation script** that checks Bitwarden vs mapping
+* auto-flag orphan secrets
+* or add a UI section called **“Wiring Complete / Execution Incomplete”** so this is visually obvious
+
+Just tell me where you want to go next.

@@ -1,0 +1,113 @@
+Update the Arclo website generator so the header “brand lockup” (logo mark + company name) automatically adapts to the site’s generated theme (palette + typography), instead of always rendering in the same default style. The company name must remain exactly what the user enters; only styling changes.
+
+Context
+	•	Arclo generates a unique theme per site (colors + look/feel).
+	•	Today: the header left brand area always looks identical across sites, making the sites feel templated.
+	•	Goal: make the company name + mark feel like part of the generated theme, while staying readable and consistent.
+
+	1.	Introduce a Theme-Aware BrandLockup component
+Create BrandLockup.tsx and use it in every generated template header.
+
+Inputs:
+	•	companyName: string (required; do not modify)
+	•	theme: ThemeTokens (required; generated per site)
+	•	placement: "headerLeft" (for now)
+
+ThemeTokens should include:
+	•	palette: { primary, secondary, accent, ink, paper, muted }
+	•	typography: { headingFont, bodyFont, displayFont?, fontWeights }
+	•	radius: number (global rounding style)
+	•	style: “modern” | “classic” | “bold” | “minimal” (optional but helpful)
+
+	2.	Brand lockup should follow the site’s typography
+Problem: name always uses the same font, so it looks disconnected.
+
+Rules:
+	•	Use theme’s heading/display font for the company name:
+	•	If theme.typography.displayFont exists: use it
+	•	Else use theme.typography.headingFont
+	•	Weight:
+	•	If theme style is “minimal/modern”: 600–700
+	•	If “classic”: 700–800
+	•	Letter spacing:
+	•	If theme heading font is serif: -0.02em
+	•	If sans: -0.01em
+	•	Font size:
+	•	clamp(18px, 2.1vw, 26px) to keep it responsive
+
+	3.	Brand lockup should use the generated palette (not a hardcoded navy)
+Problem: palette changes, but brand text/mark is fixed.
+
+Rules:
+	•	Determine header background mode:
+	•	bg = theme.header.background (or compute from header background color)
+	•	If bg is dark => use light text; if bg is light => use ink text.
+	•	Company name color:
+	•	Light header: theme.palette.ink
+	•	Dark header: rgba(255,255,255,0.95) (or theme-provided onDark)
+	•	Mark/icon color:
+	•	Prefer theme.palette.primary
+	•	If contrast is low, fall back to theme.palette.accent
+	•	Optional “highlight” variant:
+	•	Allow 1 subtle accent on the name (e.g., a small underline or dot) using theme.palette.accent
+
+	4.	Replace the generic “initials in rounded square” with a theme-derived mark
+We still need a consistent structure, but the mark should vary by theme so it doesn’t look identical.
+
+Implement a Mark system with 3 deterministic variants:
+	•	markVariant: "monogramBadge" | "lineIcon" | "none" chosen from theme.style (or hashed from siteId for variety)
+
+A) monogramBadge (default for many)
+	•	Show initials derived from companyName
+	•	Badge shape uses theme.radius:
+	•	If radius is high => pill/rounded
+	•	If radius is low => sharp square
+	•	Badge colors:
+	•	background: theme.palette.primary (or translucent primary if header is light)
+	•	text: theme.palette.paper (or computed onPrimary)
+
+B) lineIcon (more modern)
+	•	Use a simple inline SVG (generic “pillar / shield / abstract”)
+	•	Stroke color = theme.palette.primary
+	•	No box around it
+
+C) none
+	•	Wordmark only for ultra-minimal themes
+
+Important:
+	•	Do not introduce random generation. Selection must be deterministic (based on theme.style or stable hash of siteId) so rebuilds are consistent.
+
+	5.	Layout rules so it stays usable across all sites
+
+	•	Brand area is always left aligned, hamburger/menu right aligned.
+	•	Gap between mark and name: 10–12px
+	•	Reserve space for menu button on the right (fixed width) to prevent overlap.
+	•	Long company names:
+	•	One-line ellipsis in header:
+	•	white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+	•	title={companyName} for full name on hover/long press
+	•	Entire lockup is a home link.
+
+	6.	Add “BrandLockupStyle” to the generator output (small knob, big impact)
+When Arclo generates the site theme, also output:
+
+	•	theme.brandLockup = { variant, markVariant, useAccentUnderline }
+
+This lets the generator intentionally choose the best combination per style rather than fully random.
+
+Suggested mapping:
+	•	modern/minimal => wordmark + lineIcon OR wordmark only
+	•	classic/premium => wordmark + monogramBadge with sharp corners
+	•	bold => monogramBadge with solid primary background + heavier weight
+
+	7.	Acceptance criteria
+
+	•	Two different generated themes produce visibly different header brand lockups (font + colors + mark style), even if placement stays the same.
+	•	Company name text is never altered.
+	•	Brand lockup stays readable on all header backgrounds.
+	•	No layout break on mobile for long names.
+	•	Deterministic output (same inputs => same lockup).
+
+If you want an even simpler first step (MVP)
+	•	Step 1: make the company name use theme.typography.headingFont and theme.palette.ink/onHeader, no mark changes.
+	•	Step 2: add mark variants after we confirm the typography/palette change fixes the “templated” feel.

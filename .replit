@@ -1,0 +1,66 @@
+modules = ["nodejs-20", "web", "postgresql-16"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["unzip"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[env]
+PORT = "5000"
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["node", "./dist/index.cjs"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[agent]
+mockupState = "FULLSTACK"
+integrations = ["javascript_openai_ai_integrations:2.0.0", "sendgrid:1.0.0", "javascript_object_storage:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+GOOGLE_REDIRECT_URI = "https://b4e16f48-8d48-42ea-921a-7d6fa71e03be-00-3r1scxqb8rygj.picard.replit.dev/api/auth/callback"
+CLARITY_PROJECT_ID = ""
+DOMAIN = "empathyhealthclinic.com"
+BWS_ORGANIZATION_ID = "3d753bd4-6e76-4c24-9d7c-b3b901313616"
+SEO_TECHNICAL_CRAWLER_BASE_URL = "https://crawl-render-service--providers2.replit.app"
+SEO_CORE_WEB_VITALS_BASE_URL = "https://vital-monitor--providers2.replit.app"
+SEO_BLOG_WRITER_BASE_URL = "https://worker-blog-writer--providers2.replit.app/api"
+SEO_CONTENT_DECAY_MONITOR_BASE_URL = "https://decay-monitor--providers2.replit.app/api"
+SEO_BACKLINKS_BASE_URL = "https://backlink-blaster--providers2.replit.app/api"
+SEO_NOTIFICATIONS_BASE_URL = "https://notification-system--providers2.replit.app/api"
+SEO_AUDIT_LOG_BASE_URL = "https://service-audit--providers2.replit.app"
+SEO_COMPETITIVE_INTEL_BASE_URL = "https://worker-competitive-intelligence--providers2.replit.app/api"
+SERP_INTELLIGENCE_BASE_URL = "https://seo-scheduler-providers2.replit.app"
+SEO_ORCHESTRATOR_BASE_URL = "https://orchestrator-job-spec--providers2.replit.app"
+REMOVE_BG_API_KEY = "CLNUCboZSfZSu8K6BQRoE6jT"
+SEO_DEPLOYER_BASE_URL = "https://site-change-executor--providers2.replit.app"
+SENDGRID_FROM_EMAIL = "noreply@arclo.pro"
+SERP_WORKER_BASE_URL = "https://seo-scheduler-providers2.replit.app"

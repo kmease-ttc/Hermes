@@ -1,0 +1,338 @@
+Below are **dev-team instructions** to “hook up the agents” end-to-end so **Analyze My Site** takes a user through a real workflow, generates a real report, and never lands on a blank page again.
+
+---
+
+# Fix “Analyze My Site” Flow + Build Report Workflow (Hook Up Agents)
+
+## Objective
+
+When a user enters a website on the homepage and clicks **Analyze My Site**, they must be taken through a **working analysis workflow** that:
+
+1. Creates an **Analysis Job**
+2. Runs the **agent pipeline** (crawl → insights → prioritized actions)
+3. Persists results
+4. Renders a **Report UI** (even while processing)
+5. Supports follow-on actions: **Fix It** / **Autopilot**
+
+No blank routes. No dead ends.
+
+---
+
+## Root Cause (Current Behavior)
+
+Clicking **Analyze My Site** routes to a page that expects data/state, but:
+
+* there is **no job created**
+* no backend endpoint invoked
+* no polling / websocket subscription
+* no persisted report to load
+* page renders with empty/null state → “blank page”
+
+---
+
+## Required UX Behavior (Non-Negotiable)
+
+### States the user must see:
+
+1. **Submitting…** (immediate, 0–1s)
+2. **Analyzing** (progress UI with steps)
+3. **Partial results** as they arrive (crawl summary first)
+4. **Final report** with:
+
+   * Score / Summary
+   * Top issues
+   * Priority actions
+   * Opportunities
+   * “Fix It” CTA
+
+If anything fails:
+
+* show an **error panel**
+* show a **Retry** button
+* show a **support link**
+
+---
+
+## System Architecture (What To Build)
+
+### A) Frontend Pages
+
+1. **Home** (existing input + CTA)
+2. **/analyze/:jobId** (new) → analysis progress + report view
+3. Optional: **/report/:jobId** → report-only (if you want separate routes)
+
+### B) Backend APIs (Required)
+
+1. `POST /api/analysis/jobs`
+
+   * body: `{ url: string }`
+   * returns: `{ jobId: string }`
+
+2. `GET /api/analysis/jobs/:jobId`
+
+   * returns job status + progress + partial outputs
+
+3. `GET /api/analysis/jobs/:jobId/report`
+
+   * returns final report JSON (or partial report object)
+
+4. Optional: `POST /api/analysis/jobs/:jobId/fix`
+
+   * queues “Fix Everything” actions after analysis
+
+### C) Persistence (Required)
+
+Store these in DB:
+
+* AnalysisJob
+
+  * id
+  * url
+  * normalizedUrl
+  * createdAt
+  * status: `queued | running | partial | complete | failed`
+  * progress: step states + timestamps
+  * error (if any)
+
+* AnalysisArtifact
+
+  * jobId
+  * artifactType: `crawl | lighthouse | gsc | opportunities | actions | report`
+  * payload JSON
+  * createdAt
+
+This ensures the report can be reloaded and shared.
+
+---
+
+## Agent Workflow (Hook Up the Services You Already Have)
+
+You already have service base URLs configured (e.g., technical crawler, competitive intel, core web vitals, orchestrator). The analysis flow must call them in order and aggregate results.
+
+### Pipeline Steps (Recommended v1)
+
+**Step 1 — Normalize + Validate URL**
+
+* Ensure scheme present
+* Reject localhost, private IPs
+* Confirm site responds (HEAD/GET)
+
+**Step 2 — Technical Crawl (Primary)**
+
+* Call your `SEO_TECHNICAL_CRAWLER_BASE_URL`
+* Output:
+
+  * pages crawled
+  * broken links
+  * missing titles/meta
+  * duplicate titles
+  * indexability flags
+  * sitemap/robots notes
+
+**Step 3 — Core Web Vitals / Performance**
+
+* Call `SEO_CORE_WEB_VITALS_BASE_URL`
+* Output:
+
+  * LCP/CLS/INP summary
+  * mobile vs desktop scores
+  * top slow pages
+
+**Step 4 — SERP / Keyword Snapshot (Lightweight)**
+
+* Call `SERP_INTELLIGENCE_BASE_URL` (or keyword worker)
+* Output:
+
+  * top money keywords (if known)
+  * quick competitor comparison (optional v1)
+
+**Step 5 — Recommendation Synthesizer**
+This is the “report brain.”
+
+* Takes artifacts from steps 2–4
+* Produces:
+
+  * prioritized actions list
+  * impact score
+  * effort score
+  * “Fixable automatically” boolean
+  * “Needs approval” boolean
+
+**Step 6 — Report Builder (Final Artifact)**
+
+* Generates a stable report JSON:
+
+  * summary scores
+  * issues
+  * opportunities
+  * next actions
+  * recommended automation mode
+
+---
+
+## Orchestration Implementation (How to Wire It)
+
+### Backend “Job Runner”
+
+When `POST /api/analysis/jobs` is called:
+
+1. Create job row in DB (status = queued)
+2. Kick off async job runner:
+
+   * Either via your orchestrator service
+   * Or a local background worker
+3. Update job status progressively:
+
+   * running → partial → complete/failed
+4. Store artifacts in DB as each step finishes
+
+### Progress Model
+
+In the job payload, store something like:
+
+```json
+{
+  "status": "running",
+  "steps": {
+    "validate": "complete",
+    "crawl": "running",
+    "vitals": "queued",
+    "serp": "queued",
+    "synthesis": "queued",
+    "report": "queued"
+  },
+  "percent": 35
+}
+```
+
+This enables the frontend to render a proper progress UI.
+
+---
+
+## Frontend Implementation (No More Blank Page)
+
+### Home Page CTA Behavior
+
+On click:
+
+1. Call `POST /api/analysis/jobs` with URL
+2. Navigate to `/analyze/{jobId}` immediately
+
+### Analyze Page Behavior
+
+On mount:
+
+1. Fetch job status `GET /api/analysis/jobs/:jobId`
+2. Poll every 2–3 seconds until complete/failed
+3. Render:
+
+   * stepper progress UI (validate/crawl/vitals/etc.)
+   * show partial sections as artifacts arrive
+4. When complete:
+
+   * fetch report `GET /api/analysis/jobs/:jobId/report`
+   * render report view
+
+### Loading UI Requirements
+
+Even if the report is not ready, show:
+
+* skeleton cards
+* progress stepper
+* “This can take ~60 seconds”
+
+If polling fails:
+
+* show error state with retry
+
+---
+
+## Report UI (What Must Exist in V1)
+
+Build a report page layout with these sections:
+
+### 1) Header Summary
+
+* Site name / domain
+* Overall score (0–100)
+* “Top 3 things hurting you”
+* Primary CTA: **Fix Everything**
+
+### 2) Priority Actions (Core)
+
+A list/table with:
+
+* Action title
+* Why it matters
+* Impact (High/Med/Low)
+* Effort (High/Med/Low)
+* Auto-fix available (yes/no)
+* Button: “Fix” (single action)
+
+### 3) Technical Issues
+
+* broken links
+* missing titles/meta
+* duplicate titles
+* indexability
+
+### 4) Performance
+
+* CWV summary
+* top slow pages
+
+### 5) Opportunities
+
+* keyword/content gaps (even if basic in v1)
+
+### 6) Next Step Panel
+
+* Manual mode vs Autopilot toggle (can be disabled in v1 if not wired yet)
+* Explains what happens next
+
+---
+
+## “Fix Everything” Wiring (Phase 1 Requirement)
+
+On the report page, **Fix Everything** should:
+
+1. Call `POST /api/analysis/jobs/:jobId/fix`
+2. Queue the top actions that are `autoFix=true`
+3. Navigate to a “Fix Progress” view or modal:
+
+   * queued → executing → complete
+4. Persist executed actions to audit log
+
+If deployer isn’t ready for full execution yet:
+
+* still show the plan and mark as “Ready to execute”
+* do not dead-end
+
+---
+
+## Acceptance Criteria (Definition of Done)
+
+* Clicking **Analyze My Site** never lands on a blank page
+* A job is created and tracked by jobId
+* User sees progress steps within 1 second
+* Report renders with real data within ~60–120 seconds (depending on crawl)
+* Errors are handled gracefully with retry
+* Report persists and can be revisited via URL
+* “Fix Everything” at least queues actions (even if execution is mocked)
+
+---
+
+## Immediate Next Task for Dev Team (Do This First)
+
+1. Build `POST /api/analysis/jobs` + job table
+2. Build `/analyze/:jobId` page with polling + stepper
+3. Stub report JSON until pipeline is complete
+4. Wire crawler + vitals → store artifacts
+5. Synthesis step → produce actions list
+6. Render report sections from stored artifacts
+
+This gets you from “blank page” to “real workflow” quickly.
+
+---
+
+If you want, I can also write a **Replit implementation prompt** that tells the agent exactly what files to create/edit, what routes to add, and what the DB schema should look like (drizzle/prisma/etc.).

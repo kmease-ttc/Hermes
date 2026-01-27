@@ -1,0 +1,143 @@
+Here is a clean, single simulated cold-user walkthrough prompt you can give directly to an agent.
+
+This is designed to surface doubt, confusion, friction, and trust breaks — not feature ideas.
+
+⸻
+
+SIMULATED COLD-USER WALKTHROUGH
+
+Agent Prompt
+
+Objective
+
+Simulate the experience of a first-time, non-technical small business owner encountering Arclo for the first time.
+
+Your job is to walk through the product step by step as this user and identify:
+	•	moments of confusion
+	•	hesitation
+	•	mistrust
+	•	friction
+	•	unanswered questions
+	•	points where you would abandon or delay
+
+This is not a usability test and not a design critique.
+This is a psychological and functional walkthrough.
+
+⸻
+
+User Persona (Important)
+
+Assume the user is:
+	•	A small business owner (HVAC, plumbing, funding, services)
+	•	Non-technical
+	•	Possibly has no website today
+	•	Slightly skeptical of “AI tools”
+	•	Willing to pay if it feels safe and easy
+	•	Afraid of breaking something or making a bad decision
+
+They are not a power user and not a founder.
+
+⸻
+
+Walkthrough Instructions
+
+Walk through Arclo in this exact order:
+	1.	Landing page (first impression)
+	2.	“Generate Free Site” action
+	3.	Site generation form
+	4.	Site preview experience
+	5.	“Publish My Site” moment
+	6.	Account creation
+	7.	Launch checklist
+	8.	Domain decision
+	9.	Checkout & pricing
+	10.	Post-publish dashboard
+	11.	Customization & updates understanding
+	12.	Ongoing value perception
+
+At each step, pause and answer the questions below.
+
+⸻
+
+Questions to Answer at Every Step
+
+For each step, explicitly answer:
+	1.	What do I think is happening right now?
+	2.	What am I worried about at this moment?
+	3.	What question do I have that is not answered?
+	4.	Do I trust this enough to continue? Why or why not?
+	5.	Would a cautious business owner hesitate here?
+	6.	What would make this feel safer or clearer?
+
+Do not assume knowledge.
+Do not fill in gaps yourself.
+If something is unclear, say so.
+
+⸻
+
+What to Look For (Critical)
+
+Pay special attention to:
+	•	unclear ownership (domain, site, data)
+	•	fear of being locked in
+	•	fear of hidden costs
+	•	fear of complexity later
+	•	fear of “this is just a demo”
+	•	moments where the product feels too quiet
+	•	moments where the product feels too pushy
+
+⸻
+
+Output Format (Strict)
+
+Produce the walkthrough as a numbered sequence, one section per step.
+
+For each step include:
+
+Step X: [Name of Step]
+	•	What I understand
+	•	What worries me
+	•	What’s unclear or missing
+	•	Confidence level (High / Medium / Low)
+	•	Abandonment risk (None / Low / Medium / High)
+	•	One concrete improvement suggestion (only one)
+
+Do not redesign the product.
+Do not suggest new features unless absolutely required.
+Focus on clarity, reassurance, and flow.
+
+⸻
+
+Tone Rules
+	•	Be brutally honest
+	•	Assume skepticism
+	•	Assume distraction
+	•	Assume limited patience
+	•	Optimize for trust, not cleverness
+
+⸻
+
+Definition of Done
+
+A successful walkthrough:
+	•	Identifies where doubt first appears
+	•	Surfaces hidden assumptions in the product
+	•	Clearly explains why a user might hesitate
+	•	Produces actionable insights without feature creep
+
+⸻
+
+Why This Matters
+
+This walkthrough answers the real question:
+
+“If I send a stranger here with money on the line, where do they get nervous?”
+
+That is the final gate before prime time.
+
+⸻
+
+If you want, after you get the walkthrough results, paste them here and I’ll:
+	•	triage the issues
+	•	separate perception vs real gaps
+	•	tell you exactly what to fix first and what to ignore

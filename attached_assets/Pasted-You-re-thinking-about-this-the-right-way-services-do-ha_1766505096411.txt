@@ -1,0 +1,226 @@
+You’re thinking about this the right way: services do have dependencies, but you do not want them calling each other directly. That turns into a brittle mesh, explodes secrets/config, and makes debugging impossible.
+
+The cleaner way is: keep services isolated and make Hermes the only “traffic cop,” but give Hermes two extra things so it can coordinate without loops:
+	1.	a shared state store (artifacts + run context)
+	2.	a rules/guardrails layer (KBase) that is consulted in a consistent way
+
+Below is the model that solves your exact problems (QA/generator loops, shared competitor lists, notifications everywhere) without creating a web of service-to-service calls.
+
+⸻
+
+The right mental model: “Hub-and-spoke + shared artifacts”
+
+Instead of:
+	•	Generator → QA → Generator → QA (direct calls / looping)
+	•	Competitive Intelligence → KBase → Gap → SERP → etc.
+
+Do:
+	•	Every service talks only to Hermes (or to the shared artifact store via Hermes)
+	•	Hermes orchestrates sequence and passes references to outputs, not raw payloads
+	•	KBase is not “wired into everything” via secrets; it’s accessed through one consistent mechanism
+
+This is basically how large systems avoid dependency webs.
+
+⸻
+
+Pattern 1: Shared Artifact Store (the antidote to service-to-service calls)
+
+Give Hermes a canonical place to put outputs:
+	•	artifact_id
+	•	type
+	•	website_id
+	•	run_id
+	•	storage_ref / payload
+	•	producer_service
+	•	schema_version
+	•	created_at
+
+Then every service:
+	•	produces artifacts
+	•	consumes artifacts by reference (Hermes hands them the IDs it should use)
+
+Example (Gap Analysis run):
+	1.	Competitive Snapshot produces comp.snapshot artifact
+	2.	SERP produces serp.snapshot artifact
+	3.	Hermes calls Gap Analysis with:
+	•	inputs: [artifact_id: comp.snapshot, artifact_id: serp.snapshot, artifact_id: crawl.site_map]
+	4.	Gap Analysis produces gap.report
+
+Gap Analysis never has to call Competitive Snapshot, SERP, or Crawl directly. Hermes “wires” them at runtime.
+
+This is the core trick: dependencies are data dependencies, not network dependencies.
+
+⸻
+
+Pattern 2: KBase as a “Policy Decision Point” (PDP), not a service everyone calls ad-hoc
+
+You don’t want every service to implement its own KBase client + caching + secrets + error handling.
+
+Instead pick one of these two clean options:
+
+Option A (simplest): Hermes fetches rules once, passes them into services
+	•	Hermes calls KBase at start of run:
+	•	gets ruleset_version + the relevant rule bundles (QA rules, generator constraints, competitor selection rules)
+	•	Hermes passes the relevant slice into each service call:
+	•	generator receives content_generation_rules
+	•	QA receives qa_rules
+	•	gap analysis receives gap_rules
+
+Pros: easiest, fastest to implement, no extra secrets per service.
+Cons: rules payloads can be large (solve with rule “bundles” + versions)
+
+Option B (more scalable): “Rules Gateway” endpoint owned by Hermes/KBase
+	•	Services call one internal endpoint: GET /rules?website_id=...&bundle=qa
+	•	This endpoint is authenticated once (single internal auth), not per-provider secrets
+	•	Hermes/KBase handles caching and versioning
+
+Pros: services stay light, rules always consistent, small payloads.
+Cons: one more component (but it’s clean)
+
+Either way, services should never be “wired to KBase via Bitwarden individually” beyond a single shared internal auth mechanism.
+
+⸻
+
+Pattern 3: Fixing your QA ⇄ Generator loop (the real killer)
+
+Don’t let the generator “self-loop” with QA. Make Hermes enforce a bounded state machine.
+
+The state machine (per content item)
+
+States:
+	•	DRAFTED
+	•	QA_FAILED
+	•	REVISION_REQUESTED
+	•	QA_PASSED
+	•	APPROVAL_REQUIRED
+	•	APPROVED
+	•	PUBLISHED (or PR_CREATED)
+
+Rules:
+	•	Hermes is the only component allowed to transition states.
+	•	Hermes sets hard caps:
+	•	max_rewrites_per_item = 2 (or 3)
+	•	if still failing → stop and raise “needs human” with a structured fix list
+
+How a loop becomes deterministic
+	1.	Generator produces draft artifact + draft_id
+	2.	QA produces scorecard + violations + fix list
+	3.	Hermes decides:
+	•	If pass → proceed
+	•	If fail → either:
+	•	call Generator again with targeted patch instructions (not “rewrite everything”)
+	•	or stop after N attempts
+
+Key detail: the second generator call must be patch-based:
+	•	Inputs: draft_id, qa_fix_list, ruleset_version
+	•	Output: draft_revision_id
+
+This avoids the “rewrite from scratch, fail again forever” behavior.
+
+⸻
+
+Pattern 4: Notifications without every service integrating notifications
+
+You’re right that “everything needs notifications,” but don’t implement that as “everything calls Notifications Service.”
+
+Do this instead:
+	•	Services emit events and/or write artifacts with severity metadata:
+	•	severity: info|warn|critical
+	•	notify: true/false
+	•	audience: owner|ops|exec
+	•	Hermes (or Audit/Observability) is the only component that decides:
+	•	when to notify
+	•	who to notify
+	•	what channel (email/SMS)
+	•	dedupe + throttling
+
+So services stay focused: they report what happened; Hermes decides if humans need to know.
+
+⸻
+
+Pattern 5: “Capability + Required Inputs” stops the configuration explosion
+
+To avoid “Bitwarden web” and still let Hermes wire things:
+	•	every service must declare:
+	•	required_inputs (what it needs)
+	•	optional_inputs
+	•	supported_artifacts
+	•	consumes_artifacts
+	•	Hermes compares that to Website Registry settings and produces a single checklist.
+
+This becomes your automatic “what’s missing” engine and prevents partial integrations.
+
+⸻
+
+Putting it all together with your examples
+
+Example: Competitive intelligence needs competitor list + rules
+	•	Competitor list lives in Website Registry
+	•	Competitor selection / filtering rules live in KBase (bundle: competitors)
+	•	Hermes passes both to Competitive Snapshot in one call
+No Competitive Snapshot → KBase calls required.
+
+Example: Content QA must use KBase rules
+	•	Hermes fetches qa_rules once
+	•	QA service receives qa_rules_bundle + ruleset_version
+	•	QA outputs a fix list that generator consumes
+No QA → KBase direct calls required.
+
+Example: Web monitor + vitals + notifications
+	•	Vitals emits: “INP regressed on /landing-page (critical)”
+	•	Hermes writes it, correlates with GA4 conversion drop, and triggers a single alert
+No vitals → notification service direct wiring required.
+
+⸻
+
+The “easy way” to think about it
+
+You don’t have inter-service dependencies.
+You have data dependencies.
+
+So your architecture is:
+	•	Services produce/consume artifacts
+	•	Hermes controls ordering
+	•	KBase controls judgment
+	•	Notifications trigger off events + severity, centrally
+
+That keeps your system from turning into a spiderweb.
+
+⸻
+
+Replit implementation prompt (drop this into your Hermes Core / Orchestrator build)
+
+Build Hermes orchestration around an artifact-driven DAG and eliminate service-to-service calls.
+
+Requirements:
+	1.	Add an Artifact Store model/table:
+	•	artifact_id, website_id, run_id, type, schema_version, producer_service, storage_ref or payload, summary, metrics, created_at
+	2.	Add a Run Context model/table:
+	•	run_id, website_id, workflow_name, state, started_at, ended_at, step_states[], max_retries, errors[]
+	3.	Add a “Rules Bundle” fetch in Hermes Core:
+	•	GET rules for bundles: qa, generation, competitors, gap, safety
+	•	Store ruleset_version in run context
+	4.	Update service contract so /capabilities includes:
+	•	supported_artifacts[]
+	•	consumes_artifacts[]
+	•	required_inputs[]
+	5.	Implement orchestration as a DAG:
+	•	Nodes declare inputs (artifacts) and outputs (artifacts)
+	•	Engine only runs a node when its required input artifacts exist
+	6.	Implement the Content Draft state machine:
+	•	max_rewrites_per_item = 2
+	•	Generator must support patch mode:
+	•	input: draft_id + qa_fix_list + ruleset_version
+	•	output: revised_draft_id
+	•	If still failing after cap → mark NEEDS_HUMAN and trigger notification event
+	7.	Implement event-based notifications:
+	•	Services never call Notifications directly
+	•	Services emit events/artifacts with severity + notify flag
+	•	Hermes decides notification dispatch centrally (dedupe + throttle)
+
+Acceptance tests:
+	•	A draft that fails QA twice stops deterministically and produces a single actionable alert
+	•	Gap analysis runs only after competitor snapshot + SERP snapshot artifacts exist
+	•	No service calls another service directly; all coordination is via Hermes + artifacts
+
+If you want, I can also give you the exact JSON schemas for: /capabilities, the artifact envelope, the event envelope, and the draft state machine objects so you can paste them into KBase as your canonical contracts.

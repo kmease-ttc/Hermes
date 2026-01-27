@@ -1,0 +1,81 @@
+Got it. This is a **copy + implementation** change, not conceptual. Below is exactly what you need.
+
+---
+
+## Final copy (tight, minimal, conversion-safe)
+
+### Primary CTA (unchanged, dominant)
+
+**Free Health Check**
+
+### Secondary inline text (directly under the input / button)
+
+Small, subtle, text-only — not a button.
+
+> **No website yet?** Generate a free one instead →
+
+That’s it.
+No extra verbs. No “run”. No competing CTA weight.
+
+---
+
+## Behavior (important)
+
+* Clicking **Free Health Check** = current flow (URL → scan → report).
+* Clicking **Generate a free one instead**:
+
+  * Skips URL requirement
+  * Routes to your **Free Website Generator** flow
+  * Preloads industry/location if already known
+
+This makes it a **fork**, not friction.
+
+---
+
+## Replit implementation prompt (copy-paste)
+
+Use this exactly as a task for Replit:
+
+> Update the homepage hero CTA behavior:
+>
+> 1. Keep the primary CTA labeled **“Free Health Check”**.
+>
+> 2. Remove all instances of “Run Free Site Scan” or “Run”.
+>
+> 3. Directly beneath the primary CTA, add a **secondary inline text link** (not a button) that reads:
+>
+>    **“No website yet? Generate a free one instead →”**
+>
+> 4. Style the secondary link as subtle helper text:
+>
+>    * Smaller font
+>    * Neutral color
+>    * Inline under the primary CTA
+>    * Does not visually compete with the primary CTA
+>
+> 5. Clicking the secondary link should:
+>
+>    * Bypass the URL input requirement
+>    * Route users to the Free Website Generation flow
+>    * Pass along any known context (industry, location, prior answers) if available
+>
+> 6. Ensure terminology consistency across the app:
+>
+>    * Use **“Free Health Check”** everywhere in UI copy
+>    * Do not use “Run”, “Scan”, or “SEO Scan” as primary CTAs
+>
+> This change should not alter the existing health check flow logic — only add a secondary path for users without a website.
+
+---
+
+## Why this works (quick rationale)
+
+* Keeps **one primary action**
+* Gives non-website users an escape hatch without decision overload
+* Preserves funnel clarity
+* Matches how high-conversion SaaS handle alternate entry points
+
+If you want next:
+
+* I can give you the exact JSX snippet for `Home.tsx`
+* Or wire the secondary path directly into your existing generator worker contract

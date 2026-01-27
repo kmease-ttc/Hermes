@@ -1,0 +1,53 @@
+Hermes Integration Instructions
+Your Orchestrator URL
+https://your-app-name.replit.app
+What This Orchestrator Does
+Queues and dispatches jobs to you
+Stores your configuration per website
+Tracks your health via heartbeats
+Monitors your job progress
+Collects your output artifacts
+Enforces safe mode limits
+API Endpoints
+Method	Endpoint	Purpose
+GET	/api/v1/health	Check if orchestrator is online
+GET	/api/v1/services	List all registered services
+POST	/api/v1/workers/{serviceId}/heartbeat	Send heartbeat every 30s
+GET	/api/v1/workers/{serviceId}/jobs/next	Poll for available jobs
+POST	/api/v1/workers/{serviceId}/jobs/{jobId}/claim	Claim job before processing
+POST	/api/v1/workers/{serviceId}/jobs/{jobId}/progress	Report progress
+POST	/api/v1/workers/{serviceId}/jobs/{jobId}/complete	Mark job complete
+GET	/api/v1/workers/{serviceId}/config/{websiteId}	Get website config
+POST	/api/v1/workers/{serviceId}/artifacts	Submit output files
+Your Workflow
+Start up → Send heartbeat to register
+Every 30s → Send heartbeat POST /api/v1/workers/{serviceId}/heartbeat
+Every 5s → Poll for jobs GET /api/v1/workers/{serviceId}/jobs/next
+When job found → Claim it, get config, execute, report progress, complete
+Respect Operational Modes
+Check operationalMode in job/config responses:
+
+Mode	What You Can Do
+read_only	Collect data only, no changes
+draft_only	Create drafts, never publish
+approval_required	Queue changes for review
+auto_apply_low_risk	Apply safe changes only
+full_auto	Apply all changes
+Respect Safe Mode Limits
+Check safeMode in config response:
+
+maxChangesPerRun - Stop after this many changes
+maxPagesMutatedPerRun - Stop after mutating this many pages
+crawlMaxPages - Maximum pages to crawl
+crawlDepthLimit - Maximum crawl depth
+Example Heartbeat
+curl -X POST "https://orchestrator.replit.app/api/v1/workers/crawler/heartbeat" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "healthy"}'
+Example Poll for Jobs
+curl "https://orchestrator.replit.app/api/v1/workers/crawler/jobs/next"
+Example Complete Job
+curl -X POST "https://orchestrator.replit.app/api/v1/workers/crawler/jobs/{jobId}/complete" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "succeeded", "summary": "Processed 100 pages"}'
+Full documentation: See HERMES_API.md and HERMES_INTEGRATION_GUIDE.md in the project.

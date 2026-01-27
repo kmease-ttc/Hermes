@@ -1,0 +1,214 @@
+This is a very good instinct, and you’re thinking about it the right way.
+
+Short answer first, then I’ll give you:
+	1.	My take on the idea
+	2.	How these value statements should be written (rules + examples)
+	3.	Whether to do 2 vs 4 blogs/month
+	4.	A single prompt you can give the agent to implement this cleanly on the pricing page
+
+⸻
+
+1. Is this a good idea? Yes — with one important constraint
+
+Adding concise value statements under each add-on is the right move, as long as:
+	•	They focus on outcomes (traffic, leads, visibility)
+	•	They do not promise guarantees
+	•	They feel like directional impact, not hard claims
+	•	They don’t overwhelm the page or turn it into a spreadsheet
+
+Right now, the add-ons answer:
+“What does this do?”
+
+What you want them to answer is:
+“Why would I pay $49–$199/month for this?”
+
+That’s exactly the right framing.
+
+⸻
+
+2. How the value statements SHOULD be written (rules)
+
+These should not read like marketing fluff or SEO jargon.
+
+Writing rules for each value statement
+	•	1 short sentence (max 2 lines)
+	•	Plain language
+	•	No percentages that sound fake
+	•	Directional impact, not guarantees
+	•	Written from the business owner’s POV
+
+Good phrasing patterns
+	•	“Typically helps…”
+	•	“Often leads to…”
+	•	“Designed to increase…”
+	•	“Commonly results in…”
+	•	“Over time, this can…”
+
+Avoid:
+	•	“Guaranteed”
+	•	“Exact % increases”
+	•	“Rank #1”
+	•	“Explode your traffic”
+
+We want credible, calm confidence, not hype.
+
+⸻
+
+3. Blogs: 2 vs 4 per month (important)
+
+You are correct that blogs are “cheap” for you — but there is a best-practice nuance.
+
+Industry reality
+	•	1 high-quality blog per week (≈4/month) is excellent
+	•	It’s a very standard cadence for SEO growth
+	•	Especially for local + service businesses
+
+My recommendation
+	•	Upgrade Blog Writing add-on to 4 posts/month
+	•	Keep the price the same or modestly higher
+	•	Position it as “weekly content” (people understand that)
+
+Why this helps you:
+	•	Stronger perceived value
+	•	Easier mental model (“every week”)
+	•	Faster compounding SEO impact
+	•	Makes the add-on feel much more “alive”
+
+So yes — I would absolutely move to 4 blogs/month.
+
+⸻
+
+4. Suggested value statements (examples for each add-on)
+
+Below are example value statements you can use as a baseline.
+These are written to feel credible and non-salesy.
+
+Weekly Website Improvements ($149/mo)
+
+Value statement:
+
+Keeps your site fresh and improving, which helps Google trust it more and brings in more customers over time.
+
+⸻
+
+Blog Writing – 4 posts/month ($199/mo)
+
+(Value updated from 2 → 4 posts)
+
+Value statement:
+
+Regular content gives your site more chances to show up in searches and helps attract customers looking for your services.
+
+⸻
+
+Location Page Expansion ($79/mo)
+
+Value statement:
+
+Helps you appear in searches across more cities and service areas, bringing in customers you wouldn’t reach otherwise.
+
+⸻
+
+Technical SEO ($99/mo)
+
+Value statement:
+
+Removes hidden issues that prevent customers from finding you, making it easier for Google to understand and show your site.
+
+⸻
+
+Google Visibility Monitoring ($49/mo)
+
+Value statement:
+
+Shows you how customers are discovering your business so you know what’s working and what to improve.
+
+⸻
+
+Rank Tracking ($39/mo)
+
+Value statement:
+
+Lets you see whether your visibility is improving over time as Arclo continues to optimize your site.
+
+⸻
+
+Review Collection ($X/mo)
+
+Value statement:
+
+More positive reviews build trust and make new customers more likely to contact you.
+
+⸻
+
+Lead Tracking ($X/mo)
+
+Value statement:
+
+Helps you see how many calls and requests your website is generating so you can measure real results.
+
+These statements do exactly what you’re aiming for:
+	•	They explain why it matters
+	•	They connect directly to traffic or leads
+	•	They don’t require SEO knowledge
+	•	They feel honest
+
+⸻
+
+5. Prompt to give the agent (copy/paste)
+
+Here’s a single prompt you can hand to your agent to implement this cleanly.
+
+⸻
+
+PROMPT: Add Outcome-Based Value Statements to Pricing Add-Ons
+
+You are updating the add-on section on the Arclo pricing page.
+
+Goals
+	•	Help non-technical business owners understand why each add-on is worth the price.
+	•	Focus on outcomes like traffic, leads, visibility, and customers.
+	•	Do not add SEO jargon or guarantees.
+	•	Keep the page clean and easy to scan.
+
+Instructions
+	1.	Under each add-on card, add a short value statement (1 sentence, max 2 lines) that explains the business impact.
+	2.	Write in plain language for local business owners (plumbers, HVAC, bakeries, med spas).
+	3.	Use directional phrasing (e.g., “helps”, “designed to”, “often leads to”).
+	4.	Do not use percentages, rankings, or promises.
+	5.	Do not use technical SEO terms unless already present and unavoidable.
+
+Specific changes
+	•	Update Blog Writing to 4 posts per month.
+	•	Frame it as “weekly content” rather than “SEO blogging”.
+
+Example tone (do not copy verbatim)
+
+“This helps your site show up in more searches and brings in customers over time.”
+
+Validation checklist
+
+Before finishing, confirm:
+	•	Every add-on has a value statement.
+	•	No add-on reads like marketing fluff.
+	•	A non-technical business owner can understand the benefit immediately.
+	•	The pricing page still feels simple and uncluttered.
+
+⸻
+
+6. My overall take
+
+You’re doing the right thing by:
+	•	Keeping the pricing modular
+	•	Avoiding SEO jargon
+	•	Making value explicit
+	•	Letting people self-select add-ons
+
+These value statements will increase attach rate on add-ons without hurting trust.
+
+Once this is in, going back to Steps 2–4 will be much easier because:
+	•	Your blog system will be clearer
+	•	Your keyword strategy will already be implicitly priced in
+	•	Your growth narrative will be consistent across product and content
+
+When you’re ready, we can go straight back to Step 2 (keyword map) next.

@@ -1,0 +1,207 @@
+Below are **copy-ready instructions** you can hand directly to the development team. This is written as an internal implementation brief, not marketing copy.
+
+---
+
+# Hermes Navigation & IA Update — Dev Instructions
+
+## Objective
+
+Update Hermes’ navigation and information architecture to reinforce **decision simplicity**, not feature exploration.
+
+Hermes is **not a toolkit**. It is an outcome-driven product designed for busy business owners who do not want to think about SEO. Navigation must reflect that.
+
+We are **learning selectively** from competitors like SEOptimer, not copying their structure.
+
+---
+
+## Guiding Principles (Non-Negotiable)
+
+1. **No feature mega menus**
+2. **No tool taxonomy in the header**
+3. **Navigation must answer only three questions:**
+
+   * What happens?
+   * Is this for someone like me?
+   * How much does it cost?
+4. Depth belongs **inside pages and in the footer**, not the header
+5. First-time visitors should understand Hermes in **under 5 seconds**
+
+---
+
+## Header Navigation (Final, Approved Structure)
+
+### Layout
+
+**Left**
+
+* Hermes logo (home link)
+
+**Right (text links)**
+
+* How It Works
+* Use Cases
+* Pricing
+* Log In
+
+**Primary CTA (button, visually distinct)**
+
+* Get Free SEO Action Plan
+
+That is the full header.
+No additional items. No dropdowns. No mega menus.
+
+---
+
+## Explicitly Do NOT Add
+
+* ❌ “Features” menu
+* ❌ “Tools” menu
+* ❌ Mega menu of SEO capabilities
+* ❌ Agency-style navigation patterns
+* ❌ Secondary CTAs competing with the primary CTA
+
+If a capability cannot fit naturally inside *How It Works* or *Use Cases*, it belongs in the footer.
+
+---
+
+## How Features Are Represented (Instead of a Features Tab)
+
+### 1. How It Works Page
+
+This page implicitly communicates capabilities through flow, not lists.
+
+It should explain:
+
+* Input (site URL)
+* Analysis (what Hermes checks automatically)
+* Output (prioritized action plan)
+* Execution (what gets fixed / monitored)
+
+Avoid enumerating tools. Show outcomes.
+
+---
+
+### 2. Use Cases Page
+
+Use Cases should contextualize features without naming them as features.
+
+Examples:
+
+* “Local service business”
+* “Healthcare practice”
+* “Property management”
+* “No website yet”
+
+Each use case should:
+
+* State the problem
+* Show what Hermes does
+* Show the result
+
+This replaces the need for a Features menu.
+
+---
+
+## Footer Navigation (Where Depth Lives)
+
+Footer should feel **rich but quiet**. This is where advanced users can self-validate without overwhelming others.
+
+### Footer Section: Product
+
+* How It Works
+* Use Cases
+* Pricing
+* Create a Site (No site? No problem)
+
+### Footer Section: Capabilities
+
+(Flat list — no submenus required)
+
+* Technical SEO
+* Keyword Opportunities
+* Content Optimization
+* Competitor Analysis
+* Performance Monitoring
+
+These can be anchor links or lightweight pages later.
+
+### Footer Section: Examples
+
+* Empathy Health Clinic
+* Lucky Thunder Property Management
+* The Farm Texas
+
+Each should link to either:
+
+* A live example
+* Or a case-style page showing before/after
+
+### Footer Section: Company
+
+* About
+* Contact
+* Privacy
+* Terms
+
+---
+
+## “No Site? No Problem” Handling
+
+* Do **not** add this as a primary header item
+* It should live:
+
+  * As a small link on the homepage
+  * In the Product section of the footer
+* This path should feel optional, not dominant
+
+The default assumption remains: *“You already have a site.”*
+
+---
+
+## Optional Trust Enhancements (Allowed Near Header)
+
+These may appear **near the CTA**, but not as nav items:
+
+* “No credit card required”
+* “~60 seconds”
+* “Works with any public website”
+
+These should be visually secondary and non-interactive.
+
+---
+
+## Success Criteria
+
+We should be able to say “yes” to all of the following:
+
+* A first-time visitor understands Hermes without scrolling
+* There is no feeling of complexity or exploration
+* The nav feels calm, confident, and intentional
+* Power users can still find depth via Use Cases and Footer
+* Hermes feels fundamentally different from SEO tool vendors
+
+---
+
+## Internal Alignment Statement (For Team Context)
+
+Hermes is selling **relief and confidence**, not software access.
+Navigation should reinforce *deciding*, not *browsing*.
+
+---
+
+## Implementation Notes
+
+* This is primarily an **IA and copy update**, not a visual redesign
+* Mobile nav should mirror the same hierarchy (no collapsible feature trees)
+* Do not introduce new pages beyond what’s listed here
+* Keep labels exactly as specified unless approved
+
+---
+
+If you want next steps queued for the team:
+
+* Rewrite **Use Cases** to fully replace a Features menu
+* Finalize **Pricing page** to anchor the nav correctly
+* Design a **high-credibility footer layout** that doesn’t feel heavy
+
+This direction is deliberate. The competitor reference validates it — we are intentionally choosing the opposite path.

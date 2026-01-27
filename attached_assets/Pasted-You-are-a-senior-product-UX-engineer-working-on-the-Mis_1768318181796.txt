@@ -1,0 +1,201 @@
+You are a senior product + UX engineer working on the **Mission Control dashboard**. The **Tasks section is functionally correct but emotionally flat**. Users see tasks, but they do **not feel compelled to click** or understand the **value of completing each task**.
+
+Your job is to refactor the Tasks section so it becomes:
+
+* Obvious
+* Actionable
+* Motivating
+* Value-driven
+
+This is a **UX + layout + copy refactor only**. Do not change backend task logic.
+
+---
+
+## CORE PROBLEM TO SOLVE
+
+Right now Tasks answer:
+
+> “Here are things the system can do.”
+
+They must instead answer:
+
+> **“What should I do next, and why does it matter?”**
+
+If a user doesn’t feel a pull to click **Fix it**, the task is not framed correctly.
+
+---
+
+## NEW TASKS MENTAL MODEL (LOCK THIS IN)
+
+Tasks should be treated as **recommended actions**, not a list.
+
+Each task must communicate:
+
+1. What will happen
+2. Why it matters (business impact)
+3. How hard/risky it is (reassurance)
+
+---
+
+## LAYOUT CHANGE: MAKE TASKS BIGGER & CLEARER
+
+### A) Promote “Next Action” into a PRIMARY TASK CARD
+
+At the top of the Tasks section:
+
+Replace the small “Next: Complete Fetch Analytics” line with a **large featured task card**.
+
+#### Featured Task Card (1 only)
+
+Must include:
+
+* Task title (large)
+* Clear value statement (one sentence)
+* Expected outcome (metrics unlocked or risk reduced)
+* Primary CTA (Fix It)
+
+Example:
+
+**Fetch Analytics Data**
+“Unlock traffic, conversion, and engagement insights so Arclo can prioritize the right fixes.”
+
+Small subtext:
+
+> Unlocks traffic trends, conversion rate, and lead tracking
+
+CTA:
+
+> Fix This Now
+
+This card should visually stand out from the rest.
+
+---
+
+### B) Secondary Tasks = Action Cards (not rows)
+
+Replace the current flat list rows with **stacked action cards**.
+
+Each task card must include:
+
+#### Required fields
+
+* **Task title**
+* **Why this matters** (business-facing, not technical)
+* **What improves** (metrics, tasks unlocked, protection gained)
+* CTA button (consistent placement)
+
+#### Example transformation
+
+❌ Current:
+**Check Indexing Status**
+Verify which pages are indexed and identify indexing issues
+
+✅ New:
+**Fix Indexing Issues**
+“Ensure your pages can appear in Google search results and prevent silent traffic loss.”
+
+Subtext:
+
+> Confirms indexing for key pages and detects hidden errors
+
+CTA:
+
+> Fix This
+
+---
+
+## COPY RULES (VERY IMPORTANT)
+
+### Never lead with system actions
+
+Avoid phrases like:
+
+* Fetch
+* Collect
+* Verify
+* Gather
+
+Instead, reframe as outcomes:
+
+* Unlock analytics
+* Protect rankings
+* Improve visibility
+* Prevent traffic loss
+
+---
+
+## TASK VALUE TEMPLATE (USE THIS FOR EVERY TASK)
+
+Each task must follow this copy structure:
+
+**Title:** Outcome-oriented
+**Description:** Why it matters to the business
+**Impact line (small):** What improves or unlocks
+**CTA:** Fix This / Fix Now
+
+If you cannot explain the value in one sentence, the task copy is wrong.
+
+---
+
+## VISUAL DESIGN RULES FOR TASKS
+
+* Tasks section keeps **yellow/gold glow** (attention)
+* Featured task:
+
+  * Slightly larger card
+  * Stronger glow
+* Secondary tasks:
+
+  * Equal-height cards
+  * Same CTA alignment
+* Buttons:
+
+  * Use **secondary accent** (not green)
+  * Green only appears AFTER completion
+
+---
+
+## OPTIONAL BUT STRONGLY RECOMMENDED
+
+### Add a section header explainer
+
+Under “Tasks” title, add a small line:
+
+> “Recommended actions to improve traffic, rankings, and conversions.”
+
+This frames the entire section correctly.
+
+---
+
+## WHAT NOT TO DO
+
+* Do NOT show raw system language
+* Do NOT show long technical descriptions
+* Do NOT hide value behind tooltips
+* Do NOT leave tasks visually small or secondary
+
+Tasks are the **engine of value delivery** — treat them as such.
+
+---
+
+## ACCEPTANCE CHECKLIST
+
+Before finishing, verify:
+
+* One featured “Next Action” card exists
+* All tasks explain **why they matter**
+* All task CTAs feel worth clicking
+* A non-technical user can answer:
+
+  > “What happens if I click this?”
+* The Tasks section feels as important as Key Metrics
+
+If Tasks still feel like a to-do list instead of recommendations, keep refining.
+
+---
+
+## GUIDING PRINCIPLE
+
+> **People don’t act on tasks. They act on outcomes.**
+
+Make every task feel like progress toward something they care about.

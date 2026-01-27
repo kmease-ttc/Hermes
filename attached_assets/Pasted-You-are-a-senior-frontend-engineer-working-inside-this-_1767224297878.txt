@@ -1,0 +1,91 @@
+You are a senior frontend engineer working inside this Replit project.
+
+Goal
+Standardize **Key Metrics highlight colors** so they match **Natasha’s purple accent**, not the green currently used on some other crew pages (e.g., Socrates, Hemingway, Speedster variants). Purple becomes the **default Key Metrics accent color** across all crews.
+
+Scope
+
+* This is a **visual-only change**.
+* Do NOT change data, logic, or layout.
+* Do NOT introduce per-crew color divergence.
+* Natasha’s purple is the canonical color reference.
+
+What to change
+
+1. Identify the shared Key Metrics components
+
+* Locate the shared components:
+
+  * `KeyMetricsGrid`
+  * `KeyMetricCard`
+  * Any shared metric accent / glow / border styles
+* Confirm where the accent color is currently defined (likely:
+
+  * a CSS variable
+  * a Tailwind class
+  * or a status-to-color map)
+
+2. Replace green accent with purple
+
+* Wherever the Key Metrics cards use:
+
+  * green border
+  * green glow
+  * green icon highlight
+  * green top accent line
+    Replace it with the **same purple used by Natasha’s cards**.
+
+Important:
+
+* Do NOT hardcode different purples per page.
+* Extract or reuse a single token, for example:
+
+  * `--metrics-accent-primary`
+  * `metricsAccentColor`
+  * `accentVariant="primary"`
+
+3. Make purple the default Key Metrics accent
+
+* The default (no status override) Key Metrics color = purple.
+* Status-based coloring (green/yellow/red) can come later if needed, but for now:
+
+  * All Key Metrics cards use purple accent consistently.
+* Ensure:
+
+  * Glass background stays the same
+  * Shadows and blur stay the same
+  * Only the accent color changes
+
+4. Update all crew pages automatically
+   Because all crews should already be using `KeyMetricsGrid`:
+
+* This change should immediately affect:
+
+  * Natasha (no visible change)
+  * Socrates
+  * Hemingway
+  * Speedster
+  * Any other crew with Key Metrics
+    If any crew still looks green after this:
+* That crew is not using the shared component and must be refactored to do so.
+
+5. Visual verification checklist
+   After the change:
+
+* Natasha: unchanged (purple)
+* Socrates: purple Key Metrics cards
+* Hemingway: purple Key Metrics cards
+* Speedster: purple Key Metrics cards (unless Speedster explicitly uses a different metric system like vitals — those can remain vitals-colored if separate)
+* No green accent remains in Key Metrics sections
+
+Non-goals
+
+* Do NOT recolor mission widgets
+* Do NOT recolor vitals-specific charts
+* Do NOT change buttons, pills, or icons outside Key Metrics
+
+Deliverables
+
+* File paths updated
+* Confirmation that all Key Metrics cards now use the same purple accent as Natasha
+* Screenshot or description verifying at least two other crew pages now show purple Key Metrics

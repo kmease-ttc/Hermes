@@ -1,0 +1,127 @@
+Replit Prompt: Fix Action Queue CTA Colors + Make Source Pills Filled (High-Emphasis Style)
+
+Context
+In the Action Queue cards on Mission Control, the call-to-action buttons (“Review”, “Approve”, “Export Prompt”) are not using the correct visual hierarchy, and the “Sources” pills (e.g., Hemingway, Lookout) are outlined/transparent, which weakens their importance.
+
+This section represents **work to be done**, so it must visually signal action and confidence.
+
+---
+
+## Goals
+
+1. Make CTAs visually consistent with the rest of the app (My Crew / Arclo Pro)
+2. Make “Sources” pills **filled**, high-emphasis, and readable at a glance
+3. Preserve existing colors per agent, but increase contrast and weight
+
+---
+
+## 1. Call-to-Action Buttons (Review / Approve / Export Prompt)
+
+### Button hierarchy (required)
+
+* **Primary action**: `Approve`
+* **Secondary action**: `Review`
+* **Tertiary action**: `Export Prompt`
+
+### Styling rules
+
+**Approve**
+
+* Use **Arclo primary gradient button**
+* Filled, rounded pill
+* Subtle glow / lift on hover
+* Highest visual priority
+
+**Review**
+
+* Dark glass button (same style as My Crew secondary actions)
+* Filled background (not outline)
+* Subtle border + hover glow
+
+**Export Prompt**
+
+* Muted tertiary button
+* No gradient
+* Reduced opacity until hover
+* Still readable, but clearly not primary
+
+### Remove
+
+* Flat gray buttons
+* Outlined-only buttons for primary actions
+* Inconsistent padding or font weight
+
+---
+
+## 2. Sources Pills (Hemingway, Lookout, etc.)
+
+### Current issue
+
+Source pills are outlined/transparent, which makes them feel optional or inactive.
+
+### Required change
+
+All source pills must be **filled** using their agent’s color.
+
+### Styling rules for source pills
+
+* Background: agent color at ~85–90% opacity
+* Text: white (or near-white) for contrast
+* Border: none (or very subtle inner border)
+* Rounded pill shape (match other chips)
+* Font weight slightly higher than body text
+
+### Keep
+
+* Each agent’s unique color
+* Same ordering and content
+
+### Remove
+
+* Transparent or outline-only pills
+* Low-contrast text on dark background
+
+---
+
+## 3. Severity / Effort Chips (High / Medium / Quick)
+
+Make these visually distinct from source pills:
+
+* Severity (High / Medium):
+
+  * Filled, warm colors
+  * Slight glow
+* Effort (Quick / Medium):
+
+  * Neutral filled chips
+  * Lower emphasis than severity
+
+Do not mix styles between source pills and severity chips.
+
+---
+
+## Acceptance Criteria
+
+* “Approve” immediately reads as the main action
+* “Review” is clearly secondary but still actionable
+* “Export Prompt” is visible but not competing
+* Source pills are bold, filled, and scannable
+* No outlined/transparent pills remain in the Action Queue
+* The Action Queue visually matches the urgency of the recommendations
+
+---
+
+## Guardrails
+
+* Do not change layout or behavior
+* Do not introduce new colors
+* Reuse existing agent color tokens
+* This is a styling refinement only
+
+---
+
+Deliverable
+
+* Updated Action Queue card styles
+* Updated source pill styles
+* Buttons consistent with My Crew + Arclo Pro

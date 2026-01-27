@@ -1,0 +1,135 @@
+Fix continuity: “Hired crews” must be consistent across Hire Crew page, Dashboard Crew Summary, and left-nav Crew list. Create one canonical source of truth for hired/enabled crews per site and use it everywhere (no duplicated logic, no local filters).
+
+Problem
+
+* Hire Crew page shows a set of hired crews.
+* Dashboard Crew Summary shows a different set (sometimes “No Crew Members Hired” even when some are hired).
+* Left nav Crew list can also differ.
+  This is a continuity/lineage issue: different pages are reading different data sources or applying different filters (siteId/domain, environment, user/org scope, enabled vs hired, etc.).
+
+Goal
+For the selected site:
+
+* Hire Crew page = canonical truth of which crews are hired/enabled
+* Dashboard Crew Summary = displays exactly those hired crews (with their score + mission badge)
+* Left nav Crew list = displays exactly those hired crews (plus optionally a “Hire more crew” CTA)
+
+Single Source of Truth: SiteCrewState
+Create/confirm one table and one API that owns the truth.
+
+DB (recommended)
+table: site_crews
+
+* site_id (fk)
+* crew_id (enum)
+* is_hired (boolean)
+* is_enabled (boolean)           // optional, if you allow pause
+* hired_at
+* enabled_at
+* config_status ("ready"|"needs_setup"|"blocked"|"error")
+* updated_at
+  Unique constraint: (site_id, crew_id)
+
+Canonical API
+GET /api/sites/:siteId/crew-state
+returns:
+{
+siteId,
+crews: [
+{ crewId, isHired, isEnabled, configStatus, theme, ownedIntegrations }
+]
+}
+
+Rules:
+
+* “Hired crews” = crews where isHired=true AND isEnabled=true (or just isHired if you don’t support disabled).
+* No page computes “hired” from anything else (no secrets checks, no last-run checks, no enabledAgents arrays from other endpoints).
+
+Implementation changes (do this everywhere)
+
+1. Hire Crew page
+
+* Reads and writes to site_crews through:
+
+  * GET /api/sites/:siteId/crew-state
+  * POST/PATCH /api/sites/:siteId/crew-state (toggle hire/enable)
+* UI displays crews based on crewRegistry + crew-state
+
+2. Dashboard Crew Summary
+
+* Must use crew-state to decide which cards to show:
+
+  * show only crews where isHired=true (and enabled)
+* Then for each shown crew, fetch status (score/missions) via the CrewStatus endpoint:
+
+  * GET /api/sites/:siteId/crew-status
+* Join:
+
+  * crew cards = crew-state.hired ∩ crew-status
+
+Never show “No crew members hired” if crew-state says there are hired crews.
+If crew-status missing for a hired crew, show “Needs setup / Run diagnostics” state (not hide the card).
+
+3. Left nav Crew list
+
+* Must use crew-state as the source:
+
+  * show hired crews only (or show all but clearly separate “Available” vs “Hired” — but your preference seems hired-only)
+* Add “Hire more crew” CTA that links to Hire Crew page.
+
+Continuity guardrails (prevents future regressions)
+A) Standardize the site scope
+Every request that depends on “current site” must use the same siteId:
+
+* selectedSiteId from the global selector
+* do not mix DOMAIN-only or domain string filters in some pages and siteId in others
+  If DOMAIN legacy is still used, auto-migrate it into a website record and a siteId.
+
+B) Make “no hired crews” a derived boolean from site_crews only
+
+* dashboardEmpty = crewState.crews.filter(c => c.isHired && c.isEnabled).length === 0
+
+C) Add a “continuity check” debug panel (dev-only)
+Show on dashboard:
+
+* selectedSiteId + domain
+* hiredCrewIds from /crew-state
+* renderedCrewIds in left nav
+* renderedCrewIds on dashboard
+  This makes future mismatches obvious in 10 seconds.
+
+Tests (must add)
+
+1. Unit/integration test: consistency
+
+* Toggle hire Popular on Hire Crew page (API)
+* Assert /crew-state returns Popular hired
+* Assert dashboard crew summary returns Popular card visible
+* Assert nav list includes Popular
+
+2. E2E smoke test (Playwright)
+
+* select site
+* hire a crew
+* reload dashboard
+* verify card exists
+* verify nav item exists
+
+Acceptance criteria
+
+* The set of hired crews is identical across:
+
+  * Hire Crew page
+  * Dashboard Crew Summary
+  * Left nav Crew list
+* No page shows “No Crew Members Hired” if any crew is hired.
+* Crew cards are never hidden due to missing data; they show “needs setup” instead.
+
+Deliverable
+
+* One PR that:
+
+  1. introduces/standardizes site_crews (SiteCrewState)
+  2. implements /api/sites/:siteId/crew-state
+  3. refactors Hire Crew, Dashboard, and Left nav to use crew-state
+  4. adds continuity tests to stop regressions

@@ -1,0 +1,182 @@
+Absolutely — here is a **clean, precise, developer-ready upgrade plan** to make the entire **“Coming Soon / Roadmap”** section *way cooler*, more premium, more consistent with your dark AI aesthetic, and without revealing backend vendors like “Alkay.”
+
+I’ll also give **specific Tailwind snippets**, layout improvements, and visual styling upgrades.
+
+---
+
+# ✅ **WHAT TO FIX / IMPROVE**
+
+From your screenshot, the current section has these issues:
+
+* Looks **too plain** compared to the rest of your premium design.
+* Tag pills are floating awkwardly and feel disconnected.
+* The spacing makes it feel empty.
+* Background is flat and needs subtle gradients/light blobs.
+* The “ROADMAP” tag should feel more like an AI system label.
+* “(Alkay)” must be removed — you don’t show internal tools publicly.
+* No interaction / hover / depth.
+* No visual boundary between roadmap and footer.
+
+We’ll fix all of that.
+
+---
+
+# 🎨 **NEW DESIGN SPEC — ROADMAP SECTION (Premium AI Style)**
+
+## 1. **Background Upgrade**
+
+Use a soft gradient that fades into the dark footer:
+
+```
+bg-gradient-to-b from-slate-50 via-slate-100 to-[#181857]
+```
+
+Optional: Add subtle top lighting:
+
+```
+<div class="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.15),_transparent_70%)] opacity-60"></div>
+```
+
+This pulls the design upward visually and gives a “system panel” feel.
+
+---
+
+## 2. **Roadmap Tag (Make it look like a system label)**
+
+Turn the “ROADMAP” text into a glowing micro-tag, similar to your dark section micro tag.
+
+```
+<p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50/60 rounded-full px-3 py-1 inline-block shadow-sm">
+  ROADMAP
+</p>
+```
+
+---
+
+## 3. **Title Styling**
+
+Make it match your hero typography:
+
+```
+<h2 class="mt-4 text-3xl md:text-4xl font-extrabold text-slate-900">
+  Coming Soon to Arclo
+</h2>
+```
+
+Optional supporting sentence:
+
+```
+<p class="mt-3 text-slate-600 max-w-xl mx-auto">
+  Powerful new features that will expand your automated marketing capabilities — all built into Arclo.
+</p>
+```
+
+This ties it to your overall narrative of AI automation.
+
+---
+
+## 4. **Feature Pills — Make Them Look Like AI Chips**
+
+Your current pills are basic. They can look like premium glass/gradient chips:
+
+```
+<div class="
+  inline-flex items-center gap-2
+  rounded-full px-5 py-2.5
+  bg-white/80 backdrop-blur-xl
+  border border-slate-200/60
+  shadow-[0_4px_16px_rgba(0,0,0,0.06)]
+  hover:shadow-[0_6px_22px_rgba(79,70,229,0.25)]
+  hover:border-indigo-300 transition-all
+  cursor-pointer
+">
+  Ads Automation
+</div>
+```
+
+### Updated pill text list (cleaned, no backend vendor names):
+
+* Ads Automation
+* Social Media Automation
+* Reputation Management
+* Google Business Profile Automation
+
+### Add a small AI spark icon on hover:
+
+Use lucide `<Sparkles />` or `<Zap />` subtle icon animation:
+
+```
+group-hover:scale-110 transition
+```
+
+---
+
+## 5. **Pill Layout Upgrade**
+
+Switch from a flat horizontal row to a **responsive, center-aligned pill cloud**:
+
+```
+<div class="mt-10 flex flex-wrap justify-center gap-4 md:gap-6">
+  <!-- pill components -->
+</div>
+```
+
+This feels more premium and dynamic, like a real roadmap.
+
+---
+
+## 6. **Add Soft Connection Lines (Optional but looks amazing)**
+
+Between pills, you can add super faint curved lines to imply relationships:
+
+```
+opacity-[0.05] absolute hidden md:block
+pointer-events-none
+```
+
+This mimics the look of AI nodes / systems.
+
+---
+
+## 7. **Improve Spacing + Hierarchy**
+
+Here’s the exact spacing you should use:
+
+```
+pt-28 pb-36
+space-y-6
+```
+
+Then add a smooth **transition gradient** into the footer so it looks intentional instead of boxed in.
+
+---
+
+# 🔥 **RESULT**
+
+These upgrades will make the section:
+
+* More visually connected to the premium dark footer
+* More “AI system module” rather than a flat placeholder
+* More modern and futuristic
+* More trustworthy (removes backend vendor references)
+* More engaging (hover, shadow, glow)
+
+This will visually match your **hero**, **features**, **stats**, and **pricing** sections.
+
+---
+
+# ❓ Want Me to Generate the JSX for This Entire Section?
+
+I can generate **a complete replacement React component for `/Home.tsx`** that matches your new style guide:
+
+* background gradients
+* glowing roadmap tag
+* premium pills
+* hover effects
+* spacing
+* container
+* Tailwind classes ready to paste
+
+Just say:
+
+**“Generate the roadmap section JSX”**

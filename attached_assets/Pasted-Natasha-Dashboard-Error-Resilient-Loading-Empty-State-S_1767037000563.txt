@@ -1,0 +1,186 @@
+Natasha Dashboard — Error-Resilient Loading & Empty State Spec
+
+Problem to solve
+When the Competitive Intelligence integration fails or returns no data, the Natasha dashboard currently collapses into a hard error state (“Failed to load competitive data”). This breaks discoverable complexity and makes the app feel brittle.
+
+The dashboard must **always load**, even if integrations are down, partially configured, or returning empty data.
+
+---
+
+## Core Principle
+
+**No crew dashboard should ever hard-fail.**
+Errors belong at the *component level*, not the *page level*.
+
+Natasha should:
+
+* Load instantly with structure + context
+* Explain what’s missing in human language
+* Offer a clear next step
+* Still educate the user about what Natasha does
+
+---
+
+## Required Behavior Changes
+
+### 1. Page-Level Rendering (Always On)
+
+The Natasha page must always render:
+
+* Header (Natasha, Competitive Intelligence, description)
+* Tabs (Competitor Analysis, SERP Recon, Gap Detection)
+* Section containers / cards
+* Agent Score + controls (Refresh, Settings)
+
+Even if **all API calls fail**, the page layout remains intact.
+
+Implementation rule:
+
+* Never block the entire page on `competitive_overview` fetch.
+* Move all failure handling inside individual widgets/cards.
+
+---
+
+## 2. Replace Hard Error with “Degraded State”
+
+Remove this pattern:
+
+* ❌ Full-width red error card: “Failed to load competitive data”
+
+Replace with:
+
+* Neutral “Degraded / Unavailable” states *inside each section*
+
+### Visual Tone
+
+* No red error walls
+* Use muted warning styling consistent with the rest of the app
+* Calm, explanatory language
+
+---
+
+## 3. Section-Level States (Per Widget)
+
+Each major Natasha section must support **4 states**:
+
+### A. Loading
+
+* Skeleton UI
+* Placeholder bars, rows, or cards
+* No spinners blocking the page
+
+### B. Healthy (Data Available)
+
+* Normal rendered data
+
+### C. No Data Yet (Configured but Empty)
+
+Example copy:
+
+* “No competitive data yet”
+* “We haven’t detected competitors for this domain.”
+
+Actions:
+
+* “Add competitor”
+* “Run first scan”
+
+### D. Integration Unavailable (Error / Timeout)
+
+This is the current broken case.
+
+Replace with a **contextual fallback card**:
+
+**Title**
+Competitive data temporarily unavailable
+
+**Body**
+Natasha couldn’t retrieve competitive data right now. This can happen if the integration is still initializing, credentials are missing, or the scan hasn’t completed yet.
+
+**Actions**
+
+* Retry
+* View integration status
+* Learn what Natasha tracks
+
+No stack traces. No raw error messages.
+
+---
+
+## 4. Global Fallback Content (Critical)
+
+When *all* competitive data is unavailable, show **educational + preview content** instead of emptiness.
+
+Add a default “What Natasha Does” panel at the top of the dashboard body:
+
+Contents:
+
+* Short explanation:
+  “Natasha monitors your competitors, tracks ranking shifts, and identifies strategic gaps you can exploit.”
+* Bullet list of what will appear once active:
+
+  * Competitor ranking comparisons
+  * Keyword gap detection
+  * SERP feature opportunities
+  * Authority & backlink gaps
+* CTA:
+
+  * “Configure Competitive Intelligence”
+  * or “Run Initial Scan”
+
+This ensures the dashboard still feels valuable even on day zero.
+
+---
+
+## 5. Agent Score Behavior
+
+Agent Score should:
+
+* Still display
+* Fall back to a neutral score or last known score
+* If score depends on competitive data, show tooltip:
+  “Score will update once competitive data is available.”
+
+Never hide the score entirely.
+
+---
+
+## 6. Retry & Refresh Logic
+
+* “Retry” should re-trigger only the failed fetch, not reload the entire page.
+* “Refresh” in the header should:
+
+  * Re-run all Natasha-related fetches
+  * Reset degraded states back to loading → resolved
+
+---
+
+## 7. Implementation Notes (Engineering)
+
+* Do **not** gate rendering on `Promise.all`
+* Use per-widget async boundaries
+* Treat network errors as `status: unavailable`, not fatal
+* Prefer:
+
+  * `data | null`
+  * `status: loading | ready | empty | unavailable`
+
+Avoid:
+
+* Throwing errors during render
+* Page-level error boundaries for data fetch failures
+
+---
+
+## 8. Acceptance Criteria
+
+* Natasha dashboard always renders its full layout
+* No full-page “Failed to load” states
+* Each section explains *why* data is missing and *what to do next*
+* First-time users understand Natasha even without data
+* App feels stable, intentional, and professional even when integrations fail
+
+---
+
+Outcome
+Natasha becomes resilient, educational, and confidence-inspiring — even when the underlying competitive intelligence pipeline is unavailable.

@@ -1,0 +1,119 @@
+Replit Prompt: Fix Mission Control “Review” Buttons (Wire to Details Page) + Remove “API Key Required for Export” (Use Session/Auth, Not Extra Key)
+
+Issue A — “Review” button does nothing
+Problem
+On Mission Control → Priority Actions cards, clicking “Review” (e.g., “Fix indexing for your top converting pages”) doesn’t navigate anywhere or open details.
+
+Goal
+Every “Review” button must open a mission/action details view so the user can see:
+
+* why this was recommended (evidence)
+* impacted pages/queries
+* which crew members produced it
+* severity + confidence (with explanation)
+* recommended steps (checklist)
+* links to run fixes / export fix pack / mark done
+
+Implementation (choose one; prefer modal-first for speed)
+Option 1 (preferred): Open a Mission Details modal (quick win)
+
+* Create a reusable <MissionDetailsModal /> component.
+* On “Review” click:
+
+  * open modal
+  * fetch mission details from backend by missionId
+* Add “Open full page” secondary link if desired.
+
+Option 2: Navigate to a dedicated route
+
+* Add route: /missions/:missionId (or /mission/:id)
+* Wire Review button to navigate() to that route
+* Page uses the same content component as the modal.
+
+Data model / API
+
+* Ensure each priority action has a stable missionId.
+* Add endpoint:
+  GET /api/missions/:id
+  returns:
+  {
+  id, title, description,
+  sources: [{crewId, crewName, type, runId}],
+  evidence: {metrics, screenshots?, sampleRows?, urls?, queries?},
+  recommendations: [{step, rationale, impact, effort}],
+  status: {open|in_progress|done},
+  createdAt, updatedAt
+  }
+* If missions are currently generated on the fly, persist them in DB on diagnostics run so Review always has something to load.
+
+UI requirements
+
+* Mission details must follow the same cold glass modal/page styling.
+* Include:
+
+  * “Evidence” section (what data caused it)
+  * “What to do” checklist
+  * “Mark as done” + “Snooze” (optional)
+  * “Export Fix Pack” shortcut (uses existing export flow)
+
+Acceptance criteria
+
+* Clicking any “Review” always opens details (no dead button).
+* Details show enough info to understand and execute.
+
+Issue B — Export flow says “API Key Required for Export”
+Problem
+Export Fix Pack currently blocks with “API Key Required for Export.” Exporting a document from within the app should not require a special extra API key.
+
+Goal
+Remove the extra “export API key” requirement. Export should rely on:
+
+* current authenticated session (preferred), OR
+* internal server-side credentials (already available), OR
+* the existing user/app auth token if you already have one.
+  No additional secret just to export.
+
+Implementation
+
+1. Identify where the export endpoint checks for an “export API key”
+
+* Search for:
+
+  * EXPORT_API_KEY
+  * “API Key Required for Export”
+  * any middleware that checks x-api-key on /api/export/*
+
+2. Remove that requirement for in-app export calls
+
+* Export endpoint should accept the user’s session cookie / JWT, same as the rest of the app.
+* If the app does not have auth yet, then export should still work locally using server-side execution (since it’s the same user inside the Replit app).
+
+3. Keep security via normal auth + rate limiting
+
+* If you want to prevent anonymous public export:
+
+  * require authenticated session
+  * add per-user rate limits
+  * log export attempts in audit log
+
+4. UX update
+
+* Replace “API Key Required for Export” with meaningful errors only:
+
+  * “Not signed in” (if auth is required)
+  * “No diagnostics available for this site yet”
+  * “Worker unavailable (retrying…)”
+  * “Export generation failed (show code/message)”
+* The UI should never suggest the user needs to create an API key for export.
+
+Acceptance criteria
+
+* Export works without adding any new secrets.
+* The export modal no longer displays “API Key Required for Export.”
+* Export failures show actionable error code/message/hint.
+
+Do this now
+
+1. Wire Review buttons to Mission Details (modal or route) and create the details view.
+2. Remove the export API key gate and rely on existing session/auth.
+3. Add a small empty-state if mission details don’t exist yet (“Run Diagnostics to generate mission details.”)

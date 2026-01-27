@@ -1,0 +1,227 @@
+You are a senior frontend engineer and design-system owner working inside this Replit project. Your task is to **bring visual and interaction consistency to the Scan Results page** so it matches the modern, glassy, brand-forward aesthetic already present in the best parts of the UI.
+
+This is a **design + UI refactor**, not a feature build. Do not change scan logic or data outputs.
+
+---
+
+## GOAL (what “done” looks like)
+
+The entire Scan Results page should feel:
+
+* Modern
+* Intentional
+* Cohesive
+* Brand-consistent
+
+Specifically:
+
+* The **glass / frosted panels**, **colored iconography**, and **brand CTAs** already visible in the darker middle section should become the visual language for the rest of the page.
+* Eliminate generic green usage where it conflicts with brand meaning.
+* Make color usage semantic and consistent.
+
+---
+
+## CORE DESIGN RULES (non-negotiable)
+
+### 1. Color semantics (this fixes most of the “off” feeling)
+
+**Brand Gradient (purple → peach)**
+
+* Use ONLY for **primary brand actions**
+
+  * Analyze My Website
+  * Generate My Site
+  * Fix Everything Automatically
+* Never replace this with green.
+
+**Gold / Amber**
+
+* Use for:
+
+  * “Needs Attention”
+  * Letter grades (C+, B-)
+  * Lost traffic / risk numbers
+  * Warning emphasis
+* This is the “attention” color.
+
+**Green**
+
+* Use ONLY for:
+
+  * “Good”
+  * “Resolved”
+  * Completed checks
+  * Checkmarks
+* Green is NOT a highlight or CTA color.
+
+If something is green and it’s not “good” or “done”, it’s wrong.
+
+---
+
+### 2. Extend the glass system to the whole page
+
+Right now, only one section uses the glass aesthetic correctly.
+
+You must establish **three visual layers**:
+
+#### Layer 1 – Page background
+
+* Very light neutral or subtle gradient
+* No heavy contrast
+* This layer should never compete for attention
+
+#### Layer 2 – Standard glass panels (MOST content)
+
+Apply to:
+
+* “What We Checked (So Far)” cards
+* Metrics cards (traffic, clicks, leads)
+* Any informational sections
+
+Style:
+
+* Semi-transparent white
+* Subtle blur
+* Soft shadow
+* Rounded corners
+* This should cover ~80% of the page
+
+#### Layer 3 – Focus glass panels (hero / diagnosis)
+
+Apply to:
+
+* SEO Health grade
+* Lost traffic summary
+* Primary CTA cluster
+
+Style:
+
+* Slightly darker glass
+* Stronger blur
+* This is where the eye should land first
+
+Do NOT add dark backgrounds just to be dark. The glass effect is the point.
+
+---
+
+### 3. Button hierarchy (must be enforced)
+
+#### Primary (brand action)
+
+* Brand gradient
+* Used for:
+
+  * Analyze
+  * Generate
+  * Fix Everything Automatically
+
+#### Secondary (section-level action)
+
+* Solid brand purple
+* Used for:
+
+  * Fix This
+  * View Details
+
+#### Tertiary (neutral / disabled)
+
+* Glass outline
+* Muted text
+* Used for:
+
+  * Preview
+  * Limited Scan actions
+
+Remove all **green buttons** unless the button literally means “Completed”.
+
+---
+
+### 4. Iconography consistency
+
+Every card must have:
+
+* One clear icon
+* Icon must be colored intentionally (not gray)
+* Color must reflect meaning:
+
+  * Technical / neutral → brand purple
+  * Warning / risk → gold or red
+  * Success → green
+
+No gray icons.
+No default icon colors.
+
+The icon clarity you see in the darker glass panel is the reference standard.
+
+---
+
+## CONCRETE TASKS (do these in order)
+
+### Task 1: Refactor “What We Checked (So Far)”
+
+* Convert all cards to **glass panels (Layer 2)**
+* Replace flat white cards
+* Ensure:
+
+  * Colored icon
+  * Status pill uses semantic color (green/gold/red)
+  * “Fix This” uses brand purple (not green)
+
+### Task 2: Fix metrics cards (traffic, clicks, leads)
+
+* Make them glass panels
+* Increase visual weight of numbers
+* Use:
+
+  * Red / gold for losses
+  * Neutral text for labels
+* No green here unless showing a positive improvement
+
+### Task 3: Remove green highlights from non-success elements
+
+Audit the page for:
+
+* Green borders
+* Green shadows
+* Green buttons
+  Replace with:
+* Brand purple (actions)
+* Gold (attention)
+
+### Task 4: Normalize section spacing and rhythm
+
+* Glass panels should align vertically
+* Equal padding
+* No section should feel “tacked on”
+
+---
+
+## OUT OF SCOPE (do NOT touch)
+
+* Scan logic
+* Data accuracy
+* Backend APIs
+* Pricing logic
+* Authentication
+* Publishing flow
+
+This is **purely UI + design-system cleanup**.
+
+---
+
+## ACCEPTANCE CHECKLIST (self-review before finishing)
+
+* The page no longer uses green as a generic highlight
+* Brand CTAs visually match “Analyze My Website”
+* All cards feel like part of the same design system
+* Glass aesthetic is consistent across sections
+* Icons are colored and readable everywhere
+* Nothing looks like a default SaaS dashboard anymore
+
+---
+
+If you’re unsure how to style something, **copy the treatment from the best-looking glass panel already on the page** and apply it consistently.
+
+Do not invent new styles.
+
+Make the page feel like it was designed, not assembled.

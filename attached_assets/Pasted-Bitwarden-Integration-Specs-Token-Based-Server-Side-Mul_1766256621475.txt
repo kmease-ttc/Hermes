@@ -1,0 +1,182 @@
+Bitwarden Integration Specs (Token-Based, Server-Side, Multi-Service Credentials)
+
+Objective
+Integrate Bitwarden so the app can securely read and manage credentials needed to connect external services (GA4, Search Console, Ads, SERP provider, crawler, etc.) without hardcoding secrets or relying on per-environment manual entry.
+
+Important Constraints
+- The Bitwarden access token must never be pasted into chat, logged, or stored client-side.
+- All Bitwarden calls must be server-side only.
+- The frontend should never receive raw secrets. It should only receive:
+  - connection status
+  - timestamps
+  - masked metadata (e.g., last 4 chars)
+  - selectable identifiers (e.g., “Google OAuth Client for Site A”)
+
+High-Level Architecture
+- Add a “Vault Provider” abstraction layer:
+  - VaultProvider interface
+  - BitwardenProvider implementation
+- App reads service credentials using:
+  - (siteId, integrationType) -> vault item reference -> secret retrieval (server-side) -> connector uses secrets
+
+1) Data Model Changes
+
+1.1 Sites table (if not already)
+- id
+- name
+- domain
+- createdAt/updatedAt
+
+1.2 Integrations table (new)
+Stores configuration and references to vault items (not the secrets).
+- id
+- siteId
+- integrationType (enum: ga4, gsc, google_ads, serp, clarity, crawler, etc.)
+- status (connected, missing, error, pending)
+- vaultProvider (enum: bitwarden)
+- vaultItemId (string)            // Bitwarden item ID OR secret identifier
+- vaultCollectionId (string|null) // optional
+- vaultOrgId (string|null)        // optional
+- metaJson (json)                 // non-sensitive metadata (e.g., propertyId, customerId)
+- lastCheckedAt
+- createdAt/updatedAt
+
+1.3 VaultConfig table (optional, global or per-tenant)
+Stores non-secret config needed to query Bitwarden.
+- id
+- provider = bitwarden
+- orgId (optional)
+- defaultCollectionId (optional)
+- createdAt/updatedAt
+
+2) Secrets Handling (Required)
+
+2.1 Store Bitwarden token as an environment secret
+- Add server env var: BITWARDEN_ACCESS_TOKEN
+- Do not store in DB
+- Do not send to client
+
+2.2 Logging guardrails
+- Explicitly scrub secrets from logs
+- Never log:
+  - token
+  - raw secret values retrieved from vault
+  - full items JSON if it contains secrets
+
+3) Bitwarden Access Method (Choose One)
+
+Option A (Preferred): Bitwarden Secrets Manager API
+- Use the Secrets Manager access token
+- Retrieve secrets by secret ID
+- Best for programmatic usage and rotation
+
+Option B: Bitwarden CLI
+- Use bw CLI in server runtime
+- Requires session handling/unlock flow
+- More operational complexity
+Unless there’s a hard constraint, use Secrets Manager API.
+
+4) Vault Provider Abstraction
+
+4.1 Create an interface
+VaultProvider:
+- getSecret(secretRef): returns secret value (server-side only)
+- getSecrets(secretRefs[]): returns map
+- healthCheck(): returns connected/failed and last response
+- listAvailableRefs(optional): used for admin selection (optional)
+
+4.2 Implement BitwardenProvider
+- Reads BITWARDEN_ACCESS_TOKEN from env
+- Calls Bitwarden API to fetch secret by ID
+- Returns raw secret only to server-side connector code
+
+5) Mapping Strategy (How we know what to fetch)
+
+5.1 Store vault references per integration
+When user “connects” an integration (admin UI):
+- They select which Bitwarden secret(s) should be used
+- App stores:
+  - vaultProvider=bitwarden
+  - vaultItemId or secretId (depending on API)
+  - any non-sensitive meta (e.g., GA4 property ID can be stored in metaJson)
+
+Example:
+- siteId = Empathy Health
+- integrationType = serp
+- vaultItemId = “bw_secret_123”
+- metaJson = { “engine”: “google”, “location”: “Orlando, FL” }
+
+5.2 Support multi-secret bundles
+Some integrations need multiple values (client_id, client_secret, refresh_token, etc.).
+Two approaches:
+- One vault item containing multiple fields, referenced by a single vaultItemId
+- Multiple vault secrets referenced as an array in metaJson
+Pick one and standardize across integrations.
+
+6) Connector Usage Pattern (Server Only)
+
+When a connector runs (e.g., SERP check, GA4 fetch):
+- Load integration record by (siteId, integrationType)
+- Resolve vault references
+- Fetch secrets via BitwardenProvider
+- Use secrets in-memory only for the duration of the request/job
+- Do not persist secret values
+
+7) UI/UX (Admin-Friendly, No Secrets)
+
+Add a Settings page section: “Vault & Integrations”
+
+7.1 Vault status widget
+- Provider: Bitwarden
+- Status: Connected / Error
+- Last checked time
+- Test connection button
+
+7.2 Integration configuration per site
+For each integration:
+- Status badge
+- “Select Bitwarden secret(s)” (dropdown of secret names/IDs, not values)
+- “Test integration” button (runs a lightweight call)
+- Show only masked metadata in UI:
+  - e.g., “Using secret: Google OAuth (ends in …9f2a)”
+
+7.3 Error reporting
+If retrieval fails:
+- Show a clear error:
+  - “Bitwarden token invalid or expired”
+  - “Secret not found”
+  - “Permission denied”
+- Include a remediation hint
+- Do not show raw responses if they might contain sensitive data
+
+8) Background Jobs / Scheduled Sync (Optional but Recommended)
+
+- Add a daily “integration health check” job:
+  - verifies ability to fetch secrets
+  - verifies each connector can run a small test request
+  - updates Integrations.status and lastCheckedAt
+
+9) Security & Compliance Requirements
+
+- Never store secrets in DB
+- Never send secrets to the browser
+- Use least privilege:
+  - Bitwarden token should only have access to required secrets/collections
+- Add rate limiting / caching:
+  - Cache retrieved secrets in-memory for a short TTL (e.g., 5–15 minutes) to avoid repeated calls
+  - Cache must be server memory only, not persisted
+- Rotate secrets:
+  - Support changing vault references without code changes
+
+10) Acceptance Criteria
+
+- App can retrieve secrets from Bitwarden using a server-side token.
+- Integrations are configured per site using references to vault items/secrets.
+- Connectors can run using Bitwarden-sourced secrets without exposing them to the frontend.
+- UI clearly shows what is connected and whether it’s working, without ever showing secret values.
+- If vault data is missing, app shows “Not configured” and provides a path to fix it.
+
+Implementation Notes (Replit / hosted environments)
+- Store BITWARDEN_ACCESS_TOKEN in the hosting provider’s secrets manager (env secret).
+- Avoid any flow that requires interactive “unlocking” in production.
+- Prefer a non-interactive API-based approach (Secrets Manager) for stability.

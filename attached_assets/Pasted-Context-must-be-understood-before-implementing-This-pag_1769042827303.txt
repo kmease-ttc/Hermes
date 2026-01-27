@@ -1,0 +1,188 @@
+Context (must be understood before implementing)
+
+This page is the FIRST page a user sees immediately after:
+
+* Visiting the website
+* Entering their email
+* Submitting their domain
+
+They have NOT:
+
+* Purchased a plan
+* Connected Google Analytics
+* Configured integrations
+* Chosen agents or modules
+
+This is a first-run “proof of value” page.
+
+Primary Goal
+
+Convince the user — within 30–60 seconds — that:
+
+1. Arclo ran a real analysis on their site
+2. The data shown is credible
+3. There is clear upside being left on the table
+4. Arclo already knows what to do next
+5. Upgrading will unlock execution, not discovery
+
+This page is NOT:
+
+* A configuration screen
+* A fake demo
+* A generic SEO checklist
+* An internal dashboard
+
+Core Principle
+
+This page should feel like:
+“I just got a real SEO report, for free, in under a minute.”
+
+Not:
+“Here’s a product UI I need to learn.”
+
+Data Inputs (first-run safe)
+
+Only use data that can be obtained without user configuration:
+
+* SERP intelligence
+* Public competitor rankings
+* Keyword data
+* Site crawl / page inspection
+* Heuristic modeling (clearly labeled)
+
+Do NOT require GA, GSC, or paid APIs for the initial experience.
+
+Page Narrative (must follow this order)
+
+Snapshot → Proof → Opportunity → Action → Upsell
+
+Page Structure
+
+A) Header (trust + orientation)
+
+* “SEO Performance Report”
+* “Generated for {domain}”
+* Timestamp
+* Location (if inferred)
+* Small line: “Based on live search and competitor analysis”
+
+This reassures users this is real.
+
+B) Top Metrics (immediate proof)
+Show only metrics that feel intuitive to non-experts:
+
+* Keywords tracked
+* Keywords in Top 20
+* Keywords not ranking (100+)
+* Optional: Authority (only if confidently inferred)
+
+Optional projection callouts (clearly labeled “Estimated”):
+
+* Traffic at risk
+* Clicks lost
+* Leads missed
+
+Projection notes:
+
+* These are modeled estimates
+* Not required to reconcile 1:1 with rankings
+* Must be labeled as projections
+
+C) Current Wins vs Big Gaps (credibility moment)
+
+Current Wins
+
+* 5–10 keywords ranking well
+* Show keyword, volume, rank
+
+Big Gaps
+
+* 5–10 high-intent keywords not ranking
+* Show keyword, volume
+* Show which competitor ranks top 3
+
+This section answers:
+“Why am I not winning what I should be winning?”
+
+D) What Arclo Would Do Next (most important section)
+
+This is NOT a feature list.
+This is a prescriptive plan.
+
+Generate 3–5 sections max:
+
+1. Push Near-Wins
+
+* Pages ranking 4–20
+* Exact actions Arclo would take:
+
+  * Optimize title/meta
+  * Add internal links
+  * Expand content
+  * Add FAQs
+
+2. Create Missing Pages
+
+* Pages competitors have that the site does not
+* Show:
+
+  * Page name
+  * Primary keyword + volume
+  * Proposed slug
+  * Why it matters
+
+3. Publish With Momentum
+
+* Blog topics Arclo would publish
+* Each includes:
+
+  * Title
+  * Keyword + volume
+  * Which service page it supports
+
+4. Authority / Technical (only as locked previews)
+
+* If not purchased:
+
+  * Show 1–2 concrete examples
+  * Clearly label as “Unlocked with upgrade”
+  * No placeholder or fake bullets
+
+E) Keyword Table (proof + depth)
+
+This is the source of truth.
+
+Columns:
+
+* Keyword
+* Volume
+* Current rank
+* 7d / 30d delta
+* Target page (existing or “Create page”)
+* Primary competitor
+
+Everything above must be derived from this table.
+
+Design & UX Rules (first-run specific)
+
+* No “Unlock everything” walls
+* No fake examples
+* No internal jargon (missions, runs, agents)
+* Locked sections should feel like:
+  “You’re seeing the preview — execution unlocks next”
+
+Tone:
+
+* Calm
+* Confident
+* Executive
+* Helpful
+
+Deliverable
+
+A first-run SEO report page that:
+
+* Feels real
+* Feels valuable
+* Feels immediately useful
+* Naturally leads the user to upgrade to execute the plan Arclo already prepared

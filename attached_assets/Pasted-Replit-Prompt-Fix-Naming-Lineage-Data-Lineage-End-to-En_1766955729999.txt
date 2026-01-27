@@ -1,0 +1,167 @@
+Replit Prompt: Fix Naming Lineage + Data Lineage End-to-End (Integrations → Crew → Metrics → UI) with a Single Source of Truth
+
+Problem
+We have a lineage breakdown in two places:
+
+1. Naming lineage problem:
+
+* Integrations exist and crew members exist, but the mapping between them (which integration powers which crew) is not consistently defined or enforced.
+* Different parts of the app use different names/keys (e.g., “core_web_vitals” vs “vitals” vs “Speedster”, “Google Data Connector” vs “Popular”, etc.)
+
+2. Data lineage problem:
+
+* Even when integrations successfully run and store data, the data is not reliably flowing to every UI module that should display it (benchmarks, mission control cards, comparisons, etc.)
+* Example: LCP exists in DB (6.706s) but UI/benchmarks don’t show it. This suggests mismatched keys, missing aggregation, or incorrect selectors.
+
+Goal
+Create an explicit, enforceable lineage model so the app can:
+
+* Understand which integrations/services belong to which crew member
+* Understand which metrics each crew member produces
+* Reliably store those metrics with consistent keys
+* Reliably read those metrics for all UI modules (Mission Control, Benchmarks, Integrations, etc.)
+  No more “it ran but the UI shows null”.
+
+Part 1 — Create a single canonical taxonomy (keys + contracts)
+
+1. Define canonical IDs (do not change at runtime)
+   Create a shared registry file used by BOTH server and client (e.g., shared/registry.ts):
+
+* crew_id (canonical): popular, scouty, speedster, lookout, sentinel, natasha, etc.
+* service_id (canonical): google_data_connector, core_web_vitals, serp_tracking, technical_crawler, content_decay, competitive_intel, etc.
+* metric keys (canonical): ga4.sessions, ga4.users, gsc.clicks, gsc.impressions, gsc.ctr, gsc.position, vitals.lcp, vitals.cls, vitals.inp, etc.
+
+2. Contract: which service maps to which crew
+   In the registry:
+   crew → services → metricsProduced
+   Example:
+   popular:
+   services: [google_data_connector]
+   metrics: [ga4.sessions, ga4.users, ga4.conversions, gsc.clicks, gsc.impressions, gsc.ctr, gsc.position]
+   speedster:
+   services: [core_web_vitals]
+   metrics: [vitals.lcp, vitals.cls, vitals.inp]
+   scotty:
+   services: [technical_crawler]
+   metrics: [tech.blocked_urls, tech.robots_issues, tech.indexing_flags]
+   etc.
+
+This becomes the single source of truth for UI labeling + backend storage.
+
+Part 2 — Normalize ingestion: everything stored with canonical keys
+
+3. Normalize worker outputs into a standard “metrics event” format
+   When any service runs (worker or internal):
+
+* Transform its raw output into:
+  {
+  siteId,
+  serviceId,
+  crewId,
+  runId,
+  collectedAt,
+  metrics: {
+  "vitals.lcp": 6.706,
+  "vitals.cls": null,
+  "vitals.inp": null,
+  ...
+  },
+  raw: {...} (optional)
+  }
+
+4. Store in one normalized table (or add a materialized view)
+   Create a table like:
+   seo_metric_events(
+   site_id,
+   service_id,
+   crew_id,
+   run_id,
+   collected_at,
+   metrics_json
+   )
+
+Optionally add:
+seo_metric_values(
+site_id,
+metric_key,
+value_numeric,
+value_text,
+unit,
+collected_at,
+service_id,
+crew_id,
+run_id
+)
+This makes querying dashboards easy.
+
+5. Add a key translation layer (temporary)
+   If existing tables use legacy keys (e.g., worker_key='core_web_vitals' but UI expects 'lcp'):
+
+* Add a translation map in the server so legacy keys are converted into canonical metric keys at ingest time.
+* Do NOT handle this in the UI.
+
+Part 3 — Normalize retrieval: all UI reads through one metrics API
+
+6. Create a single “metrics query” endpoint used everywhere
+   GET /api/metrics/latest?siteId=...
+   Returns:
+   {
+   siteId,
+   collectedAt,
+   metrics: { "vitals.lcp": 6.706, "ga4.sessions": 2847, ... },
+   coverage: { missing: ["vitals.cls", "vitals.inp"], stale: [...] }
+   }
+
+7. Benchmarks/Comparison reads from canonical metrics
+
+* BenchmarkComparison.tsx must request canonical keys (vitals.lcp, etc.)
+* If the benchmark API currently returns comparison[] with a “metric” field, ensure those metric names match canonical keys exactly.
+  Example: the benchmark API must use “vitals.lcp”, not “lcp” in one place and “LCP” in another.
+
+Part 4 — Add lineage debugging UI (so QA is fast)
+
+8. Add a “Lineage Inspector” panel (dev-only or admin-only)
+   Route: /dev/lineage (or within Settings → Diagnostics)
+   Show, for a selected site:
+
+* Crew → Services mapping (from registry)
+* For each service:
+
+  * configured? connected? last run? status?
+  * metrics expected vs metrics present
+  * latest values and timestamps
+* A “why missing?” explanation:
+
+  * not configured, never ran, last run failed, parsing mismatch, key mismatch, stale data, etc.
+
+This makes problems obvious instantly.
+
+Part 5 — Fix the specific symptom: LCP in DB but not in UI
+
+9. Implement a targeted reconciliation check
+
+* If DB has vitals.lcp in metric store, the /api/metrics/latest endpoint must return it.
+* If it returns it but UI doesn’t show it, then the UI is mapping wrong.
+* If /api/benchmarks/compare expects “lcp” but store uses “vitals.lcp”, unify them.
+
+Add an automated test:
+
+* Seed a vitals run with lcp=6.706
+* Assert Mission Control + Benchmarks render 6.706
+
+Acceptance criteria
+
+* Each crew member has an explicit list of integrations/services and expected metrics (registry).
+* Every integration run stores metrics with canonical keys (no drift).
+* Every UI module loads metrics via a single canonical metrics endpoint (no scattered queries).
+* Lineage Inspector shows exactly why a metric is missing.
+* The LCP value that exists in DB reliably appears in UI and benchmark comparison.
+
+Deliverables
+
+* shared/registry.ts (crew/services/metrics contracts)
+* normalization layer on ingest (worker outputs → canonical metric keys)
+* normalized metrics storage table(s)
+* /api/metrics/latest endpoint used by UI
+* /dev/lineage debugging page
+* regression test for LCP + a couple key GSC metrics

@@ -1,0 +1,111 @@
+import React, { useMemo, useState } from "react";
+// Adjust these imports to match your repo paths:
+import { ShipCanvasA1, CrewRoleId } from "@/components/crew/ShipCanvasA1";
+import { MissionStatusCard } from "@/components/crew/MissionStatusCard";
+import { ActiveCapabilitiesSection } from "@/components/crew/ActiveCapabilitiesSection";
+import { SetBonusesSection } from "@/components/crew/SetBonusesSection";
+// import { CrewModal } from "@/components/crew/CrewModal"; // if you already have it
+
+export default function CrewPage() {
+  // Replace these with your real state sources:
+  const enabled = useMemo<Set<CrewRoleId>>(
+    () => new Set(["captain", "natasha", "beacon"]), // example
+    []
+  );
+
+  const [selected, setSelected] = useState<Set<CrewRoleId>>(new Set());
+  const [activeRole, setActiveRole] = useState<CrewRoleId | null>(null);
+
+  // Open modal (or whatever you use) when a tile is clicked
+  const onSlotClick = (id: CrewRoleId) => {
+    setActiveRole(id);
+    // open modal here
+  };
+
+  // Preview-select missing agents (used by “Add required crew” and capability clicks)
+  const previewSelectMany = (ids: CrewRoleId[]) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  return (
+    <div className="min-h-screen w-full">
+      {/* Page header */}
+      <div className="mx-auto w-full max-w-[1400px] px-6 pt-6">
+        <h1 className="text-2xl font-semibold text-white/90">My Crew</h1>
+        <p className="mt-1 text-sm text-white/60">
+          Staff AI specialists to unlock deeper insights.
+        </p>
+      </div>
+
+      {/* HERO CANVAS ZONE (above the fold) */}
+      <section className="mx-auto w-full max-w-[1400px] px-6 pt-6">
+        {/* 20/80 split */}
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          {/* Left rail: Mission Status */}
+          <div className="min-w-0">
+            <MissionStatusCard
+              enabled={enabled}
+              selected={selected}
+              // Provide whatever this component expects:
+              // onAddRequiredCrew={() => previewSelectMany(["popular", "lookout"])}
+              // onPickUpgrade={(ids) => previewSelectMany(ids)}
+            />
+          </div>
+
+          {/* Right: Ship canvas as a CANVAS, not a card */}
+          <div className="min-w-0">
+            <div className="relative w-full">
+              {/* Give the ship dominance */}
+              <div className="relative w-full min-h-[72vh] max-h-[780px] overflow-hidden">
+                <ShipCanvasA1
+                  enabled={enabled}
+                  selected={selected}
+                  onSlotClick={onSlotClick}
+                  tileSize={132} // slightly larger to reduce “bunched” feel
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* BELOW THE FOLD (long scroll is fine) */}
+      <section className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-10">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ActiveCapabilitiesSection
+            enabled={enabled}
+            selected={selected}
+            // Clicking a capability should preview-select required agents:
+            onSelectRequiredAgents={(ids: CrewRoleId[]) => previewSelectMany(ids)}
+          />
+
+          <SetBonusesSection
+            enabled={enabled}
+            selected={selected}
+            // Clicking "Select X" inside a set bonus should preview-select:
+            onSelectRequiredAgents={(ids: CrewRoleId[]) => previewSelectMany(ids)}
+            // Clicking a missing chip should open the modal:
+            onOpenAgent={(id: CrewRoleId) => onSlotClick(id)}
+          />
+        </div>
+      </section>
+
+      {/* Modal (optional) */}
+      {/*
+      <CrewModal
+        open={!!activeRole}
+        roleId={activeRole}
+        onClose={() => setActiveRole(null)}
+        enabled={enabled}
+        selected={selected}
+        onSelect={() => activeRole && previewSelectMany([activeRole])}
+        onEnable={() => {}}
+      />
+      */}
+    </div>
+  );
+}

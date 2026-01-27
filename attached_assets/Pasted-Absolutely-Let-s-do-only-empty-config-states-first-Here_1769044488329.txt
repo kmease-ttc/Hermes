@@ -1,0 +1,198 @@
+Absolutely. Let’s do **only empty + config states** first.
+
+Here’s a Replit-agent prompt that forces a clean, clickable “setup/purchase” state for every metric/card and routes users to the right configuration page.
+
+You are working in Hermes SEO. Task: implement **configuration + purchase empty states** and **click-to-config** behavior for the Dashboard. Do NOT redesign the dashboard layout. Do NOT implement OAuth yet. This task is UI state + routing + placeholders only.
+
+---
+
+## Goal
+
+When data is missing OR a module isn’t purchased:
+
+1. The dashboard shows a clear empty/locked state (readable, not gray-on-gray).
+2. Clicking the metric/card takes the user to the correct configuration page.
+3. The config page has clear “what you need to do” instructions + inputs (even if the backend integration isn’t finished).
+4. The dashboard never shows fake numbers as if they’re real. Use “—” or “Not connected” instead.
+
+---
+
+## Part A — Define 3 states for every dashboard card
+
+Every card (metrics, modules, analytics, technical, etc.) must render one of:
+
+### 1) ACTIVE (has data)
+
+* Show real number/value
+* Normal styling
+
+### 2) SETUP REQUIRED (feature exists but not connected/configured)
+
+Examples: GA4 not connected, GSC not connected, domain not verified, no keywords selected.
+
+UI rules:
+
+* Show value as “—”
+* Show badge: “Requires setup”
+* Primary CTA inside card: “Connect” or “Finish setup”
+* Entire card is clickable → routes to the exact config page
+* Avoid low-contrast gray-on-gray. Use white background + border + small muted text.
+
+### 3) LOCKED / NOT PURCHASED (needs subscription/module)
+
+UI rules:
+
+* Show value as “—”
+* Show badge: “Locked”
+* CTA inside card: “Subscribe”
+* Entire card is clickable → routes to Agents/Plans section (or purchase modal/page)
+
+---
+
+## Part B — Implement Click-to-Config routing (required)
+
+### Metric cards → correct destination
+
+Implement `onClick` for these cards:
+
+* “Analytics Insights” metric/cards → `/app/settings/integrations` (scroll to GA4 section)
+* “Search Console” / ranking data cards that depend on GSC → `/app/settings/integrations` (scroll to GSC section)
+* “Technical SEO” / crawl-related cards → `/app/settings/integrations` (scroll to Technical Crawler section)
+* “SERP / Rankings” cards → `/app/agents/serp_intel` or `/app/agents/serp_tracker` (whichever exists) OR `/app/settings` if keywords not set
+* “Notifications” / weekly email cards → `/app/settings/notifications`
+
+If you do not have these routes yet, create them (settings subroutes are OK). The key is: a click always takes the user to the next step.
+
+---
+
+## Part C — Build empty state components (do not duplicate UI)
+
+Create reusable components:
+
+### `<DataCard ... />`
+
+Props:
+
+* title
+* value
+* status: 'active' | 'setup_required' | 'locked'
+* statusLabel
+* ctaText
+* onClick
+* description (optional)
+
+Rules:
+
+* Value is bold and readable always.
+* In setup/locked: value shows “—” and the status label explains why.
+
+### `<EmptyStateInline ... />`
+
+For sections like “Activity” / “Recent changes” / “Agents”
+
+* Provides: icon, title, one-liner, CTA button
+* Never use gray-on-gray blocks.
+
+---
+
+## Part D — Fix the “Activity” section readability (quick)
+
+Current “gray on gray” is unacceptable.
+
+Change to:
+
+* white card background (glass ok)
+* border
+* darker text (`#0B1220` / `#334155`)
+* empty state message when there’s no activity:
+
+  * “No recent activity yet.”
+  * CTA: “Run your first report” (routes to analyze flow)
+
+---
+
+## Part E — Configuration pages (UI + inputs + instructions only)
+
+Create/upgrade Settings pages with clear sections:
+
+### `/app/settings/integrations`
+
+Include these blocks:
+
+#### Google Analytics (GA4) — “Analytics Insights”
+
+State:
+
+* Not connected → shows instructions + input(s)
+  Fields:
+* GA4 Property ID (text)
+* Optional: Measurement ID
+  CTA:
+* “Save”
+* “Connect” (disabled if OAuth not implemented; but still show UI)
+
+Instructions (simple):
+
+1. Open GA4 → Admin → Property Settings
+2. Copy Property ID
+3. Paste here and save
+
+#### Google Search Console — “Rankings & Indexing”
+
+Fields:
+
+* GSC Site URL / Property (text)
+* Optional: Verification status (display only)
+  Instructions:
+
+1. Open Search Console → Settings → Users & permissions / Property
+2. Copy property URL
+3. Paste here
+
+#### Technical Crawler
+
+Fields:
+
+* Toggle: “Allow crawl-based technical insights”
+* Crawl base URL (prefilled)
+* Optional: robots/crawl blocked detection info (display placeholder)
+  CTA:
+* “Test crawl” (can be mocked for now)
+
+Each integration block must show:
+
+* status pill: Connected / Not connected
+* last updated timestamp if available (or “Never”)
+
+---
+
+## Part F — Data plumbing (minimal)
+
+Do not implement full agent wiring yet, but do this minimal structure:
+
+* Store integration config in DB (or existing settings store) per site:
+
+  * ga4_property_id
+  * gsc_property_url
+  * crawler_enabled
+* Read these values on Dashboard to determine:
+
+  * setup_required vs active
+
+No need to call external APIs yet. Just make the state machine real.
+
+---
+
+## Acceptance criteria
+
+Done when:
+
+1. No dashboard tile shows fake numbers when data is missing.
+2. Every setup/locked tile is clickable and routes correctly.
+3. Settings/Integrations page exists with clear instructions + inputs.
+4. Activity section is readable and has a clean empty state.
+5. All empty states use reusable components (not one-off hacks).
+
+Proceed now. Keep scope limited to states + routing + settings UI.
+
+If you want next, after this lands, we’ll do **only one thing**: the **GA4 + GSC connect flow** (OAuth vs manual IDs), and wire those configs into Popular / the ranking jobs.

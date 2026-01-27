@@ -1,0 +1,132 @@
+Replit Prompt: Fix “Review Speedster” Page (Populate Vitals: LCP/CLS/INP) + Correct Bounce Rate Ownership (Should Not Be Speedster)
+
+We have two issues:
+
+A) “Review Speedster” page is blank (missing LCP/CLS/INP content)
+B) Bounce Rate card incorrectly routes/attributes to Speedster (Speedster shouldn’t own bounce rate)
+
+---
+
+A) Populate the Speedster (Core Web Vitals) detail page
+Goal
+The Speedster detail page must show real Core Web Vitals content:
+
+* LCP
+* CLS
+* INP
+  Plus status, trends, benchmarks, and “what to do next” actions.
+
+What the page should include (minimum viable)
+
+1. Header
+
+* Title: Speedster
+* Subtitle: Core Web Vitals / Performance Monitoring
+* Status: Good/Watch/Alert (derived from vitals thresholds)
+* Last updated timestamp + source (Core Web Vitals worker / CrUX/Lighthouse if applicable)
+
+2. Core Vitals cards (3)
+   Each card shows:
+
+* Current value (big)
+* Trend (% change WoW or vs previous run)
+* Status chip (Good/Watch/Needs Improvement)
+* Benchmark slider with p25/p50/p90 + clamped dot (reuse your slider component)
+* “Why it matters” (one sentence)
+
+3. Evidence + Diagnostics
+
+* “What we measured” section:
+
+  * Source type (CrUX field data vs Lighthouse lab)
+  * URL scope (site-wide vs sampled pages)
+  * Sample count (how many URLs tested)
+* If CLS/INP are null:
+
+  * show “Not available yet” with the reason:
+
+    * worker not returning it
+    * parsing missing
+    * data not stored
+  * show the exact fix checklist (see Data Lineage section below)
+
+4. Top affected pages (if available)
+
+* List top 5 URLs contributing to poor vitals (or slowest pages)
+* Each row: URL, LCP/CLS/INP, status, “View details”
+
+5. Actions (what to do next)
+
+* “Run Vitals Scan” / “Re-run” button
+* “Export Fix Pack” for performance optimizations
+* “Open evidence” / “View raw results” (for debugging)
+
+Data plumbing requirements (make it real)
+
+* Speedster page must query canonical metrics keys:
+
+  * vitals.lcp, vitals.cls, vitals.inp
+* It must pull from stored results (DB) with last-known fallback (do not require live API).
+* If DB currently stores LCP but UI shows blank:
+
+  * fix the key mapping so the Speedster page reads the same canonical keys used by the worker normalizer.
+
+API endpoints to implement/use
+
+* GET /api/crew/speedster/summary?siteId=...
+  returns:
+  { capturedAt, metrics: { vitals.lcp, vitals.cls, vitals.inp }, trend: {...}, sampleCount, topUrls: [...] }
+
+---
+
+B) Fix Bounce Rate attribution (should not be Speedster)
+Problem
+On Mission Control, Bounce Rate card links to “Review Speedster”, but Speedster (Core Web Vitals) does not own bounce rate. Bounce rate is an analytics metric (GA4), so it belongs to Popular (Analytics & Signals), not Speedster.
+
+Fix
+
+1. Update the crew/service ownership registry
+
+* Ensure bounce rate metric key is assigned to Popular / Google Data Connector (GA4):
+
+  * ga4.bounce_rate (or analytics.bounce_rate)
+* Speedster should only own:
+
+  * vitals.lcp, vitals.cls, vitals.inp (and related performance metrics)
+
+2. Update the Mission Control key metrics routing
+
+* Bounce Rate card should route to “Review Popular” (or the analytics detail page), not Speedster.
+* Also update the label on the card CTA:
+
+  * From: “Review Speedster”
+  * To: “Review Popular”
+
+3. Ensure the analytics detail page has bounce rate content
+
+* Popular detail page should include:
+
+  * Bounce Rate
+  * Conversion Rate
+  * Sessions / Users
+  * Leads/form submits (if tracked)
+  * Top landing pages and conversion drivers
+
+Acceptance criteria
+
+* Clicking “Review” on Bounce Rate takes you to the Analytics/Popular detail page, not Speedster.
+* Clicking “Review Speedster” shows a fully populated vitals page with LCP/CLS/INP (or clear “missing with reason + fix steps” if not available).
+* No blank pages.
+* Ownership is consistent across:
+
+  * Integrations modal
+  * Crew Summary cards
+  * Mission Control Key Metrics CTAs
+  * Crew detail pages
+
+Do this now (order)
+
+1. Fix Bounce Rate ownership and routing (fast, prevents confusion)
+2. Implement Speedster detail page UI
+3. Implement /api/crew/speedster/summary and wire to stored vitals metrics
+4. Add null-handling + “why missing / how to fix” display for CLS/INP

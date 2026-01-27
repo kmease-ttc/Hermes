@@ -1,0 +1,119 @@
+You’re right that the current light glass header looks a bit odd sitting on top of the full-dark pricing hero. But I wouldn’t create *two totally different headers* – that usually makes the product feel like two different sites.
+
+Better approach: **one header component with a `variant` (on-light / on-dark)** that only changes colors, not layout.
+
+Here’s what I’d do and what to tell your dev.
+
+---
+
+## Design call
+
+* Keep the **same structure** everywhere:
+
+  * thin tagline bar on very top
+  * pill-shaped nav bar with logo + links + CTA
+* Add a **`variant="dark"`** style for pages whose hero is dark (like Pricing, maybe Real Results later).
+* On dark pages, the nav pill should feel more integrated with the dark background:
+
+  * darker, translucent background
+  * white text
+  * gradient CTA that pops
+
+That keeps consistency while making the pricing page feel intentional.
+
+---
+
+## Dev instructions
+
+### 1. Update the Header component to accept a variant
+
+```tsx
+type HeaderProps = {
+  variant?: "light" | "dark";
+};
+
+export function Header({ variant = "light" }: HeaderProps) {
+  const isDark = variant === "dark";
+
+  return (
+    <header className="sticky top-0 z-40">
+      {/* top tagline bar stays the same */}
+      <div className="w-full bg-slate-900 text-[10px] tracking-[0.2em] text-slate-300 py-1 text-center uppercase">
+        Built for people who don’t want to think about SEO
+      </div>
+
+      <div className="flex justify-center px-4 pt-4">
+        <nav
+          className={`
+            flex items-center justify-between gap-6
+            w-full max-w-5xl
+            rounded-full border backdrop-blur-xl px-5 py-2
+            ${isDark
+              ? "bg-slate-900/80 border-slate-700 shadow-[0_10px_35px_rgba(15,23,42,0.75)] text-slate-100"
+              : "bg-white/80 border-slate-200 shadow-[0_10px_30px_rgba(15,23,42,0.12)] text-slate-800"}
+          `}
+        >
+          {/* logo + nav links + CTA */}
+        </nav>
+      </div>
+    </header>
+  );
+}
+```
+
+### 2. Use `variant="dark"` on the Pricing page
+
+In `PricingPage` (or the route component):
+
+```tsx
+export default function PricingPage() {
+  return (
+    <AppLayout headerVariant="dark">
+      {/* pricing content */}
+    </AppLayout>
+  );
+}
+```
+
+And in `AppLayout` pass the prop down:
+
+```tsx
+export function AppLayout({
+  children,
+  headerVariant = "light",
+}: {
+  children: React.ReactNode;
+  headerVariant?: "light" | "dark";
+}) {
+  return (
+    <>
+      <Header variant={headerVariant} />
+      <main>{children}</main>
+      <Footer />
+    </>
+  );
+}
+```
+
+### 3. Keep all other pages on the light variant
+
+* Home, What We Do, Examples, About, Contact, FAQ → `headerVariant="light"` (or default).
+* Pricing (and any future dark-hero page) → `headerVariant="dark"`.
+
+---
+
+## Small visual tweaks for the dark header
+
+On the dark variant:
+
+* Nav links: `text-slate-100` default, `hover:text-white`.
+* Active route pill: `bg-slate-800/80` instead of light grey.
+* CTA button:
+
+  ```tsx
+  className="rounded-full bg-gradient-to-r from-indigo-400 via-purple-500 to-sky-400 text-white px-5 py-2 text-sm font-medium shadow-[0_8px_30px_rgba(59,130,246,0.6)]"
+  ```
+
+That will make the header sit naturally on the dark pricing hero without feeling like a light sticker pasted on top.
+
+If you’d like, next step we can quickly sanity-check each page with the new header variants once your dev wires this up.

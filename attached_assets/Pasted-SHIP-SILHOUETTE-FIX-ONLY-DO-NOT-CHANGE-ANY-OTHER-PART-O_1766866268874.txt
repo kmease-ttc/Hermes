@@ -1,0 +1,50 @@
+SHIP SILHOUETTE FIX ONLY — DO NOT CHANGE ANY OTHER PART OF THE PAGE
+
+The Crew page layout and compartments are correct, but the “ship” still looks like a rounded rectangle panel.
+We need the container to READ AS A SHIP: hull silhouette + cockpit + engine bay.
+Do NOT change left status tabs, cards below, copy, or overall layout. ONLY change the ship canvas visuals.
+
+REQUIREMENT
+Replace the current ship background container with a ship silhouette built as:
+1) A single SVG “ship hull” shape (light ship against dark background)
+2) The role compartments must appear INSIDE the hull (clipped/masked to the hull shape)
+3) Add subtle ship details: cockpit window area at top, engine base at bottom (simple shapes ok)
+
+IMPLEMENTATION (NON-NEGOTIABLE)
+A) Create an SVG hull silhouette component:
+- File: components/crew/ShipHull.tsx
+- Return an <svg> that includes:
+  - A large hull path (rounded spaceship shape, not a rectangle)
+  - Optional internal panel lines (very subtle)
+  - A bottom “engine tray” protrusion
+  - A top “cockpit” dome or window inset
+- Provide a <clipPath id="shipClip"> using the hull path
+
+B) Update ShipCanvas to use the hull clip path:
+- Wrap the compartments grid in a container that is clipped to the hull:
+  - Option 1: SVG foreignObject with clipPath
+  - Option 2 (simpler): Use CSS clip-path: path('...') OR clipPath via inline SVG + mask
+- The compartments MUST be clipped so they don’t extend beyond the hull edges.
+
+C) Visual requirements:
+- Hull fill: lighter than the page background (e.g., rgba(255,255,255,0.06–0.10))
+- Hull border: subtle (white/10)
+- Add a gentle highlight gradient near the top-left of hull (very subtle)
+- Add engine glow dots at bottom (small cyan dots ok)
+- Keep current compartment cards exactly as-is, just placed inside the hull
+
+D) Layout: keep same compartment positions; just make the outer container the hull shape:
+- No more big rounded rectangle.
+- The hull silhouette should be clearly visible even if compartments are empty.
+
+ACCEPTANCE CRITERIA
+- The ship canvas reads as a spaceship silhouette (hull), not a generic panel
+- Compartments are visibly inside the ship
+- Compartment content is clipped to the hull boundaries
+- No other sections of the page change
+
+NOTE
+If clipPath/path() is hard, implement a simpler approach:
+- Use an SVG hull as the background image behind compartments
+- Add a dark overlay outside the hull to fake clipping (mask layer)
+But prioritize REAL clipping if possible.

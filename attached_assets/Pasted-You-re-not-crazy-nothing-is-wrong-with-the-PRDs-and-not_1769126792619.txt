@@ -1,0 +1,210 @@
+You’re not crazy — nothing is “wrong” with the PRDs, and nothing is “broken” in React/Tailwind per se. What’s happening is a very common failure mode when people expect design standards docs to enforce UI automatically.
+
+Short version
+
+Markdown PRDs do not enforce UI. Code does.
+Right now, your UI is claiming compliance, but there is no enforcement layer translating the MD rules into Tailwind tokens, component constraints, or review gates.
+
+That’s why:
+	•	The page renders with low contrast
+	•	The left nav is black instead of brand purple
+	•	Sections look “washed out”
+	•	Replit happily says “fully compliant” (because nothing is checking it)
+
+Let’s break this down cleanly and then fix it.
+
+⸻
+
+What’s actually happening (root cause)
+
+1️⃣ The PRD is descriptive, not executable
+
+Your UI/UX Design Standards PRD correctly says things like:
+	•	“Dashboards must inherit the marketing brand”
+	•	“Neutrals dominate, brand colors are accents”
+	•	“Sidebar must match brand”
+
+But nothing in code is enforcing:
+	•	Which Tailwind colors are allowed
+	•	Which component styles are legal
+	•	Whether a new page is using the correct layout primitives
+
+So a dev/agent can:
+	•	Create a new page
+	•	Use bg-black or bg-slate-900
+	•	Use low-contrast text
+…and the system has no way to stop it.
+
+⸻
+
+2️⃣ Tailwind defaults are winning
+
+Your screenshot shows classic Tailwind default behavior:
+	•	Sidebar: bg-black or bg-slate-900
+	•	Cards: light gray on light gray
+	•	Section headers: low contrast text
+
+This means:
+	•	Brand tokens are not defined in tailwind.config.js
+	•	Or they exist, but components aren’t required to use them
+	•	Or this page bypassed shared layout/components entirely
+
+So Tailwind falls back to “reasonable defaults” — which are not your brand.
+
+⸻
+
+3️⃣ “Compliance” is currently self-reported
+
+Right now, when something says “fully compliant”, that means:
+	•	It wasn’t validated against anything
+	•	No lint rule failed
+	•	No design token was missing
+	•	No contrast check ran
+
+In other words: there is no compliance check.
+
+⸻
+
+Why the left nav is black (specifically)
+
+This is the smoking gun.
+
+Your UI/UX PRD clearly implies:
+	•	Brand-first surfaces
+	•	Purple-based identity
+	•	Consistent nav treatment
+
+But your sidebar is black, which almost certainly means one of these is true:
+	1.	The sidebar component is still using an old style
+(bg-black, bg-slate-900, or hardcoded CSS)
+	2.	The sidebar is not using shared layout tokens
+(each page can override it)
+	3.	The PRD tokens were never translated into Tailwind theme values
+
+Markdown cannot override bg-black. Only code can.
+
+⸻
+
+The fix (this is the important part)
+
+You need one small enforcement layer, not a redesign.
+
+Step 1: Lock brand tokens in Tailwind (non-optional)
+
+In tailwind.config.js, you need authoritative tokens:
+
+theme: {
+  extend: {
+    colors: {
+      brand: {
+        purple: '#7C3AED',
+        pink: '#EC4899',
+        orange: '#F59E0B',
+        gradient: 'linear-gradient(90deg, #7C3AED, #EC4899, #F59E0B)',
+      },
+      surface: {
+        primary: '#FFFFFF',
+        soft: '#F9FAFB',
+        nav: '#7C3AED', // IMPORTANT
+        dark: '#0F172A',
+      },
+      text: {
+        primary: '#0F172A',
+        secondary: '#475569',
+        inverse: '#FFFFFF',
+      }
+    }
+  }
+}
+
+From this point on:
+	•	No bg-black
+	•	No raw hex values
+	•	Only bg-surface-nav, text-text-primary, etc.
+
+⸻
+
+Step 2: Enforce a single layout component
+
+Your new page should not be building its own layout.
+
+There must be one:
+	•	AppLayout
+	•	DashboardLayout
+	•	or similar
+
+That layout owns:
+	•	Sidebar background color
+	•	Contrast rules
+	•	Spacing
+	•	Section containers
+
+If a page renders outside that layout, it’s automatically non-compliant.
+
+⸻
+
+Step 3: Add a “UI compliance checklist” to PR reviews
+
+This is low effort, high return.
+
+Example (literally paste this into PR template):
+
+## UI Compliance Checklist
+- [ ] Uses shared layout component
+- [ ] No raw colors (no bg-black, no hex)
+- [ ] Uses brand tokens only
+- [ ] Contrast is readable without zoom
+- [ ] Sidebar matches brand nav color
+
+Now “fully compliant” actually means something.
+
+⸻
+
+Step 4: Optional but powerful — simple runtime guard
+
+You can add a dev-only warning:
+	•	If bg-black or text-gray-400 appears in dashboard routes
+	•	Log a console warning:
+“UI violates design standards — use brand tokens”
+
+This catches mistakes instantly.
+
+⸻
+
+Why this page looks especially bad
+
+One more thing you noticed (correctly):
+
+“It’s good you used purple, but everything else is washed out”
+
+That’s because:
+	•	Accent color was applied
+	•	Hierarchy was not
+
+Design systems fail when:
+	•	Accent color exists
+	•	But surfaces, contrast, and structure are not enforced
+
+Your PRD is correct.
+Your implementation boundary is missing.
+
+⸻
+
+Bottom line
+	•	❌ The markdown is not the problem
+	•	❌ Replit is not the problem
+	•	❌ Tailwind is not the problem
+
+✅ You need:
+	1.	Locked Tailwind brand tokens
+	2.	One enforced layout
+	3.	A basic compliance gate
+
+Once those exist, the PRD will suddenly “work” — because it finally has teeth.
+
+If you want, next I can:
+	•	Audit this exact page and tell you which classes are wrong
+	•	Rewrite the sidebar component to be compliant
+	•	Create a ui-tokens.ts + Tailwind config that cannot be bypassed
+
+Just tell me how hands-on you want to get.

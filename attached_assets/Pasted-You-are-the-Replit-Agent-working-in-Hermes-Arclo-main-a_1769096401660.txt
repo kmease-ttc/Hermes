@@ -1,0 +1,232 @@
+You are the Replit Agent working in **Hermes (Arclo main app)**.
+
+Goal: Implement **bidirectional integration** with the separate app:
+**Worker: SERP & Keyword Intelligence Service** (the “SEO Performance Report” app).
+
+Hermes must:
+
+1. **Trigger report generation** and **fetch the report JSON** from the Worker
+2. Expose **internal Hermes endpoints** so the Worker can fetch:
+
+   * site plan / agent unlock state / configuration (GA/GSC connected)
+   * completed work (“what’s already been done”)
+   * Authority (DA) score (if Hermes is the owner of DA)
+
+Single-site only (one site per account).
+
+---
+
+# A) Configuration (required)
+
+Add environment variables (or config constants):
+
+* `SERP_WORKER_BASE_URL` = `https://seo-scheduler-providers2.replit.app`
+* `ARCLO_INTERNAL_API_KEY` = shared secret value (must match Worker’s `SEO_SCHEDULER_API_KEY` usage)
+
+Hermes must include this header on all calls to Worker:
+
+* `X-ARCLO-API-KEY: ARCLO_INTERNAL_API_KEY`
+
+Hermes must also validate this header on all internal endpoints (below).
+
+---
+
+# B) Hermes → Worker (required)
+
+## 1) Trigger “Free Report”
+
+When the user submits: (website + email) in Hermes “Analyze my site”
+Call:
+
+POST `{SERP_WORKER_BASE_URL}/api/v1/report/generate`
+Headers: `X-ARCLO-API-KEY`
+Body:
+{
+"domain": "<normalized_domain_only>",
+"email": "<user_email>",
+"source": "free_report"
+}
+
+Response:
+{
+"report_id": "...",
+"status": "queued"
+}
+
+Store `report_id` against the user + site.
+
+## 2) Poll for completion
+
+Poll:
+
+GET `{SERP_WORKER_BASE_URL}/api/v1/report/{report_id}`
+Headers: `X-ARCLO-API-KEY`
+
+* If `status` is `queued|running`, keep polling (backoff)
+* If `complete`, store report JSON in Hermes DB:
+
+  * table: `seo_reports`
+  * columns: `site_id, report_id, report_json, created_at`
+* If `failed`, store error and render a graceful error UI.
+
+## 3) Show report in Hermes UI
+
+Create a route/page:
+
+* `/app/report/:report_id` (or similar)
+
+Render from stored `report_json` (do NOT parse HTML).
+
+---
+
+# C) Hermes internal endpoints for Worker (required)
+
+These endpoints are called by the Worker DURING report generation to correctly label:
+
+* Active vs Unlock vs Configure
+* “Example” labels
+* Suppressing already-done tasks
+* DA metric
+
+All endpoints below MUST:
+
+* require header `X-ARCLO-API-KEY`
+* accept `domain` as query param
+* return JSON exactly as specified
+
+---
+
+## 1) Site state (plan + agents + configuration)
+
+GET `/api/internal/site/state?domain=example.com`
+
+Return:
+{
+"domain": "example.com",
+"site_id": "site_...",
+"plan": "free|starter|pro|business",
+"agents": {
+"atlas": {"enabled": true, "configured": true},
+"scotty": {"enabled": false, "configured": false},
+"speedster": {"enabled": false, "configured": false},
+"authority": {"enabled": false, "configured": false},
+"analytics": {"enabled": true, "configured": false}
+},
+"credentials": {
+"ga4": {"connected": false},
+"gsc": {"connected": false}
+}
+}
+
+Rules:
+
+* `enabled` means purchased/unlocked
+* `configured` means user completed setup for that agent
+* `credentials` reflect whether the user connected them in Hermes
+
+This is what Worker uses to set card states:
+
+* enabled+configured → Active
+* not enabled → Unlock + example
+* enabled but not configured → Configure + setup CTA
+
+---
+
+## 2) Completed work (“what’s already been done”)
+
+GET `/api/internal/site/completed?domain=example.com`
+
+Return:
+{
+"domain": "example.com",
+"completed": [
+{
+"fingerprint": "sha1...",
+"page": "/psychiatrist-near-me",
+"type": "on_page_seo|technical_seo|content|authority|analytics",
+"action": "Optimize title/meta; add internal links; expand content",
+"completed_at": "2026-01-18T10:12:00Z"
+}
+]
+}
+
+Hermes must store these fingerprints when:
+
+* A fix is applied/merged (now or future)
+* Or when you manually mark something done (optional)
+
+Worker will send fingerprints in recommendations; Hermes must persist them.
+
+---
+
+## 3) Authority (DA) endpoint
+
+GET `/api/internal/site/authority?domain=example.com`
+
+Return:
+{
+"domain": "example.com",
+"da": 28,
+"updated_at": "2026-01-21T22:00:00Z",
+"status": "ok|unavailable|locked"
+}
+
+If Hermes does not have DA yet:
+
+* Return `da: null`, `status: "unavailable"` (do not 500)
+
+Worker uses this to populate the Authority metric and set Unlock/Configure state.
+
+---
+
+# D) Unlock / Configure routing (required)
+
+Hermes must support stable UI URLs so Worker can embed links:
+
+* Unlock / Hire agents:
+  `/app/agents?focus=<agent_slug>`
+
+* Finish setup:
+  `/app/integrations` (or your exact route)
+  Include anchors if possible:
+
+  * `#ga4`
+  * `#gsc`
+
+Hermes should accept these query/anchor params and scroll to the relevant section.
+
+---
+
+# E) Normalization (required)
+
+Hermes must normalize the domain before sending to Worker:
+
+* strip protocol
+* strip path/query
+* lower-case
+* e.g. `https://www.empathyhealthclinic.com/foo` → `empathyhealthclinic.com`
+
+Use the same normalization to look up `site_id`.
+
+---
+
+# F) Failure handling (required)
+
+If Worker is unreachable:
+
+* Hermes still loads
+* Show “Report temporarily unavailable”
+* Do not crash dashboard or signup flow
+
+---
+
+# Acceptance Criteria
+
+* Hermes can trigger report generation and fetch report JSON
+* Hermes exposes internal endpoints so Worker can:
+
+  * determine unlock/configure state
+  * suppress already-completed recommendations
+  * populate DA when available
+* All internal endpoints require `X-ARCLO-API-KEY`
+* Single-site only logic throughout

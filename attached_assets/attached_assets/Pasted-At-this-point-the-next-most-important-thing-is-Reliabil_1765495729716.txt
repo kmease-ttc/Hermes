@@ -1,0 +1,210 @@
+At this point, the next most important thing is:
+
+👉 Reliability + Confidence: Automated QA, Monitoring, and “Release Safety”
+
+You’re about to:
+	•	sell setup services
+	•	publish customer sites
+	•	run background jobs
+	•	make ongoing changes automatically
+
+If something silently breaks, trust collapses.
+
+So the next workstream should make Arclo feel safe, professional, and production-ready by adding:
+	•	automated QA
+	•	site health checks
+	•	visible monitoring
+	•	failure surfacing (not hiding)
+
+This directly reduces churn, support, and anxiety.
+
+⸻
+
+NEXT WORKSTREAM: QA, Monitoring, and Site Health
+
+Agent Prompt
+
+Objective
+
+Implement an automated QA + monitoring layer that continuously validates:
+	•	Arclo itself
+	•	customer sites
+	•	critical workflows (publish, domain, tracking, pages)
+
+The system must:
+	•	catch issues early
+	•	surface problems clearly
+	•	tie failures to activities
+	•	reinforce trust that Arclo is “on it”
+
+⸻
+
+PART 1 — Add Automated QA Runner (Playwright)
+
+1) Integrate Playwright
+
+Add Playwright to the repo and configure it for headless execution.
+
+Create a /qa or /tests directory with:
+	•	smoke.spec.ts
+	•	publish-flow.spec.ts
+	•	site-health.spec.ts
+
+⸻
+
+2) Smoke Tests (Platform)
+
+Implement smoke tests that run against Arclo itself:
+
+Validate:
+	•	login
+	•	dashboard load
+	•	“My Websites” page renders
+	•	preview page renders
+	•	publish button exists
+	•	service subscription flow loads
+
+Fail tests on:
+	•	uncaught JS errors
+	•	failed navigation
+	•	missing critical elements
+
+⸻
+
+3) Publish Flow Test (Critical)
+
+Create a test that simulates:
+	1.	Generate site
+	2.	Preview site
+	3.	Click “Publish”
+	4.	Stop before payment (mock)
+	5.	Confirm checklist loads
+	6.	Confirm domain step renders
+
+This test ensures your core funnel never breaks.
+
+⸻
+
+PART 2 — Customer Site Health Checks (Huge Trust Win)
+
+1) Add Site Health Job
+
+Create a scheduled job (daily or weekly per site) that checks:
+	•	Site returns 200
+	•	Homepage loads within X seconds
+	•	No JS fatal errors
+	•	Sitemap reachable
+	•	Robots.txt reachable
+	•	Core pages exist
+
+Store results as site_health_checks.
+
+⸻
+
+2) Surface Health in Dashboard
+
+Add a “Site Health” indicator per site card:
+	•	Healthy (green)
+	•	Needs attention (yellow)
+	•	Issue detected (red)
+
+Clicking opens:
+	•	What failed
+	•	When
+	•	What Arclo is doing about it
+
+⸻
+
+PART 3 — Tie QA & Health to Activities
+
+Rules
+	•	Every failed check creates an activity with status=failed
+	•	Every recovery creates an activity with status=completed
+	•	No silent failures
+
+Example:
+“Detected broken sitemap — repairing automatically”
+or
+“Homepage failed to load — investigating”
+
+⸻
+
+PART 4 — Failure Visibility & Trust
+
+In-App Alerts
+
+If a site health issue occurs:
+	•	Show alert in dashboard
+	•	Do NOT panic the user
+	•	Use calm language:
+“We detected an issue and are working on it.”
+
+Email Alerts (Only for serious issues)
+
+Send email only if:
+	•	site is down
+	•	domain expired
+	•	tracking removed
+
+⸻
+
+PART 5 — Admin Controls (Early-Stage Friendly)
+
+Create internal admin views to:
+	•	see failing QA runs
+	•	see site health across all customers
+	•	rerun checks
+	•	mark issues resolved
+	•	attach notes
+
+This allows manual intervention without exposing internals.
+
+⸻
+
+PART 6 — QA for Services (Forward-Looking)
+
+Add hooks so that:
+	•	when a service runs (blog publish, page creation, SEO fix)
+	•	a lightweight validation runs after
+	•	success/failure is logged as activity
+
+This prevents:
+	•	“we think it ran” uncertainty
+	•	invisible failures
+
+⸻
+
+Definition of Done
+	•	Playwright tests run locally
+	•	Core flows are protected
+	•	Customer sites are monitored
+	•	Issues are visible, not hidden
+	•	Users trust Arclo to catch problems before they do
+
+⸻
+
+Why this is the right next step
+
+You now have:
+	•	onboarding
+	•	services
+	•	upsells
+	•	activity tracking
+
+The missing piece is confidence at scale.
+
+This work makes Arclo feel like:
+
+“An always-on website operations platform”
+
+not:
+
+“An AI experiment that might break.”
+
+⸻
+
+After this, the next two logical options are:
+	1.	Onboarding + empty states + education (conversion & activation), or
+	2.	Pricing page + packaging rewrite (revenue optimization)
+
+Tell me which one you want next and I’ll write that prompt.

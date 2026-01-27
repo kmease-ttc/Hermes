@@ -1,0 +1,178 @@
+Strengthen Popular “Traffic Drop” logic: dedupe anomalies, validate % drop, cross-agent corroboration (Speedster/Hemingway), fix “Invalid Date”, and make Score consistent with Missions.
+
+Problems to fix (from screenshot + your notes)
+
+1. Conflicting organic-traffic anomalies (20% vs 40% vs 25%) should collapse into ONE canonical issue on Popular.
+2. “Invalid Date” badge appears; the anomaly card should never render an invalid date. If date can’t be parsed, show “Unknown date” and add an action to fix upstream.
+3. Popular’s suggested actions are generic; they should trigger automatic cross-checks:
+
+   * Speedster: confirm if performance degraded around the anomaly window
+   * Hemingway (or content-change agent): confirm if content was removed/modified around the anomaly window
+4. Score mismatch: page header shows Score=50 but Missions panel shows 0. These must agree via one source of truth.
+
+High-level architecture change
+Create a single “Evidence-backed Issue” pipeline for Popular:
+
+* Step A: Normalize and merge raw anomaly signals into a canonical issue (dedupe).
+* Step B: Validate the anomaly magnitude (is it really -42.4%?).
+* Step C: Auto-run corroboration checks across relevant agents (Speedster/Hemingway/etc.).
+* Step D: Update issue card with: confirmed magnitude, confidence, evidence, and only the actions that still apply.
+* Step E: Derive Missions count and Score from the same computed issue set (single source of truth).
+
+A) Normalize + Dedupe anomalies into a canonical issue
+Implement a canonical issue key and merge logic:
+
+CanonicalIssueKey fields:
+
+* metric_family: "organic_traffic"
+* metric: "ga4_sessions" (or similar stable enum)
+* dimension: "all" | "landing_page" | "channel" (likely "all" here)
+* window: { start_date, end_date } normalized to YYYY-MM-DD
+* scope: crew="Popular" + domain
+
+Merge rules:
+
+* Group raw anomalies by (metric_family, metric, window overlap within N days, scope).
+* Choose a single “primary” anomaly:
+
+  * Prefer highest absolute percent change (or highest severity score) BUT keep others as supporting evidence.
+* Set canonical percent change to a computed value (see B) rather than trusting the raw card value.
+* The UI on Popular shows only canonical issues, not raw anomalies.
+
+Implementation details:
+
+* Add a function: mergeAnomalies(rawAnomalies) -> canonicalIssues[]
+* canonicalIssues[i].evidence.raw_anomalies = [...the merged list...]
+* canonicalIssues[i].display_title = "Organic Traffic (Sessions)" (single title)
+* canonicalIssues[i].severity is derived consistently (see Score section)
+
+B) Validate the % drop (stop trusting a single number)
+Right now you’re rendering -42.4% vs 7-day average, but you also have other cards with 20%/25% etc.
+Make Popular compute/confirm the magnitude using GA4 data:
+
+* Define a standard comparison method:
+
+  * baseline = average(daily sessions, prev_7_days)  (or prev_28, but choose one and use it everywhere)
+  * current = sessions for the anomaly day (or avg over anomaly window)
+  * pct = (current - baseline) / baseline
+* Store this computed pct as canonicalIssues[i].metrics.confirmed_pct_change
+* Store also:
+
+  * confirmed_current_value
+  * confirmed_baseline_value
+  * confirmed_method = "vs_prev_7day_avg" (or "vs_prev_7day_window")
+
+If GA4 query fails or returns partial data:
+
+* status should be “needs_setup” or “integration_down”
+* show an actionable empty state (per your “no dead ends” rule) with a CTA to fix GA4 connection / permissions / date range.
+
+C) Auto-run cross-agent corroboration checks (Speedster + Hemingway)
+When a canonical organic traffic drop issue exists, Popular should automatically request evidence from other crews and incorporate it.
+
+Define a “corroboration plan” per issue type:
+Issue type: organic_traffic_drop
+
+* Speedster check:
+
+  * Query: performance summary for same window (Core Web Vitals / page load / error rate)
+  * Output needed: { status: ok|no_data|error, perf_degraded: boolean, details, top_urls_affected, evidence_links }
+* Hemingway check:
+
+  * Query: content-change summary for same window (recent edits, removed pages, major rewrite, indexability changes)
+  * Output needed: { status, content_changed: boolean, details, urls_changed, evidence_links }
+
+Implementation approach:
+
+1. Create server endpoint: POST /api/crews/popular/issues/:issueId/corroborate
+
+   * Or run it automatically when the issue is created/refreshed.
+2. Popular server calls internal service clients:
+
+   * callSpeedsterSummary(domain, window)
+   * callHemingwayChangeSummary(domain, window)
+3. Save results to DB: issue_corroboration table keyed by issue_id and source ("speedster"|"hemingway")
+4. UI renders “Evidence” section:
+
+   * Speedster: “No performance degradation detected” OR “Performance degradation detected: LCP +Xms on top pages”
+   * Hemingway: “No significant content changes” OR “Major content updates on N pages”
+
+Critically: The “AI Interpretation” text must be derived from evidence:
+
+* If Speedster shows no degradation, remove/grey-out the recommendation about slow page load and replace with “Performance appears stable.”
+* If Hemingway shows no content changes, remove/grey-out the recommendation about content removal and replace with “No major content changes detected.”
+
+D) Fix “Invalid Date”
+Root cause is almost always date parsing from:
+
+* “20251207” string treated as Date() without formatting
+* undefined/null date in API response
+* timezone formatting mismatch
+
+Fix rules:
+
+* Standardize date strings in API: always return ISO “YYYY-MM-DD” for any display date.
+* If upstream returns yyyymmdd, convert server-side once.
+* UI should never call new Date(rawString) unless rawString is ISO.
+
+UI fallback:
+
+* If date is missing/unparseable:
+
+  * Display: “Unknown date”
+  * status badge: “Needs setup” or “Data issue”
+  * actions include: “View raw payload” (dev mode) and “Fix date normalization” (create_task)
+
+Also fix the “Analysis Complete” line that currently says “on 20251207”:
+
+* Render “on 2025-12-07” (formatted) or “on Unknown date”.
+
+E) Eliminate duplicate “Search clicks” etc.
+Apply the same canonical merge logic for any metric family:
+
+* search_clicks: only one card per window/scope
+* ad_spend: only one card per window/scope
+  Anything that varies only by a different raw detector should be merged into one canonical issue with evidence.
+
+UI rule:
+
+* Detected Drops tab shows canonical issues only.
+* If you want to show “supporting anomalies,” hide them behind “View evidence (N signals)”.
+
+F) Score vs Missions mismatch (single source of truth)
+Right now header Score and Missions “0 needs attention” disagree.
+Fix by deriving both from the same computed state:
+
+Define:
+
+* issues_needing_attention = canonicalIssues.filter(severity >= threshold && status in ["ok","empty"] etc.)
+* missions = issues_needing_attention.map(issue -> issue.recommended_actions as missions)
+
+Then:
+
+* Missions count = missions.length (or unique mission groups)
+* Score = computeScore(canonicalIssues) with a stable formula:
+
+  * Example: start 100, subtract weighted penalties by severity/confidence
+  * Or: normalized health score from evidence-backed KPIs
+    But the key: Score uses canonicalIssues, not some other feed.
+
+Implementation steps:
+
+1. Create a single endpoint that returns the Popular dashboard model:
+   GET /api/crew/popular/dashboard
+   returns:
+
+   * score
+   * missions (array)
+   * canonicalIssues (array)
+   * kpis
+2. Both the header score and the Missions panel read from this single response.
+3. Remove any local computation that can drift.
+
+G) Acceptance criteria
+
+* Popular shows exactly ONE “Organic Traffic (Sessions)” issue for a given time window.
+* The % drop on that card matches the confirmed GA4 computation method.
+* “Invalid Date” never appears; if date missing, show “Unknown date” with an action to fix.
+* Recommendations are evidence-backed:

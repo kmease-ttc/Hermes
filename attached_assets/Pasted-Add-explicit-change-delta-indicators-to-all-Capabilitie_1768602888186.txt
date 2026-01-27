@@ -1,0 +1,116 @@
+Add explicit **change (delta) indicators** to all Capabilities & Performance KPIs so users can immediately see whether a metric went up or down and by how much.
+
+## Goal
+
+For every KPI card, show:
+
+* Current value
+* Direction of change (up / down / flat)
+* Amount of change since the last run
+  This must work for **both Sample and Live data**.
+
+A user should be able to answer:
+“Did this go up or down, and by how much?” at a glance.
+
+---
+
+## Data Model Change (Required)
+
+Extend the Crew KPI snapshot with a previous value:
+
+```
+CrewKpiSnapshot {
+  crewId
+  primaryMetric: {
+    key
+    value
+    previousValue
+    unit
+    isSample
+    lastUpdatedAt
+  }
+}
+```
+
+If `previousValue` is missing:
+
+* Show “—” for delta
+* Do NOT guess
+
+---
+
+## Delta Calculation Logic
+
+For numeric metrics:
+
+```
+delta = value - previousValue
+```
+
+* Positive → increase
+* Negative → decrease
+* Zero → no change
+
+For percentage metrics:
+
+* Show delta in percentage points (pp), not percent of percent
+
+Example:
+
+* 34 → 35 = **+1**
+* 72% → 68% = **−4pp**
+
+---
+
+## UI Rules (Very Important)
+
+Add a **small delta indicator near the metric value**, not hidden in a tooltip.
+
+Examples:
+
+* `35  ▲ +1`
+* `68% ▼ −4`
+* `91% —`
+
+Color:
+
+* Green = increase
+* Red = decrease
+* Gray = no change / no prior data
+
+Direction arrow is mandatory.
+
+---
+
+## Sample vs Live Behavior
+
+* Sample data **still shows deltas** if previous sample exists
+* Sample badge stays, delta still renders
+* Live badge + delta = ideal state
+
+Do NOT suppress deltas just because data is sample.
+
+---
+
+## Edge Cases
+
+* First run → show value only, delta = “—”
+* Source reset → delta = “— (reset)”
+* Previous value exists but stale → delta still shown, freshness badge handles trust
+
+---
+
+## Acceptance Criteria
+
+* Beacon (Domain Authority) clearly shows:
+
+  * Current DA
+  * ▲ or ▼
+  * Exact change amount
+* User can tell in <1 second whether DA went up or down
+* Works consistently across all crew cards
+* No hover required to see the change
+
+Do not redesign the layout.
+Do not add charts.
+Just add delta math + indicator.

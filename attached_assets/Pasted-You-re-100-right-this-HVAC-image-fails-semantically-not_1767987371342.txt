@@ -1,0 +1,204 @@
+You’re 100% right — this HVAC image fails **semantically**, not technically. It’s a *nice photo*, but it does **not communicate HVAC** or “business website hero” at all. It reads as *interior design / couch / paint texture*, which breaks trust.
+
+Below is a **very concrete, fixable playbook** to get HVAC images right, without falling back into bad stock clichés.
+
+---
+
+## Why This Image Fails (So We Don’t Repeat It)
+
+This image is bad for HVAC because:
+
+1. **No HVAC signal**
+
+   * No home exterior
+   * No equipment context
+   * No environmental cue (heat/cold/air)
+2. **Feels like interior decor**
+
+   * Couch + wall texture = living room ad
+3. **Doesn’t pass the 1-second test**
+
+   * A user cannot identify “HVAC business website” instantly
+
+If the industry label were removed, no one would guess HVAC.
+
+That’s the bar.
+
+---
+
+## The Correct HVAC Image Mental Model
+
+An HVAC website hero image should instantly communicate **comfort + home + climate control**.
+
+Think:
+
+> “This company keeps my house comfortable year-round.”
+
+Not:
+
+> “This is a room.”
+
+---
+
+## Best HVAC Image Options (Ranked)
+
+### 🥇 Option 1 (BEST): Website Screenshot of HVAC Homepage
+
+This is still the gold standard.
+
+**What to show:**
+
+* A generated HVAC site hero
+* Headline like “Reliable Heating & Cooling in Denver”
+* CTA button visible
+* Optional hero image *inside* the website screenshot
+
+**Why this wins:**
+
+* Zero ambiguity
+* Pure marketing context
+* Looks like a real business asset
+
+If you can generate even **one** HVAC demo site, use that screenshot and delete all stock HVAC photos.
+
+---
+
+### 🥈 Option 2 (Best Stock Alternative): Home Exterior + Subtle HVAC Context
+
+If you must use photography:
+
+#### What to look for
+
+Search terms:
+
+* `modern home exterior summer`
+* `suburban home winter snow`
+* `comfortable home exterior sunlight`
+* `residential heating cooling home`
+
+**Key traits:**
+
+* Exterior of a home
+* Clear seasonal cues (sunlight, snow, fall colors)
+* Clean, neutral composition
+* No close-ups of equipment
+
+**Why this works:**
+
+* HVAC is about *comfort*, not machinery
+* Home exterior implies “we manage what’s inside”
+* Much more website-hero friendly
+
+---
+
+### 🥉 Option 3 (Acceptable): Technician at Rest (Not Working)
+
+If including a person:
+
+**Rules:**
+
+* Technician standing calmly
+* Clean uniform
+* Neutral background (home exterior)
+* NOT working
+* NOT holding tools mid-action
+
+Search:
+
+* `hvac technician residential exterior`
+* `hvac technician home smiling`
+
+This can work, but only if it feels *professional and calm*, not staged.
+
+---
+
+## What to Explicitly Avoid for HVAC
+
+❌ Interiors without HVAC context (like the couch photo)
+❌ Close-ups of AC units
+❌ Basement mechanical rooms
+❌ Orange/industrial textures
+❌ Action shots (sweat, ladders, tools)
+❌ Anything that feels like Home Depot stock
+
+If it feels like:
+
+* a catalog photo
+* a trade manual
+* a lifestyle blog
+
+…it’s wrong.
+
+---
+
+## Concrete Replacement Plan (Dev-Ready)
+
+### Step 1: Kill the Current HVAC Image
+
+Delete it entirely. Do not try to “fix” it with overlays or crops.
+
+---
+
+### Step 2: Replace With One of These (In Order)
+
+**Preferred**
+
+* Screenshot of generated HVAC demo site hero
+
+**Fallback**
+
+* Home exterior image (summer or winter)
+* Crop wide
+* Leave negative space for overlay label
+
+---
+
+### Step 3: Add HVAC-Specific Overlay Copy (Critical)
+
+Overlay text should reinforce industry meaning:
+
+```
+HVAC Website · Denver, CO
+Heating & Cooling Services
+```
+
+This helps anchor even borderline images.
+
+---
+
+### Step 4: Visual Consistency Check
+
+Before shipping, do this test:
+
+* Hide all labels
+* Show cards side-by-side
+* Ask: “Can I identify each industry in under 1 second?”
+
+If HVAC fails → replace again.
+
+---
+
+## One-Line Rule for HVAC Images (Save This)
+
+> **HVAC images must communicate “home comfort,” not “interior design.”**
+
+---
+
+## Recommendation (Strong)
+
+If you want this to feel *premium* and stop iterating on stock photos:
+
+* Generate **one HVAC demo site**
+* Screenshot the hero
+* Use that everywhere
+* Never touch stock HVAC photos again
+
+That single move will remove 80% of this friction permanently.
+
+If you want, next I can:
+
+* Define **exact Unsplash queries** that consistently return acceptable HVAC images
+* Help you design **a reusable website-screenshot frame**
+* Or prioritize which industries *must* use real site screenshots first
+
+But you’re correct — this image has to go.

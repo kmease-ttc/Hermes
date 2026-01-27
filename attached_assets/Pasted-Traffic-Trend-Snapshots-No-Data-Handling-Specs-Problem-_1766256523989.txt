@@ -1,0 +1,172 @@
+Traffic Trend Snapshots + “No Data” Handling Specs
+
+Problem
+Traffic numbers are currently showing the same value for multiple time windows (e.g., 7d = 30d = 90d). That makes trend interpretation impossible and is almost certainly caused by:
+
+* reusing a single aggregated value across windows, or
+* not snapshotting historical values and falling back to the latest value for every window.
+
+Goal
+
+1. If historical data is missing, show a “no data” indicator (dash/line) instead of repeating a number.
+2. Persist traffic snapshots on a schedule (daily) so we can run comparisons over time and show 7/30/60/90 day deltas reliably.
+
+Key Requirements
+
+* Always compute traffic windows correctly when possible.
+* If we cannot compute (insufficient history), show “—” and mark as “insufficient history.”
+* Store daily snapshots so “change over time” does not depend on retroactive API calls only.
+
+---
+
+## 1) UI: Don’t Repeat Numbers When Data Is Missing
+
+1.1 Display Rules
+For each metric window (24h, 7d, 30d, 60d, 90d):
+
+* If we have data: show value + delta vs prior period
+* If we do NOT have data: show “—” and a tooltip: “Not enough history yet”
+
+1.2 Trend Lines
+
+* If fewer than 2 snapshot points exist for the chart: show an empty state line or placeholder.
+* Do not draw a flat line based on duplicated values unless those values truly reflect the time series.
+
+1.3 “Status” Logic Must Respect Missing Data
+If missing history:
+
+* Status should say “Inconclusive (insufficient history)” rather than “Needs Attention”
+* Do not fire “down X%” callouts without enough data.
+
+---
+
+## 2) Database: Snapshot Model (Daily + Window Anchors)
+
+2.1 Create a traffic snapshot table (site-scoped)
+Table: traffic_snapshots
+Columns:
+
+* id
+* siteId
+* snapshotDate (date, normalized to UTC day)
+* source (“ga4”)
+* windowsJson (JSON object of aggregated windows at snapshot time)
+* metricsJson (optional: additional KPI fields)
+* createdAt
+
+2.2 Snapshot payload (minimum)
+windowsJson should include:
+
+* sessions_total_24h
+* sessions_organic_24h
+* sessions_total_7d
+* sessions_organic_7d
+* sessions_total_30d
+* sessions_organic_30d
+* sessions_total_60d
+* sessions_organic_60d
+* sessions_total_90d
+* sessions_organic_90d
+
+Optional (strongly recommended):
+
+* users_total_7d/30d/90d
+* conversions_7d/30d/90d
+* topLandingPages_7d (array of {path, organicSessions})
+* channelBreakdown_7d (organic/paid/direct/referral)
+
+Note: If GA4 can’t provide “organic sessions” cleanly, store:
+
+* sessions_total + sessions_organic_estimate (with a flag)
+* and/or store channel group breakdown to derive organic.
+
+2.3 Uniqueness
+
+* Unique constraint on (siteId, snapshotDate).
+* If job runs twice, upsert rather than duplicate.
+
+---
+
+## 3) Collection Strategy (Don’t Overcomplicate)
+
+We want two things:
+A) “Current values” (right now)
+B) “Change over time” (vs prior points)
+
+To get both:
+
+* Query GA4 for current windows (24h/7d/30d/60d/90d)
+* Store them as a snapshot daily
+* Use snapshots for trend comparisons and charts
+
+Important: Snapshots are the source of truth for comparisons. GA4 is the source of truth for “current.”
+
+---
+
+## 4) Snapshot Job (Schedule + Backfill)
+
+4.1 Daily Scheduled Job
+Run once per day per site (e.g., 2am local or UTC):
+
+* For each active site with GA4 configured:
+
+  * pull aggregated values for each window
+  * insert/upsert a row in traffic_snapshots
+
+4.2 Backfill (One-time / On-demand)
+When a site is first connected:
+
+* Backfill up to 90 days of daily snapshots if feasible:
+
+  * If GA4 daily time series is available, pull daily organic + total and populate traffic_snapshots per day.
+  * If not feasible, start collecting from day 1 and mark older windows as “insufficient history.”
+
+If backfill is too heavy, acceptable MVP:
+
+* Start daily snapshots now
+* Show “—” for 60/90 until enough days accumulate
+
+---
+
+## 5) How Comparisons Should Work
+
+5.1 On Dashboard (per selected site)
+For each window metric display:
+
+* Value: sessions_organic_7d (from “current” GA4 query OR from latest snapshot)
+* Delta: compare latest snapshot’s sessions_organic_7d vs snapshot from 7 days ago (or nearest available)
+
+Example:
+
+* “Organic Sessions (7d): 1,240 (↓18%)”
+  Where ↓18% is computed from:
+* latestSnapshot.7d vs snapshotClosestTo(latestSnapshotDate - 7 days).7d
+
+5.2 Handling Missing Comparison Points
+If no comparison snapshot exists:
+
+* show “—” for delta
+* tooltip: “Need more history for comparisons”
+
+---
+
+## 6) Acceptance Criteria
+
+* The dashboard never displays the exact same value across 7d/30d/60d/90d unless that is truly the result from GA4.
+* If history is missing, the UI shows “—” (not duplicated numbers) and labels it as “insufficient history.”
+* A daily snapshot is stored per site and used for:
+
+  * trend charts
+  * percent change callouts
+  * comparisons (7/30/60/90)
+* Unique snapshot rows enforced (siteId + snapshotDate).
+* Comparisons work as soon as enough snapshots exist (e.g., after 8 days, 7d delta appears).
+
+---
+
+## 7) Implementation Notes (Keep It Simple)
+
+* Start with sessions_total and sessions_organic windows only.
+* Add other KPIs later.
+* Use snapshots for deltas and charts; avoid recomputing historical deltas from GA4 repeatedly.
+* If GA4 organic segmentation is tricky, store channel grouping totals and derive organic consistently.

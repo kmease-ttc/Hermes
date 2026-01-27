@@ -1,0 +1,115 @@
+You are a senior full-stack engineer working inside this Replit project.
+
+Problem
+On the Speedster (Core Web Vitals) crew page, the “Issues” section is empty. I’ve already added the missing issue data to the worker, so the data should now be available. However, when I click “Run Vital Scan”, nothing happens (no UI change, and the page doesn’t populate).
+
+Goal
+Make “Run Vital Scan” reliably trigger a scan, fetch the new issues payload from the worker, and render the results in the Issues UI (and any dependent sections like Issue Breakdown, impacted pages, etc.).
+
+Do NOT guess. Diagnose with evidence from logs/network responses, then fix.
+
+Step-by-step
+
+1. Reproduce and inspect the click path
+
+* Find the Speedster page component for core web vitals (route /agents/core_web_vitals).
+* Locate the “Run Vital Scan” button and the handler it calls.
+* Add temporary logging at the top of the click handler:
+
+  * console.log("Run Vital Scan clicked", { timestamp, siteId, crewId, route })
+* Confirm in the browser console that the click handler fires.
+
+2. Confirm a request is actually being made
+
+* If no network request is triggered:
+
+  * Wire the button to the correct action function and ensure it’s not blocked by disabled state / missing props.
+* If a request is triggered:
+
+  * Identify the endpoint URL, HTTP method, headers, and request body.
+  * Log the final resolved URL and payload.
+
+3. Verify the worker endpoint + payload
+
+* Identify the worker base URL used by Core Web Vitals:
+
+  * Look for SEO_CORE_WEB_VITALS_BASE_URL (or similar) configuration usage.
+* Confirm the correct endpoint exists server-side (or worker-side):
+
+  * If there’s a “run scan” endpoint, confirm expected path + method.
+* Manually call the endpoint from server code (or curl in terminal) using the same payload to confirm it returns the new “issues” data.
+
+4. Fix the client data flow
+   There are 3 common failure points; check each:
+
+A) Button triggers scan but UI never refreshes
+
+* After scan completes, the UI should:
+
+  * refetch the “core web vitals summary/issues” query, OR
+  * receive the data directly and set state, OR
+  * poll job status until results are ready.
+* Identify which pattern this page uses (react-query, SWR, custom fetch + useEffect).
+* Ensure the scan completion path invalidates/refetches the correct query key.
+
+B) Results returned but mapping/parsing is wrong
+
+* Compare the worker response JSON to what the UI expects.
+* Update the Typescript types + mapping layer.
+* Make sure Issue Breakdown is reading:
+
+  * issuesSummary.totalPagesScanned
+  * issuesSummary.totalIssues
+  * impactedPages
+  * issueTypes[] with fields: (issueType/pagesAffected/severity/metric/exampleUrl?)
+* If fields changed, update both:
+
+  * the API client DTO
+  * the UI rendering logic
+
+C) Results take time and UI gives no feedback
+
+* Add visible loading state:
+
+  * Button becomes “Running…” with spinner
+  * Disable while running
+  * Toast on success/failure
+* If scan is async:
+
+  * Implement polling for up to N seconds (e.g., 60–90s) OR show “Scan started, results will appear shortly” and refresh automatically every X seconds until data appears.
+
+5. Confirm Issue Breakdown renders
+
+* Remove “Issue Breakdown Unavailable” once the required fields exist.
+* Ensure the “Issues” tab shows a real list/table:
+
+  * issue type
+  * severity
+  * metric
+  * pages affected
+  * example URL (clickable)
+* If there are no issues, render an explicit empty state:
+
+  * “No issues detected in this scan.”
+
+6. Add logs and error surfacing
+
+* If the worker responds with non-200, show a visible error:
+
+  * “Vital scan failed: <message>”
+* In dev, also console.error with the response body.
+
+What I need from you (deliverables in your final response)
+
+* The exact file(s) you modified (paths)
+* The endpoint the button calls (method + URL path)
+* A screenshot or description of:
+
+  * clicking Run Vital Scan shows loading
+  * results populate Issues + Issue Breakdown after completion
+* If the worker is async: explain the polling/refresh behavior in 2–3 bullets.
+
+Constraints
+
+* Do not change the worker again unless you find a mismatch in endpoint or response shape.
+* Keep changes minimal and consistent with existing patterns in this repo.

@@ -1,0 +1,189 @@
+Yes — you 100% should add tooltips.
+This will immediately improve conversions, reduce user confusion, and decrease support questions.
+
+But they must be written in plain language, NOT technical language.
+(Remember: your customers are plumbers, bakers, cleaners, local med spas — not designers.)
+
+Below are the developer instructions on where to add tooltips, how they must behave, and EXACT copy you should use.
+
+⸻
+
+✅ DEVELOPER INSTRUCTIONS — ADD TOOLTIP SYSTEM TO ARCLO ONBOARDING
+
+We are adding tooltips to the entire onboarding/business-info form.
+
+Tooltips must:
+	•	Be available on hover (desktop)
+	•	Be available on tap (mobile)
+	•	Use a small “?” icon next to the label
+	•	Display in plain-language
+	•	Not use SEO/tech jargon
+	•	Explain why it matters (the benefit) more than the definition
+
+⸻
+
+🎯 TOOLTIP BEHAVIOR REQUIREMENTS
+
+1. Every tooltip is triggered by a small circle icon with “?”
+	•	Should appear to the right of the form label
+	•	Same styling across all fields
+	•	On click/tap, tooltip appears above/below the field in a floating box
+
+2. Tooltip box requirements:
+	•	Soft rounded corners
+	•	Slight shadow
+	•	Light neutral background
+	•	1–2 short paragraphs max
+	•	One sentence bolded for the key takeaway
+
+3. Tooltip placement:
+	•	Must never obstruct the input field
+	•	Must auto-adjust on mobile so it doesn’t go off-screen
+
+⸻
+
+📌 ADD TOOLTIP TO THESE FIELDS (MANDATORY)
+
+Below is EXACT copy you can give to your dev to implement.
+
+⸻
+
+1. Business Name — Tooltip
+
+Why we ask for this
+
+This is the name we’ll put on your website and logo.
+It helps us personalize your site, write your content, and generate your branding automatically.
+
+⸻
+
+2. Industry / Business Type — Tooltip
+
+What this does
+
+We use your industry to generate the right style, images, and wording for your website.
+A bakery looks different from a plumber — this helps us customize everything.
+
+⸻
+
+3. City / Service Area — Tooltip
+
+Why it matters
+
+Your location tells Google where you serve customers.
+This helps your website show up for people searching nearby.
+
+⸻
+
+4. Hero Image — Tooltip
+
+(You specifically requested this — must be simple!)
+
+A hero image is the big banner photo at the top of your website.
+It’s the first thing customers see, so it sets the mood and shows what your business is about.
+
+If you don’t upload one, we’ll create one for you automatically.
+
+⸻
+
+5. Business Photos Upload — Tooltip
+
+Clarity for users
+
+These photos help us design your site to look more like your business.
+Upload anything that shows your work — products, storefront, before/after photos, or your team.
+
+If you skip this, we’ll generate high-quality placeholder images.
+
+⸻
+
+6. Services You Offer — Tooltip
+
+Why we ask
+
+We use your services to build the pages customers look for on Google.
+More accurate services = more people finding you online.
+
+⸻
+
+7. Business Description — Tooltip
+
+Purpose
+
+This helps us write your website content in your voice.
+A short sentence or two is enough — we’ll expand it for you.
+
+⸻
+
+8. Phone Number — Tooltip
+
+Why it matters
+
+We add a “Call Now” button to your site so customers can reach you instantly.
+Call tracking also helps you see how many customers your website brings in.
+
+⸻
+
+9. Address — Tooltip
+
+When to use it
+
+If you serve customers at a physical location, we’ll add a map to your site.
+If you travel to customers, we’ll show your service area instead.
+
+⸻
+
+10. Hours of Operation — Tooltip
+
+Why it’s useful
+
+Customers and Google rely on accurate hours.
+This helps people know when you’re open and increases trust.
+
+⸻
+
+11. Logo Upload (Optional) — Tooltip
+
+Help the AI match your brand
+
+If you already have a logo, upload it here.
+If not, we’ll generate a clean, modern logo based on your business name and industry.
+
+⸻
+
+💡 OPTIONAL BUT HIGHLY RECOMMENDED TOOLTIP AREAS
+
+These optional tooltips increase trust and reduce friction:
+
+FAQ-style popups in the form
+	•	“Why does Arclo ask these questions?”
+	•	“What happens after I submit?”
+	•	“Do I need technical skills?”
+
+Tooltip explaining the AI
+
+Arclo uses AI to build your website and improve it every day.
+You don’t need to understand AI — you’ll just see more customers finding you.
+
+⸻
+
+🚀 DEVELOPER ACCEPTANCE CRITERIA
+
+A tooltip implementation is complete when:
+	1.	Every tooltip looks consistent in style and behavior.
+	2.	Tooltips load instantly — no noticeable delay.
+	3.	No tooltip contains technical jargon.
+	4.	Tooltip text fits on mobile without overflowing.
+	5.	Click/tap outside the tooltip closes it.
+	6.	Tooltips are available throughout onboarding, in the preview panel, and even inside the dashboard (later).
+
+⸻
+
+🌟 Want me to write plain-language copies for your entire onboarding form?
+
+I can generate:
+	•	The entire form UX rewritten for small business owners
+	•	The new hero copy + benefit statements
+	•	A full “walkthrough script” that explains how Arclo works in non-technical terms
+
+Just tell me and I’ll produce it.

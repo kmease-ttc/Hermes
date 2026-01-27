@@ -1,0 +1,77 @@
+You are a senior front-end engineer. Standardize the **Metrics / KPI section UI** across ALL agent pages so they match the styling and layout used by **Natasha** and **Lookout** (these two are the canonical reference implementations).
+
+Goal
+Many agent pages have KPI sections that don’t follow the standard (spacing, card sizing, accent lines, icon styling, missing-state colors). Fix them so every agent’s KPI section looks and behaves exactly like Natasha/Lookout.
+
+Agents in scope
+Apply to every agent page in the left nav (at minimum): Natasha, Lookout, Popular, Scotty, Speedster, Sentinel, Hemingway, Beacon, Atlas, Draper, Socrates (and any others present).
+
+Definition of “Standard”
+Use Natasha/Lookout as the single source of truth for:
+
+* KPI grid layout (row/column count, responsive behavior)
+* KPI card dimensions (height, padding, border radius)
+* Typography (value size, label size, weight, letter spacing)
+* Accent treatment (agent color line/border/glow)
+* Icon placement (top-right icon button/indicator)
+* Medal/crown badge styling (gold/silver/bronze)
+* Missing-state styling (gold hue, not blue)
+* Hover/focus states and subtle shadows
+
+Implementation requirements
+
+1. Create a reusable KPI component (or ensure we already have one)
+
+* Identify the KPI card + KPI grid components used by Natasha/Lookout.
+* Extract them into reusable components if not already shared:
+
+  * `client/src/components/kpi/KpiGrid.tsx`
+  * `client/src/components/kpi/KpiCard.tsx`
+  * `client/src/components/kpi/kpiStyles.ts` (or CSS module / Tailwind helpers)
+* The goal is: other agent pages import and use the same components, not copy/paste.
+
+2. Centralize theme + agent accent colors
+
+* Ensure each agent has a defined accent color (existing “agent color” system).
+* KPI cards must show the accent consistently:
+
+  * either a left border line, top border line, or subtle glow identical to Natasha/Lookout.
+* Do not hardcode colors per page. Use the theme/agent config.
+
+3. Replace custom KPI implementations on other pages
+
+* For each agent page:
+
+  * Remove its bespoke KPI markup and styling.
+  * Replace with `<KpiGrid>` + `<KpiCard>` and pass the same props structure used by Natasha/Lookout.
+* Maintain each page’s KPI content/values, but standardize the visuals.
+
+4. Ensure consistent missing/empty behavior
+
+* If a KPI value is missing, render a deterministic numeric fallback (e.g., 0 / 0%) rather than blank.
+* If a KPI card represents a “missing” or “needs attention” state, it must use the gold hue style (same as Natasha/Lookout) rather than blue.
+
+5. QA checklist (must validate)
+
+* Compare each agent page KPI section to Natasha/Lookout:
+
+  * identical spacing and card sizes
+  * identical typography scale
+  * identical accent line styling
+  * icons aligned
+  * responsive layout matches
+* Test at common widths:
+
+  * desktop wide
+  * laptop
+  * tablet breakpoint
+
+Acceptance criteria
+
+* Every agent page KPI section renders using the same shared KPI components as Natasha/Lookout.
+* No agent page uses one-off KPI CSS/classes.
+* Visual differences are limited to the agent accent color and the KPI data itself.
+* No KPI section shows blank placeholders or broken alignment.
+
+Commit message
+`refactor(ui): standardize KPI section across agents using Natasha/Lookout components`

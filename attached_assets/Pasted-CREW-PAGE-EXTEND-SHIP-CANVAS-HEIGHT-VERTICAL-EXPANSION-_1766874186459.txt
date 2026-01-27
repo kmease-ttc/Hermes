@@ -1,0 +1,84 @@
+CREW PAGE – EXTEND SHIP CANVAS HEIGHT (VERTICAL EXPANSION ONLY)
+
+Context:
+Crew tiles are now compact and dense. The remaining issue is that the SHIP itself needs to be longer (taller) so the layout feels spacious and intentional, and to prevent crowding as more slots are added.
+
+This task is ONLY about extending the ship canvas vertically.
+Do NOT change tile size, avatar size, or internal tile layout.
+
+---
+
+### 1) SHIP CANVAS MUST BE TALLER
+
+Increase the vertical height of the ship canvas significantly.
+
+Requirements:
+- Ship canvas should span most of the viewport height.
+- The ship section should visually dominate the page before scrolling.
+
+Implementation:
+- Set ship container to:
+  - min-height: 1200px (desktop)
+  - height: calc(100vh - headerOffset) with a clamp
+  - max-height: none (allow tall canvas)
+- Do NOT constrain the ship to the Mission Status card height.
+
+The page is allowed (and expected) to scroll.
+
+---
+
+### 2) STRETCH SHIP BACKGROUND VERTICALLY
+
+The ship background/silhouette must scale to fill the taller canvas:
+- Do NOT keep the ship centered with large empty margins.
+- Scale the ship background vertically so it occupies most of the available height.
+- Maintain aspect ratio (no distortion), but allow more vertical presence.
+
+Goal:
+- The ship reads as a tall vessel from top (cockpit) to bottom (engine bay).
+
+---
+
+### 3) REPOSITION ROLE SLOTS TO USE NEW HEIGHT
+
+With the taller ship:
+- Spread role slots further apart vertically.
+- Use the additional height to:
+  - Increase distance between top/mid/bottom rows
+  - Reduce visual congestion
+
+Rules:
+- Do NOT shrink or move tiles closer together.
+- Prefer spreading DOWNWARD rather than sideways.
+- Ensure no overlaps at >= 1280px width.
+
+---
+
+### 4) PUSH LOWER SECTIONS DOWN
+
+Active Capabilities and Set Bonuses must sit BELOW the ship canvas:
+- No overlap with the ship
+- No cards floating up into ship space
+- It’s fine if they are far below the fold
+
+---
+
+### 5) WHAT NOT TO CHANGE
+
+- Do NOT change avatar size
+- Do NOT change tile internal layout
+- Do NOT change Mission Status card
+- Do NOT add new UI elements
+
+This is a pure canvas height + vertical spacing change.
+
+---
+
+### ACCEPTANCE CRITERIA
+
+This task is complete when:
+- The ship is visibly taller and more dominant
+- Crew slots have more vertical breathing room
+- No overlaps occur
+- The ship feels like a full system diagram, not a compressed card
+- Lower sections are clearly separated below the ship

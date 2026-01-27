@@ -1,0 +1,308 @@
+# Arclo Dev Instructions: Change Governance + Knowledge Base Validation + Cadence Control
+Owner: Engineering
+Priority: P0 (Safety + Trust + SEO Stability)
+Scope: All agents, all deployments, all websites
+
+## Objective
+Implement a platform-wide governance layer that:
+1) Logs every proposed/queued/applied/rolled-back change from every agent
+2) Validates every change against a versioned Knowledge Base (best practices + policy)
+3) Enforces update cadence (cooldowns + deploy windows) to prevent over-updating
+4) Reduces regressions via pre/post snapshots and rollback readiness
+
+Do NOT rebuild UI pages; add the plumbing + minimal UI surfaces to Mission Control.
+
+---
+
+## 1) Build a Central Change Log (Single Source of Truth)
+### 1.1 Create DB tables (or collections)
+**Table: `changes`**
+Required columns:
+- `change_id` (uuid, PK)
+- `website_id` (uuid, indexed)
+- `agent_id` (string, indexed) // e.g., "crawl", "performance", "keywords", "content"
+- `change_type` (enum) // content|technical|performance|config
+- `scope` (enum) // single_page|template|sitewide
+- `affected_urls` (json array)
+- `description` (text) // plain-English
+- `reason` (text) // why recommended
+- `trigger` (enum) // scheduled_run|manual|alert
+- `confidence_score` (float 0..1)
+- `risk_level` (enum) // low|medium|high
+- `knowledge_pass` (bool)
+- `policy_pass` (bool)
+- `conflicts_detected` (bool)
+- `cadence_pass` (bool)
+- `cadence_block_reason` (text, nullable)
+- `status` (enum) // proposed|queued|applied|rolled_back|skipped
+- `created_at` (timestamp)
+- `queued_at` (timestamp nullable)
+- `applied_at` (timestamp nullable)
+- `rolled_back_at` (timestamp nullable)
+- `metrics_before` (json nullable)
+- `metrics_after` (json nullable)
+- `deploy_window_id` (uuid nullable)
+
+**Table: `deploy_windows`**
+- `deploy_window_id` (uuid, PK)
+- `website_id` (uuid, indexed)
+- `theme` (string) // e.g. "Technical Cleanup"
+- `scheduled_for` (timestamp)
+- `status` (enum) // scheduled|executed|rolled_back|canceled
+- `created_at` (timestamp)
+
+**Table: `deploy_window_changes`** (join)
+- `deploy_window_id`
+- `change_id`
+
+### 1.2 Add a Change Log SDK/helper
+Create a small helper module used by ALL agents:
+- `logProposedChange(...) -> change_id`
+- `markValidated(change_id, validation_result)`
+- `markQueued(change_id, deploy_window_id)`
+- `markApplied(change_id, metrics_after)`
+- `markSkipped(change_id, reason)`
+- `markRolledBack(change_id, reason)`
+
+Hard rule:
+> No agent may call the executor / apply a change without first creating a `changes` row.
+
+---
+
+## 2) Implement a Knowledge Base Validator (Best Practices Gate)
+### 2.1 Create KB storage + versioning
+**Table: `kb_rules`**
+- `rule_id` (string, PK)
+- `version` (int)
+- `category` (enum) // cadence|content|technical|indexing|performance|compliance
+- `description` (text)
+- `severity` (enum) // low|medium|high
+- `action` (enum) // allow|warn|block
+- `conditions` (json) // simple condition schema (see below)
+- `created_at` (timestamp)
+- `active` (bool)
+
+Condition schema (keep simple v1):
+- match by `change_type`, `scope`, `website_industry` (optional), `url_pattern` (optional)
+
+Example:
+```json
+{
+  "change_type": "technical",
+  "scope": "sitewide"
+}
+
+2.2 Build validator service/module
+
+Function:
+	•	validateChange(change, website_context) -> { pass|warn|block, reasons[], rule_hits[] }
+
+Rules:
+	•	block => cannot be queued for auto-apply
+	•	warn => allowed but should reduce confidence or priority
+	•	allow => proceed
+
+Persist results to changes:
+	•	knowledge_pass true/false
+	•	policy_pass true/false (policy can be same engine with different category)
+	•	conflicts_detected (if rules contradict or multiple high-sev warnings)
+
+2.3 Enforcement point
+
+The ONLY path from proposed -> queued goes through:
+	1.	Knowledge/policy validation
+	2.	Cadence validation
+	3.	Deploy window assignment
+
+⸻
+
+3) Add Cadence Control + Cooldowns (SEO Stability)
+
+3.1 Config defaults (per website)
+
+Add to website settings:
+	•	max_deploys_per_week default 2
+	•	cooldowns JSON default:
+	•	content_refresh_days: 7
+	•	title_meta_days: 14
+	•	template_layout_days: 21
+	•	technical_indexing_days: 14
+	•	performance_days: 7
+
+3.2 Cadence checker module
+
+Function:
+	•	checkCadence(website_id, proposed_change) -> { pass: bool, reason?: string, next_eligible_at?: timestamp }
+
+Implementation:
+	•	Query changes (status applied/queued) for the same website
+	•	Determine last applied time for:
+	•	same change_type
+	•	same scope
+	•	page/template/sitewide overlap
+	•	If within cooldown: fail cadence
+	•	Also enforce weekly deploy count (rolling 7 days)
+
+Persist results:
+	•	cadence_pass
+	•	cadence_block_reason if blocked
+	•	If blocked: status = skipped with reason “Cooldown/Stabilization”
+
+3.3 Stabilization mode (optional v1, recommended)
+
+Auto-enable stabilization mode when:
+	•	A sitewide/template change was applied in last N days
+	•	OR regression risk is high
+
+When stabilization mode active:
+	•	Only allow low-risk fixes (e.g., 404 fix) and block anything else automatically
+
+⸻
+
+4) Deploy Windows (Batching)
+
+4.1 Create deploy window scheduler
+
+Instead of applying immediately:
+	•	Queue changes into a deploy_window grouped by:
+	•	website_id
+	•	theme (derived from change_type/scope)
+	•	scheduled_for time
+
+Default schedule:
+	•	1–2 windows per week per site
+	•	If user triggers manual run, still add to next window unless “emergency” (future)
+
+4.2 Window assignment logic
+
+Function:
+	•	assignToDeployWindow(website_id, change) -> deploy_window_id
+
+Rules:
+	•	If no open window exists this week, create one
+	•	Group technical/performance separately from content if possible
+	•	Never mix high-risk with low-risk in same window (simple v1: create separate window when risk_level=high)
+
+⸻
+
+5) Executor Integration (Safe Apply)
+
+5.1 Modify executor to require change_id
+
+Any apply call must include:
+	•	change_id
+	•	website_id
+
+Executor must:
+	•	Refuse execution if changes.status != queued
+	•	Write back applied_at, metrics_after, status=applied
+
+5.2 Pre/Post metrics snapshots
+
+Before executing a deploy window:
+	•	capture metrics_before for the window (store on each change or on window)
+
+Minimum metrics snapshot (v1):
+	•	GSC clicks/impressions/position (if connected)
+	•	CWV statuses for key URLs (if available)
+	•	If not connected, store { "available": false }
+
+After execution:
+	•	store metrics_after with same fields (even if placeholder)
+
+⸻
+
+6) Regression Monitoring (Flag, Don’t Auto-Rollback Yet)
+
+6.1 Regression rule engine
+
+Function:
+	•	evaluateRegression(window_id) -> { at_risk: bool, reasons[] }
+
+Simple heuristics (configurable):
+	•	impressions drop > 15% week-over-week after deploy
+	•	clicks drop > 15%
+	•	CWV worsens on homepage/top page (status drops)
+
+6.2 Actions
+
+If at_risk:
+	•	mark deploy window as executed but flagged
+	•	create alert record for Mission Control
+	•	DO NOT auto rollback in v1 (create “recommended rollback” CTA later)
+
+⸻
+
+7) Minimal Mission Control UI Surfacing (No Rebuild)
+
+Add minimal panels to the existing Mission Control page:
+	1.	Recent Changes (last 10 applied/queued)
+	2.	Upcoming Deploy Window (scheduled_for + list of changes)
+	3.	Skipped Changes (with cadence_block_reason)
+	4.	Stabilization Status (e.g., “Stabilization mode active until DATE”)
+
+Required APIs:
+	•	GET /api/websites/:website_id/changes?limit=...
+	•	GET /api/websites/:website_id/deploy-windows?status=scheduled
+	•	GET /api/websites/:website_id/alerts
+
+⸻
+
+8) API Endpoints (Required)
+	•	POST /api/changes/propose
+	•	used by agents to create proposed changes
+	•	POST /api/changes/:change_id/validate
+	•	runs KB + cadence validation, returns result
+	•	POST /api/changes/:change_id/queue
+	•	assigns to deploy window
+	•	POST /api/deploy-windows/:deploy_window_id/execute
+	•	executes window (manual trigger for now)
+	•	GET /api/websites/:website_id/changes
+	•	GET /api/websites/:website_id/deploy-windows
+	•	GET /api/kb/rules (admin only if needed)
+
+Note: Agents can also call internal modules directly; APIs exist for UI and debugging.
+
+⸻
+
+9) Analytics Events (Required)
+
+Emit:
+	•	change_proposed
+	•	change_blocked_kb
+	•	change_blocked_cadence
+	•	change_queued
+	•	deploy_window_executed
+	•	deploy_flagged_regression
+
+⸻
+
+10) Acceptance Tests (QA)
+	1.	Agent proposes a change -> changes row created with status proposed.
+	2.	Validation runs:
+	•	If KB blocks -> status becomes skipped, reason stored.
+	•	If cadence blocks -> status becomes skipped, reason stored.
+	•	If pass -> status becomes queued and deploy_window created/assigned.
+	3.	Executor refuses to apply a change not in queued status.
+	4.	Deploy window execution:
+	•	marks changes as applied
+	•	writes metrics snapshots (or placeholders)
+	5.	Mission Control shows:
+	•	queued/applied/skipped changes with reasons
+	6.	No more than max_deploys_per_week windows execute for a site.
+
+⸻
+
+11) Explicit Implementation Guidance (What to do first)
+	1.	Implement DB tables + Change Log helper
+	2.	Wire executor to require change_id and update status
+	3.	Implement cadence checker
+	4.	Implement KB rules store (start with 8–12 rules)
+	5.	Implement deploy windows batching
+	6.	Add Mission Control panels + endpoints
+
+Do not attempt advanced rollback automation until the above is stable.
+
+⸻
+
+

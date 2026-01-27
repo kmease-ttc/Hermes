@@ -1,0 +1,241 @@
+Yes — you can (and should) automate this. What you’re doing manually is basically: **(1) can Hermes connect**, **(2) does the worker respond**, **(3) does a tiny “smoke run” produce the expected outputs**, and **(4) does Hermes record the run so the dashboard updates**.
+
+Below are **developer instructions** to add automated testing that runs on demand and (optionally) on a schedule, and produces a single “QA run” report you can trust.
+
+---
+
+# Developer Instructions: Automated Integration Testing for Hermes + Workers
+
+## Goal
+
+Replace manual troubleshooting with:
+
+* A single **“Run QA”** button (and optional schedule)
+* Automated tests for every service:
+
+  * Connection (health/auth)
+  * Smoke run (minimal work)
+  * Output contract (expected vs actual outputs)
+  * UI truth (service_runs written + dashboard updated)
+* A clear report:
+
+  * Pass / Fail / Skipped
+  * Why
+  * What to fix
+
+---
+
+## 1) Create a dedicated “QA Runs” concept
+
+### DB tables
+
+**A) `qa_runs`**
+
+* `id`
+* `site_id` (nullable; run can be global or per-site)
+* `trigger` (`manual|scheduled|deploy`)
+* `started_at`, `finished_at`
+* `status` (`pass|fail|partial`)
+* `summary` (text)
+* `results_json` (jsonb) – aggregate
+
+**B) `qa_run_items`**
+
+* `id`
+* `qa_run_id`
+* `service_slug`
+* `test_type` (`connection|smoke|contract`)
+* `status` (`pass|fail|skipped`)
+* `duration_ms`
+* `details` (text)
+* `metrics_json` (jsonb)
+* `missing_outputs` (text[])
+
+This keeps QA separate from production `service_runs` while still linking.
+
+---
+
+## 2) Add a QA runner endpoint
+
+### Endpoint
+
+`POST /api/qa/run`
+
+Body:
+
+```json
+{
+  "siteId": "uuid",
+  "mode": "connection_only" | "smoke" | "full"
+}
+```
+
+Returns:
+
+* `qa_run_id`
+* initial status
+
+Add:
+`GET /api/qa/runs/:id` to fetch results.
+
+---
+
+## 3) Implement three test types (matches your manual workflow)
+
+### A) Connection Test (fast)
+
+For every **built** service:
+
+* Load secret config from Bitwarden (per your mapping)
+* If secret missing → **skipped** with reason
+* If remote worker:
+
+  * call `GET {base_url}/health` with `X-API-Key`
+  * pass if 200
+  * fail if 401/403/timeout
+* If internal connector (Google):
+
+  * check oauth tokens exist
+  * run a tiny API call (properties list or 1-row report)
+
+Output:
+
+* status pass/fail/skipped
+* latency, http status
+
+### B) Smoke Test (small work)
+
+For services that support it:
+
+* Crawler: crawl 1 URL or “shallow=10”
+* SERP worker: query `/summary?site=domain` or run scan for 1 keyword
+* Vitals: run PSI for homepage only
+* Backlinks: fetch counts only
+* Notifications: send test email to ADMIN_EMAILS
+* Content QA: validate 1 page or a tiny text sample
+
+Important:
+
+* Smoke tests should never cost much
+* Add `mode=smoke` / `limit=5` / `dry_run=true` conventions across workers
+
+### C) Contract Test (expected vs actual outputs)
+
+After smoke:
+
+* Compare the worker’s returned output slugs to `expectedOutputs` from the service catalog
+* Record missing slugs, not just counts
+
+---
+
+## 4) Make QA update the dashboard “truth” automatically
+
+This is critical: the dashboard is run-based.
+
+When QA tests a service, Hermes must write a normal `service_run` too (or at least update the “last run” fields), so the Integrations page immediately reflects reality.
+
+Rule:
+
+* Every QA smoke test creates a `service_run` with:
+
+  * status = success/partial/failed
+  * outputs_json.actualOutputs
+  * metrics_json
+  * summary
+
+That fixes the “connection passed but summary says never ran” class of problems.
+
+---
+
+## 5) Add a “Run QA” button in Integrations
+
+UI changes:
+
+* Add a button at top: **Run QA**
+* Mode dropdown:
+
+  * Connection only (fast)
+  * Smoke (recommended)
+  * Full (later)
+
+UI shows:
+
+* progress (running items)
+* results table
+* links to failing services
+
+---
+
+## 6) (Optional) Schedule it daily and/or on deploy
+
+### Scheduled daily check
+
+If you already have the Scheduler/Job Runner:
+
+* Add a daily QA job:
+
+  * connection-only daily
+  * smoke weekly
+
+### Run on deploy
+
+In Replit:
+
+* Add `npm run qa:connection` in your publish pipeline
+* Fail publish only if core dependencies fail (DB/Bitwarden), not external APIs
+
+---
+
+## 7) Minimum worker endpoints you should standardize (so QA is easy)
+
+For each worker app, implement:
+
+* `GET /health` → 200 + version/build
+* `POST /health/test` → runs a lightweight check and returns:
+
+  * `actualOutputs`
+  * `metrics`
+  * `status`
+
+Or for async workers:
+
+* `POST /run?mode=smoke` → 202 jobId
+* `GET /status/:jobId` → done/pending + outputs
+
+This is what makes automation reliable.
+
+---
+
+## 8) What “pass” means (so results aren’t meaningless)
+
+* **Connection pass**: health reachable + auth ok
+* **Smoke pass**: returned something meaningful
+* **Contract pass**: returned required output slugs (or partial if missing)
+* **Overall pass**: no critical services failed
+
+Critical services list for your setup (recommended):
+
+* Google Data Connector (when OAuth complete)
+* Crawl & Render
+* Web Vitals
+* SERP
+* Audit Log / Observability
+* Notifications (optional but nice)
+
+---
+
+## 9) What you get out of this (what you’re asking for)
+
+You click one button, and it tells you:
+
+* Which services are wired correctly
+* Which ones are reachable/authenticated
+* Which ones are producing incomplete outputs
+* Which ones are slow or timing out
+* Exactly what to fix next
+
+No more “manual Replit agent loop” for basic verification.
+
+---
+
+If you want a super fast first version: implement **Connection-only QA** first (health/auth/secret presence + writes service_runs). That alone will remove 80% of the painful manual debugging.

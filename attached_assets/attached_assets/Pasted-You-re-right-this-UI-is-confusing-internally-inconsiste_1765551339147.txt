@@ -1,0 +1,213 @@
+You’re right — this UI is confusing, internally inconsistent, and violates several basic UX principles, especially for a “prime-time” onboarding moment.
+
+Below are clear, copy-pasteable instructions you can hand directly to your developer. This is not a redesign fantasy; it’s a fix plan grounded in best practices and aligned with the rest of your product.
+
+⸻
+
+Instructions: Fix the “Day 1 of 7 / Today’s Focus” UI
+
+High-Level Diagnosis (for context)
+
+This component fails because it:
+	•	mixes time-based onboarding with task-based onboarding
+	•	hides critical actions behind “future days”
+	•	introduces artificial gating (“Unlocks Day 2”) that makes users feel blocked
+	•	uses visual styles that don’t match the rest of the dashboard
+	•	competes with the actual primary actions already on the page
+
+Result: confusion, hesitation, and distrust.
+
+This is especially bad for non-technical SMB users.
+
+⸻
+
+What This Section Should Be
+
+This section should answer one question only:
+
+“What should I do next, right now, to get my site live and valuable?”
+
+Not:
+	•	a course
+	•	a schedule
+	•	a drip program
+	•	a tutorial
+
+⸻
+
+Core Changes (Must Do)
+
+1. Delete the “Day 1 of 7” Concept Entirely
+
+Remove:
+	•	“Day 1 of 7”
+	•	“Unlocks Day 2”
+	•	“View full schedule”
+	•	Any time-based gating
+
+Reason:
+Time-based onboarding makes users feel controlled and confused. Task-based onboarding gives agency and clarity.
+
+⸻
+
+2. Replace With a Simple “Next Steps” Card
+
+Rename the section to:
+
+“Next steps to get your site live”
+
+Subtext:
+“Complete these when you’re ready. You can come back anytime.”
+
+No days. No countdowns. No unlocks.
+
+⸻
+
+3. Use the Same Visual Language as the Rest of the Dashboard
+
+Styling rules:
+	•	White or neutral card background (match other cards)
+	•	Same border radius
+	•	Same shadow depth
+	•	Same typography scale
+	•	Same primary button style (purple)
+
+Do not introduce new colors (e.g., orange CTA here but purple elsewhere).
+
+⸻
+
+4. Flatten the Content Into Actionable Tasks
+
+Replace the current structure with 3–5 clear tasks, each with:
+	•	icon
+	•	title
+	•	one-line explanation
+	•	single CTA
+
+Example structure:
+
+Review your site
+“Check your AI-generated website and request changes if needed.”
+[View Preview]
+
+Publish your site
+“Make your site live so customers can find you.”
+[Publish]
+
+Connect a domain
+“Use your own domain name for a professional look.”
+[Connect domain]
+
+Optional: Improve visibility
+“Connect Google tools so we can track and improve performance.”
+[Have Arclo do this]
+
+⸻
+
+5. Remove Duplicate CTAs
+
+Right now you have:
+	•	“View Preview” in this card
+	•	“Preview” buttons on site cards
+	•	A notification banner with another CTA
+
+Rules:
+	•	Each primary action should appear once per screen
+	•	If the site is “Preview Ready,” rely on the site card CTA
+	•	The onboarding card should guide, not duplicate
+
+If “View Preview” already exists below → remove it here.
+
+⸻
+
+6. Kill the Notification Banner at the Bottom
+
+This banner:
+
+“Your site is ready! Take a look…”
+
+Should be:
+	•	Either removed entirely
+	•	Or shown once, dismissible forever
+
+Never show it persistently once preview has been viewed.
+
+Persistent banners signal broken state or nagging.
+
+⸻
+
+7. Align Copy With Your “Managed Service” Positioning
+
+Avoid language that implies:
+	•	the user must do everything
+	•	the user must understand steps
+	•	the user must follow a program
+
+Replace with:
+	•	“We’ll handle this for you”
+	•	“You can do this now or later”
+	•	“Nothing breaks if you skip”
+
+Example improvement:
+
+Instead of:
+
+“Check out your AI-generated website and make sure everything looks right.”
+
+Use:
+
+“Review your site. If you want changes, just tell us and we’ll handle them.”
+
+⸻
+
+8. Tie This Section to Real State (Not Time)
+
+Each task should:
+	•	show completed / not completed
+	•	reflect actual system state
+	•	disappear once done
+
+No fake progress bars.
+
+Progress should be:
+	•	task-based
+	•	honest
+	•	reversible
+
+⸻
+
+What to Remove Entirely
+
+Tell the developer to delete, not refactor:
+	•	“Day X of Y”
+	•	“Unlocks Day X”
+	•	“View full schedule”
+	•	Any time-based sequencing
+	•	Any onboarding logic not tied to real system state
+
+⸻
+
+Acceptance Criteria (for You)
+
+This section is fixed when:
+	•	A cold user immediately understands what to do next
+	•	Nothing feels blocked or delayed
+	•	The UI visually matches the rest of the dashboard
+	•	There is exactly one clear primary action
+	•	Users feel in control, not trained
+
+If you wouldn’t explain this section verbally to a friend, it’s still wrong.
+
+⸻
+
+One-Line Guidance for the Developer
+
+“Replace the time-based onboarding (‘Day 1 of 7’) with a simple, task-based ‘Next steps’ card that uses the same styling as the rest of the dashboard, removes artificial gating, and focuses on immediate actions that get the site live.”
+
+⸻
+
+If you want, next I can:
+	•	sketch the exact component structure (props, states, conditions), or
+	•	do a full cold-user critique of the entire dashboard layout
+
+Just say which.

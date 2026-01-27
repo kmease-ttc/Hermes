@@ -1,0 +1,292 @@
+Got it. I’ll regenerate this cleanly and **tighter**, with the crew visibility problem fully solved and without over-engineering it.
+
+Below is a **reframed, end-to-end recommendation** for Mission Control that directly addresses:
+
+* First-time confusion
+* Crew visibility gaps
+* “I didn’t know I needed to hire that”
+* Keeping it simple without killing the crew concept
+
+---
+
+# Regenerated Recommendations: Mission Control + Crew Visibility
+
+## Core principle (this is the anchor)
+
+**Users should never have to infer that something exists.
+They should *see what’s missing* before they’re told to act.**
+
+Crew is not a separate concept — it’s a **capability unlock system**.
+
+---
+
+## 1. Mission Control should be a “capabilities dashboard,” not a status dashboard
+
+Right now Mission Control answers:
+
+> “What’s happening?”
+
+It needs to first answer:
+
+> “What *can* happen vs what *isn’t yet possible*?”
+
+That’s the missing piece.
+
+---
+
+## 2. Show the *full system* — but with progressive disclosure
+
+### Do NOT hide metrics because crew isn’t hired
+
+### DO show them as **locked / unavailable**
+
+This solves the “I didn’t know I needed to hire crew” problem immediately.
+
+---
+
+## 3. Pattern: Locked Metrics + Explicit Unlock CTA
+
+### Example: Key Metrics section (reworked)
+
+Instead of conditionally rendering metrics, **always render all of them**.
+
+#### For metrics with required crew not hired:
+
+* Show the metric tile
+
+* Gray it out (desaturated, blurred number)
+
+* Replace the value with:
+
+  > “Crew required”
+
+* Add a small inline label:
+
+  > “Requires: Lookout (SERP Tracking)”
+
+* Clicking the tile opens:
+
+  * What this metric does
+  * Why it matters
+  * One clear CTA: **Hire required crew**
+
+---
+
+### Concrete examples
+
+#### Monthly Sessions
+
+* If analytics crew not hired:
+
+  * Value: `—`
+  * Status: Locked
+  * Subtext:
+
+    > “Hire Analytics crew to track traffic”
+
+Button inside tile:
+**Hire Popular (Analytics)**
+
+---
+
+#### Market SOV / Competitor Metrics
+
+* If competitive snapshot crew not hired:
+
+  * Value: `—`
+  * Subtext:
+
+    > “Competitor monitoring not enabled”
+
+Button:
+**Hire Natasha (Competitive Intelligence)**
+
+---
+
+#### Conversion Rate
+
+* If conversion tracking not configured:
+
+  * Value blurred
+  * Subtext:
+
+    > “Requires analytics + goal setup”
+
+Button:
+**Complete Setup**
+
+---
+
+## 4. Crew Summary needs to become “Crew Coverage”
+
+Rename **Crew Summary → Coverage**
+
+This reframes crew from characters into **system completeness**.
+
+### Coverage card structure
+
+#### Section: “System Coverage”
+
+Show all core domains:
+
+* Analytics & Signals
+* SERP Tracking
+* Competitive Intelligence
+* Technical SEO
+* Content Intelligence
+* Learnings / Memory
+
+Each one has a status:
+
+* ✅ Active
+* ⚠️ Partial
+* ⛔ Not enabled
+
+Each row has:
+
+* Short description
+* Crew responsible
+* Inline CTA if missing
+
+Example:
+
+**Competitive Intelligence**
+Status: ⛔ Not enabled
+Crew: Natasha
+CTA: **Hire Natasha**
+
+This removes the need to ever “go check the crew page.”
+
+---
+
+## 5. Crew Page becomes optional, not required
+
+The Crew page should still exist — but it becomes:
+
+> “Advanced management”
+> not
+> “Required discovery”
+
+Most users should hire crew **from Mission Control**.
+
+Crew page is for:
+
+* Details
+* Backstory
+* Power users
+* Reconfiguration
+
+---
+
+## 6. Fix the “Fix Everything” button confusion
+
+Right now:
+
+> Fix Everything (14)
+
+But “everything” is undefined.
+
+### Change behavior:
+
+If required crew is missing:
+
+* Button becomes disabled
+* Tooltip / inline message:
+
+  > “Some fixes require additional crew”
+
+CTA below:
+**Hire required crew to unlock all fixes**
+
+This reinforces causality.
+
+---
+
+## 7. Missions should also show locked steps
+
+In the **Missions** section:
+
+* Show the full mission chain
+* Gray out steps that can’t run yet
+* Label them clearly:
+
+> “Requires SERP Tracking”
+
+This trains the user:
+
+> “Crew → Capabilities → Outcomes”
+
+without explaining it.
+
+---
+
+## 8. Language cleanup (important)
+
+Avoid:
+
+* “Hire”
+* “Agents”
+* “Export Fix Pack” (too implementation-y)
+
+Prefer:
+
+* **Enable**
+* **Unlock**
+* **Activate**
+
+Examples:
+
+* “Enable Competitive Intelligence”
+* “Unlock SERP Tracking”
+* “Activate Analytics Monitoring”
+
+You can still *theme* it as crew visually, but **language must stay operational**.
+
+---
+
+## 9. First-time user flow (simplified)
+
+When landing the first time:
+
+1. Mission Control loads
+2. User sees:
+
+   * Metrics (some locked)
+   * Coverage gaps
+   * Clear “Enable” buttons
+3. User clicks enable
+4. Crew is hired implicitly
+5. Metrics unlock
+6. System feels alive
+
+No scavenger hunt. No mental model gap.
+
+---
+
+## 10. Why this preserves your vision (important)
+
+You do **not** lose:
+
+* The crew concept
+* The charm
+* The system depth
+
+You **gain**:
+
+* Discoverability
+* Intuition
+* Zero explanation required
+
+Crew stops being a *concept to learn*
+and becomes a *capability you unlock*.
+
+---
+
+If you want, next I can:
+
+* Rewrite the **exact UI copy** for locked metrics
+* Design the **Coverage card layout**
+* Propose **visual states** (active / partial / locked)
+* Or write **implementation instructions for your dev team** (component-level)
+
+Just tell me which one to do next.

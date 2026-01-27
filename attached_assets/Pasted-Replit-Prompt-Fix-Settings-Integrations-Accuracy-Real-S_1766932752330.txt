@@ -1,0 +1,135 @@
+Replit Prompt: Fix Settings + Integrations Accuracy (Real Status, Actionable Errors, Working Buttons, Data Source Truth)
+
+Goal
+The Settings + Integrations experience needs to be accurate, debuggable, and actionable. Right now it shows incorrect states (e.g., Bitwarden “not configured” even though it’s connected), unhelpful errors (“vault connection failed” with no guidance), and buttons that throw errors without any error detail. Also “Data sources: no data” is misleading when data is clearly being returned elsewhere.
+
+High-level requirement
+Stop using static/placeholder/config-only assumptions. The UI must reflect the REAL runtime status by calling the backend and showing:
+
+* current config presence (which env vars are set)
+* connectivity tests (Bitwarden, GA4, GSC, Google Ads, DB, workers)
+* last successful sync time and last error (with error code + message)
+* exactly what the user must do next when something fails
+
+Scope
+
+* Settings page
+* Integrations page (buttons + status panels + data source summary)
+* Shared “connection test” components + API endpoints that power them
+
+Part 1 — Create a single source of truth “System Health” API
+
+1. Implement a backend endpoint (or expand existing) that returns consolidated health:
+   GET /api/system/health (or /api/settings/health)
+
+Return JSON shaped like:
+{
+"bitwarden": {
+"configured": true/false,
+"connected": true/false,
+"details": { "orgIdPresent": true, "projectIdPresent": true, "tokenPresent": true },
+"lastCheckedAt": "...",
+"lastSuccessAt": "...",
+"lastError": { "code": "...", "message": "...", "hint": "...", "raw": "..." }
+},
+"database": {...},
+"google": {
+"oauthConfigured": true/false,
+"ads": {...},
+"ga4": {...},
+"gsc": {...}
+},
+"workers": {
+"serp": {...},
+"decay": {...},
+"backlinks": {...},
+...
+},
+"dataSources": {
+"ga4": { "hasData": true/false, "lastDataAt": "...", "sampleCount": n },
+"gsc": {...},
+"ads": {...},
+"clarity": {...}
+}
+}
+
+Important: “configured” must be based on actual env var presence + required settings, not guesswork.
+“connected” must be based on a real ping/test call (or last known good + recent validation).
+
+Part 2 — Fix Settings page to use real health data
+2) Settings page must call /api/system/health and render real states:
+
+* If Bitwarden is connected, show “Connected” (not “not configured”).
+* If any environment variables are missing, show which keys are missing (friendly list).
+* Replace vague copy like “environment variables error” with exact missing items and a link/button to the section that configures them.
+
+3. Replace “Vault connection failed” with actionable guidance
+   When a Bitwarden test fails, show:
+
+* Error code + short message (human readable)
+* “What to do next” steps, based on the failure type:
+
+  * Missing token → “Add BWS_ACCESS_TOKEN secret”
+  * Missing org/project id → “Set BWS_ORGANIZATION_ID / BWS_PROJECT_ID”
+  * Permission error → “Verify token has access to org/project”
+  * Network error → “Check outbound access / try again”
+    Also include a “Copy required keys” button that copies the exact keys the user must set.
+
+Part 3 — Fix Integrations page buttons so they do something and errors are visible
+4) Every action button must be wired to a real API call and show feedback:
+Buttons like “Test Connection”, “Run QA”, “Run Smoke Tests”, per-service actions, etc. must:
+
+* call an API endpoint
+* show loading state
+* show success or failure toast
+* if failure: render an error panel with:
+
+  * error code
+  * message
+  * hint
+  * request id / timestamp
+  * any missing configuration keys detected
+
+5. Standardize error handling
+   Create a shared error format from backend:
+   {
+   "error": {
+   "code": "WORKER_UNREACHABLE",
+   "message": "Google Data Connector returned 404: API endpoint not found",
+   "hint": "Verify the worker base URL and ensure it is deployed and running",
+   "details": {...},
+   "requestId": "..."
+   }
+   }
+   Frontend must render this and never swallow errors silently.
+
+Part 4 — Fix “Data sources: no data” to reflect reality
+6) Data Sources summary must come from real ingestion signals
+Replace any “no data” placeholders with computed truth:
+
+* If GA4 metrics are being displayed on Mission Control, then GA4 “hasData” must be true.
+* If GSC queries are returned anywhere, then GSC “hasData” true.
+  Implement this by:
+* Recording last_success_at and last_row_count for each connector (in DB)
+* Health endpoint returns hasData based on recent successful fetch + row_count > 0
+
+Part 5 — Make it impossible for UI to drift out of sync again
+7) Remove duplicated logic
+
+* Settings and Integrations must use the same health endpoint and the same interpretation rules.
+* Any “configured/not configured” UI state must be derived ONLY from that endpoint.
+
+Acceptance criteria
+
+* If Bitwarden is actually connected (as shown in Platform Dependencies), Settings shows “Connected” and does not claim misconfiguration.
+* Clicking “Test Connection” shows a real result, and failures always explain exactly what to set up (keys/steps).
+* No button on Integrations throws a blank error; all errors show code/message/hint.
+* “Data sources: no data” only appears when data truly hasn’t been ingested; otherwise it shows last sync + sample count.
+* All pages stay consistent because they share the same backend truth.
+
+Do this now
+
+1. Implement/expand /api/system/health
+2. Update Settings page to use it
+3. Wire all Integrations buttons to real endpoints with proper error rendering
+4. Update data source “hasData” logic to use DB-backed last_success + counts

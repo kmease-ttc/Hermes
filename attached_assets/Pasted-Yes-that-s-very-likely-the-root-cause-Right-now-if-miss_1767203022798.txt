@@ -1,0 +1,148 @@
+Yes — that’s *very* likely the root cause.
+
+Right now, if “mission completion” only exists as a toast + in-memory UI state, the app has **no durable source of truth** to answer:
+
+* “What was the last completed mission for this crew/site?”
+* “Should this mission still be in Next Actions?”
+* “What should show in Recently Completed after a refresh?”
+
+So the UI keeps rendering the same Next Action forever because nothing is being persisted and re-read.
+
+Here’s exactly how to **check** whether you already have storage (and if not, add the minimum viable version).
+
+---
+
+## What to check first
+
+1. **Is there already an audit/executions table?**
+   Search for any of these in your repo:
+
+* `mission_execution`, `executions`, `action_runs`, `crew_runs`
+* `audit_log`, `chronicle`, `activity_log`
+* drizzle schema entries related to missions/actions
+
+If you find one, the fix is probably just:
+
+* you’re not writing to it on success, or
+* the Missions widget isn’t reading from it.
+
+2. **Does the “Fix it” endpoint return a run id / persisted record?**
+   When you click Fix it, inspect the network response:
+
+* If it returns only `{ ok: true, message: "KBase updated..." }`, you have no durable identifier.
+* If it returns `{ executionId, completedAt }` etc., then storage exists and wiring is missing.
+
+3. **After refresh, does anything change?**
+   If “Recently Completed” disappears on refresh (or never appears), that’s the smoking gun: **no persistent read path**.
+
+---
+
+## Minimum viable storage design (the thing you’re describing)
+
+You don’t need “events + event bus” yet. You just need a durable “executions” record.
+
+### Table: `mission_executions` (or reuse Chronicle if it exists)
+
+Fields:
+
+* `id` (uuid)
+* `siteId` (string)
+* `crewId` (string)
+* `missionId` (string)
+* `status` (`success` | `failed`)
+* `summary` (string) — e.g. “KBase updated — 22 new insights”
+* `metadata` (json) — writtenCount, runId, etc.
+* `completedAt` (timestamp)
+
+This gives you everything you need to:
+
+* show **Recently Completed** (latest success by crew+site)
+* suppress spam (don’t show missions that have a success within a cooldown window)
+* show completion timestamp in the UI
+
+---
+
+## The simplest “fire event + capture event” pattern (without real events)
+
+Treat “Fix it succeeded” as the event. The capture is just a DB insert.
+
+### On successful Fix It (server-side)
+
+1. verify the action actually happened (for Socrates: writeVerified)
+2. insert into `mission_executions`
+3. return the inserted record to the UI
+
+### On page load (UI)
+
+Call:
+
+* `GET /api/missions/state?siteId=…&crewId=…`
+  That endpoint:
+* loads latest execution (Recently Completed)
+* computes Next Actions (filter out recently completed missions)
+
+That’s it. No message queue required.
+
+---
+
+## A Replit prompt to run *right now* to confirm the gap
+
+You are a senior full-stack engineer in this Replit project.
+
+Task: Verify whether mission completion is persisted anywhere, and if not, implement minimal DB-backed mission execution storage so the Missions widget can render “Recently Completed” and stop repeating completed actions.
+
+1. Confirm if persistence already exists
+
+* Search codebase for tables/models: mission_executions, action_runs, executions, chronicle, audit_log.
+* Check shared/schema.ts (drizzle) for anything related.
+* Identify any API endpoints that return mission/action execution history.
+
+2. Confirm what happens on “Fix it”
+
+* Find the Socrates mission “Review and categorize findings” handler.
+* Identify the endpoint it calls and inspect the response shape.
+* Add server-side logs to confirm whether any DB write occurs on success.
+
+3. If no persistence exists, implement minimum viable storage
+
+* Add a drizzle table mission_executions with:
+  id, siteId, crewId, missionId, status, summary, metadata(json), completedAt
+* Create:
+  POST /api/missions/execute  (wrap existing mission handlers; on success insert mission_executions row)
+  GET  /api/missions/state?siteId&crewId (returns nextActions + lastCompleted from DB)
+
+4. Wire the Missions widget to the new state endpoint
+
+* Update the shared Missions/MissionOverview component to show:
+
+  * NEXT ACTIONS from nextActions
+  * RECENTLY COMPLETED from lastCompleted (single item)
+* Do NOT implement full cooldown UX yet, but DO exclude the lastCompleted missionId from nextActions for now.
+
+5. Verification
+
+* Click Fix it once:
+
+  * execution row is inserted
+  * Recently Completed shows that item after refetch
+  * Next Actions no longer includes that same mission
+* Refresh page:
+
+  * Recently Completed still shows (persisted)
+  * Next Actions still filtered
+
+Deliverables:
+
+* File paths changed
+* Table name and columns
+* Endpoints added
+* Proof in logs / description that execution persists and survives refresh
+
+---
+
+If you run that, you’ll quickly find out which case you’re in:
+
+* **storage exists but not used**, or
+* **storage doesn’t exist yet**, which is why the UI can’t “remember” completion.
+
+If you paste the response body from the Fix It network call (just the JSON keys/shape, no secrets), I can tell you immediately whether persistence is already there or missing.

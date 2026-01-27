@@ -1,0 +1,218 @@
+Analysis Section – Visual Clarity, AI Insight, and Update Cadence Specs
+
+Objective
+Improve the Analysis section so anomalies (drops, spikes) are:
+
+1. Immediately readable (dates, values, averages, z-scores are visually distinct)
+2. Interpreted for the user (why this likely happened)
+3. Prescriptive (what to do next)
+4. Updated on a predictable cadence (daily, with manual override)
+
+This section should feel like **“incident analysis + recommendation”**, not raw stats.
+
+---
+
+## 1) Visual Formatting & Hierarchy (Critical)
+
+### 1.1 Stop Using Uniform Gray for Everything
+
+Right now, dates, values, averages, and z-scores visually blend together. That makes scanning hard.
+
+Implement a clear hierarchy:
+
+**Primary signal (what changed)**
+
+* Metric name (bold)
+* Percent change (large, colored)
+
+  * Red for negative
+  * Green for positive
+* Direction icon (↓ ↑)
+
+**Secondary context (why this matters)**
+
+* Absolute value (medium emphasis)
+* Time window (7d avg, 30d baseline)
+
+**Tertiary diagnostics (for power users)**
+
+* Z-score
+* Raw comparison values
+* Exact date
+
+### 1.2 Card Layout for Each Detected Drop
+
+Each “Detected Drop” card should follow this layout:
+
+A) Header Row
+
+* Metric name (e.g., “GSC Search Clicks”)
+* Status badge: Severe / Moderate / Mild
+* Date range (formatted clearly, e.g., “Dec 5–12, 2025”)
+
+B) Impact Row (most prominent)
+
+* “↓ 64.8% vs 7-day average”
+* Use large font + color
+
+C) Context Row (clearly labeled)
+
+* Current value: 537 clicks
+* Baseline (7-day avg): 1,525 clicks
+* Z-score: −3.78 (label this as “Anomaly score”)
+
+Do NOT abbreviate without labels. Always spell out what the number represents.
+
+---
+
+## 2) Plain-English Interpretation (Required)
+
+Below the metrics, add an **“AI Interpretation”** block.
+
+### 2.1 AI Interpretation Content
+
+This block should contain:
+
+* 1–2 sentences explaining the most likely cause
+* Written in plain English
+* No hedging without explanation
+
+Example:
+“Search clicks dropped sharply while impressions remained stable, suggesting a ranking or CTR issue rather than a demand drop. This often happens after SERP layout changes or title/meta mismatches.”
+
+### 2.2 How to Generate This
+
+For each detected anomaly:
+
+* Send a compact payload to ChatGPT (or internal LLM layer) containing:
+
+  * metric name
+  * percent change
+  * baseline window
+  * z-score
+  * related metrics (if available: impressions, rankings, indexation status)
+* Ask for:
+
+  * Likely cause (1–2 sentences)
+  * Confidence level (low / medium / high)
+
+Store the response so it doesn’t re-generate on every page load.
+
+---
+
+## 3) Suggested Action Block (Required)
+
+Below the interpretation, add a **“Suggested Action”** section.
+
+### 3.1 Action Format
+
+* One primary action (bold)
+* Optional secondary checks (bullet list, max 2)
+
+Example:
+Suggested Action
+Primary: Review recent ranking changes for top 5 affected queries
+Also check:
+
+* Title/meta changes in the last 7 days
+* Indexing or crawl errors for ranking pages
+
+### 3.2 Source of Actions
+
+Actions can be:
+
+* Rule-based (if X metric drops, suggest Y)
+* Augmented by LLM (rewrite into human language)
+
+Do not show more than 3 actions total per anomaly.
+
+---
+
+## 4) Update Cadence & Re-Runs
+
+### 4.1 Default Schedule
+
+* Run Analysis **once per day per site**
+* Recommended time: early morning (e.g., 2–4am site local or UTC)
+
+### 4.2 What Happens on Each Run
+
+* Pull fresh metrics
+* Detect anomalies (using z-score + thresholds)
+* For *new or changed* anomalies:
+
+  * Generate / refresh AI interpretation + actions
+* Store results as a dated “Analysis Report”
+
+### 4.3 Manual Re-Run
+
+* Add a “Re-run Analysis” button
+* Button:
+
+  * Recomputes metrics
+  * Re-generates AI insights
+  * Overwrites today’s report only
+
+---
+
+## 5) Data Model Additions (Analysis Output)
+
+Add an analysis_results table (or equivalent):
+
+* id
+* siteId
+* analysisDate
+* metricType (e.g., gsc_clicks)
+* window (e.g., 7d)
+* currentValue
+* baselineValue
+* percentChange
+* zScore
+* severity (mild/moderate/severe)
+* aiExplanation (text)
+* aiSuggestedAction (text or array)
+* createdAt
+
+This allows:
+
+* Historical incident review
+* Trend analysis of recurring issues
+* Confidence building (“we fixed this last time”)
+
+---
+
+## 6) UX Copy & Labeling Rules
+
+* Always label averages: “7-day average”, “30-day baseline”
+* Rename “Z-Score” to:
+
+  * “Anomaly Score (Z)”
+  * Add tooltip: “How unusual this change is compared to recent history”
+* Dates must be human-readable:
+
+  * “Dec 12, 2025” not “2025-12-12”
+
+---
+
+## 7) Acceptance Criteria
+
+* A user can glance at a drop card and understand:
+
+  * What changed
+  * How severe it is
+  * Why it likely happened
+  * What to do next
+* Metrics are visually distinct (no gray-on-gray ambiguity)
+* Each detected drop includes an AI explanation and action
+* Analysis runs daily and produces a new dated report
+* Manual re-run works without duplicating cards
+
+---
+
+## Design North Star
+
+This page should feel like:
+“A smart analyst reviewed my data overnight and left me notes.”
+
+Not:
+“Here are some numbers—good luck.”

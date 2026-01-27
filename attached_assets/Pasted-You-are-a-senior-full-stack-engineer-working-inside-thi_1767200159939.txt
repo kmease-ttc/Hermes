@@ -1,0 +1,122 @@
+You are a senior full-stack engineer working inside this Replit project.
+
+Problem
+The Socrates (Knowledge Base) crew page at /socrates is still blank / “No data available yet” even though the Knowledge Base integration now shows Worker Connected and configuration detection was fixed. We need to determine whether:
+
+* the worker isn’t returning data, OR
+* the app isn’t fetching/reading the worker data, OR
+* the UI expects a different endpoint/response shape.
+
+Goal
+Make the Socrates page populate with real content (Learnings / Insights / Recommendations / Activity) once the worker has data, and at minimum show a correct “connected but no learnings yet” state with a working “Run” action that fetches and displays results.
+
+Constraints
+
+* Do not guess. Diagnose by inspecting network calls + server logs + endpoint responses.
+* Prefer fixing the app fetch/wiring first. Only change the worker if the endpoint/shape is wrong or missing.
+* Keep changes minimal and consistent with existing worker/integration patterns (use the same approach Speedster/others use to fetch data).
+
+Step-by-step (do in order)
+
+1. Confirm what data Socrates page is trying to load
+
+* Locate the Socrates page component (client/src/pages/* or client/src/crew/*).
+* Identify which endpoints it calls (look for fetch/axios/react-query keys).
+* Add temporary console logs to print:
+
+  * endpoint URL used
+  * response status
+  * response body keys
+  * any caught errors
+
+2. Watch the actual network traffic in the browser
+
+* Load /socrates and open DevTools Network.
+* Identify ALL /api/* calls triggered on load.
+* Specifically look for:
+
+  * /api/kb/status
+  * /api/kb/overview
+  * /api/kb/learnings
+  * /api/kb/insights
+  * /api/kb/recommendations
+  * /api/agents/*kbase*
+* If calls are missing, the page isn’t wired correctly → fix routing/hook usage.
+* If calls exist but return empty/404/500 → fix server endpoints or base URL config.
+
+3. Verify server endpoints exist and are healthy
+
+* Search server routes for kb endpoints: server/routes/*, server/api/*.
+* For each endpoint Socrates page expects, verify it exists and returns the expected envelope.
+* If any endpoint is missing, implement it by proxying to the Knowledge Base worker using the configured base URL + API key.
+
+4. Validate worker base URL and credentials used by Socrates API proxy
+
+* Socrates should use:
+
+  * SEO_KBASE_API_KEY (read)
+  * SEO_KBASE_WRITE_KEY (write) where needed
+  * A base URL config (check if SEO_KBASE_BASE_URL exists; if not, add it as a Configuration)
+* Confirm the server-side config resolver pulls these correctly (Bitwarden/env/config).
+* Log resolved base URL + whether key is present (never log the key itself).
+
+5. Determine why the UI stays blank
+   Most common causes:
+   A) Endpoint returns data but UI mapping expects different keys
+
+* Compare response JSON to the UI’s expected model.
+* Update types + mapping so Learnings/Insights/Recommendations arrays render.
+
+B) Endpoint returns empty because the worker has no data yet
+
+* In this case, the UI should still show a meaningful state:
+
+  * “Connected. No learnings yet. Run diagnostics to generate your first learnings.”
+* Ensure “Run Now” / “Fix it” actually triggers a worker action (see Step 6).
+
+C) The page is reading from the wrong place (e.g., integrations DB vs worker API)
+
+* Make it use the same server proxy layer that Integrations uses for status.
+
+6. Make the “Run” action work for Socrates
+
+* The Missions widget shows “Run diagnostics to collect learnings” with a Fix it button.
+* Ensure clicking Fix it/Run triggers a server endpoint like:
+
+  * POST /api/kb/run (or /api/agents/socrates/run)
+* That endpoint should:
+
+  * call the worker to generate/refresh learnings
+  * then refetch /api/kb/overview (or invalidate react-query cache)
+* Add UI loading state:
+
+  * button spinner
+  * toast on success/failure
+* If the worker is async, implement polling for up to 60–90s until learnings appear.
+
+7. Render at least one real panel
+   Once data is returned:
+
+* Learnings tab: list items with title + snippet + source crew + timestamp
+* Insights tab: list key themes/patterns
+* Recommendations tab: prioritized next actions
+* Agent Activity: last runs/log entries
+
+8. Verification (must do)
+
+* Hard refresh /socrates
+* Confirm network calls return 200
+* Confirm the page shows either:
+
+  * populated learnings (if data exists), OR
+  * connected empty state with a working Run action that produces data and then renders it
+
+Deliverables (include in final response)
+
+* Root cause (app not fetching vs worker not returning vs response mismatch)
+* File paths changed
+* Endpoints involved (method + path)
+* What now appears on Socrates page after the fix
+
+Important
+If the worker genuinely has no persisted data yet, do NOT leave the page blank. The UI must clearly show “Connected, no learnings yet” plus a prominent Run action that actually generates data.

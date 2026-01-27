@@ -1,0 +1,86 @@
+Objective
+Fix the **layout and visual alignment** of the Mission Status component on the Speedster dashboard so it looks intentional, balanced, and polished—especially after adding the Performance score to the left side.
+
+Observed Problems
+
+* The left “65 Performance” badge feels visually disconnected from the rest of Mission Status.
+* Vertical alignment between:
+
+  * the score badge
+  * the “Mission Status / Needs attention” text
+  * the supporting copy (“Vital in poor range”, “Next: …”)
+    is off.
+* The content feels left-heavy and slightly cramped, while the right-side “Fix Everything” button feels detached.
+* Spacing and hierarchy don’t clearly communicate:
+
+  * Score → Status → Guidance → Action
+
+Required End State (Visual & Layout)
+
+Mission Status should read **left → right** in a clean, horizontal flow:
+
+[ Performance Score Badge ]  [ Status + Summary + Next Step ]  [ Fix Everything Button ]
+
+Detailed Layout Rules
+
+1. Performance Score Badge (Left)
+
+* Keep it compact and vertically centered.
+* Badge should include:
+
+  * Large number (e.g., 65)
+  * Small label “Performance” underneath or beside it.
+* Use a fixed-width container so it doesn’t collapse or stretch.
+* Align vertically to the center of the Mission Status card.
+
+2. Status Content Block (Center)
+   This block should be vertically stacked and left-aligned:
+
+* Row 1:
+
+  * “Mission Status” label
+  * Status chip (e.g., “Needs attention”) inline with the label
+* Row 2:
+
+  * Short summary sentence (e.g., “1 vital in poor range”)
+* Row 3:
+
+  * “Next:” guidance line (lighter weight, secondary color)
+
+Spacing rules:
+
+* Clear vertical rhythm (small gap between rows, not compressed).
+* Text should not appear vertically misaligned relative to the score badge.
+
+3. Action Button (Right)
+
+* “Fix Everything” button should be:
+
+  * Vertically centered relative to the entire Mission Status card
+  * Clearly separated from the text block with consistent padding
+* Do not let the button float higher or lower than the score badge.
+
+Implementation Guidance (CSS / Layout)
+
+* Use a 3-column flex layout:
+
+  * Left: score badge (fixed width)
+  * Middle: status content (flex-grow)
+  * Right: actions (auto width)
+* Align items vertically with `align-items: center` at the top-level container.
+* Internally, allow the center column to stack text with `flex-direction: column`.
+
+Do NOT:
+
+* Stack the score badge above the text.
+* Let the score badge push the status text downward.
+* Introduce new colors or typography styles.
+
+Acceptance Criteria
+
+* The Mission Status card feels visually balanced and intentional.
+* The performance score clearly feels “part of” Mission Status, not bolted on.
+* All elements are vertically aligned and readable at a glance.
+* The layout matches the level of polish of the rest of the Speedster dashboard.
+
+This is a **formatting and layout correction only**—no logic, data, or copy changes.

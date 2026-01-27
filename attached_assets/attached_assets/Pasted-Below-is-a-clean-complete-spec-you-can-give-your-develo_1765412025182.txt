@@ -1,0 +1,309 @@
+Below is a **clean, complete spec** you can give your developer to fix EVERY issue you just identified:
+
+* overlay too dark
+* wrong image subjects
+* harsh purple header color
+* inconsistent color palette
+* phone number visibility issues
+* generic feel due to incorrect industry context
+* poor AI image prompts
+* poor AI copy prompts
+
+This is the **fit + finish spec** required to reach “LuckyThunder-level” quality.
+
+---
+
+# ✅ SECTION 1 — **Color System Fix (3-Color Palettes Only)**
+
+Every palette should include:
+
+### **1. Primary** (buttons, highlights, hero CTAs, active nav)
+
+### **2. Secondary** (accents, outlines, badges)
+
+### **3. Neutral** (backgrounds, overlays, text tones)
+
+**DO NOT** use theme primary as an overlay color.
+**DO NOT** use neon or harsh colors anywhere in the UI.
+
+### ✔ Final Palette Structure Example
+
+**Palette: Navy / Sky / Slate**
+
+* `primary: #475BE8` (Sky Indigo)
+* `secondary: #0EA5E9` (Sky Blue)
+* `neutral: #0F172A` (Slate 900)
+
+**Palette: Teal / Emerald / Slate**
+
+* `primary: #0F766E`
+* `secondary: #10B981`
+* `neutral: #1E293B`
+
+**Palette: Plum / Pink / Slate (for beauty/therapy/med spa)**
+
+* `primary: #7C3AED`
+* `secondary: #EC4899`
+* `neutral: #1E1B4B`
+
+### Developer instructions:
+
+1. Update `themes.ts` to enforce **exactly 3 colors** per palette.
+2. Replace all places where gradients use theme colors.
+3. Use theme primary ONLY for:
+
+   * buttons
+   * active nav item
+   * icon accents
+   * badges
+
+No purple overlays. No bright bars.
+
+---
+
+# ✅ SECTION 2 — **Hero Overlay Fix (the biggest visual problem)**
+
+### Current:
+
+The overlay is **too purple** and **too opaque**, drowning the image.
+
+### Required Fix:
+
+Hero image overlay gradient MUST be:
+
+**Neutral slate/black**
+with **40–55% opacity**.
+
+### New Overlay Code (copy/paste):
+
+```tsx
+backgroundImage: `
+  linear-gradient(
+    to bottom right,
+    rgba(15, 23, 42, 0.35),
+    rgba(15, 23, 42, 0.55)
+  ),
+  url('${heroImageUrl}')
+`,
+backgroundSize: 'cover',
+backgroundPosition: 'center',
+```
+
+### Notes:
+
+* Always use **slate-900** tones (15,23,42).
+* NEVER use theme primary color in hero overlay.
+* This ensures contrast for phone numbers and CTAs while preserving the photo.
+
+---
+
+# ✅ SECTION 3 — **Fix the Phone Number Issue**
+
+Right now the phone number sits on a harsh purple background → low readability + ugly.
+
+### Required Fixes:
+
+1. Phone badge uses **neutral background**, NOT theme color:
+
+   ```css
+   background: rgba(255,255,255,0.14);
+   backdrop-filter: blur(6px);
+   border: 1px solid rgba(255,255,255,0.15);
+   color: white;
+   ```
+
+2. Hover state:
+
+   ```css
+   background: rgba(255,255,255,0.22);
+   ```
+
+3. Text color always `#FFF`.
+
+This matches high-end HVAC/contractor websites.
+
+---
+
+# ✅ SECTION 4 — **Industry-Accurate Image Generation Prompts**
+
+This is the other major problem: AI is generating **wrong subject matter**
+(e.g., *kitchen interior instead of restaurant*).
+
+Here are the corrected prompts:
+
+---
+
+## ✔ Trades (HVAC, Plumbing, Electrical, Roofing) Background:
+
+```
+Ultra-realistic wide hero photo of a modern [industry] project in [city]. 
+Outdoor environment preferred. Professional lighting. No people. 
+Show equipment or relevant work environment. 
+Landscape orientation. Clean, high-end, service-business aesthetic. 
+No text, no artificial digital artifacts.
+```
+
+**Examples:**
+
+* HVAC → exterior AC unit, ducts, furnace, service truck
+* Plumbing → bathrooms, pipes, tools, utility rooms
+* Roofing → shingles, ladders, rooftops
+
+---
+
+## ✔ Restaurants / Bars:
+
+```
+Ultra-realistic hero image of a modern bar or restaurant interior in [city]. 
+Warm lighting, wide angle, clean modern design. 
+No people. No text. Landscape orientation.
+```
+
+---
+
+## ✔ Health Clinics / Med Spa:
+
+```
+Modern medical office interior, clean white surfaces, soft natural lighting. 
+No patients. No text. Landscape orientation. High-end aesthetic.
+```
+
+---
+
+## ✔ Legal / Financial Services:
+
+```
+Modern office interior, warm natural lighting, wood + glass materials, 
+professional clean design. 
+No people. No text. Landscape orientation.
+```
+
+---
+
+### Developer instructions:
+
+* Add `industry → prompt` mapping in the generation worker.
+* Replace generic prompts with these **industry-specific templates**.
+* Always request **landscape / hero-width** images.
+* Always store the first generated image as `heroImageUrl`.
+
+---
+
+# ✅ SECTION 5 — **Improve Website Copy Prompts**
+
+Right now the hero headlines are generic.
+
+Here are the corrected prompts:
+
+---
+
+### HERO HEADLINE:
+
+```
+Write a confident, benefit-focused headline for a [industry] business in [city]. 
+Keep it 3–6 words max. No exclamation marks.
+```
+
+**Examples:**
+
+* “Comfort Starts Here”
+* “Plumbing You Can Trust”
+* “Stress-Free Electrical Service”
+
+---
+
+### HERO SUBHEADLINE:
+
+```
+Write a 1–2 sentence subheadline explaining what this business does, 
+emphasizing reliability, quality, and local service. 
+Use everyday language, no jargon.
+```
+
+---
+
+### SERVICES BLURBS:
+
+```
+List 4 common services for a [industry] business. 
+For each service, write a short description (< 12 words) explaining what it includes.
+```
+
+---
+
+### WHY CHOOSE US BULLETS:
+
+```
+Create 3 short bullet points (< 10 words each) explaining why customers trust this business.
+```
+
+---
+
+# ✅ SECTION 6 — **Correct Image Selection Logic**
+
+Ensure:
+
+1. If the user uploads a hero image → always use it.
+2. Else → choose AI-generated hero image.
+3. Else → fallback to an industry stock image.
+
+For other sections:
+
+* Services → use 1–2 secondary images from AI or upload gallery.
+* About → small subtle background shapes (not images).
+
+Hero image should ALWAYS exist now.
+
+---
+
+# ✅ SECTION 7 — **Fix Color Overwrites in the Header**
+
+The top bar’s purple background is bleeding through because theme primary is being applied to header background.
+
+### Correct behavior:
+
+* Header should either be **transparent over hero**, OR
+* Use **neutral frosted glass**:
+
+```css
+background: rgba(255,255,255,0.12);
+backdrop-filter: blur(10px);
+```
+
+Theme colors should *only* be used for:
+
+* CTAs
+* Selected nav item
+* Icons
+
+Never background surfaces.
+
+---
+
+# 🎯 FINAL DEV TICKET (copy/paste for your developer)
+
+> **Title: Fit + Finish Fixes for Generated Sites (Hero, Color System, Prompts)**
+>
+> **Summary**: Improve generated site quality by fixing color palettes, overlays, AI image prompts, hero image selection, and header contrast issues.
+>
+> **Requirements**:
+>
+> 1. Limit each theme to **3 colors** (primary, secondary, neutral). No bright/neon.
+> 2. Remove theme-based hero overlays. Use neutral gradient:
+>
+>    * rgba(15,23,42,0.35) → rgba(15,23,42,0.55).
+> 3. Always use a hero image (upload → uploads → AI → fallback).
+> 4. Add industry-specific AI prompts for hero image generation (see attached).
+> 5. Improve copy prompts (headline, subheadline, services, bullets).
+> 6. Fix phone number badge (use frosted-glass neutral background).
+> 7. Header background must be neutral or transparent — NEVER theme primary.
+> 8. Ensure hero text remains readable with new overlay.
+> 9. Ensure final hero image looks natural, not tinted or over-darkened.
+>
+> After implementation, preview sites should look more like **LuckyThunderPropertyManagement.com quality**, especially the hero.
+
+---
+
+If you want, I can **refine the industry prompt library**, or **generate full before/after mocks** for your dev.
+
+Want me to create the **final prompt dictionary** for every business type you support?

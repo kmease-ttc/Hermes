@@ -1,0 +1,171 @@
+Perfect. The next prompt should now focus on Growth Loops & Referrals.
+
+At this point you have:
+	•	a working product
+	•	proof of customization
+	•	ongoing value
+	•	confidence + trust
+
+The next unlock is organic growth, where customers help sell Arclo for you.
+
+⸻
+
+NEXT WORKSTREAM: Referral, Sharing & Growth Loop
+
+Agent Prompt
+
+Objective
+
+Implement a lightweight referral and sharing system that allows Arclo customers to:
+	•	easily share their site
+	•	show off before/after improvements
+	•	refer other businesses
+	•	generate inbound demand organically
+
+This must feel natural, not like affiliate marketing.
+
+⸻
+
+PART 1 — “Share My Site” (Low Friction)
+
+Add a Share Action in the Dashboard
+
+Add a button:
+“Share my site”
+
+When clicked, present options:
+	•	Copy site URL
+	•	Share before/after view
+	•	Share “Built with Arclo” link (optional)
+
+Do NOT force branding.
+Do NOT add watermarks by default.
+
+⸻
+
+PART 2 — Before/After Sharing Links
+
+Generate Shareable Links
+
+For each before/after pair:
+	•	Generate a public, read-only link
+	•	Show:
+	•	transformation
+	•	short explanation
+	•	“Powered by Arclo” footer (subtle)
+
+Purpose:
+	•	Let customers visually prove improvement to peers
+	•	Create curiosity-driven traffic
+
+⸻
+
+PART 3 — Simple Referral Flow (Phase 1)
+
+Referral Entry Point
+
+Add a section in the dashboard:
+“Refer another business”
+
+Flow:
+	1.	Enter name + email of referred business (optional)
+	2.	OR copy referral link
+
+No dashboards.
+No points.
+No gamification yet.
+
+⸻
+
+Referral Incentive (Keep It Simple)
+
+Incentive:
+	•	$50 account credit OR
+	•	One free month of an add-on
+
+Apply credit only when:
+	•	Referred site is generated
+	•	Referred user publishes + pays
+
+⸻
+
+PART 4 — Referral Tracking (Backend)
+
+Create a referrals table:
+	•	id
+	•	referrer_user_id
+	•	referred_email (nullable)
+	•	referral_code
+	•	status (sent | site_created | converted)
+	•	created_at
+	•	converted_at
+
+Tie referral_code to:
+	•	site generation
+	•	account creation
+
+⸻
+
+PART 5 — Landing Page Support
+
+Add “Built with Arclo” Pattern (Optional)
+
+Allow users to optionally enable:
+	•	small footer text:
+“Built with Arclo”
+
+Toggle:
+	•	off by default
+	•	incentivized (e.g., referral credit)
+
+This creates passive growth without force.
+
+⸻
+
+PART 6 — Admin Controls
+
+Internal admin view:
+	•	see referrals
+	•	approve credits
+	•	disable abuse
+	•	view conversion rates
+
+⸻
+
+PART 7 — Guardrails
+	•	No aggressive referral prompts
+	•	No spammy email behavior
+	•	No forced branding
+	•	No MLM vibes
+
+Tone:
+Helpful, proud, optional.
+
+⸻
+
+Definition of Done
+	•	Users can share their site easily
+	•	Before/after examples travel outside Arclo
+	•	Referrals are trackable
+	•	Credits are applied cleanly
+	•	Growth loop exists without friction
+
+⸻
+
+Why This Is the Right Next Step
+
+You’ve already created something people will want to show.
+
+This system:
+	•	turns pride into growth
+	•	turns results into marketing
+	•	scales without ad spend
+
+⸻
+
+After this, the next logical workstreams are:
+	1.	Arclo’s own SEO & example-driven landing pages
+	2.	White-label / reseller mode
+	3.	API & integrations (Zapier, CRM, etc.)
+
+When ready, tell me which one and I’ll write the next prompt.

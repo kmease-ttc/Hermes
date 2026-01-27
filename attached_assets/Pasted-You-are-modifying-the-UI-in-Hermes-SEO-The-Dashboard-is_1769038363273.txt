@@ -1,0 +1,167 @@
+You are modifying the UI in Hermes SEO. The Dashboard is now readable, but it lost the “glowy / glass” visual language. Your job is to restore that modern glassmorphism + gradient aesthetic **while keeping readability and WCAG contrast rules**.
+
+Do NOT redesign layouts again. This task is purely **visual styling + component variants**.
+
+---
+
+## Goal (visual)
+
+We want:
+
+* Light theme base
+* “Glassy” panels (subtle transparency + blur)
+* Hue/glow borders (gradient borders or colored border glow)
+* Gradient buttons (like the “Analyze My Website” button)
+* Some cards are “tinted glass fills” (green/purple/amber) and some are “neutral glass” with only a hue border
+
+Keep everything readable.
+
+---
+
+## Implementation constraints
+
+* Reuse existing components (Card, Button, Badge, etc.)
+* Add **style variants** (don’t inline random CSS per page)
+* Centralize tokens in `src/styles` or `src/theme` (where your app already stores theme)
+* No opacity tricks that make text unreadable (no text blur, no < 0.7 opacity)
+
+---
+
+## Add these design tokens (CSS variables)
+
+In your global theme file (e.g. `src/index.css` or `src/styles/theme.css`), add:
+
+:root {
+/* Base */
+--bg: #f8fafc;
+--card: rgba(255, 255, 255, 0.72);
+--card-strong: rgba(255, 255, 255, 0.86);
+--border: rgba(17, 24, 39, 0.08);
+--shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+
+/* Text */
+--text: #111827;
+--muted: #475569;
+
+/* Glass blur */
+--glass-blur: 14px;
+
+/* Gradients */
+--grad-primary: linear-gradient(90deg, #7c3aed 0%, #ec4899 55%, #f59e0b 100%);
+--grad-success: linear-gradient(90deg, #10b981 0%, #22c55e 60%, #a3e635 100%);
+--grad-info: linear-gradient(90deg, #38bdf8 0%, #6366f1 60%, #a78bfa 100%);
+
+/* Glow colors */
+--glow-purple: rgba(124, 58, 237, 0.25);
+--glow-pink: rgba(236, 72, 153, 0.20);
+--glow-amber: rgba(245, 158, 11, 0.18);
+--glow-green: rgba(34, 197, 94, 0.18);
+}
+
+---
+
+## Create “Glass Card” and “Glow Border” utilities (single source of truth)
+
+Add CSS classes (or Tailwind utilities if you’re using Tailwind) that the whole app can reuse:
+
+.glass {
+background: var(--card);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border: 1px solid var(--border);
+box-shadow: var(--shadow);
+}
+
+.glass-strong {
+background: var(--card-strong);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border: 1px solid var(--border);
+box-shadow: var(--shadow);
+}
+
+/* Gradient “hue” border without breaking layout */
+.glow-border {
+position: relative;
+}
+.glow-border::before {
+content: "";
+position: absolute;
+inset: -1px;
+border-radius: inherit;
+padding: 1px;
+background: var(--grad-primary);
+-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+-webkit-mask-composite: xor;
+mask-composite: exclude;
+pointer-events: none;
+opacity: 0.85;
+}
+
+/* Optional soft outer glow */
+.glow-purple { box-shadow: 0 18px 45px var(--glow-purple); }
+.glow-green  { box-shadow: 0 18px 45px var(--glow-green); }
+.glow-amber  { box-shadow: 0 18px 45px var(--glow-amber); }
+
+---
+
+## Button variants (must match Analyze button)
+
+Implement button variants in your shared Button component:
+
+* Primary (gradient fill):
+  background: var(--grad-primary)
+  text: white
+  hover: slightly brighter
+  focus ring: purple/pink
+
+* Success (gradient fill):
+  background: var(--grad-success)
+  text: white
+
+* Outline-glow:
+  transparent background
+  1px gradient border using same ::before mask trick
+  text: var(--text)
+
+Make sure “Subscribe / Finish Setup / Upgrade” buttons use these variants (not plain gray).
+
+---
+
+## Card variants (apply to the Dashboard)
+
+Update the Dashboard cards to use these variants:
+
+1. **Neutral glass** (default panels)
+
+* class: `glass`
+
+2. **Tinted glass fill** (for green “Top Performers”, purple “What To Do Next”, etc.)
+
+* class: `glass glow-green` (or glow-purple) plus a subtle tinted background overlay:
+  background: rgba(color, 0.08) + glass blur (do NOT reduce text contrast)
+
+3. **Hue border only** (for locked cards)
+
+* class: `glass glow-border`
+* Keep interior mostly neutral so it stays readable
+
+---
+
+## Keep readability (still mandatory)
+
+* Text uses `--text` and `--muted`
+* Numbers must remain bold and high contrast
+* Do NOT use low-opacity text
+* Do NOT place body text directly on gradients
+
+---
+
+## Acceptance checks
+
+* Dashboard retains the report layout you built
+* Cards have glass + subtle glow (not flat)
+* Buttons for Subscribe/Finish Setup/Upgrade match the Analyze gradient style
+* Green/purple sections feel “alive” but are still easy to read
+
+Implement this via reusable classes/variants, then apply them across the Dashboard.

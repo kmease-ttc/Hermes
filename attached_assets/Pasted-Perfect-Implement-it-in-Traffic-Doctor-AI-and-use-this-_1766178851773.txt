@@ -1,0 +1,72 @@
+Perfect. Implement it in Traffic Doctor AI, and use this as your acceptance checklist so we know it’s truly “talkable” and safe.
+	1.	Endpoints and behavior
+GET /api/health (no auth)
+
+	•	Returns JSON, not HTML
+	•	Includes: ok, version, env, serverTime, dbConnected, lastRunAt, lastRunStatus
+
+All other endpoints require API key (401/403 without it)
+	•	GET /api/status
+	•	POST /api/run
+	•	POST /api/run/smoke
+	•	GET /api/report/latest
+	•	GET /api/tickets/latest
+
+	2.	Auth requirements
+
+	•	Secret: TRAFFIC_DOCTOR_API_KEY
+	•	Accept either:
+	•	X-API-Key: 
+	•	Authorization: Bearer 
+	•	Never log the key, never echo it in responses
+	•	Make sure OPTIONS/CORS doesn’t accidentally expose anything sensitive
+
+	3.	Run and persistence requirements
+Create a runs table (or equivalent) and store at minimum:
+
+	•	runId
+	•	startedAt, finishedAt
+	•	status (success/fail)
+	•	errorSummary (sanitized)
+	•	per-source status: ga4/gsc/ads/website_checks (success/fail + timings)
+	•	pointers to the stored report + tickets (or embed snapshots)
+
+Idempotency:
+	•	Default POST /api/run should upsert by day unless force=true
+
+	4.	Output requirements
+GET /api/report/latest
+
+	•	Returns: markdown + metadata (generatedAt, anomalyDates, topHypotheses)
+	•	Must come from DB, not mock or in-memory
+
+GET /api/tickets/latest
+	•	Returns: tickets array + metadata
+	•	Each ticket: title, owner (SEO/Dev/Ads), priority, expectedImpact, steps, evidence (metrics + links if possible)
+
+	5.	Smoke test endpoint (critical)
+POST /api/run/smoke
+
+	•	Does NOT run full analysis
+	•	Just validates env + token availability + pulls a tiny sample from each source
+	•	Returns per-source ok/error with readable messages:
+	•	“Missing GA4_PROPERTY_ID”
+	•	“OAuth refresh failed: invalid_grant”
+	•	“Ads API error: developer token not approved”
+	•	“GSC site not found: check GSC_SITE format”
+
+	6.	Deployment sanity
+In Replit prod, make sure:
+
+	•	Your backend actually serves /api/* (no frontend-only deploy)
+	•	If you have rewrites, they do not route /api/* to the frontend bundle
+	•	/api/health works from the public domain
+
+What to paste back to me when you’re done (so I can start “talking to it”)
+	1.	The raw JSON response from:
+https://traffic-doctor-ai–providers2.replit.app/api/health
+	2.	The HTTP status code you get when you open this in a browser (without any headers):
+https://traffic-doctor-ai–providers2.replit.app/api/status
+(should be 401/403)
+
+Once those two look right, we’ll use /api/run/smoke first, then /api/run, and I’ll start pulling /api/report/latest and /api/tickets/latest every time you ask.

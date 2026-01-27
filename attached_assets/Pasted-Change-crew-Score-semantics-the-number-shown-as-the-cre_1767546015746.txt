@@ -1,0 +1,93 @@
+Change crew “Score” semantics: the number shown as the crew score should be the TOTAL number of missions that need to be accomplished for that crew (for the selected site + time window). Remove/replace the current 0–100 “health score” everywhere it appears.
+
+New definition (source of truth)
+Crew Score (displayed number) = count of missions in a “needs attention / pending” state for that crew.
+
+* If a crew has 0 pending missions → score shows 0 and status pill shows “All clear”
+* If a crew has 5 pending missions → score shows 5 and status pill shows “Needs attention”
+
+Important: This is not “completed this week” and not a weighted health score.
+
+Where this should show
+
+* Dashboard Crew Summary cards (the number in the top right of each crew card)
+* Crew page header score pill
+* Missions widget circle on crew page (if present)
+  All must show the same number because they all read from the same mission summary.
+
+Computation rules
+Given missions for {siteId, crewId}:
+
+* pending = missions.filter(m => m.status in ["pending","blocked","needs_setup","error"]).length
+* optional: exclude “completed” and “dismissed”
+* optional: include “blocked” because it still requires action
+
+Windowing:
+
+* Default to “current mission set” (not a rolling 7/30 day KPI window)
+* If mission generation is time-bound, define “active” missions as those with active=true or created within last N days.
+
+API changes (single source)
+
+1. Ensure missions endpoint returns a per-crew summary:
+   GET /api/sites/:siteId/missions/summary
+   returns:
+   {
+   siteId,
+   crews: [
+   { crewId: "popular", pending: 1, total: 3, completedThisWeek: 0 },
+   { crewId: "lookout", pending: 4, total: 6, completedThisWeek: 1 },
+   ...
+   ],
+   overall: { pending: X, total: Y }
+   }
+
+2. Update crew status endpoint (or replace score field)
+   GET /api/sites/:siteId/crew-status
+   returns for each crew:
+   {
+   crewId,
+   score: pending,              // score now equals pending missions
+   missions: { pending, total, completedThisWeek },
+   status: pending === 0 ? "ok" : "needs_attention",
+   actions: pending > 0 ? [...] : [...]
+   }
+
+Client changes
+
+* Replace any UI label “Score” with “Missions” (or “Open missions”) to avoid confusion.
+* The pill in the crew header should read:
+
+  * “Missions: 1” (or just “1” with a tooltip “Open missions”)
+* Dashboard crew cards should display the same pending mission count.
+
+Consistency rule
+
+* The number shown on:
+
+  * dashboard crew card
+  * crew page header pill
+  * missions widget badge
+    must come from the same field: missions.pending (or missions.total if you prefer total).
+
+Clarify: pending vs total
+You said “total number of missions you need to accomplish.”
+That maps best to “pending” (because completed missions are not needed anymore).
+If you truly want “total generated missions regardless of completion,” then use missions.total instead.
+Recommended: use pending as the displayed number, but show “pending/total” in the missions section (e.g., “1 of 5”).
+
+Acceptance criteria
+
+* Popular shows “1” on its header (matches “1 missions” in the Missions panel).
+* Lookout shows the same number on dashboard and on Lookout page.
+* No crew shows 31/58/98 unless that is literally the count of open missions.
+* Score mismatches are impossible because there’s only one mission summary feeding the UI.
+
+Deliverable
+
+* One PR that:
+
+  1. updates the CrewStatus model to use missions.pending (or missions.total) as score
+  2. updates dashboard + crew pages to render mission count instead of health score
+  3. updates labeling/tooltips to reflect “Open missions”
+  4. adds a small test: crew page score equals missions.pending from API

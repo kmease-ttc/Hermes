@@ -1,0 +1,171 @@
+🧠 FINAL ARC GLOW PROMPT
+
+(Copy/Paste This Exactly to Your Development Agent)
+
+⸻
+
+ARC GLOW PROMPT
+
+Project: Arclo Homepage + Free Scan Funnel
+Design System: Tailwind CSS (reuse existing Arclo tokens, colors, typography, spacing)
+Framework: Existing Arclo stack (do not introduce new frameworks)
+Scope: Homepage + Scan Flow UX (no backend logic required beyond stubs)
+
+⸻
+
+GOAL
+
+Rebuild the Arclo homepage and scan experience to support a friction-free SEO diagnostic funnel where:
+	•	Users run a free SEO scan using only a website URL
+	•	The scan runs immediately (no login, no email)
+	•	Users see real preview insights
+	•	Email is required to unlock the full report
+	•	Account creation is optional until users want to save or act
+
+Do not redesign the brand. Preserve the current Arclo look and feel.
+
+⸻
+
+HOMEPAGE REQUIREMENTS (/)
+
+Hero Section
+	•	Headline:
+Get a complete SEO action plan from your website — no setup required.
+	•	Subhead:
+Enter your website URL and Arclo scans it for technical issues, keyword opportunities, and competitor gaps — then turns it into a clear, prioritized plan.
+	•	Primary CTA:
+	•	Input: Enter your website (e.g. example.com)
+	•	Button: Run Free Site Scan
+	•	Secondary CTA: See a sample report
+	•	Microcopy under CTA:
+No logins • No integrations • Takes ~60 seconds
+
+⸻
+
+FREE SCAN FLOW (/scan or equivalent)
+
+Step 1: URL Submission
+	•	Accept website URL only
+	•	Immediately begin scan
+
+Step 2: Progress Screen (45–60 seconds)
+Show real, sequential steps:
+	•	Crawling site structure
+	•	Analyzing technical SEO
+	•	Identifying keyword opportunities
+	•	Finding competitors
+	•	Generating action plan
+
+Each step visually completes before moving on.
+
+⸻
+
+Step 3: Preview Report (UNGATED)
+
+Show real but limited insights, such as:
+	•	Number of technical issues found
+	•	Number of keyword opportunities identified
+	•	Number of competitors detected
+	•	High-level summaries
+
+Do not show:
+	•	Full keyword lists
+	•	Specific URLs
+	•	Detailed fixes
+	•	Prioritized steps
+
+Use visual locking (blur / disabled states) for gated sections.
+
+⸻
+
+Step 4: Soft Gate (EMAIL ONLY)
+
+Overlay or inline gate:
+
+Title:
+Unlock your full SEO report
+
+Copy:
+Enter your email to view the complete report, save it, and receive a copy.
+
+Form:
+	•	Email input
+	•	Button: View full report
+
+Small disclaimer:
+We’ll email you a copy. No spam.
+
+⸻
+
+Step 5: Full Report (POST-EMAIL)
+
+Once email is submitted:
+	•	Unlock all sections
+	•	Show full detail
+	•	Display CTA:
+Create an account to save this report and staff your AI crew
+
+Account creation is optional at this stage.
+
+⸻
+
+CREW INTRO (HOMEPAGE SECTION)
+	•	Light introduction only (no ship UI here)
+	•	Headline:
+Turn insights into action with AI specialists
+	•	Show 4–6 agent tiles with:
+	•	Role
+	•	One-line outcome
+	•	CTA:
+Staff your AI crew
+
+⸻
+
+TECHNICAL CONSTRAINTS
+	•	Reuse existing Tailwind config
+	•	No new color tokens
+	•	Mobile-first
+	•	Lighthouse-friendly
+	•	Clean semantic HTML
+	•	Analytics hooks on:
+	•	Run Free Site Scan
+	•	Email unlock
+	•	Staff your AI crew
+
+⸻
+
+DO NOT
+	•	Require GA4, Search Console, or integrations
+	•	Require account creation before value
+	•	Add game-like visuals
+	•	Add heavy animations
+	•	Change typography or spacing system
+
+⸻
+
+SUCCESS CRITERIA
+	•	User understands value within 10 seconds
+	•	Free scan requires only a URL
+	•	Preview insights feel real
+	•	Email gating feels natural, not forced
+	•	Clear path from report → crew staffing
+
+⸻
+
+🧩 WHY YOU SHOULD SHIP THIS NOW
+
+You’ve now:
+	•	Solved the funnel
+	•	Solved friction
+	•	Solved trust
+	•	Solved monetization sequencing
+
+At this point, execution beats thinking.
+
+Let the agent build v1. Once it’s live, we can:
+	•	Tighten copy
+	•	Improve preview vs gated balance
+	•	Tune conversion rates
+	•	Add crew recommendations post-report
+
+When you’re ready, the very next thing I’d suggest is designing the post-report “Next Best Crew Member” recommendation logic — but only after you see this live.

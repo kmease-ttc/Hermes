@@ -1,0 +1,295 @@
+Great instinct. This is mostly a positioning + guardrails problem, not a technical one. You want to:
+	•	remove the “this is basic / locked” fear
+	•	signal flexibility and power
+	•	avoid opening yourself up to unlimited chaos
+	•	keep the promise simple and believable
+
+Here’s the recommendation, then the agent prompt.
+
+⸻
+
+First: My Recommendation (Decision)
+
+Do not position this as “number of updates”
+
+Counting updates is:
+	•	confusing
+	•	arbitrary
+	•	invites gaming (“does this count as one?”)
+	•	makes the product feel cheap/transactional
+
+Instead, position it as response-based customization, with SLAs and scope, not counts.
+
+The mental model that works best
+
+You are not selling “pages.”
+You are selling:
+
+“Tell us what you want changed, and we’ll do it for you.”
+
+That’s powerful, reassuring, and aligns with how you’ll actually operate.
+
+⸻
+
+The Right Model (Simple, Honest, Scalable)
+
+Base Plan: “Managed Website”
+
+Includes:
+	•	Hosting
+	•	Ongoing maintenance
+	•	Minor copy/layout tweaks
+	•	Bug fixes
+	•	Small adjustments
+
+Limits (important, but soft):
+	•	“Reasonable changes”
+	•	No design overhauls
+	•	No net-new complex features
+
+Positioning:
+“Perfect if you want a professional site that stays up to date.”
+
+⸻
+
+Pro Plan: “Unlimited Updates”
+
+This is where you unlock the promise you want to make.
+
+Includes:
+	•	Unlimited content updates
+	•	Layout changes
+	•	Section swaps
+	•	New pages
+	•	Copy rewrites
+	•	Visual adjustments
+
+Rules:
+	•	Requests are handled asynchronously
+	•	Turnaround: within 24 hours
+	•	One request at a time per site (this is the real throttle)
+
+Positioning:
+“Tell us what you want. We’ll make it happen.”
+
+This avoids:
+	•	abuse
+	•	giant backlogs
+	•	unclear scope
+
+⸻
+
+What “Unlimited” Means (in plain English)
+
+You should define it as:
+
+“Unlimited requests, handled one at a time, completed within 24 hours.”
+
+This is the same model used by:
+	•	design subscription companies
+	•	dev-as-a-service companies
+
+It works.
+
+⸻
+
+How to Communicate This on the Landing Page
+
+You don’t need to show pricing yet. You need to remove fear.
+
+Add a section titled:
+
+“You’re not locked into the first version”
+
+Copy (example):
+“You can update anything on your site — text, layout, sections, pages, or services. Just tell us what you want, and we’ll handle the changes for you.”
+
+Then:
+	•	“Most updates are completed within 24 hours.”
+	•	“No code. No editors. No hassle.”
+
+This reframes “basic” as “starting point.”
+
+⸻
+
+Now: The Agent Prompt
+
+Below is the exact prompt to give the agent.
+
+⸻
+
+NEXT WORKSTREAM: Customization Model & Messaging
+
+Agent Prompt
+
+Objective
+
+Clearly communicate that Arclo-generated sites are fully customizable after signup, and implement a simple, scalable update-request model tied to plans.
+
+This work focuses on:
+	•	messaging
+	•	plan semantics
+	•	update request flow (lightweight)
+	•	trust and reassurance
+
+Do NOT build a complex CMS or editor.
+
+⸻
+
+PART 1 — Define the Update Model (Required)
+
+Introduce Two Update Tiers
+
+Tier 1: Managed Updates (Base Plan)
+Includes:
+	•	Minor copy changes
+	•	Small layout adjustments
+	•	Bug fixes
+	•	Content corrections
+
+Rules:
+	•	No hard numeric limits
+	•	Framed as “reasonable changes”
+	•	No SLA guarantee beyond “best effort”
+
+Used for:
+	•	fixing typos
+	•	adjusting text
+	•	small visual tweaks
+
+⸻
+
+Tier 2: Unlimited Updates (Pro Add-On or Higher Plan)
+Includes:
+	•	Unlimited update requests
+	•	One request active at a time
+	•	Turnaround target: within 24 hours
+
+Requests can include:
+	•	New pages
+	•	Section redesigns
+	•	Copy rewrites
+	•	Layout changes
+	•	Visual updates
+
+Explicitly exclude:
+	•	Custom app development
+	•	Net-new product features
+	•	Third-party integrations (unless sold separately)
+
+⸻
+
+PART 2 — Landing Page Messaging (Critical)
+
+Add a new section to the marketing site.
+
+Section Title
+
+“You’re never locked into the first version”
+
+Required Copy Themes
+	•	You can change anything
+	•	Just tell us what you want
+	•	We handle the updates
+	•	Updates publish fast (24 hours)
+
+Avoid:
+	•	mentioning limits
+	•	mentioning “AI”
+	•	technical language
+
+⸻
+
+PART 3 — Pricing Page Language Update
+
+On plans/add-ons, include a row:
+
+“Website updates & customization”
+
+Base plan:
+	•	“Managed updates”
+
+Pro / Unlimited:
+	•	“Unlimited updates, handled for you”
+
+Add footnote:
+“Requests handled one at a time. Most updates completed within 24 hours.”
+
+⸻
+
+PART 4 — Add a Lightweight Update Request Flow
+
+UI Entry Point
+
+Add a button in the site dashboard:
+“Request a change”
+
+Flow
+	1.	Simple text input:
+“What would you like to change?”
+	2.	Optional:
+	•	reference URL/section
+	3.	Submit
+
+Behavior
+	•	Create a request record tied to the site
+	•	Mark status:
+	•	queued
+	•	in progress
+	•	completed
+	•	Only allow one active request at a time for Unlimited plan
+	•	Base plan users can submit but may see slower handling
+
+No editor. No previews. Keep it simple.
+
+⸻
+
+PART 5 — Tie Updates to Activity Feed
+
+When a request is:
+	•	received → activity created
+	•	completed → activity created with summary
+
+Example:
+“Updated homepage copy and added new service section.”
+
+This reinforces value.
+
+⸻
+
+PART 6 — UX Rules
+	•	Never imply the site is “finished”
+	•	Never imply users must edit themselves
+	•	Never expose internal limits
+	•	Emphasize partnership, not tooling
+
+⸻
+
+Definition of Done
+	•	Users understand they can customize freely
+	•	“Basic-looking” no longer feels risky
+	•	Update expectations are clear
+	•	Scope is controlled without friction
+	•	Messaging builds confidence
+
+⸻
+
+Why This Is the Right Next Step
+
+This directly addresses the biggest psychological blocker:
+
+“What if this doesn’t quite fit my business?”
+
+You’re answering it with:
+
+“That’s fine. We’ll change it for you.”
+
+Which is exactly what people want to hear.
+
+⸻
+
+If you want, the next logical step after this would be:
+	•	A request intake + internal workflow view, or
+	•	A before/after gallery to visually prove customization
+
+Say which one and I’ll write that prompt.

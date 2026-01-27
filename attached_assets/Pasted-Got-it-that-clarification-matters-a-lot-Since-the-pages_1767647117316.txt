@@ -1,0 +1,304 @@
+Got it — that clarification matters a lot.
+Since the pages already exist, this is not a UI build problem. It’s an access, routing, and state orchestration problem.
+
+Below are very explicit requirements for your dev team to unlock Mission Control and the crew dashboards, wire them to auth, and make the app usable for existing customers without rebuilding pages.
+
+⸻
+
+Arclo – Mission Control Access, Auth, and App Shell Requirements
+
+Context: Pages already exist. Users cannot reach them reliably.
+Goal: Make the existing app reachable, gated, and state-driven.
+
+⸻
+
+1. Core Problem Statement (for the dev team)
+
+We already have Mission Control, crew dashboards, integration pages, and settings pages built.
+The missing pieces are authentication, routing, website context, and permissions.
+
+This work is about plumbing, not UI.
+
+⸻
+
+2. High-Level Fix Strategy
+
+To “get to” the existing pages, the system must:
+	1.	Authenticate the user
+	2.	Establish which website they are operating on
+	3.	Load subscription + crew entitlements
+	4.	Route them into Mission Control
+	5.	Allow navigation across crew dashboards and settings
+
+⸻
+
+3. Authentication (Login / Session) Requirements
+
+Required
+	•	Email + password login (no social auth required v1)
+	•	Session-based auth (JWT or cookie OK)
+	•	Persistent login across refresh
+
+Routes
+	•	GET /login
+	•	POST /api/auth/login
+	•	POST /api/auth/logout
+	•	GET /api/auth/session
+
+Session Object (Required)
+
+Every authenticated request must have access to:
+
+{
+  "user_id": "...",
+  "email": "...",
+  "websites": ["website_id_1", "website_id_2"],
+  "default_website_id": "...",
+  "plan": "free|core",
+  "addons": {
+    "content_growth": true,
+    "competitive_intel": false,
+    "authority_signals": false
+  }
+}
+
+
+⸻
+
+4. App Shell & Route Guarding (This Is Likely the Main Blocker)
+
+App Layout Rule
+
+All customer-facing app pages must live under:
+
+/app/*
+
+Examples:
+	•	/app/mission-control
+	•	/app/crew/content
+	•	/app/settings
+	•	/app/integrations
+
+Route Guarding Rules
+	1.	Unauthenticated user
+	•	Any /app/* route → redirect to /login
+	2.	Authenticated user, no website selected
+	•	Redirect to /app/select-site
+	3.	Authenticated + website selected
+	•	Route to /app/mission-control
+
+This single guard logic likely fixes “we can’t get to it.”
+
+⸻
+
+5. Website Context (Critical)
+
+Problem
+
+Mission Control and crew dashboards require a website_id, but the app is not consistently setting or passing it.
+
+Required Fix
+
+Introduce a global website context.
+
+Mechanism (one of these)
+	•	URL-based: /app/:website_id/mission-control
+	•	OR session-based: active_website_id stored in session
+
+Pick one and use it everywhere.
+
+Required API
+	•	POST /api/websites/select
+
+{ "website_id": "..." }
+
+
+
+Sets active_website_id in session.
+
+⸻
+
+6. Mission Control Page Requirements (Unlock Existing Page)
+
+Route
+
+GET /app/mission-control
+
+On Load, Must Fetch:
+	•	Active website summary
+	•	Latest run status
+	•	Health score
+	•	Alerts
+	•	Enabled crew
+	•	Last changes
+
+Required API Calls
+	•	GET /api/websites/:website_id/summary
+	•	GET /api/websites/:website_id/alerts
+	•	GET /api/websites/:website_id/crew
+
+If any call fails:
+	•	Show partial UI with “data unavailable” state
+	•	Do NOT block page render
+
+⸻
+
+7. Crew Dashboards (Access Control Only)
+
+Crew Pages Already Exist
+
+Examples:
+	•	/app/crew/content
+	•	/app/crew/competitive
+	•	/app/crew/performance
+
+Access Rules
+	•	If crew is enabled → show dashboard
+	•	If crew is not enabled → show:
+	•	Read-only preview
+	•	CTA: “Enable this crew”
+
+Required API
+	•	GET /api/websites/:website_id/crew
+	•	POST /api/websites/:website_id/crew/enable
+	•	POST /api/websites/:website_id/crew/disable
+
+Crew Object
+
+{
+  "crew_id": "content_growth",
+  "enabled": true,
+  "status": "active|paused",
+  "last_run": "timestamp"
+}
+
+
+⸻
+
+8. Settings Pages (Make Them Reachable)
+
+Route
+
+/app/settings
+
+Sections (already built, just wire data)
+	•	Website settings
+	•	Run frequency
+	•	Safe mode
+	•	Competitors list
+	•	Keyword preferences
+
+Required APIs
+	•	GET /api/websites/:website_id/settings
+	•	PUT /api/websites/:website_id/settings
+
+Important
+	•	Settings should save without requiring a full page reload
+	•	Changes should update next scheduled job automatically
+
+⸻
+
+9. Integrations Setup (OAuth Unlock)
+
+Route
+
+/app/integrations
+
+Required Integrations
+	•	Google Search Console
+	•	GA4
+
+Required API
+	•	POST /api/integrations/google/connect
+	•	GET /api/integrations/status
+
+UI Rules
+	•	If not connected → show “Connect” CTA
+	•	If connected → show property selector + status
+
+⸻
+
+10. Navigation (Why Users Feel “Stuck”)
+
+Required Global Nav (App Only)
+
+Visible on all /app/* pages:
+	•	Mission Control
+	•	Crew
+	•	Reports
+	•	Settings
+	•	Integrations
+	•	Logout
+
+This nav must:
+	•	Persist across routes
+	•	Respect website context
+	•	Reflect enabled crew
+
+⸻
+
+11. Default Entry Points (Fix the “Can’t Get There” Issue)
+
+After Login
+
+Redirect to:
+
+/app/mission-control
+
+After Free Report Upgrade
+
+Redirect to:
+
+/app/mission-control?welcome=true
+
+After Selecting Website
+
+Redirect to:
+
+/app/mission-control
+
+
+⸻
+
+12. Minimal Acceptance Criteria (Very Important)
+
+This work is done when:
+	•	A logged-out user cannot access /app/*
+	•	A logged-in user can:
+	•	Reach Mission Control
+	•	Switch websites
+	•	View crew dashboards
+	•	Enable/disable crew
+	•	Adjust settings
+	•	Connect integrations
+	•	No page is blocked by missing data
+	•	No dead-end routes exist
+
+⸻
+
+13. Likely Root Causes (For Debugging)
+
+Based on what you said, the most likely blockers are:
+	•	No consistent website_id context
+	•	Routes not guarded correctly
+	•	App shell not mounted for /app/*
+	•	Pages expecting data that isn’t fetched yet
+	•	Auth session not available on client render
+
+Tell the team to start there.
+
+⸻
+
+14. Explicit Instruction to the Team (Use This Sentence)
+
+“Do not rebuild pages. Focus only on auth, routing, website context, and data wiring so existing Mission Control and crew pages are reachable and functional.”
+
+⸻
+
+If you want next, I can:
+	•	Turn this into a one-page debug checklist
+	•	Help you design the first Mission Control default view
+	•	Write a dev kickoff message you can paste into Slack
+	•	Map Mission Control metrics to retention
+
+This is the right problem to solve next.

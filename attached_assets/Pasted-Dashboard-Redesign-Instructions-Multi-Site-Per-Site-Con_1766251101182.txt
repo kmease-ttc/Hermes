@@ -1,0 +1,162 @@
+Dashboard Redesign Instructions (Multi-Site, Per-Site Console)
+
+Goal
+Redesign the dashboard so it supports multiple connected sites, with a site selector and a per-site “SEO operating console” broken into 3 pillars:
+1) Website Traffic
+2) Technical SEO
+3) Keyword Ranking
+
+Do not show all sites’ metrics on one page. The user selects a site first, then the dashboard is fully scoped to that site.
+
+1) Navigation + Information Architecture
+1.1 Left nav
+- Keep “Dashboard” as the default landing page.
+- Keep “Sites” (or “Websites”) as the place to manage connected sites.
+- Keep “SERP Tracking” (or “Keyword Tracking”) as a section, but make it site-scoped.
+
+1.2 New dashboard structure (within Dashboard)
+Dashboard should be a per-site console with:
+- Site Selector (top-left of page or top bar)
+- Overview panel (summary)
+- 3 pillar cards/sections (Traffic, Technical SEO, Keyword Ranking)
+- “Recommended Actions” section (optional for now, but leave a placeholder panel)
+
+2) Site Selector (Required)
+2.1 Placement
+- Add a site selector dropdown (or left-rail selector) that is visible on:
+  - Dashboard
+  - SERP/Keyword Tracking
+  - Any “Run Diagnostics” screens
+- Default to last-selected site (persist in local storage and/or user profile).
+
+2.2 Behavior
+- When user changes the selected site:
+  - Update the route query param: ?siteId=...
+  - Refetch all dashboard data for that siteId
+  - Update headings/subtitles to reflect the site (e.g., “Daily diagnostic report for {domain}”)
+  - Update actions (Run Diagnostics, Export) to run/export for that site.
+
+2.3 Data model
+- Ensure there is a Websites/Sites table with at minimum:
+  - id
+  - name
+  - domain
+  - ga4PropertyId (optional)
+  - gscSiteUrl (optional)
+  - adsCustomerId (optional)
+  - createdAt/updatedAt
+- If you already have a Sites Registry, reuse it; otherwise, add it.
+
+3) Replace “Single Health Score” with 3 Pillars (Required)
+3.1 Remove/De-emphasize overall Health Score
+- Keep the concept of a “score” if needed, but do not present it as the main headline metric.
+- The dashboard top area should highlight the three pillars independently.
+
+3.2 Pillar definitions
+A) Website Traffic
+- Data sources: GA4 (sessions/users), optionally Ads (spend/clicks) and Clarity (optional)
+- Minimum KPIs:
+  - Organic sessions (7d + trend vs prior 7d)
+  - Total sessions (7d + trend)
+  - Top landing pages (by organic sessions)
+  - Biggest losers/winners (page-level traffic change)
+- Status logic (Good / Needs Attention / Critical):
+  - Needs Attention if organic sessions down more than a configurable threshold (e.g., -10% WoW)
+  - Critical if down more than a higher threshold (e.g., -25% WoW) or tracking broken
+  - Good otherwise
+
+B) Technical SEO
+- Data sources: existing “Website Checks”, crawl data, and/or Screaming Frog-style crawler results
+- Minimum KPIs:
+  - Indexation/Crawlability flags:
+    - robots.txt blocking issues
+    - noindex presence on key pages
+    - sitemap presence/health
+    - pages returning 4xx/5xx
+  - On-page hygiene:
+    - missing/duplicate title tags
+    - missing/duplicate H1
+  - Optional:
+    - Core Web Vitals summary
+- Status logic:
+  - Critical if any crawl/indexation blockers detected (robots blocking, widespread 5xx, sitemap missing)
+  - Needs Attention if high volume of duplicates/missing metadata exceeds thresholds
+  - Good otherwise
+
+C) Keyword Ranking
+- Data sources: GSC queries + SERP tracking API (if available)
+- Minimum KPIs:
+  - Tracked keywords count
+  - Keywords in Top 3 / Top 10 / 11–20 (counts)
+  - Movers: biggest winners/losers (position deltas)
+  - Opportunities: keywords in positions 4–12 (quick wins)
+- Status logic:
+  - Needs Attention if top-10 count declining WoW or average position worsens significantly
+  - Critical if tracked keywords are not updating (connector failure)
+  - Good otherwise
+
+4) Dashboard UI Layout (Recommended)
+4.1 Header row
+- Title: “Overview”
+- Subtitle: “Daily diagnostic report for {domain}”
+- Right-side actions:
+  - Export Report (site-scoped)
+  - Run Diagnostics (site-scoped)
+
+4.2 Summary row (3 pillar cards)
+Each card shows:
+- Pillar title
+- Status badge (Good / Needs Attention / Critical)
+- 1-sentence explanation (generated from most important driver)
+- 2–4 key KPIs
+- “View details” link that jumps/scrolls to the section below or navigates to a details page
+
+4.3 Detail sections (stacked)
+- Website Traffic section: small trend charts + tables
+- Technical SEO section: issues grouped by impact (Indexing/Crawlability first)
+- Keyword Ranking section: grouped counts + movers + quick wins
+
+5) API + State Changes (Required)
+5.1 All dashboard API endpoints must accept siteId
+- Every “get overview” call: /api/dashboard/overview?siteId=...
+- Every “run diagnostics” call: /api/diagnostics/run?siteId=...
+- Every “export” call: /api/reports/export?siteId=...
+- SERP/keywords: /api/serp/* and /api/keywords/* must be site-scoped
+
+5.2 Server-side resolution of credentials by siteId
+- Do not rely on global env vars for per-site configuration.
+- Look up the site’s integration configuration from DB by siteId.
+- For shared credentials (e.g., SERP API key), keep global secret; for per-site identifiers (GA4 property ID, GSC site), store on the site record.
+
+5.3 UI state
+- Introduce a site context provider/hook:
+  - selectedSiteId
+  - selectedSite object (name/domain)
+  - setter that updates query param + storage
+- All dashboard pages should read selectedSiteId from:
+  1) query param (if present)
+  2) local storage (fallback)
+  3) first available site (final fallback)
+
+6) Reporting/Export (Site-Scoped)
+- Export should generate a report for the currently selected site only.
+- Report sections should align to the 3 pillars (Traffic, Technical SEO, Keyword Ranking).
+- Include “Inconclusive” states when data is missing, but do so per pillar (not for the whole site).
+
+7) “Inconclusive” Handling (Required)
+- Replace the current single “Inconclusive” banner with per-pillar readiness states:
+  - Traffic: GA4 connected? last fetch time? data volume sufficient?
+  - Technical SEO: last crawl time? checks completed?
+  - Keyword Ranking: GSC connected? SERP tracking running? keywords seeded?
+- On the Overview page, show “Inconclusive” only for the affected pillar, not the whole dashboard.
+
+8) Acceptance Criteria
+- User can switch sites via dropdown, and every dashboard metric updates to reflect that site.
+- “Run Diagnostics” runs for the selected site and updates only that site’s latest run.
+- Dashboard is organized into 3 pillars (Traffic, Technical SEO, Keyword Ranking) with independent statuses.
+- No page shows combined “all sites metrics” by default.
+- URL includes siteId for shareable deep links to the same site’s dashboard state.
+
+9) Implementation Notes
+- Keep the existing cards for GA4/GSC/Ads/Website Checks if useful, but move them into the correct pillar sections or a “Integrations” subpanel.
+- Prioritize delivering the site selector + 3-pillar restructure first; you can iterate on the deep metrics after the layout is correct.

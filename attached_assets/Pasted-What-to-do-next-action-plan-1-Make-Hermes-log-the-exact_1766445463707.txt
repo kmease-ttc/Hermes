@@ -1,0 +1,139 @@
+What to do next (action plan)
+1) Make Hermes log the exact URL it is calling (so we stop guessing)
+
+Developer instruction
+
+In the SERP worker “test connection” call, log (and store in the run record):
+
+base_url
+
+path
+
+full final URL
+
+response status
+
+response body snippet (first 200 chars)
+
+Store it in service_runs.outputs_json.debug so it appears in the Service detail modal under “Diagnostics”.
+
+Example:
+
+{
+  "debug": {
+    "requested": "https://.../health",
+    "status": 404,
+    "body": "Cannot GET /health"
+  }
+}
+
+
+This turns “404 mystery” into “oh, Hermes called /health but worker doesn’t have it.”
+
+2) Stop using “legacy mode” for SERP test connection
+
+Right now Hermes is testing SERP like a generic worker (health endpoint). Your SERP worker doesn’t match that legacy contract.
+
+Developer instruction
+
+For service slug serp_keyword_intel, override test logic:
+
+✅ Do not call /health (unless your worker actually has it)
+✅ Instead call an endpoint you confirmed exists:
+
+GET /api/serp/top-keywords?site=empathyhealthclinic.com
+
+GET /api/serp/snapshot?site=empathyhealthclinic.com&keyword=psychiatrist%20near%20me
+
+If either returns 200, mark Connected.
+
+3) Encode the keyword parameter correctly (common hidden 404/400 issue)
+
+Even if the endpoint exists, an unencoded keyword can create weird behavior.
+
+Developer instruction
+
+Always encodeURIComponent(keyword) before calling snapshot endpoint.
+
+The clean, permanent fix (recommended)
+Option A: Add a real /health endpoint to the SERP worker
+
+This is best long term because every worker will behave consistently.
+
+In SERP worker app
+
+Implement:
+
+GET /health → returns 200 with { ok: true, service: "serp", version: "..." }
+
+Then Hermes can do standard health checks.
+
+Option B: Store per-worker endpoint paths in Bitwarden JSON (so Hermes doesn’t guess)
+
+Update SEO_SERP_&_Keyword value to include the correct paths:
+
+{
+  "base_url": "https://e9c3c428-...janeway.replit.dev",
+  "api_key": "…",
+  "health_path": "/api/serp/top-keywords",
+  "test_params": { "site": "empathyhealthclinic.com" },
+  "snapshot_path": "/api/serp/snapshot"
+}
+
+
+Then Hermes test connection becomes:
+
+GET {base_url}{health_path}?site=...
+
+No more legacy mode.
+
+Why you’re still seeing “2 missing”
+
+You already know the two missing outputs are likely:
+
+Top Keywords
+
+SERP Snapshots
+
+Those correspond to the two endpoints above. Hermes is currently failing before it can successfully call them.
+
+Once Hermes calls the correct endpoint(s) and stores:
+
+"actualOutputs": ["serp_top_keywords", "serp_snapshots"]
+
+
+…the missing count will drop.
+
+Minimal developer patch (fastest)
+
+Tell your dev to make this exact change:
+
+In Hermes serp_keyword_intel testConnection handler:
+
+Load base_url/api_key from Bitwarden JSON
+
+Call:
+
+GET {base_url}/api/serp/top-keywords?site={siteDomain}
+
+If 200:
+
+set connected = true
+
+set actualOutputs += ["serp_top_keywords"]
+
+Optionally call snapshot with a hardcoded test keyword:
+
+psychiatrist near me (encoded)
+
+if 200 set actualOutputs += ["serp_snapshots"]
+
+Save those outputs into the run record
+
+This will immediately eliminate the legacy 404 loop.
+
+If you want to sanity-check it yourself in 10 seconds: open the worker base URL in a browser and append exactly:
+
+/api/serp/top-keywords?site=empathyhealthclinic.com
+
+If that loads, Hermes must use that path as its health/test endpoint. If it doesn’t, the worker URL is wrong (but your earlier tests suggest it does).

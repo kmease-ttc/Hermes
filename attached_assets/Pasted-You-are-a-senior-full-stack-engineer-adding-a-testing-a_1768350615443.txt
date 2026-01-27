@@ -1,0 +1,259 @@
+You are a senior full-stack engineer adding a **testing and guardrail framework** to enforce the **Canonical Crew Identity System** across the entire codebase.
+
+Goal
+Any time we add or reference a crew element (KPI, metric, task, run, integration status, dashboard card, report section), it must be done through the canonical identity system:
+
+* Canonical ID: `crewId`
+* Canonical registry: `crewRegistry`
+* Canonical KPI IDs: `primaryKpi.id` and defined KPI schema per crew
+* Canonical “data access” functions: `getCrewIntegrationConfig`, `getCrewOverview`, etc.
+
+We need tests + developer guardrails that prevent drift.
+
+Non-negotiables
+
+* No “stringly typed” crew names (“Scotty”, “technical”, “crawl_render”) in logic paths.
+* No metrics/KPI extraction unless it is tagged with crewId and validated against the crew’s KPI contract.
+* Fail CI if any crew identity or KPI contract is violated.
+* Tests must cover: registry completeness, config keys, KPI schemas, and dashboard aggregation correctness.
+
+---
+
+## 1) Introduce a real test runner + CI hook
+
+If not present, add **Vitest** (preferred for Vite/TS apps) or Jest.
+
+### Add deps
+
+* vitest
+* @vitest/coverage-v8
+* zod (if not already) for runtime schema validation
+* tsd (optional but powerful for type tests)
+
+### package.json scripts
+
+* "test": "vitest run"
+* "test:watch": "vitest"
+* "test:coverage": "vitest run --coverage"
+* "typecheck": "tsc -p tsconfig.json --noEmit"
+* "lint": "eslint ."
+
+In CI (or Replit workflow), run:
+
+* lint
+* typecheck
+* test
+
+---
+
+## 2) Make “crewId” a first-class type and ban raw strings
+
+### Canonical type
+
+In `shared/crew/crewRegistry.ts`:
+
+* Export `CrewId` union type and `crewRegistry` as const.
+
+Example:
+
+* `export type CrewId = typeof crewIds[number]`
+* `export const crewIds = [...] as const`
+
+### ESLint rule to prevent drift
+
+Add a custom lint rule (or simplest approach: bans via no-restricted-syntax/no-restricted-imports):
+
+* Ban importing old “crew constants” from random files
+* Ban use of crew names as string literals in integration/dashboard/report logic files
+
+Minimum viable:
+
+* In key folders (server/integrations, server/crew, client/components/dashboard), disallow:
+
+  * `"scotty"` literal except in registry/test files
+  * `"Speedster"` literal except display text
+
+Pragmatic approach:
+
+* Allow displayName strings in UI copy, but enforce that logic uses `crewId`.
+
+---
+
+## 3) Add runtime schema validation for KPI payloads (critical)
+
+Even with TS, workers can return odd payloads. We need a contract.
+
+### Define KPI schemas per crew
+
+Create `shared/crew/kpiSchemas.ts` using Zod:
+
+* A base KPI record:
+
+  * crewId: CrewId
+  * kpiId: string
+  * value: number | string
+  * measuredAt: ISO string
+
+Then per crew:
+
+* allowed KPI IDs (enum)
+* expected value types/units
+
+Example:
+
+* Scotty allows: "crawlHealth", "indexCoverage", "criticalIssues"
+* Speedster allows: "performanceScore", "worstLcp"
+
+The normalization pipeline must validate:
+
+* every KPI emitted matches (crewId, kpiId) allowed for that crew
+* required KPIs exist for “primaryKpi.id” (or else mark “no data yet”)
+
+If validation fails, the run is stored as failed with explicit “contract error”.
+
+---
+
+## 4) Add contract tests: registry + config key validation
+
+Create `tests/crewRegistry.spec.ts`:
+
+Tests:
+
+1. Registry completeness
+
+* crewRegistry includes all 11 crews
+* Every entry has:
+
+  * crewId
+  * displayName
+  * worker.baseUrlConfigKey
+  * worker.apiKeySecretKey
+  * worker.outputsContract
+  * dashboards.primaryKpi.id
+  * dashboards.route
+
+2. No duplicates
+
+* crewIds unique
+* integrationId unique
+* routes unique
+
+3. Primary KPI contract integrity
+
+* primaryKpi.id must exist in that crew’s KPI schema allowed IDs
+
+4. Config key naming consistency
+
+* baseUrlConfigKey ends with `_BASE_URL`
+* apiKeySecretKey ends with `_API_KEY` (or accepted variants)
+
+---
+
+## 5) Add contract tests: Integrations status is derived from canonical resolver
+
+Create `tests/integrationsStatus.spec.ts`:
+
+* Mock `getCrewIntegrationConfig(crewId)` and ensure Integrations API uses it.
+* Ensure Integrations does not look up any crew by displayName.
+* For each crew:
+
+  * if missing config → NEEDS_CONFIG
+  * if health check fails → UNREACHABLE
+  * if outputs missing → PARTIAL
+  * if latest run has required outputs → READY
+
+This ensures Integrations and dashboards can’t drift.
+
+---
+
+## 6) Add contract tests: Mission Control aggregation uses crewId + primaryKpi.id
+
+Create `tests/missionControlAggregation.spec.ts`:
+
+Given:
+
+* A set of fake DB rows for crew_runs and crew_kpis
+
+Assert:
+
+* Mission Control cards are produced for each CrewId
+* Each card’s displayed KPI comes from:
+
+  * crewRegistry[crewId].dashboards.primaryKpi.id
+* No card can display a KPI from another crew
+* If no KPI exists, card shows “No data yet” (not placeholder fake)
+
+Add a test that intentionally injects a KPI with mismatched crewId and ensure it is rejected.
+
+---
+
+## 7) Add “type tests” to enforce developer ergonomics (optional but excellent)
+
+Add `tsd` tests (or pure TS compile-time tests) that ensure:
+
+* Functions accepting crew identifiers only accept CrewId
+* A metric fetch function cannot be called with a displayName string
+* KPI getters require (crewId, kpiId) from allowed enums
+
+This prevents drift before runtime.
+
+---
+
+## 8) Add a “lineage verification” test command
+
+Create `scripts/verify_lineage.ts` that:
+
+* Iterates all crewIds
+* Validates:
+
+  * registry completeness
+  * KPI schema validity
+  * integration resolver can resolve keys (in test mode, stubbed)
+  * overview endpoint returns consistent crewId + kpiId
+
+Wire it into:
+
+* `npm run test` or `npm run verify`
+
+This becomes the quick “does the identity system hold?” check.
+
+---
+
+## 9) Developer workflow guardrails
+
+When someone adds a new crew or KPI:
+
+* They must:
+
+  1. Add crew to registry
+  2. Add KPI schema entries
+  3. Add worker outputs contract
+  4. Add/confirm primary KPI id exists
+  5. Run tests (CI will enforce)
+
+Add a short `docs/CREW_IDENTITY_CONTRACT.md` with a checklist and links to failing tests.
+
+---
+
+## Deliverables
+
+* Vitest (or Jest) added + scripts in package.json
+* Zod KPI schema contract file + validation usage in normalization pipeline
+* Test suite:
+
+  * crewRegistry.spec.ts
+  * integrationsStatus.spec.ts
+  * missionControlAggregation.spec.ts
+* Optional: tsd/type tests
+* Script: scripts/verify_lineage.ts
+* CI/workflow update to run lint + typecheck + test
+
+---
+
+Guiding principle
+Every piece of data must carry:
+
+* crewId (canonical identity)
+* kpiId (validated against that crew’s contract)
+
+If it doesn’t, it doesn’t ship.

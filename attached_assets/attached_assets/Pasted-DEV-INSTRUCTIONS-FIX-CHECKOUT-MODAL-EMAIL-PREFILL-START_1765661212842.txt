@@ -1,0 +1,191 @@
+DEV INSTRUCTIONS — FIX CHECKOUT MODAL EMAIL PREFILL + “START MY SUBSCRIPTION” DOES NOTHING
+
+Issues
+	1.	The “Start My Subscription” button appears greyed/disabled until email is entered, but it’s not obvious email is required.
+	2.	After clicking “Start My Subscription”, nothing happens: modal stays open, no redirect, user is stuck.
+
+Goal
+Make email requirement obvious, prefill email from earlier workflow, and ensure clicking the CTA reliably initiates checkout with clear loading + error handling.
+
+⸻
+
+A) PREFILL EMAIL FROM EARLIER WORKFLOW
+	1.	Define the source of truth for “customer email”
+Where you already collect email earlier in the flow, persist it in one (or more) of:
+
+	•	authenticated user profile (best if user is logged in)
+	•	session (server-side) keyed by session id
+	•	localStorage (client-side fallback)
+	•	URL param (not ideal, but workable)
+
+Implementation (recommended)
+	•	When the user enters email earlier:
+	•	Save to DB if user exists (users table)
+	•	Also save to session/localStorage for immediate reuse:
+	•	localStorage.setItem("arclo_customer_email", email.trim().toLowerCase())
+
+	2.	On “Launch Your Website” modal open, prefill the email field
+In the modal component:
+
+	•	Set default value from:
+	•	logged-in user email (if available)
+	•	else session email (if you have it)
+	•	else localStorage key
+	•	Only prefill if email passes basic validation.
+
+Pseudo:
+	•	const initialEmail = user?.email ?? sessionEmail ?? localStorageEmail ?? ""
+	•	Initialize form state with initialEmail
+
+	3.	Keep email synced if user edits it in the modal
+
+	•	On change, update localStorage immediately:
+	•	localStorage.setItem("arclo_customer_email", email)
+	•	If the user completes checkout successfully, persist it to the user profile as well.
+
+Acceptance criteria
+	•	When the modal opens, “Your email” is already filled in for users who provided it earlier.
+	•	The CTA is enabled immediately if the prefilled email is valid.
+
+⸻
+
+B) MAKE EMAIL REQUIREMENT OBVIOUS (UX)
+
+Even with prefill, make it clear and bulletproof.
+	1.	Label + required indicator
+
+	•	Change label to: “Your email (required)”
+	•	Add * required marker
+	•	Add placeholder that looks like an email, not “you@company.com” if it confuses people.
+
+	2.	Inline validation message
+If email is empty and they try to click:
+
+	•	Show inline error under field: “Email is required to create your account and send login details.”
+
+	3.	CTA disabled state clarity
+If CTA is disabled:
+
+	•	Add a small helper text directly above the button:
+	•	“Enter your email to continue”
+	•	Or change button tooltip text on hover (desktop).
+
+Acceptance criteria
+	•	A user immediately understands they must enter an email without guessing.
+
+⸻
+
+C) FIX “START MY SUBSCRIPTION” DOES NOTHING (CORE BUG)
+
+This is almost always one of:
+	•	onClick handler not firing
+	•	handler fires but API call fails silently
+	•	handler fires, session created, but redirect not executed
+	•	promise never resolves due to uncaught exception
+	•	modal overlay blocks navigation / the checkout opens in same modal but isn’t mounted
+
+You need explicit loading + explicit error.
+	1.	Make the CTA run a single “create checkout session” function
+On click:
+
+	•	validate email
+	•	set loading state
+	•	disable closing the modal while loading (optional but recommended)
+	•	call server endpoint to create checkout session
+	•	redirect to returned URL
+	•	if error, show it inside the modal
+
+Required UX states
+	•	Button text becomes: “Starting checkout…” with spinner
+	•	Button disabled while request in flight
+	•	If success: redirect immediately
+	•	If fail: show error banner + keep modal usable
+
+	2.	Add client-side logging + error surface
+In the click handler:
+
+	•	Wrap the entire flow in try/catch
+	•	Console log the error in dev
+	•	Show user-friendly error in UI with a request id if available
+
+Example UI error:
+“We couldn’t start checkout. Please try again.”
+“If it keeps happening, email support@arclo.pro with code: {requestId}”
+	3.	Ensure the server endpoint returns a redirect URL
+Server must return:
+
+	•	url (Stripe Checkout URL) OR sessionId usable by stripe.redirectToCheckout
+
+Pick one approach and make it consistent.
+
+Recommended simplest approach:
+	•	Server creates Stripe Checkout Session
+	•	Server returns { url: session.url }
+	•	Client does window.location.assign(url)
+
+	4.	Confirm the request is actually being sent
+Dev checklist:
+
+	•	Open browser devtools → Network
+	•	Clicking button should produce a request to your checkout endpoint
+If there is no request:
+	•	The button may be inside a form and default submission is blocked
+	•	The button might be disabled due to CSS overlay
+	•	The onClick might not be attached
+
+Fixes:
+	•	Ensure button is type="button" (not submit) unless you intentionally submit a form.
+	•	Ensure the onClick is attached to the actual clickable element.
+	•	Ensure no pointer-events: none on parent overlay.
+
+	5.	Handle “double click” and “dead click”
+
+	•	Add idempotency on server (Stripe idempotency key)
+	•	Debounce click on client: if loading, return
+
+	6.	Add a timeout + recovery
+If request takes > 15 seconds:
+
+	•	show “Still working…” + retry button
+	•	allow modal close again
+
+Acceptance criteria
+	•	Clicking “Start My Subscription” always results in either:
+a) Redirect to Stripe checkout within 1–3 seconds, OR
+b) A visible error message explaining what happened with a retry option
+	•	The user is never stuck with a modal they can’t proceed from.
+
+⸻
+
+D) VERIFY THIS IS NOT THE SAME ROOT CAUSE AS “FAILED TO CREATE CHECKOUT SESSION”
+
+Earlier you had “Failed to create checkout session” on a different step.
+This new behavior (nothing happens) suggests the error is not being surfaced.
+
+Required change:
+	•	Use the same shared checkout creation function everywhere
+	•	Standardize error handling and show the same error banner in all checkout entry points
+
+⸻
+
+E) QUICK IMPLEMENTATION NOTES (SO IT’S FAST)
+
+If you’re using React + a modal:
+	•	Store email in a form state hook
+	•	Use a single async function:
+	•	startCheckout({ email, selectedPlan, addOns })
+
+Server endpoint must:
+	•	Validate email
+	•	Validate price IDs
+	•	Create session
+	•	Return { url, requestId } or { sessionId, requestId }
+
+Client must:
+	•	setLoading(true)
+	•	call endpoint
+	•	redirect
+	•	catch errors and show banner
+	•	setLoading(false)
+
+If you paste the checkout modal component (or file name + the click handler), I’ll rewrite the exact handler + state logic in your style so you can drop it in.

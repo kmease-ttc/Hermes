@@ -1,0 +1,111 @@
+Yep — I can see the real issue now. Inter/font wasn’t the main problem.
+
+What’s actually wrong (and why it looks “washed out”)
+
+Your UI is applying opacity to text color variables. The agent even surfaced it:
+
+rgba(248, 250, 252, 0.94) — that alpha makes text look faded
+…and in your dashboard, a bunch of labels look like they’re at ~40–60% opacity, not true contrast.
+
+This is almost always caused by one of these patterns:
+	1.	CSS variables like:
+
+--foreground: 248 250 252 / 0.94;
+
+	2.	Tailwind classes like:
+
+	•	text-white/60
+	•	text-slate-400
+	•	opacity-60 on a parent container
+
+	3.	“muted” token usage on primary text by mistake (e.g. using muted-foreground everywhere)
+
+⸻
+
+Fix it the right way (one pass)
+
+Step 1 — Make primary text 100% opacity
+
+Wherever your tokens are defined (likely src/index.css or src/styles/theme.css), change your foreground/text tokens to no alpha.
+
+If you have something like:
+
+--foreground: 248 250 252 / 0.94;
+
+Change to:
+
+--foreground: 248 250 252;
+
+Or if you’re using hex:
+	•	Primary text should be solid:
+	•	#0F172A (slate-900) on light backgrounds
+	•	#FFFFFF on dark nav
+
+No opacity for primary text.
+
+⸻
+
+Step 2 — Split “primary text” vs “muted text”
+
+You need two separate tokens, and you must use them consistently:
+	•	Primary text: always solid
+	•	text-text-primary → #0F172A
+	•	Secondary text: slightly muted but still readable
+	•	text-text-secondary → #475569
+
+Avoid using alpha here too; just use the lighter neutral.
+
+⸻
+
+Step 3 — Remove opacity from containers
+
+Search your repo for:
+	•	opacity-
+	•	text-white/
+	•	text-slate- (especially 300–500)
+	•	text-gray- (especially 300–500)
+
+Specifically check:
+	•	Dashboard cards
+	•	Subheaders
+	•	Stat labels (“Traffic at risk/mo”, “Updated weekly…”)
+
+If any parent wrapper has opacity-50 or similar, remove it. That fades everything inside.
+
+⸻
+
+Sidebar should be purple (you mentioned this too)
+
+Your sidebar is still too close to black. That’s because your nav token is using a very dark violet.
+
+Set the nav surface to a real brand-purple surface, not near-black.
+
+Recommended:
+	•	surface.nav = #4C1D95 is fine for contrast, but if it’s too dark, move it up to:
+	•	#5B21B6 (violet-800-ish)
+
+Then ensure nav text is:
+	•	#FFFFFF (solid)
+	•	inactive text can be #FFFFFF with opacity like /80 (that’s acceptable on dark backgrounds)
+
+⸻
+
+Quick confirmation test (takes 15 seconds)
+
+After the token fix:
+	•	The dashboard title and labels should look crisp
+	•	The “Updated weekly…” line should be readable, not ghosted
+	•	Card labels shouldn’t disappear into the background
+
+⸻
+
+If you want the fastest path right now
+
+Tell me which file contains your token variables:
+	•	src/index.css
+	•	src/styles/*
+	•	src/theme/*
+
+Or paste the section where --foreground / --text-* is defined.
+
+I’ll tell you the exact 3–5 lines to change so the whole app snaps into proper contrast.

@@ -1,0 +1,70 @@
+You are a senior frontend engineer working inside this Replit project.
+
+Goal
+Fix the Mission Overview widget so it matches the Speedster design exactly across all crew pages, including the “Performance Score” ring placement and its yellow/gold accent color.
+
+Problems to fix (based on screenshots)
+
+1. Speedster: the score ring (“65” + “Performance”) is floating / aligned to the full widget height. It should be aligned with the Mission Overview header area only (i.e., visually anchored to the Mission Overview title row), not vertically centered across the entire card.
+2. Other crews: their consolidated Mission Overview widget does not match Speedster’s look. We need the same layout + the same yellowish/gold accent for the score element.
+
+Non-negotiables
+
+* There must be ONE shared MissionOverview component used by all crew pages.
+* The score ring styling must be centralized (no per-crew CSS overrides).
+* The score ring color must match Speedster’s gold/yellow accent (use the same token/value Speedster currently uses for the ring/button accent).
+* The layout must remain responsive and not break on smaller widths.
+
+Implementation steps
+
+1. Locate the Mission Overview component
+
+* Find the component that renders the merged “Mission Overview” widget (the one we recently created).
+* Confirm which crews are using it and which are still using older variants.
+
+2. Make the score ring part of the Mission Overview header row (not full-card)
+
+* Refactor the component layout so the ring sits in a left column that is aligned to the title row.
+* Concretely:
+
+  * Create a header container row: Title + Status pill + (optional) “Fix Everything” button.
+  * Render the score ring in the same row (or immediately adjacent) with top alignment, not vertically centered to the card.
+* The ring should NOT stretch the card height. It should occupy only the header area and leave the rest of the card content to flow normally.
+
+3. Standardize score ring styling and color
+
+* Extract the score ring into a reusable component (if it isn’t already):
+
+  * client/src/components/mission/ScoreRing.tsx (or similar)
+* Ensure all crews use the same ScoreRing component.
+* Set the ring stroke + label color to the same yellow/gold used on Speedster:
+
+  * If Speedster already defines a token (e.g., --accent-gold), reuse it.
+  * If not, define a single CSS variable for the gold and use it everywhere in ScoreRing and any related badge accents.
+* Ensure the ring label “Performance” remains under the ring, but the whole block is aligned to the Mission Overview header region.
+
+4. Make all crews match Speedster
+
+* Update MissionOverview component so it renders identically regardless of crew:
+
+  * Title: “Mission Overview”
+  * Status pill in the same position
+  * “Next:” line formatting identical
+  * “NEXT ACTIONS” section header same typography
+  * Action rows spacing same
+  * Right side CTAs (Fix Everything / Run Now / Generate Plan / Fix it) keep their existing behavior but the layout must be consistent.
+* Remove any crew-specific spacing differences by consolidating styles inside the shared component.
+
+5. Verify visually
+
+* Check at minimum:
+
+  * Speedster: score ring is anchored to the Mission Overview header, gold accent correct.
+  * Scotty: Mission Overview matches Speedster layout and uses the same gold score ring styling (even if score is 0).
+  * Sentinel and Popular: same match.
+
+Deliverables
+
+* File paths changed
+* Confirmation that MissionOverview is now shared by all crews (list which pages import it)
+* Confirmation that ScoreRing colo

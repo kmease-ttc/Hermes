@@ -1,0 +1,153 @@
+You’re right — and your screenshots are the clearest proof: **Socrates has real data on the Socrates page (220 learnings, 5 insights, etc.) but the Mission Control Socrates card is empty.** That means the **home page is not reading from the same canonical “crew overview” source** (or the overview endpoint is not returning Socrates’ primary KPI), so the identity system isn’t actually being enforced end-to-end.
+
+Here’s exactly what’s broken and the most direct fix.
+
+---
+
+## What’s actually happening
+
+### Socrates page
+
+It’s showing data because it’s pulling from:
+
+* Socrates-specific endpoint (likely KB endpoints) **or**
+* a local data source / direct worker call
+
+### Mission Control card
+
+It’s trying to show the “primary KPI” for Socrates (whatever you defined, e.g. `insightsGenerated` or `totalLearningsStored`) from:
+
+* the Mission Control aggregation endpoint **which probably only reads `crew_kpis`**
+  and **Socrates’ KB stats are not being written into `crew_kpis`**, so Mission Control sees “no KPI” → blank card.
+
+So the identity system exists “on paper,” but Socrates is not participating in the **KPI normalization + storage step**.
+
+---
+
+## The fix (do this for Socrates, then replicate)
+
+### Step 1: Decide Socrates’ home KPI
+
+Based on your Socrates page, the most compelling core KPI is:
+
+* **Total Learnings** (e.g. 220)
+
+Secondary (nice later):
+
+* Insights (5)
+* Active Agents (1)
+
+So in the crew registry:
+
+* `primaryKpi.id = "totalLearnings"`
+
+### Step 2: Make Socrates emit that KPI into the canonical pipeline
+
+Every crew needs one step that takes its “page data” and writes it as a canonical KPI row:
+
+`crewId="socrates", kpiId="totalLearnings", value=220`
+
+This should happen whenever:
+
+* Socrates runs “collect learnings”
+* or KB data is refreshed
+* or Mission Control loads (if you want lazy refresh, but storage is better)
+
+### Step 3: Make Mission Control read only from `/api/crew/:crewId/overview`
+
+This is the enforcement part:
+
+* Mission Control must render the Socrates card from the same overview endpoint Socrates page uses (or an overview that composes it).
+* No separate Socrates-only logic.
+
+---
+
+## Vibe coding agent instructions (copy/paste)
+
+You are a senior full-stack engineer. Socrates shows real KB stats on the Socrates page (e.g., Total Learnings = 220), but the Socrates card on Mission Control is blank. Fix this by enforcing the canonical crew identity + KPI pipeline for Socrates.
+
+Goal
+Mission Control must display Socrates’ primary KPI using the canonical identity system: crewId="socrates" and a primary KPI sourced from the same data as the Socrates page.
+
+Non-negotiables
+
+* No placeholder KPI for Socrates when real data exists.
+* Mission Control must not read Socrates data from a separate code path.
+* Socrates page and Mission Control must share the same canonical “crew overview” model.
+
+Steps
+
+1. Set Socrates primary KPI in crew registry
+   In shared/crew/crewRegistry.ts:
+
+* crewId: "socrates"
+* primaryKpi:
+
+  * id: "totalLearnings"
+  * label: "Total Learnings"
+  * unit: "count"
+
+2. Add a Socrates KPI normalization step
+   Create server/crew/normalize/socrates.ts (or equivalent):
+
+* Fetch Socrates KB stats from the same source the Socrates page uses (likely the KB worker or KB API proxy).
+* Produce a CrewKpi row:
+  { crewId:"socrates", kpiId:"totalLearnings", value:<totalLearnings>, unit:"count", measuredAt: now }
+  Optionally also emit:
+
+  * kpiId:"insightsCount" value:<insights>
+  * kpiId:"activeAgents" value:<activeAgents>
+
+3. Persist Socrates KPIs into crew_kpis
+   In POST /api/crew/:crewId/run (or the Socrates “collect learnings” action handler):
+
+* When crewId === "socrates":
+
+  * call normalizeSocrates()
+  * insert returned KPI rows into crew_kpis with siteId + runId
+    If Socrates doesn’t use the run pipeline yet:
+* Add a lightweight endpoint:
+  POST /api/crew/socrates/refresh
+  that normalizes + stores the KPI rows.
+  Then wire Mission Control to call this refresh when needed (or trigger on existing Socrates task completion).
+
+4. Update /api/crew/socrates/overview
+   Ensure GET /api/crew/:crewId/overview returns:
+
+* primaryKpi = latest crew_kpis where kpiId === "totalLearnings"
+* plus status, trend, tasks count (existing pattern)
+
+5. Update Mission Control capabilities grid
+   Ensure the Socrates card is rendered from /api/crew/socrates/overview just like every other crew:
+
+* Display the primary KPI value (220)
+* Label “Total Learnings”
+* Use Socrates color styling
+* If no KPI exists, show “—” + “Run diagnostics” (but this should not happen if KB has data)
+
+Verification
+
+* Visit Socrates page: confirm Total Learnings shows 220
+* Visit Mission Control: Socrates card must show 220 and “Total Learnings”
+* Confirm there is no duplicate Socrates-only query path in Mission Control
+
+Deliverables
+
+* File paths changed
+* The exact KPI id used (“totalLearnings”)
+* Proof Socrates card on Mission Control now shows the real number
+
+---
+
+## One important note
+
+Your screenshot shows **“Last Write: Never / Last Query: Never”** in the Mission Control Socrates widget area, while the Socrates page clearly has learnings. That’s another hint that there are **two data sources**:
+
+* Socrates page pulling from KB store directly
+* Mission Control widget pulling from a different “socrates status” model that isn’t wired
+
+Once you force everything through the `crew_kpis` + `crew_overview` pipeline, that inconsistency goes away.
+
+---
+
+If you want, I can also recommend what the home KPI should be for every crew (so you lock it once and stop debating), but the immediate fix is: **normalize Socrates stats into `crew_kpis` under crewId="socrates" and make Mission Control read that.**

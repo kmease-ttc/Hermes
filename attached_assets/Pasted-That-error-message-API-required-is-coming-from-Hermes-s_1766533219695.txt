@@ -1,0 +1,138 @@
+That error message (“**API required**”) is coming from **Hermes’s API auth middleware**, not from Bitwarden or the workers.
+
+In other words: **the button click is hitting a Hermes backend endpoint that requires an API key header**, and the browser request isn’t sending it — so Hermes blocks the request *before it ever tries to read Bitwarden*.
+
+That’s why it feels like “it should have everything it needs” (it does), but it never gets to the part where it uses it.
+
+Here’s how to fix it cleanly.
+
+---
+
+## What’s happening
+
+* UI button → calls something like `POST /api/integrations/test-connections` or `POST /api/tests/smoke/start`
+* Hermes middleware checks for a header (usually `X-API-Key` or `Authorization`)
+* Header is missing → Hermes responds `401/403` with “API required”
+* Nothing runs
+
+Bitwarden has nothing to do with this part; Bitwarden is used *after* Hermes lets the request in.
+
+---
+
+# Developer Instructions: Fix “API required” for Test Connections / Smoke Tests
+
+## 1) Decide the auth model for your UI
+
+Pick **one** (recommended is Option A):
+
+### Option A (recommended): Same-origin UI requests are session-authenticated
+
+* If user is logged into the Hermes UI, buttons should work without requiring an API key.
+* Protect the UI via session cookies (or a lightweight logged-in check).
+* Keep API-key auth for external calls only.
+
+### Option B: UI always sends an API key header
+
+* Store a UI token and attach it to every request
+* This is more annoying, but workable.
+
+---
+
+## 2) Identify which middleware is returning “API required”
+
+In `server/routes.ts` or your auth middleware file, there’s likely something like:
+
+* `requireApiKey(req)` checking `TRAFFIC_DOCTOR_API_KEY`
+* header name: `X-API-Key` or `Authorization: Bearer`
+
+**Find the exact check and the exact header name.**
+
+---
+
+## 3) Fix it (two acceptable implementations)
+
+### Fix A: Allow authenticated UI routes without API key (best UX)
+
+In your auth middleware:
+
+* Apply API key requirement only to routes under something like:
+
+  * `/api/public/*` or `/api/worker/*`
+* Exempt internal UI actions:
+
+  * `/api/integrations/*`
+  * `/api/tests/*`
+  * `/api/services/*`
+  * `/api/runs/*`
+  * `/api/diagnostics/*`
+
+Example rule:
+
+* If request has valid session cookie → allow
+* Else require API key
+
+This keeps your UI functional and still protects external APIs.
+
+### Fix B: Send the API key header from the UI (quickest if you already have the key)
+
+If Hermes is using `TRAFFIC_DOCTOR_API_KEY` as the gate, then:
+
+* On the frontend fetch calls for:
+
+  * Test Connections
+  * Run Smoke Tests
+  * Ask Hermes
+    …attach the header:
+
+`X-API-Key: <TRAFFIC_DOCTOR_API_KEY>`
+
+Where does the UI get it?
+
+* Preferably from server-rendered session or an internal token endpoint, not hardcoded in client JS.
+* But since this is your internal tool, simplest is:
+
+  * create an endpoint `/api/auth/me` that returns a short-lived token
+  * UI stores it in memory and sends it
+
+**Do not store the raw key in localStorage long-term.**
+
+---
+
+## 4) Confirm the UI is not swallowing the error
+
+Right now it likely shows a toast like “API required” but doesn’t show details.
+
+Developer must:
+
+* log the status code + response body in console
+* show a clear toast:
+
+  * “Unauthorized: missing X-API-Key header”
+  * or “Session expired”
+
+---
+
+## 5) Quick verification steps (no guessing)
+
+Have dev do this:
+
+1. Click **Test Connections**
+2. Open browser DevTools → Network
+3. Find the request to `/api/...test-connections`
+4. Confirm:
+
+   * Response status is 401/403
+   * Response body says “API required”
+5. Confirm request headers do NOT include the required auth header
+6. Implement Fix A or Fix B
+7. Repeat: should return 200 and create runs
+
+---
+
+## Why this explains your exact symptom
+
+Because you’re already seeing Bitwarden is connected and services are showing “Ready” — but the button actions are backend mutations, and they’re being blocked by middleware before they can do anything.
+
+---
+
+If you tell me what the required header is in your app (is it `X-API-Key` or `Authorization: Bearer`?), I’ll give you the exact one-liner to add to the frontend request wrapper and/or the exact allowlist rule for the middleware.

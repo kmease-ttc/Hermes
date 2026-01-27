@@ -1,0 +1,100 @@
+If Hermes is **still failing** even though `/api/health` and `/api/smoke-test` exist, there are only **two realistic causes left**:
+
+1. **Hermes is not sending the API key the way the worker expects** (header mismatch), or
+2. **The API key in Bitwarden does not equal the worker’s expected key** (key mismatch)
+
+Because your worker now returns a clean JSON 401 for “invalid key”, Hermes should no longer show doctype/HTML/404 for this connector. It should fail (if it fails) at **Auth / Request Sent** with a **401**.
+
+### What to check in Hermes (takes 30 seconds)
+
+Open the Google Data Connector modal → run **Smoke Test** → expand the first failing stage and look for:
+
+* **Request URL** (should be `.../api/smoke-test`)
+* **Status** (if it’s 401, we’re in key mismatch territory)
+* **Headers sent** (redacted, but should show whether it used `x-api-key` or `Authorization`)
+
+If Hermes is sending `Authorization: Bearer ...` but the worker only checks `x-api-key`, that’s the issue. (You said the worker uses `requireAuth`; make sure it accepts both.)
+
+---
+
+## The best “gold standard” fix: stop comparing keys, compare fingerprints
+
+This eliminates your dyslexia problem permanently and makes worker debugging frictionless.
+
+Here’s the prompt to implement the fingerprint handshake across **worker + Hermes**, without ever revealing the secret.
+
+Implement **API key fingerprint diagnostics** for all Hermes worker connectors (starting with Google Services Worker), so we can verify key alignment without exposing secrets.
+
+GOAL:
+When Hermes tests a worker connector, it should be able to confirm:
+
+* "Hermes api_key fingerprint: ab12…ef34"
+* "Worker expected key fingerprint: ab12…ef34"
+  and immediately detect mismatches.
+
+PART A — Worker Changes (Google Services Worker)
+
+1. In the worker, compute:
+   expectedKey = process.env.TRAFFIC_DOCTOR_API_KEY (or WORKER_API_KEY fallback)
+   expectedKeyFingerprint = sha256(expectedKey) as hex, then display first 6 + last 6 chars (e.g., "9f2c1a…a31b77")
+
+2. Add this field to GET /api/health (public, no auth):
+   {
+   "ok": true,
+   "service": "google_services_worker",
+   "version": "1.0.0",
+   "expected_key_fingerprint": "9f2c1a…a31b77"
+   }
+
+3. Ensure /api/health remains JSON-only and safe (never prints the raw key).
+
+PART B — Hermes Changes
+
+1. When reading a worker connector config from Bitwarden:
+
+   * Compute `hermesKeyFingerprint` from the api_key using the same sha256 rule (first 6 + last 6).
+
+2. In Diagnostics Pipeline:
+
+   * In `auth_ready` stage details, show:
+
+     * auth_header_used: "x-api-key" or "Authorization"
+     * hermes_key_fingerprint: "...."
+
+3. During test/smoke:
+
+   * Always call {base_url}/health first
+   * Capture worker `expected_key_fingerprint` from the JSON response
+   * If fingerprints mismatch, fail early with:
+     failure_bucket = "api_key_mismatch"
+     suggested_fix = "Bitwarden api_key does not match worker’s expected key. Update one side."
+
+4. Headers:
+
+   * Always send BOTH headers for compatibility:
+
+     * x-api-key: <api_key>
+     * Authorization: Bearer <api_key>
+       (Worker can accept either; this avoids header mismatch issues across workers.)
+
+SECURITY:
+
+* Never log raw api_key.
+* Fingerprints only.
+* Redact any auth headers in logs.
+
+OUTCOME:
+We can validate key alignment instantly, safely, and repeatedly across all workers.
+
+---
+
+## Why this will solve your current issue
+
+If Hermes still fails, the diagnostics will tell you instantly:
+
+* **Header mismatch** → Hermes didn’t send `x-api-key` / worker didn’t accept Bearer
+* **Key mismatch** → fingerprints differ (Bitwarden and worker don’t match)
+
+Once the fingerprints match and Hermes sends the header(s), the smoke test will pass.
+
+If you paste the **Request Sent** + **Response Type Validated** stage details from the failing Hermes smoke test run (redacted is fine), I’ll tell you which of the two it is immediately.

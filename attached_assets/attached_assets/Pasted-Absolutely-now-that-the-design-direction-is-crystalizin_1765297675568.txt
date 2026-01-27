@@ -1,0 +1,319 @@
+Absolutely — now that the design direction is crystalizing (light, premium, AI-powered, with rich gradients + glass + floating elements), here is a **complete, professional-grade style guide** for Arclo.
+
+Give this to your developer/designer and apply globally as your design system.
+
+This is tuned specifically to the visuals you already have and the aesthetic you liked when you said:
+
+* “Love the dark section styling”
+* “Make the features cooler”
+* “Hero should be more visual”
+* “Header should be more interesting”
+* “Pricing needs cooler styling”
+
+This unifies everything.
+
+---
+
+# 🎨 **ARCLO STYLE GUIDE (v1.0)**
+
+### *AI Website Engine — Modern, Clean, Trustworthy, Premium*
+
+---
+
+# 1. **Brand Colors**
+
+## **Primary Palette**
+
+| Purpose             | Color     | Use                                    |
+| ------------------- | --------- | -------------------------------------- |
+| **Primary Indigo**  | `#4F46E5` | Primary buttons, icons, strong accents |
+| **Electric Purple** | `#7C3AED` | Gradients, icon glows, highlights      |
+| **Sky Blue**        | `#38BDF8` | Accent gradient hues, soft highlights  |
+| **Deep Sapphire**   | `#181857` | Dark sections, backgrounds             |
+
+These act as your **core AI gradient**:
+
+### **Primary Gradient (for buttons, tags, highlights)**
+
+```
+bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#38BDF8]
+```
+
+---
+
+## **Neutral Palette**
+
+| Purpose       | Color     | Use                                      |
+| ------------- | --------- | ---------------------------------------- |
+| **Slate 900** | `#0F172A` | Headings, dark text                      |
+| **Slate 700** | `#374151` | Body text                                |
+| **Slate 500** | `#64748B` | Secondary text                           |
+| **Slate 200** | `#E5E7EB` | Borders, dividers                        |
+| **Slate 100** | `#F1F5F9` | Light cards, backgrounds                 |
+| **White**     | `#FFFFFF` | Hero card, pricing cards, content blocks |
+
+---
+
+## **AI Glow Colors**
+
+Used for gradients behind mockups, stat sections, floating chips.
+
+* **Glow Purple:** `rgba(124, 58, 237, 0.35)`
+* **Glow Blue:** `rgba(79, 70, 229, 0.25)`
+* **Glow Pink:** `rgba(244, 114, 182, 0.25)`
+
+These should always be blurred heavily (`blur-3xl` or `blur-[80px]`).
+
+---
+
+# 2. **Typography**
+
+## **Headings: Manrope**
+
+```
+font-family: 'Manrope', sans-serif;
+```
+
+* Rounded but strong
+* Great for large, premium SaaS headings
+* Use for **all page titles and hero text**
+
+**Usage:**
+
+* `text-5xl font-extrabold tracking-tight` → Hero
+* `text-3xl font-bold` → Section titles
+* `text-xl font-semibold` → Subheaders
+
+---
+
+## **Body: Inter**
+
+```
+font-family: 'Inter', sans-serif;
+```
+
+**Usage:**
+
+* `text-base text-slate-600` for paragraphs
+* `text-sm text-slate-500` for microcopy
+* `text-lg text-slate-700` for important description text
+
+---
+
+# 3. **Component Styles**
+
+---
+
+## 🍞 **Header (Glass Navigation)**
+
+**Background:**
+
+```
+bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg
+```
+
+**Active link:**
+
+```
+text-slate-900 bg-slate-100 rounded-full px-4 py-1
+```
+
+**CTA button:**
+
+```
+rounded-full px-6 py-2.5
+bg-gradient-to-r from-indigo-500 to-purple-500 text-white
+shadow-[0_4px_20px_rgba(79,70,229,0.45)]
+hover:shadow-[0_6px_26px_rgba(79,70,229,0.55)]
+```
+
+---
+
+## 🦾 **Hero Section (Light Theme)**
+
+**Hero card:**
+
+```
+rounded-3xl shadow-2xl bg-white px-10 py-14
+```
+
+**Gradient glow behind mockup:**
+
+```
+absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(79,70,229,0.12),_transparent_60%)]
+```
+
+**Floating AI tags:**
+
+```
+rounded-full bg-white shadow-xl text-slate-700
+border border-slate-200/60 px-4 py-2 text-sm
+```
+
+---
+
+## ⭐ **Features Section (Upgraded AI Style)**
+
+**Feature card outer border:**
+
+```
+bg-gradient-to-br from-slate-100 via-white to-slate-100 p-[1px] rounded-3xl
+```
+
+**Inner card:**
+
+```
+rounded-[20px] bg-white/80 backdrop-blur
+shadow-md hover:shadow-xl transition hover:-translate-y-1
+```
+
+**Icon chip:**
+
+```
+rounded-2xl p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 text-white shadow-lg
+```
+
+**Highlight card (e.g., Autonomous SEO Engine):**
+
+```
+bg-gradient-to-br from-indigo-50 via-purple-50 to-sky-50
+border border-indigo-200/70
+```
+
+---
+
+## 🌑 **Dark Sections (Premium “AI Lab” Look)**
+
+**Background:**
+
+```
+relative overflow-hidden bg-[#181857]
+```
+
+**Add layered AI light blobs:**
+
+```
+absolute h-72 w-72 rounded-full bg-fuchsia-500/30 blur-3xl
+absolute h-64 w-64 rounded-full bg-indigo-500/40 blur-3xl
+```
+
+**Add faint grid or line chart behind stats** (already implemented).
+
+**Glass stat cards:**
+
+```
+rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10
+hover:bg-white/10 hover:border-indigo-300/40 transition
+```
+
+---
+
+## 💸 **Pricing Section (Needs Cooler Styling)**
+
+Here’s how to make pricing feel *premium and modern*:
+
+### Card container:
+
+```
+rounded-3xl shadow-xl bg-white/90 backdrop-blur-xl border border-slate-200
+hover:-translate-y-1 hover:shadow-2xl transition-all
+```
+
+### Featured (“Pro”) card:
+
+```
+bg-gradient-to-br from-indigo-50 to-sky-50 border border-indigo-200 shadow-xl
+```
+
+### Price typography:
+
+```
+text-4xl font-extrabold text-indigo-600 tracking-tight
+```
+
+### Button (primary):
+
+```
+rounded-full px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white
+shadow-[0_4px_20px_rgba(79,70,229,0.35)]
+hover:shadow-[0_6px_26px_rgba(79,70,229,0.45)]
+```
+
+---
+
+# 4. **Spacing + Layout Rules**
+
+To make the entire site feel consistent and professional:
+
+### Vertical spacing between sections:
+
+```
+py-20 md:py-28
+```
+
+### Maximum page width:
+
+```
+max-w-6xl mx-auto px-4 md:px-8
+```
+
+### Container cards:
+
+```
+rounded-3xl shadow-lg bg-white
+```
+
+### Section headings:
+
+```
+text-center mb-10 md:mb-14
+```
+
+---
+
+# 5. **Motion Guidelines**
+
+Motion should feel subtle, premium, not playful.
+
+### Hero mockup:
+
+* `animate-float-slow` (3–6px vertical float)
+
+### Floating tags:
+
+* `transition-all duration-300 ease-out hover:scale-105`
+
+### Cards (features, pricing):
+
+* Slight lift: `hover:-translate-y-1`
+* Subtle brighten: `hover:shadow-xl`
+
+---
+
+# 6. **Iconography**
+
+Use a consistent icon set:
+
+* **Lucide** or **Heroicons**
+* Weight: 1.5–2px stroke
+* Round, clean, modern
+
+Icons should be placed inside the **gradient icon chips** described in the Features section.
+
+---
+
+# NEXT STEPS
+
+I can now generate:
+
+### ✔ A full **Figma-ready design token sheet**
+
+### ✔ A matching **Tailwind config override** (colors, shadows, radius, transitions)
+
+### ✔ A **component library** (Hero, Header, FeatureCard, PricingCard, StatCard)
+
+### ✔ A **code-ready global theme file** using CSS variables
+
+If you'd like those, tell me:
+
+**“Generate the Tailwind theme”** or **“Generate the design tokens”** or **“Generate the component library.”**

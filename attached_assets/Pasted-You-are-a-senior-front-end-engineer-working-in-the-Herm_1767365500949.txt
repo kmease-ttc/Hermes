@@ -1,0 +1,60 @@
+You are a senior front-end engineer working in the Hermes SEO / Arclo UI codebase.
+
+Task
+On **Natasha’s page**, update the **Overview section** to clearly use **Market SOV** and **Tracked SOV** as the primary Share of Voice metrics, and move detailed Share of Voice analysis to the bottom of the page.
+
+What to change
+
+1. Overview section (top of Natasha page)
+
+* In the KPI / Overview row:
+
+  * Display **Market SOV**
+    Label: `Market SOV`
+    Definition: CTR-weighted visibility across *all target keywords* (from Lookout rankings).
+  * Display **Tracked SOV**
+    Label: `Tracked SOV`
+    Definition: Visibility vs the curated competitor set (current competitive snapshot metric).
+* Do **not** show any generic or ambiguous “Share of Voice” label in the Overview.
+* Both KPIs must always show a numeric percent (0–100), never blank.
+
+2. Bottom of page – Share of Voice section
+
+* Keep a dedicated **Share of Voice** section lower on the page (below competitors / gap analysis).
+* This section should:
+
+  * Explain the difference between Market SOV and Tracked SOV.
+  * Show any charts, breakdowns, or competitor comparisons you already have.
+  * Use this section for interpretation and detail, not headline KPIs.
+
+3. Data wiring rules
+
+* Market SOV:
+
+  * Source: Lookout keyword rankings.
+  * Use CTR-weighted calculation already implemented.
+* Tracked SOV:
+
+  * Source: Competitive Snapshot API.
+  * Uses the curated competitor list (the 5 competitors shown on Natasha’s page).
+* Do not recompute these in multiple places—use the same normalized values for both Overview KPIs and the detailed section.
+
+4. UX / copy requirements
+
+* Overview KPIs should be concise and scannable.
+* Bottom Share of Voice section can include helper text like:
+
+  * “Market SOV shows how visible you are across all target keywords.”
+  * “Tracked SOV compares your visibility against selected competitors.”
+* Avoid confusing language like “User Voice” or unlabeled “Share of Voice.”
+
+Acceptance criteria
+
+* Natasha Overview shows **Market SOV** and **Tracked SOV** clearly.
+* No duplicate or conflicting “Share of Voice” KPIs in the Overview.
+* A single, clear Share of Voice section exists at the bottom for deeper analysis.
+* Metrics update correctly after running analysis.
+* No blanks, NaN, or zeroes unless the data truly warrants it.
+
+Commit message
+`refactor(natasha): use market and tracked SOV in overview and move detailed SOV analysis to bottom`

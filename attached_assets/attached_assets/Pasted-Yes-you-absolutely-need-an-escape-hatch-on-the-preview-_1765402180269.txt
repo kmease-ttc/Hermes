@@ -1,0 +1,121 @@
+Yes — you absolutely **need** an escape hatch on the preview page.
+Right now the only visible action is *Claim Your Website*, which traps users and creates friction.
+
+The fix is simple:
+
+# ✅ Add a **“No Thanks, Go Back”** link/button to the Preview Page
+
+This gives users a graceful exit and reduces bounce anxiety.
+
+---
+
+# ⭐ What You Should Add (copy)
+
+Place this under the *Claim Your Website* button:
+
+### **No thanks — take me back**
+
+(a gray, subtle text link)
+
+OR more user-friendly:
+
+### **Not ready yet? Go back to the homepage**
+
+---
+
+# ⭐ Where It Should Live
+
+On the preview page, right under:
+
+```
+[ Claim Your Website → ]
+```
+
+Add spacing:
+
+* margin-top: 12–16px
+* low-contrast text
+* not a button (should not compete with primary CTA)
+
+---
+
+# ⭐ Developer Instructions (paste this to your dev)
+
+**File:** `client/app/sites/[id]/preview/page.tsx` (or wherever Preview component lives)
+
+Add below the Claim CTA:
+
+```tsx
+<div className="mt-4 text-center">
+  <a
+    href="/"
+    className="text-sm text-slate-500 hover:text-slate-700 transition"
+  >
+    No thanks — go back
+  </a>
+</div>
+```
+
+Or if you want a different route:
+
+```tsx
+href="/"
+```
+
+or
+
+```tsx
+href="/start"
+```
+
+---
+
+# ⭐ Optional: Add secondary navigation in the top right
+
+A small “Back” button in the header:
+
+```
+← Back
+```
+
+Developer:
+
+Add to the header bar:
+
+```tsx
+<Link
+  href="/"
+  className="text-sm text-slate-500 hover:text-slate-700"
+>
+  ← Back
+</Link>
+```
+
+---
+
+# ⭐ Best UX Pattern
+
+For max conversions *and* good user experience:
+
+* Keep “Claim Your Website” as big primary CTA
+* Add “No thanks — go back” below
+* Add a small “← Back” in the top-left or right
+
+This satisfies:
+
+* User control
+* Reduced frustration
+* Trust-building
+* Lower perceived pressure
+* Higher future visits because they don’t feel trapped
+
+---
+
+# If you want, I can also:
+
+🔥 Improve the entire Preview Page layout
+🔥 Add a mini-header with “Preview mode” + “Exit preview”
+🔥 Add a tooltip explaining what happens if they claim the site
+🔥 Add a secondary CTA like “Regenerate site with different style”
+
+Just tell me!

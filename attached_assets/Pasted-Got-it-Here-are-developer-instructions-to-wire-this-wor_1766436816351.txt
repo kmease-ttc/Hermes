@@ -1,0 +1,213 @@
+Got it. Here are **developer instructions** to wire this worker into Hermes correctly, using:
+
+* **Worker app name (in Integrations / catalog):** `Worker: SERP & Keyword Intelligence Service`
+* **Bitwarden secret key name:** `SEO_SERP_&_Keyword`
+
+The key points are:
+
+1. Hermes needs a **base URL + worker API key** for this service (even if SerpAPI lives inside the worker)
+2. This service is **async/long-running**, so “configured” = “can start a job,” not “has results immediately”
+3. The run record must store `actualOutputs` slugs so the UI doesn’t show “missing” forever.
+
+---
+
+# Developer Instructions: Connect SERP Worker (SEO_SERP_&_Keyword)
+
+## 0) Add/verify serviceCatalog entry
+
+In `shared/servicesCatalog.ts`, add/update the service definition:
+
+```ts
+{
+  slug: "serp_keyword_intel",
+  displayName: "Worker: SERP & Keyword Intelligence Service",
+  category: "worker",
+  integrationType: "remote_worker",
+  bitwardenSecretKey: "SEO_SERP_&_Keyword",
+
+  // Required configuration for Hermes → Worker auth
+  configRequirements: ["SERP_WORKER_BASE_URL", "SERP_WORKER_API_KEY"],
+
+  // Async job behavior
+  supportsAsyncRuns: true,
+
+  // Use namespaced output slugs (same convention as Google fix)
+  expectedOutputs: [
+    "serp_top_keywords",
+    "serp_rank_snapshots",
+    "serp_serp_snapshots",
+    "serp_tracked_keywords"
+  ],
+
+  keyMetrics: [
+    "serp_keywords_tracked",
+    "serp_keywords_top10",
+    "serp_scan_duration_ms"
+  ]
+}
+```
+
+**Important:** Do not try to use the Bitwarden secret name directly as the worker’s base URL or provider key. Bitwarden holds whatever JSON/text you stored — Hermes must parse it and extract what it needs.
+
+---
+
+## 1) Standardize what `SEO_SERP_&_Keyword` contains in Bitwarden
+
+In Bitwarden, this secret should be a JSON blob with:
+
+```json
+{
+  "base_url": "https://<your-serp-worker-domain>",
+  "api_key": "<worker_api_key>",
+  "health_path": "/health",
+  "start_path": "/api/serp/run",
+  "status_path": "/api/serp/status"
+}
+```
+
+Minimum required:
+
+* `base_url`
+* `api_key`
+
+If you don’t want paths in the secret, hardcode defaults in Hermes.
+
+---
+
+## 2) Update Hermes Bitwarden fetch + mapping (per service)
+
+In Hermes, when it loads secrets for the selected site:
+
+* fetch Bitwarden secret by name: `SEO_SERP_&_Keyword`
+* parse JSON
+* map to runtime config:
+
+  * `SERP_WORKER_BASE_URL = base_url`
+  * `SERP_WORKER_API_KEY = api_key`
+
+Store these **in-memory** for the current request/session (do not re-store into Replit secrets).
+
+---
+
+## 3) Config check logic (fix “Not Configured”)
+
+For `serp_keyword_intel`, mark configState as:
+
+* `ready` if:
+
+  * `SERP_WORKER_BASE_URL` present
+  * `SERP_WORKER_API_KEY` present
+  * `GET {base_url}/health` returns 200 with that key
+
+* `needs_config` if base_url/api_key missing
+
+* `blocked` if reachable fails due to 401/403 (wrong key) or network error
+
+Return `blockingReason` with the exact reason.
+
+---
+
+## 4) Implement Test Connection as “start a small job” (async)
+
+Endpoint:
+`POST /api/services/serp_keyword_intel/test-connection`
+
+Flow:
+
+1. Create `service_runs` row (status=`running`)
+2. Call:
+
+   * `GET {base_url}/health` (auth header)
+3. Call start endpoint:
+
+   * `POST {base_url}/api/serp/run`
+   * payload:
+
+     ```json
+     { "site": "<selected site domain>", "mode": "smoke", "limit": 5 }
+     ```
+4. Expect:
+
+   * `202 { jobId }` (preferred) OR `200 { results }`
+
+Update `service_runs`:
+
+* status = `running`
+* summary = `Started SERP scan (jobId=...) — results pending`
+* metrics_json includes `jobId`
+
+Also write `outputs_json` immediately:
+
+```json
+{
+  "actualOutputs": ["job_started"],
+  "metrics": { "job_id": "..." }
+}
+```
+
+---
+
+## 5) Add job polling / refresh so runs eventually complete
+
+When user hits global Refresh (or periodically):
+
+* Find runs where:
+
+  * `service_slug = serp_keyword_intel`
+  * `status = running`
+  * `metrics_json.jobId` exists
+
+Call:
+
+* `GET {base_url}/api/serp/status?jobId=...` (or `/jobs/:jobId` depending on worker)
+
+If complete, update run:
+
+* status = `success` (or `partial`)
+* outputs_json.actualOutputs = list of produced slugs:
+
+  * `serp_rank_snapshots`, `serp_serp_snapshots`, etc.
+* metrics_json populated:
+
+  * keywords_tracked
+  * keywords_top10
+  * duration_ms
+
+**Critical UI rule:** While run is `running`, do NOT show “missing outputs.” Show “Pending”.
+
+---
+
+## 6) Fix the name with special characters (don’t use it as an identifier)
+
+You can keep the display name:
+`Worker: SERP & Keyword Intelligence Service`
+
+But the internal `slug` must be clean:
+`serp_keyword_intel`
+
+And the Bitwarden secret key includes special characters:
+`SEO_SERP_&_Keyword`
+
+So in code:
+
+* use slug for lookups and routing
+* use Bitwarden key string only when calling Bitwarden
+
+---
+
+## 7) Quick acceptance test
+
+1. Add `SEO_SERP_&_Keyword` secret in Bitwarden with JSON above
+2. Hermes refresh integrations
+3. SERP service row becomes **Ready**
+4. Click Test Connection:
+
+   * shows Running with jobId
+5. After some time, click Refresh:
+
+   * run resolves to Success
+   * missing outputs = 0 (or only what’s truly missing)
+
+---
+
+If you paste what you stored inside `SEO_SERP_&_Keyword` (just the field names, not the sensitive values), I’ll tell you whether Hermes should parse it as JSON or if it’s currently stored in a format that would cause “Not Configured.”

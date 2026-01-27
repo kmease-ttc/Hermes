@@ -1,0 +1,137 @@
+Fix continuity for Socrates across Mission Control widget, dashboard crew card, and left-nav crew page. These must all render from the same underlying Socrates “CrewStatus + Learnings + Missions” data for the selected site. Also fix the “100 open missions” bug (should be 1).
+
+What’s wrong (observed)
+
+1. Mission Control Socrates widget is empty (shows no learnings/insights).
+2. Socrates crew card shows data (e.g., learnings/insights counts).
+3. Socrates crew page (left nav) shows learnings list and metrics (data is flowing).
+   => These are the same logical object, but different views are pulling from different endpoints / filters / scopes.
+
+Additionally:
+4) Socrates shows “100 open missions” in the header, but the Missions panel shows “1 open”.
+=> The “open missions” number is coming from the wrong field (likely TotalLearnings=100 or a placeholder) or the wrong scope (global instead of site+crew).
+
+Non-negotiable contract
+For any crew (including Socrates), every place it is shown must use the SAME canonical data model:
+
+* CrewStatus (score + mission counts + readiness + last run)
+* RecentLearnings (list + counts)
+* Missions (open/total + next actions)
+  All scoped to: selected siteId + crewId.
+
+1. Canonical endpoints (single source of truth)
+   A) CrewStatus (for cards + headers + nav)
+   GET /api/sites/:siteId/crew-status
+   returns crews: [{ crewId, score, missions:{open,total}, readiness, updatedAt, primaryMetric }]
+
+B) Socrates learnings feed (for widget + crew page)
+GET /api/sites/:siteId/learnings?crew=socrates&limit=5
+returns list of learnings (same as shown on Socrates page)
+
+C) Missions feed (for the missions panel)
+GET /api/sites/:siteId/missions?crew=socrates&status=open
+returns open missions (and a summary count)
+
+All three views (dashboard card, mission-control widget, crew page) must read from these endpoints (or from one combined endpoint that includes them).
+
+2. Fix #1: Mission Control Socrates widget is empty
+   Cause (likely):
+
+* Widget is querying the wrong site scope (domain vs siteId), or
+* It’s using a different endpoint than the Socrates page, or
+* It’s filtering by the wrong “source” tag (e.g., expects source="socrates" but learnings are stored as source="kbase"), or
+* It’s gating on “integration configured” rather than “data exists”.
+
+Fix:
+
+* Mission Control widget should render learnings if learnings.length > 0, regardless of config flags.
+* Only show “Configure Integration” when BOTH:
+
+  * learnings.length === 0 AND
+  * CrewStatus.readiness indicates missing prerequisites
+
+Widget render logic (must implement):
+if (learnings.length > 0) {
+show learnings list (top 3–5) + “View all” link
+} else if (crewStatus.readiness.missingIntegrations.length > 0) {
+show Configure CTA to /settings/websites/:siteId (or Socrates setup page)
+} else {
+show “No learnings yet” + CTA “Run Socrates”
+}
+
+3. Fix #2: “100 open missions” bug
+   This is almost certainly a field mix-up:
+
+* “100 open missions” is likely being populated from:
+
+  * totalLearnings (100/220)
+  * a default constant
+  * a global missions count across the whole system
+  * or a wrong summary field (e.g., total rows instead of open missions)
+
+Correct rule:
+
+* “Open missions” displayed anywhere must equal missions.open from the missions summary.
+* For Socrates right now, missions.open = 1.
+* Therefore:
+
+  * top header badge must show 1 open
+  * missions panel must show 1 open
+  * dashboard card mission badge must show 1
+  * mission control widget mission badge must show 1
+
+Implementation:
+
+* Remove any use of “learningsCount” or “insightsCount” for mission badges.
+* Bind open missions to:
+  crewStatus.missions.open
+* Ensure crewStatus is computed from the same mission store used by the missions list.
+
+4. Enforce continuity: one crew object, three views
+   Introduce a single client hook that all three views use:
+   useCrewData(siteId, crewId) -> {
+   status: CrewStatus,
+   missionsSummary,
+   recentLearnings
+   }
+
+* Dashboard crew card uses status + missionsSummary (+ optional primaryMetric)
+* Mission Control Socrates widget uses recentLearnings + missionsSummary
+* Socrates crew page uses status + missions list + recentLearnings (full)
+
+No view should call a bespoke endpoint for “socrates summary” that can drift.
+
+5. Debug checklist (fastest way to find the exact bug)
+
+* In dev tools, compare network calls when:
+  A) viewing Socrates crew page
+  B) viewing Mission Control page
+* Identify:
+
+  * which endpoint returns learnings on Socrates page
+  * which endpoint Mission Control uses (and why it’s empty)
+    Common findings:
+* different query params (siteId missing)
+* different crew id string (“seo_kbase” vs “socrates”)
+* different environment scope (dev vs prod DB)
+  Fix by normalizing:
+* crewId enum = "socrates" everywhere
+* integrate legacy route /agents/seo_kbase but map to crewId="socrates"
+
+6. Acceptance criteria
+
+* Mission Control Socrates widget shows the same recent learnings visible on Socrates crew page (top 3–5).
+* Socrates “open missions” count is consistent everywhere and equals the true open missions (1).
+* No “empty widget” when data exists.
+* No “Configure Integration” prompt when the worker is connected and returning data.
+* All three views use the same crewId + siteId scope and the same underlying data functions.
+
+Deliverable
+
+* One PR that:
+
+  1. unifies Socrates data sources into CrewStatus + Learnings + Missions endpoints (or a combined endpoint)
+  2. updates Mission Control widget to render learnings when present
+  3. fixes open-missions binding to crewStatus.missions.open (removing any incorrect field)
+  4. normalizes crewId mapping for Socrates across routes (“seo_kbase” -> “socrates”)
+  5. adds a regression test asserting mission counts match between header and missions panel for Socrates

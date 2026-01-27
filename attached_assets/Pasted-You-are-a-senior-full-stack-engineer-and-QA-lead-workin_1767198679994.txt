@@ -1,0 +1,153 @@
+You are a senior full-stack engineer and QA lead working inside this Replit repo.
+
+Goal
+Create a comprehensive, repeatable “run-all-workers” validation + debug harness that:
+
+1. Discovers every worker/service/integration in this repo (including Crew members like Speedster/Natasha/Socrates/etc. and any SEO_* or AI_* service clients).
+2. Runs a standardized health check suite for each one (config, auth, connectivity, minimal API call, schema validation, UI wiring).
+3. Produces a single report that lists: PASS/FAIL/SKIP per worker, root cause hypothesis, exact repro steps, logs, and recommended fix path (API vs worker vs UI wiring vs env).
+4. Optionally applies “safe fixes” automatically (missing env var detection, incorrect base URL, mismatched UI label, non-fatal error handling), but never changes secrets/keys or paid/billing settings.
+
+Non-negotiables / Guardrails
+
+* Do NOT print secret values. You may print which keys are required/present/missing.
+* Do NOT rotate or regenerate any credentials.
+* Do NOT remove features or redesign UI. Focus on correctness and resilience.
+* No destructive DB migrations. Read-only DB checks are ok.
+* If an external integration would incur cost or create data, use a “dry-run” / minimal no-op endpoint if available; otherwise mark as SKIP with rationale.
+* Keep changes scoped and reviewable: prefer adding new harness code + small targeted fixes, not refactors.
+
+Deliverables
+A) New “Worker Validation Harness”
+
+* Add a runnable command: npm run validate:workers
+* Add a report output: ./reports/worker-validation-report.json and ./reports/worker-validation-report.md
+* Add a small in-app admin page (optional but preferred): /admin/worker-diagnostics (gated behind dev mode or simple local auth) that displays the same report.
+
+B) A Worker Registry
+
+* Central list of workers/services with metadata:
+
+  * id, displayName, crewMember (if applicable), type (integration|worker|ui-only|api-client)
+  * requiredEnvKeys
+  * baseUrl / endpoints
+  * “smokeTest” function to run minimal validation
+  * “uiBindings” (what pages/components should show this worker and what states to expect)
+
+C) Standardized Test Protocol (applies to every worker)
+For each worker run, in order:
+
+1. Config check
+
+   * required env keys present (values not printed)
+   * base URL looks valid (https, no trailing whitespace)
+2. Runtime wiring check
+
+   * Can import/init the worker module without throwing
+   * Can create the client instance with current env
+3. Connectivity check
+
+   * Ping/health endpoint if exists; else do a minimal read-only call
+4. Response shape validation
+
+   * Validate returned object against a Zod schema (create one per worker)
+5. UI state integration check
+
+   * If the UI claims “needs config” but config is present, flag as wiring bug
+   * If the worker fails, UI must still render with a graceful “Degraded” state (no blank page)
+6. Logging + trace bundle
+
+   * Capture last N relevant logs per worker test into the report
+
+D) “Safe Auto-Fix” pass (only if confidence is high)
+Examples of safe fixes:
+
+* Normalize base URL formatting (trim, remove double slashes)
+* Fix mismatched naming (e.g., Socrates displayed but points to wrong key)
+* Improve error handling so pages render even when integrations fail
+* Fix a wrong env var key name in code (if clearly incorrect)
+  If a fix is not safe, do NOT apply—just recommend.
+
+What to Build (Implementation Plan)
+
+1. Discover workers automatically
+
+* Scan code for:
+
+  * any folder like server/workers, server/integrations, shared/integrations, or wherever you keep them
+  * any exported “client” wrappers
+  * any Crew config / registry used to render crew pages
+* Build a WorkerRegistry.ts that can be extended manually for edge cases.
+
+2. Add per-worker smoke tests
+
+* For each known worker create:
+
+  * schema.ts (Zod schema for expected minimal response)
+  * smokeTest.ts (runs minimal call with timeout, retries=1, captures errors)
+* Central harness iterates registry and writes report.
+
+3. Add unified error taxonomy
+
+* Categorize failures into:
+
+  * MISSING_ENV
+  * AUTH_FAILURE
+  * PERMISSION / SCOPE
+  * NETWORK / DNS
+  * RATE_LIMIT
+  * API_RESPONSE_SHAPE
+  * UI_WIRING
+  * INTERNAL_EXCEPTION
+* Report should map each failure to “likely owner”: API creds vs code bug vs UI mapping.
+
+4. Update UI to be resilient (small targeted)
+
+* Anywhere a crew page currently hard-fails when an integration errors, wrap with:
+
+  * safe loader
+  * fallback UI showing status + “View diagnostics” link
+* Make sure “configured / needs config” is driven by the same registry/env checks used by the harness.
+
+Commands to Add
+
+* npm run validate:workers
+* npm run validate:workers -- --json (only json output)
+* npm run validate:workers -- --worker Socrates (single worker)
+* npm run validate:workers -- --fix-safe (apply safe auto-fixes)
+
+Report Format Requirements
+Create both JSON and Markdown outputs.
+
+Markdown report structure:
+
+1. Summary table
+
+   * Worker | Status | Category | Primary Cause | Suggested Fix
+2. Detailed section per worker
+
+   * Expected behavior
+   * What was tested
+   * Result
+   * Error traces (sanitized)
+   * Env keys required/present/missing
+   * UI binding checks and mismatches
+   * Recommended next actions (ranked)
+3. Cross-worker findings
+
+   * Repeated issues (timeouts, shared auth, bad base URL, etc.)
+   * Suggested systemic improvements
+
+Acceptance Criteria
+
+* Running npm run validate:workers completes in under 2 minutes when most integrations are SKIP or PASS.
+* When a worker fails, the app still loads the related pages and shows a clear degraded status.
+* The harness produces an actionable report that is accurate and points to specific files/lines for wiring bugs.
+* No secrets are printed to logs or reports.
+
+Now do it
+
+* Implement the harness, registry, schemas, and reports.
+* Run it locally (in this Replit environment) and include a brief console summary of what passed/failed.
+* If any worker is failing due to missing env vars, report it (do not guess values).
+* If any worker fails despite env vars present, capture the minimal repro and propose the smallest fix.

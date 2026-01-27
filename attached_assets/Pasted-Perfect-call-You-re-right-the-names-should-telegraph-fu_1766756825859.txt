@@ -1,0 +1,168 @@
+Perfect call. You’re right — the names should telegraph function instantly, and the cultural references should reinforce what the worker actually does, not distract from it. Let’s tighten this up.
+
+Below is a clean, on-the-nose revision of the crew names you flagged, plus a small update prompt you can hand to Replica to adjust the manifest without re-architecting anything.
+
+⸻
+
+Updated Crew Naming Decisions
+
+1. Marketing / Ads Worker
+
+Old issue: Banker-ish / finance vibes
+Goal: Growth, persuasion, messaging, conversion
+
+Recommended name: Madison
+Role: Growth Strategist
+Why it works:
+	•	Clear reference to Madison Avenue (advertising, copy, campaigns)
+	•	Neutral, professional, instantly “marketing”
+	•	Scales well as ads get more complex (search, display, retargeting, CRO)
+
+Color: Hot Pink or Magenta
+Icon: Megaphone or TrendingUp
+
+If you want a slightly sharper tone:
+	•	Alternate: Sterling (ad agencies, not finance)
+	•	Alternate: Banner (very literal, very clear)
+
+Madison is the cleanest.
+
+⸻
+
+2. Writer / Content Generator
+
+You were spot-on here.
+
+Name: Hemingway
+Role: Editorial Craftsman
+Why it works:
+	•	Immediately implies clarity, restraint, strong writing
+	•	Fits SEO + long-form + rewriting
+	•	Cultural shorthand for “good writing, no fluff”
+
+Color: Deep Sea Blue
+Icon: PenTool or BookOpen
+
+This is a perfect match for:
+	•	Blog writing
+	•	Rewrites
+	•	Knowledge base articles
+	•	Tone normalization
+
+This one feels premium.
+
+⸻
+
+3. Competitive Intelligence Worker
+
+Old issue: Generic / bland
+Goal: Spycraft, recon, stealth, competitors
+
+You’re right that spy names work extremely well here — but we should avoid anything too jokey or geopolitical.
+
+Best options:
+
+Primary recommendation: Natasha
+Role: Intelligence Operative
+Why it works:
+	•	Instantly reads as “spy”
+	•	Short, memorable
+	•	Neutral enough to feel intentional, not silly
+
+Alternates (if you want different vibes):
+	•	Boris – heavier, brute-force recon
+	•	Cipher – modern, technical spy
+	•	Shadow – more abstract, less human
+
+Natasha is the sweet spot.
+
+Color: Crimson or Dark Red
+Icon: Eye or Crosshair
+
+⸻
+
+Final Updated Crew Table (Relevant Changes Only)
+
+service_id	Nickname	Role	Notes
+seo_marketing	Madison	Growth Strategist	Ads, messaging, conversion
+seo_writer	Hemingway	Editorial Craftsman	Content + KB writing
+seo_compintel	Natasha	Intelligence Operative	Competitive & SERP recon
+
+Everything else (Hermes, Atlas, Scout → replaced, Wrench, Beacon, Pulse) stays as-is unless you want to tune tone later.
+
+⸻
+
+Updated Crew Manifest Snippet (Drop-In)
+
+"seo_marketing": {
+  service_id: "seo_marketing",
+  nickname: "Madison",
+  role: "Growth Strategist",
+  color: "#EC4899",
+  icon: "Megaphone",
+  blurb: "Designs campaigns, messaging, and experiments that drive acquisition and conversion.",
+  capabilities: ["Ad Strategy", "Copy Testing", "Conversion Optimization"]
+},
+
+"seo_writer": {
+  service_id: "seo_writer",
+  nickname: "Hemingway",
+  role: "Editorial Craftsman",
+  color: "#1E3A8A",
+  icon: "PenTool",
+  blurb: "Writes clear, durable content optimized for humans and search engines.",
+  capabilities: ["Long-form Writing", "Rewrites", "Knowledge Articles"]
+},
+
+"seo_compintel": {
+  service_id: "seo_compintel",
+  nickname: "Natasha",
+  role: "Intelligence Operative",
+  color: "#7F1D1D",
+  icon: "Eye",
+  blurb: "Gathers competitive intelligence, SERP movements, and strategic gaps.",
+  capabilities: ["Competitor Analysis", "SERP Recon", "Gap Detection"]
+}
+
+
+⸻
+
+Replica Update Prompt (Focused, Safe Change)
+
+Use this verbatim with Replica:
+
+Update the existing Crew Manifest configuration only (do not refactor architecture).
+
+Changes required:
+	•	Rename the marketing/ads worker to:
+	•	Nickname: Madison
+	•	Role: Growth Strategist
+	•	Color: #EC4899
+	•	Icon: Megaphone
+	•	Rename the writer/content worker to:
+	•	Nickname: Hemingway
+	•	Role: Editorial Craftsman
+	•	Color: #1E3A8A
+	•	Icon: PenTool
+	•	Rename the competitive intelligence worker to:
+	•	Nickname: Natasha
+	•	Role: Intelligence Operative
+	•	Color: #7F1D1D
+	•	Icon: Eye
+
+Preserve all service_id values, APIs, and logic. This is a presentation-only update.
+
+⸻
+
+Why This Now Works
+	•	Every name instantly implies function
+	•	Cultural references reinforce behavior, not personality
+	•	No name feels silly in logs, dashboards, or investor demos
+	•	The system still scales cleanly as you add more workers
+
+If you want, next we can:
+	•	Do a full tone pass to ensure none of the remaining names drift
+	•	Add log message templates per crew member (“Natasha flagged 3 threats”)
+	•	Define naming rules for future workers so this never degrades
+
+This is turning into a real product personality — the good kind.

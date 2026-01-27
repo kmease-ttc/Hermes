@@ -1,0 +1,36 @@
+To achieve the look you’re describing on your “Lookout” page, you’ll need to make a few targeted changes in your front‑end code:
+
+1. **Mission widget styling**
+   – Wrap the Mission widget in a container element (e.g., a `div`) with a background or border set to your yellow mission hue. This mirrors the styling on your other Mission pages.
+   – Example (using Tailwind‑style classes or plain CSS):
+
+   ```html
+   <div class="mission-widget bg-yellow-100 border border-yellow-300 p-4 rounded-md">
+     <!-- existing Mission content -->
+   </div>
+   ```
+
+2. **Merge Performance metrics into Key Metrics**
+   – Identify where your “Performance” tab is rendered and remove it entirely.
+   – Take the values currently displayed under Performance (e.g., 95 keywords, 55 rank, 7 in top, etc.) and display them within your “Key Metrics” section instead. This could mean adding additional `<li>` elements or cards under Key Metrics, or replacing the current metrics there with the Performance metrics.
+
+3. **Remove the Performance tab**
+   – If you’re using a tab component, simply omit the Performance tab definition from your tab array or component. Ensure that other tabs (Mission, Keywords, etc.) remain intact.
+
+4. **Apply the agent (pinky) accent colour**
+   – Define a CSS variable or class that represents your agent’s pink accent.
+   – Apply this colour to the border or an accent line around each metric card or the Key Metrics container. For example:
+
+   ```css
+   :root {
+     --agent-accent: #E48FAE; /* example pinky colour */
+   }
+   .key-metrics-card {
+     border-left: 4px solid var(--agent-accent);
+     /* or use a top border/bottom border depending on your layout */
+   }
+   ```
+
+   – Continue to use gold, silver, and bronze colours for medal‑style highlights where appropriate.
+
+With these changes, the Lookout page will better align with your visual standards: a yellow‑tinted Mission widget, consolidated metrics under Key Metrics, no separate Performance tab, and pink accents reflecting your agent colour palette. If you’d like help editing specific files or components in your project, let me know which framework or file you’re using and I can suggest more concrete code modifications.

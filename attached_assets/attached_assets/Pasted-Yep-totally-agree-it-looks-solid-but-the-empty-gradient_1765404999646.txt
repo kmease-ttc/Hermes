@@ -1,0 +1,122 @@
+Yep, totally agree — it looks solid but the empty gradient makes it feel like a nice *wireframe*, not a real site. Let’s make “hero always has an image” a hard requirement.
+
+Here’s exactly what to tell your developer.
+
+---
+
+### 1. Rule: Hero MUST use an image
+
+For every generated site:
+
+1. If user uploaded a hero image → use that.
+2. Else if user uploaded any images → pick the best candidate and use as hero.
+3. Else → generate a hero image with AI based on business type + city and use that.
+
+No case should fall back to a flat gradient.
+
+---
+
+### 2. Hero implementation (background image + overlay)
+
+In the generated site template, update the hero section:
+
+* Use a `div` with CSS background image and overlay instead of just a gradient.
+
+Something like:
+
+```tsx
+<section
+  id="hero"
+  className="relative flex min-h-[70vh] items-center justify-center px-6 py-20 text-white"
+  style={{
+    backgroundImage: `
+      linear-gradient(to bottom right, rgba(15,23,42,0.80), rgba(15,23,42,0.65)),
+      url('${heroImageUrl}')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* existing hero content (badge, H1, sub, CTAs, trust icons) */}
+</section>
+```
+
+Where `heroImageUrl` is resolved by the logic below.
+
+---
+
+### 3. Choosing `heroImageUrl`
+
+In the site generation worker / function:
+
+1. Collect IDs/URLs for:
+
+   * `uploadedHeroImageUrl` (new field from form)
+   * `uploadedImages[]` (existing multi-upload list)
+   * `generatedHeroImageUrl` (AI-generated)
+
+2. Add a helper:
+
+```ts
+function pickHeroImage(input: {
+  uploadedHeroImageUrl?: string;
+  uploadedImages?: string[];
+  generatedHeroImageUrl?: string;
+}): string {
+  if (input.uploadedHeroImageUrl) return input.uploadedHeroImageUrl;
+  if (input.uploadedImages && input.uploadedImages.length > 0) {
+    // pick the first or the widest once you have metadata
+    return input.uploadedImages[0];
+  }
+  if (input.generatedHeroImageUrl) return input.generatedHeroImageUrl;
+  // last-resort fallback: generic stock per industry (never just a flat gradient)
+  return getDefaultIndustryImage(input.businessType);
+}
+```
+
+Store the chosen URL on the site model, e.g. `site.heroImageUrl`, and pass it into the template.
+
+---
+
+### 4. Generating the hero image (when none uploaded)
+
+You already have OpenAI image generation wired for logos; reuse that for hero images.
+
+Prompt per business:
+
+```text
+Ultra-realistic, modern website hero photo of a [business_type] working in [city].
+Clean, bright, professional, wide landscape, no text or logos, for use as a website background.
+```
+
+* Save result to object storage under `/sites/{siteId}/hero.jpg`.
+* Store URL as `generatedHeroImageUrl`.
+
+If the AI call fails, fall back to a static, industry-specific stock image (one per business type).
+
+---
+
+### 5. Ensure preview uses the hero image
+
+On the **Preview Ready** page, the mini browser card should load the same HTML/CSS as the real site, so once the template uses `heroImageUrl`, the preview will show it automatically.
+
+Just confirm:
+
+* The preview is pulling from the built site (`/public-objects/sites/{id}/index.html`)
+* That build step already has `heroImageUrl` in its data.
+
+---
+
+### 6. Acceptance test
+
+For every preview:
+
+* Hero must show an actual photo (not just a blue/purple gradient)
+* Text is readable because of the dark overlay
+* The design still looks like your CK Heating and Air example.
+
+If they send you a build without a hero image, they missed this spec.
+
+---
+
+You can drop this straight into a ticket: “Hero image must always be present; implement heroImageUrl selection + background image hero section.” Once they’ve done a pass, show me the new preview and we can tweak overlay, cropping, etc.

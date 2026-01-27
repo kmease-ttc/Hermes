@@ -1,0 +1,57 @@
+Objective
+Remove the **Action Queue** from the home page because it is duplicative of **Missions**. Missions already represent the same underlying actions, and “Missions” is the preferred, cooler abstraction. The home page should not show both.
+
+What’s Wrong
+
+* “Action Queue” and “Missions” are effectively the same concept:
+
+  * Both show pending actions
+  * Both show what needs to be done next
+* Having both creates redundancy and cognitive overload.
+* Missions already exist as a first-class concept across crew dashboards and Mission Control.
+
+Required End State
+
+* The home page should NOT render an “Action Queue” section.
+* Missions should be the single source of truth for actionable work.
+* Users should discover and manage work via:
+
+  * Mission Control
+  * Individual crew dashboards (Missions section)
+
+Implementation Instructions
+
+1. Remove the Action Queue component from the home/dashboard page:
+
+   * Identify the component rendering “Action Queue” on the home page.
+   * Remove it entirely (do not hide with CSS).
+   * Remove any data fetching or hooks used exclusively for Action Queue on the home page.
+
+2. Ensure no orphaned logic remains:
+
+   * If Action Queue data is still used elsewhere (e.g., Mission Control), leave it intact there.
+   * If the home page was triggering any background fetches for Action Queue, remove those calls.
+
+3. Optional (Nice-to-have, not required):
+
+   * If there’s empty space after removal, let the page breathe—do not immediately replace it with another widget.
+   * The home page should feel lighter and more focused on:
+
+     * Crew summaries
+     * High-level status
+     * Entry points into Missions
+
+What NOT to Do
+
+* Do not rename Action Queue to Missions on the home page.
+* Do not keep a collapsed or minimized version.
+* Do not introduce another list of actions on the home page.
+
+Acceptance Criteria
+
+* The home page no longer shows “Action Queue.”
+* All actionable work is accessed via Missions (Mission Control or crew pages).
+* No duplicate action lists exist on the home page.
+* The app still functions correctly with no missing data or errors.
+
+This change intentionally simplifies the mental model: **Missions are the work.**

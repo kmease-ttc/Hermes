@@ -1,0 +1,191 @@
+STYLE CLUSTERING FOR HERO IMAGES & SITE LOOK/FEEL
+
+Agent Prompt
+
+Objective
+
+Implement style clustering so generated sites feel:
+	•	cohesive within an industry (professional consistency)
+	•	but still unique per business (no template vibes)
+
+This must work for both:
+	•	AI-generated hero images
+	•	stock hero images
+	•	overall site styling (palette + typography + section styling)
+
+Style clustering is not “reuse the same design.”
+It is “reuse a style family with variation.”
+
+⸻
+
+PART 1 — Define Style Clusters (Required)
+
+Create a style_clusters registry
+
+Create 8–12 style clusters. Each cluster defines:
+	•	cluster_key (e.g. hvac_modern_blue, medical_clean_white, funding_bold_trust)
+	•	industries[] it applies to
+	•	tone (modern, premium, friendly, rugged, clinical, etc.)
+	•	palette (primary, secondary, accent, background)
+	•	typography (heading font, body font, sizes scale)
+	•	ui_style (button radius, shadow level, card style)
+	•	hero_style (photographic direction)
+	•	image_prompt_modifiers (short list)
+	•	negative_prompt_modifiers (short list)
+	•	stock_query_modifiers (short list)
+
+This registry must be config-driven (editable without redeploy).
+
+⸻
+
+PART 2 — Industry → Cluster Selection Logic (Critical)
+
+Cluster selection rules
+
+When generating a site:
+	1.	Determine industry and business_type
+	2.	Select a cluster using:
+
+	•	a weighted random pick among valid clusters for that industry
+	•	prefer clusters that have been used less recently (avoid streaks)
+
+Store on the site:
+	•	site.style_cluster_key
+	•	site.style_variant_seed (for controlled variation)
+
+This ensures two HVAC sites can share a “family” but not look identical.
+
+⸻
+
+PART 3 — Add Controlled Variation Within a Cluster (Non-Negotiable)
+
+Within a cluster, generate a variant per site using style_variant_seed:
+
+Vary:
+	•	accent color shade (within allowed range)
+	•	hero overlay gradient strength
+	•	section layout variant (choose from 2–3 templates)
+	•	icon style set (choose from 2–3 sets)
+	•	button style (one of 2 variants)
+
+Rules:
+	•	variation must stay within the cluster’s design system
+	•	never randomize outside the cluster palette or typography
+	•	ensure all variants remain accessible (contrast)
+
+⸻
+
+PART 4 — Apply Clusters to HERO IMAGE GENERATION
+
+AI image generation
+
+When generating hero images:
+	•	Base prompt comes from image_intent
+	•	Append image_prompt_modifiers from chosen cluster
+	•	Append negative_prompt_modifiers
+
+Also enforce:
+	•	Generate 3–5 candidates with different seeds
+	•	Run uniqueness hash check (existing system)
+	•	Select best by relevance + visual quality
+
+Stock image selection
+
+When searching stock:
+	•	Use base industry/service query
+	•	Append stock_query_modifiers to bias toward cluster look
+Example modifiers:
+	•	“clean modern”
+	•	“natural lighting”
+	•	“warm tone”
+	•	“minimal”
+	•	“high-end”
+
+Run uniqueness check before final selection.
+
+⸻
+
+PART 5 — Apply Clusters to SITE UI (Colors, Typography, Components)
+
+Ensure the cluster controls:
+	•	header style
+	•	hero typography sizing + contrast overlay rules
+	•	CTA button style
+	•	card styling
+	•	section spacing scale
+	•	icon style
+	•	background patterns (if any)
+
+All pages must inherit from the chosen cluster:
+	•	homepage
+	•	services
+	•	location pages
+	•	contact page
+
+No page should “fall back” to default styling.
+
+⸻
+
+PART 6 — Prevent “Same-Looking” Sites (Guardrails)
+
+Similarity detection (recommended)
+
+Add a lightweight similarity check per cluster:
+	•	Track last N hero images + layout variants used per cluster
+	•	Avoid choosing the same:
+	•	hero composition type
+	•	section layout variant
+	•	accent shade
+	•	icon set
+twice in a row for the same industry
+
+This prevents the “it always looks the same” pattern.
+
+⸻
+
+PART 7 — Admin Tools (Required)
+
+Create internal tooling to:
+	•	view clusters and their definitions
+	•	preview cluster variants (seed-based)
+	•	see cluster usage counts
+	•	override cluster selection per site
+	•	“regenerate in a different style” action for support
+
+⸻
+
+PART 8 — UX Hooks
+
+In the site dashboard:
+	•	Display: “Style: Modern (Industry Standard)”
+	•	Provide a button (future-ready):
+“Try a different style”
+This can initially be admin-only.
+
+⸻
+
+Definition of Done
+	•	Each site is assigned a style cluster and variant seed
+	•	Similar industries feel consistent but not identical
+	•	Hero images match industry + cluster aesthetic
+	•	Repetition is eliminated (no streaks of same look)
+	•	A support/admin can re-style a site safely
+
+⸻
+
+Why This Matters
+
+This solves:
+	•	“sites look basic”
+	•	“sites feel templated”
+	•	“images repeat”
+without creating:
+	•	design chaos
+	•	endless customization burden
+
+It’s the sweet spot between “agency quality” and automation.
+
+⸻
+
+If you want, next I can write the prompt for:
+	•	“regenerate in 3 style options and let the user pick” (high-conversion feature)

@@ -1,0 +1,249 @@
+You are a senior product + UX engineer working on the **Mission Control dashboard**. The Accomplishments section exists, but it is currently **system-centric** (“analytics connected”) instead of **value-centric** (“more traffic, more leads, better rankings”). Your task is to refocus Accomplishments so it delivers **dopamine, proof of value, and ROI reinforcement**.
+
+This is a **content model + presentation refactor**, not a new feature build.
+
+---
+
+## CORE PROBLEM TO FIX
+
+Right now Accomplishments answer:
+
+> “What did the system do?”
+
+They must instead answer:
+
+> **“What improved for my business?”**
+
+If the user can’t immediately point to:
+
+* more traffic
+* more leads
+* better rankings
+* reduced risk
+
+…then the section is not doing its job.
+
+---
+
+## NEW PURPOSE OF ACCOMPLISHMENTS (LOCK THIS IN)
+
+**Accomplishments = Business Wins**
+
+This section should:
+
+* Reinforce that Arclo is working
+* Make progress feel tangible
+* Justify cost emotionally
+* Encourage continued usage
+
+Think:
+
+> “This is already paying off.”
+
+---
+
+## CONTENT HIERARCHY (VERY IMPORTANT)
+
+Each accomplishment must follow this structure:
+
+1. **Primary line = outcome (business metric)**
+2. **Secondary line = what Arclo did to cause it**
+3. **Time context = when it happened**
+
+Never lead with integrations or scans unless nothing else exists.
+
+---
+
+## ACCOMPLISHMENT TYPES (PRIORITY ORDER)
+
+When generating the list, always prefer items in this order:
+
+### 1) Revenue / Lead Impact (highest dopamine)
+
+Examples:
+
+* **+3 new leads detected**
+  “Conversion tracking enabled and validated”
+* **Form submissions increased**
+  “Tracking verified across key pages”
+
+Use even small numbers. Small wins still feel like wins.
+
+---
+
+### 2) Traffic & Visibility Gains
+
+Examples:
+
+* **Traffic stabilized on key pages**
+  “Performance and indexing issues resolved”
+* **Ranking improvements detected**
+  “5 target keywords moved up in search results”
+* **Search visibility increased**
+  “New pages indexed and validated”
+
+Avoid vague language. Use counts when possible.
+
+---
+
+### 3) Risk Reduction / Protection
+
+Examples:
+
+* **Indexing issues prevented**
+  “12 pages confirmed indexed and error-free”
+* **Performance regressions avoided**
+  “Core Web Vitals monitored and updated”
+
+This frames maintenance as value, not busywork.
+
+---
+
+### 4) System Setup (fallback only)
+
+Only show when no business metrics exist yet.
+
+Examples:
+
+* **Analytics connected**
+  “Now tracking traffic and conversions”
+* **Monitoring enabled**
+  “Future issues will be detected automatically”
+
+These should appear lower in the list and feel like *enablers*, not achievements.
+
+---
+
+## DESIGN ADJUSTMENTS (IMPORTANT)
+
+### Visual tone
+
+* This section should feel:
+
+  * Positive
+  * Calm
+  * Rewarding
+* Reduce technical iconography.
+* Prefer:
+
+  * Up arrows
+  * Checkmarks
+  * Spark / trend icons
+
+### Copy tone
+
+* Avoid words like:
+
+  * “completed”
+  * “executed”
+  * “collected”
+* Prefer:
+
+  * “increased”
+  * “improved”
+  * “detected”
+  * “protected”
+  * “unlocked”
+
+---
+
+## EXAMPLE: BEFORE vs AFTER
+
+### ❌ Before
+
+**Analytics connected**
+GA4 and Search Console data successfully synced
+
+### ✅ After
+
+**Traffic and leads are now being tracked**
+Conversion and traffic data validated across your site
+
+---
+
+### ❌ Before
+
+**Performance scan completed**
+Core Web Vitals data updated across key pages
+
+### ✅ After
+
+**Page performance issues identified early**
+Core Web Vitals monitored across high-impact pages
+
+---
+
+## COUNT BADGE (VERY IMPORTANT)
+
+The badge “3 improvements completed” should be reframed as:
+
+* **“3 business improvements delivered”**
+  or
+* **“3 wins this week”**
+
+This number should:
+
+* Reset weekly (later)
+* Feel like momentum, not history
+
+---
+
+## EMPTY / EARLY STATE (DON’T MISS THIS)
+
+If no business wins are available yet:
+
+Show:
+
+> “Your first wins will appear here as Arclo starts improving traffic, leads, and rankings.”
+
+Then show **ONE setup item** as a bridge:
+
+* “Analytics enabled — traffic and leads will now be tracked”
+
+---
+
+## DATA SOURCING (KEEP IT SIMPLE)
+
+Do NOT overengineer.
+
+You can derive accomplishments from:
+
+* Completed tasks with impact metadata
+* Metric deltas (even coarse)
+* Integration enablement as fallback
+
+If exact deltas aren’t available:
+
+* Use directional language (“improvements detected”, “issues prevented”)
+* But ALWAYS tie it to business outcomes.
+
+---
+
+## ACCEPTANCE CHECKLIST
+
+Before marking done, verify:
+
+* At least 2 of the visible accomplishments reference:
+
+  * traffic
+  * leads
+  * rankings
+  * visibility
+* System-only items appear last or not at all
+* The section feels rewarding, not technical
+* A business owner can read this and say:
+
+  > “Okay, this is doing something for me.”
+
+If it doesn’t spark that reaction, rewrite the copy.
+
+---
+
+## GUIDING PRINCIPLE (DO NOT IGNORE)
+
+> **People don’t pay for tasks. They pay for progress.**
+
+This section exists to emotionally justify the subscription.
+Make it earn its place.
+
+Implement this refactor before adding any new gamification or charts.

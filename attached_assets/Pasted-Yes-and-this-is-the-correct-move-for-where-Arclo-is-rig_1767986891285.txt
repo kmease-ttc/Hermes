@@ -1,0 +1,220 @@
+Yes — and this is **the correct move** for where Arclo is right now.
+
+You’re early, you’re asking for trust, and **“Website Analysis” is a lower-friction, higher-intent entry point** than “Generate My Site.” Generation is powerful, but analysis is the *permission slip*.
+
+Below are **clear, copy-ready instructions** for how to implement this cleanly without breaking the flow you’ve already built.
+
+---
+
+# Update Primary CTA: Make “Website Analysis” Primary
+
+## Strategic Rationale (Internal Alignment)
+
+### Why this change is correct
+
+* **Website analysis = low commitment, high curiosity**
+* **Generate my site = high commitment**
+* SMBs want validation before transformation
+
+This matches natural buyer psychology:
+
+> “Tell me what’s wrong before you fix everything.”
+
+You’re not removing generation — you’re **earning the right to offer it**.
+
+---
+
+## Global CTA Hierarchy (Required)
+
+### New CTA Priority Order
+
+1. **Primary CTA (everywhere):**
+   **Analyze My Website**
+
+2. **Secondary CTA:**
+   Generate My Site
+
+3. **Tertiary (contextual only):**
+   View demo / See example
+
+---
+
+## Header Changes (Critical)
+
+### Current
+
+* Primary button: **Generate My Site**
+* Secondary links: Examples, How It Works, Pricing, Log In
+
+### Update To
+
+**Header right side (recommended order):**
+
+* Examples
+* How It Works
+* Pricing
+* Log In
+
+**Primary Button (filled / gradient):**
+
+* **Analyze My Website**
+
+**Secondary Button (outline / subtle):**
+
+* Generate My Site
+
+### Visual Treatment
+
+* “Analyze My Website” = high contrast, gradient
+* “Generate My Site” = outline or muted gradient
+* Do **not** give both equal weight
+
+---
+
+## Homepage Hero CTA Update
+
+### Current (conceptually)
+
+* Generate My Site
+
+### Replace With
+
+**Primary CTA:**
+
+* **Analyze My Website**
+
+  * Subtext (optional, small): *Takes ~60 seconds · No credit card*
+
+**Secondary CTA (text or outline button):**
+
+* Generate My Site
+
+**Optional tertiary link:**
+
+* See examples →
+
+This keeps momentum but respects intent.
+
+---
+
+## Copy Update (Very Important)
+
+### Change “Generate-first” framing → “Diagnose-first” framing
+
+**Before (implied):**
+
+> We build you a site.
+
+**After (recommended):**
+
+> We analyze, fix, then generate if needed.
+
+### Example Hero Copy Adjustment
+
+> **Autonomous SEO for Local Businesses**
+> Start with a free website analysis. Arclo finds what’s holding your site back and fixes it automatically — or generates a better one if needed.
+
+This subtly reframes generation as a *solution*, not the *starting point*.
+
+---
+
+## Examples Page CTA Update
+
+On each example card:
+
+### Current
+
+* View demo
+* Generate like this
+
+### Update To
+
+Primary:
+
+* **Analyze My Website**
+
+Secondary:
+
+* Generate like this
+
+Reason:
+You’re saying “this is what *could* happen — let’s see where *you* stand first.”
+
+---
+
+## Pricing Page CTA Update
+
+### Top CTA
+
+* **Analyze My Website**
+
+### Secondary CTA
+
+* Generate My Site
+
+### FAQ / Lower Sections
+
+* Keep “Generate My Site” visible but not dominant
+
+---
+
+## Funnel Logic (Product Alignment)
+
+This CTA change should map to the actual flow:
+
+1. User clicks **Analyze My Website**
+2. Enters domain
+3. Gets:
+
+   * High-level issues
+   * Opportunities
+   * “Fix Everything” preview
+4. THEN you introduce:
+
+   * Autopilot
+   * Generation
+   * Upgrade paths
+
+This is *much* stronger than asking for generation upfront.
+
+---
+
+## What NOT to Do
+
+* ❌ Do not remove “Generate My Site”
+* ❌ Do not hide generation behind pricing
+* ❌ Do not make both CTAs equal weight
+* ❌ Do not force site generation without analysis
+
+Generation should feel like:
+
+> “Obviously the right next step.”
+
+Not:
+
+> “The first thing we’re pushing.”
+
+---
+
+## Success Criteria
+
+This change is successful when:
+
+* More users start the funnel
+* Fewer bounce on hero
+* Users feel guided, not sold
+* “Generate My Site” feels earned, not forced
+
+---
+
+## One-Line Internal Principle
+
+> **Diagnosis earns trust. Automation earns loyalty. Generation earns commitment.**
+
+If you want next:
+
+* We can tune **analysis output copy** to naturally upsell generation
+* Or define **rules for when Arclo recommends generating a new site vs fixing**
+* Or redesign the **Analyze → Fix → Generate** funnel as a single narrative
+
+This was the right instinct.

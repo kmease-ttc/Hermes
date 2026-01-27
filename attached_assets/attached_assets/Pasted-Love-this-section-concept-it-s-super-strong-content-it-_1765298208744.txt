@@ -1,0 +1,204 @@
+Love this section concept — it’s super strong content, it just needs the same “premium AI” treatment as the rest of the site.
+
+Here’s a design brief you can hand your dev to make **“Sites Built by Arclo”** look really cool and consistent with the new style.
+
+---
+
+## 1. Section Shell
+
+Use the light AI glow background like the hero / features:
+
+* Section wrapper:
+
+  ```tsx
+  <section className="relative bg-gradient-to-b from-white via-slate-50 to-slate-100 py-24 md:py-28">
+  ```
+* Optional glow blobs behind cards:
+
+  ```tsx
+  <div className="pointer-events-none absolute -left-32 top-10 h-64 w-64 rounded-full bg-indigo-300/25 blur-3xl" />
+  <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-purple-300/20 blur-3xl" />
+  ```
+
+---
+
+## 2. Heading & Copy
+
+You’re mostly there; just tighten the hierarchy:
+
+* Tag:
+
+  ```tsx
+  <p className="text-xs font-semibold tracking-[0.2em] uppercase text-indigo-600">
+    Real Examples
+  </p>
+  ```
+* Title:
+
+  ```tsx
+  <h2 className="mt-3 text-3xl md:text-4xl font-extrabold text-slate-900">
+    Sites Built by Arclo
+  </h2>
+  ```
+* Subtitle:
+
+  ```tsx
+  <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
+    See what Arclo can create for your business. Every site is fully optimized and
+    improves automatically.
+  </p>
+  ```
+
+Center all of this with `text-center mb-12 md:mb-16`.
+
+---
+
+## 3. Card Layout
+
+Use a **3-up responsive grid** that becomes a horizontal scroll on mobile:
+
+```tsx
+<div className="mt-8 grid gap-8 md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x md:snap-none">
+  {/* cards */}
+</div>
+```
+
+On mobile, give each card `min-w-[280px] snap-center`.
+
+---
+
+## 4. Card Styling (Glass + Depth)
+
+Each card should feel like a premium case-study tile:
+
+```tsx
+<div
+  className="
+    group relative flex flex-col
+    rounded-3xl bg-white/90 backdrop-blur
+    border border-slate-200/70
+    shadow-[0_20px_50px_rgba(15,23,42,0.12)]
+    overflow-hidden
+    transition-all duration-300 ease-out
+    hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(15,23,42,0.24)]
+  "
+>
+  {/* screenshot + overlay + content */}
+</div>
+```
+
+---
+
+## 5. Screenshot + Overlay Interaction
+
+Make the screenshot the hero of each card.
+
+```tsx
+<div className="relative overflow-hidden">
+  <img
+    src={screenshot}
+    alt={title}
+    className="w-full h-56 md:h-64 object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+  />
+
+  {/* gradient overlay on hover */}
+  <div className="
+    pointer-events-none absolute inset-0
+    bg-gradient-to-t from-slate-900/70 via-slate-900/0 to-transparent
+    opacity-0 group-hover:opacity-100
+    transition-opacity duration-300
+  " />
+
+  {/* “View Site” CTA on hover */}
+  <div className="
+    pointer-events-none absolute inset-x-0 bottom-4 flex justify-center
+    opacity-0 group-hover:opacity-100 transition-opacity duration-300
+  ">
+    <span className="
+      inline-flex items-center gap-2 rounded-full
+      bg-white/90 px-4 py-2 text-xs font-medium text-slate-900 shadow-lg
+    ">
+      View Live Site
+      <span className="text-slate-500">↗</span>
+    </span>
+  </div>
+
+  {/* Category pill sits ON the image lower-left */}
+  <span className="
+    absolute left-4 top-4 inline-flex items-center rounded-full
+    bg-indigo-500/90 text-[11px] font-semibold uppercase tracking-wide
+    text-white px-3 py-1 shadow-md
+  ">
+    {category}
+  </span>
+</div>
+```
+
+Key changes vs current:
+
+* Category pill **overlays** the screenshot (top-left), not below — feels more like a real “badge.”
+* Soft gradient overlay and “View Live Site” chip appear on hover.
+* Slight zoom on hover for the image.
+
+---
+
+## 6. Text Block Under the Image
+
+Clean and compact:
+
+```tsx
+<div className="px-6 pt-5 pb-6 space-y-1.5">
+  <h3 className="text-lg font-semibold text-slate-900">
+    {title}
+  </h3>
+  <p className="text-sm text-slate-500">
+    {description}
+  </p>
+
+  {/* optional meta row */}
+  <div className="pt-3 flex items-center justify-between text-xs text-slate-400">
+    <span className="inline-flex items-center gap-1">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+      Fully optimized
+    </span>
+    <span className="inline-flex items-center gap-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+      Auto-improving daily
+    </span>
+  </div>
+</div>
+```
+
+This reinforces the “autonomous” angle without adding noise.
+
+---
+
+## 7. Subtle Motion / Parallax (Optional)
+
+If you want to go the extra mile:
+
+* Add a tiny rotation / parallax on hover:
+
+```tsx
+hover:-translate-y-2 hover:rotate-[0.25deg]
+```
+
+* Or use `transform-gpu` + `group-hover:translate-y-[-8px]` for smoother motion.
+
+---
+
+## 8. Footer Connection
+
+Add a soft fade into the next section so the examples feel “framed,” not floating:
+
+```tsx
+<section className="relative ...">
+  {/* content */}
+
+  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-white" />
+</section>
+```
+
+---
+
+If you’d like, I can turn this into a full `SitesExamples` React component with props for each site (title, category, screenshot, url) so you can drop it straight into `Home.tsx`.

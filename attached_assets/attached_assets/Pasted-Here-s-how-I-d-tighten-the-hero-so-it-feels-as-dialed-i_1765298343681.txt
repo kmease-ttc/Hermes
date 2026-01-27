@@ -1,0 +1,173 @@
+Here’s how I’d tighten the hero so it feels as dialed-in as the features, stats, and roadmap sections.
+
+I’ll keep this as a punchy checklist your dev can implement.
+
+---
+
+## 1. Background + Hero Card
+
+Right now the hero card looks good but a little flat compared to the upgraded sections.
+
+Use the same light gradient + glow language you’ve used elsewhere:
+
+**Section wrapper**
+
+```tsx
+<section className="relative bg-gradient-to-b from-white via-slate-50 to-slate-100 py-20 md:py-24">
+  <div className="max-w-6xl mx-auto px-4 md:px-8">
+    {/* hero card */}
+  </div>
+</section>
+```
+
+**Glow behind the card** (subtle, like the stats section):
+
+```tsx
+<div className="pointer-events-none absolute -left-24 top-0 h-64 w-64 rounded-full bg-indigo-300/20 blur-3xl" />
+<div className="pointer-events-none absolute right-[-40px] top-32 h-72 w-72 rounded-full bg-purple-400/14 blur-3xl" />
+```
+
+**Hero card**
+
+```tsx
+<div className="relative rounded-[32px] bg-white/95 backdrop-blur-xl shadow-[0_24px_70px_rgba(15,23,42,0.18)] px-8 py-12 md:px-12 md:py-14 flex flex-col lg:flex-row gap-10 lg:items-center">
+  {/* left + right */}
+</div>
+```
+
+That gives you the same “glass + depth” vibe as the dark stats and pricing.
+
+---
+
+## 2. Typography & Left Column
+
+The copy is strong; just make the stack match the style guide.
+
+```tsx
+<div className="flex-1 space-y-6">
+  <p className="inline-flex items-center rounded-full bg-indigo-50 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-600">
+    Built for people who don’t want to think about SEO
+  </p>
+
+  <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+    Grow Your Business<br />
+    With an AI Website<br />
+    That Runs Itself.
+  </h1>
+
+  <p className="text-base md:text-lg text-slate-600 max-w-md">
+    Everything your website needs — built, written, fixed, and improved automatically.
+  </p>
+
+  {/* CTA row */}
+  <div className="flex flex-wrap items-center gap-4">
+    <button className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 px-6 py-3 text-sm font-medium text-white shadow-[0_4px_20px_rgba(79,70,229,0.45)] hover:shadow-[0_6px_28px_rgba(79,70,229,0.6)] transition">
+      Generate My Free Site
+    </button>
+    <button className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
+      See It in Action
+      <span>↗</span>
+    </button>
+  </div>
+
+  <p className="text-xs text-slate-500">
+    No effort. No setup. No SEO knowledge required.
+  </p>
+</div>
+```
+
+That keeps the hero consistent with the pricing CTAs and dark-section typography.
+
+---
+
+## 3. Mockup Container (Right Column)
+
+The mockup is nice; we just want it to feel like the “hero object” of the site and match your glass/stat cards.
+
+```tsx
+<div className="flex-1 flex justify-center lg:justify-end">
+  <div className="relative transform-gpu">
+    {/* glow under mockup */}
+    <div className="pointer-events-none absolute inset-0 translate-y-6 blur-3xl bg-[radial-gradient(circle_at_center,_rgba(15,23,42,0.45),_transparent_60%)]" />
+
+    <div className="relative rounded-[28px] bg-slate-950/90 border border-slate-800/80 shadow-[0_22px_60px_rgba(15,23,42,0.5)] overflow-hidden animate-[float_7s_ease-in-out_infinite]">
+      <img
+        src={HeroExample}
+        alt="Example local business website created by Arclo"
+        className="block w-full h-full object-cover"
+      />
+
+      {/* same shape as cards: subtle inner highlight */}
+      <div className="pointer-events-none absolute inset-0 border border-white/10 rounded-[28px]"></div>
+
+      {/* floating tags go outside this box */}
+    </div>
+
+    {/* floating tags */}
+  </div>
+</div>
+```
+
+---
+
+## 4. Floating Value Props – Make Them Match the Rest
+
+Style the four tags to look like mini glass chips, consistent with your feature icons and stats:
+
+```tsx
+const tagBase =
+  "absolute inline-flex items-center gap-2 rounded-full bg-white/95 backdrop-blur-xl px-4 py-2 text-xs font-medium text-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.18)] border border-slate-200/80";
+
+<span className={`${tagBase} -top-6 left-4`}>
+  Site Improved Daily
+  <span className="text-emerald-500">✓</span>
+</span>
+
+<span className={`${tagBase} -top-4 right-0`}>
+  Content Written
+  <span className="text-emerald-500">✓</span>
+</span>
+
+<span className={`${tagBase} -bottom-6 left-0`}>
+  Pages Generated
+  <span className="text-emerald-500">✓</span>
+</span>
+
+<span className={`${tagBase} -bottom-4 right-4`}>
+  SEO Issues Fixed
+  <span className="text-emerald-500">✓</span>
+</span>
+```
+
+Small extra polish: give them a slight hover interaction:
+
+```tsx
+className={`${tagBase} hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(15,23,42,0.26)] transition-transform duration-200`}
+```
+
+Now the tags visually match the glass stats and feature cards instead of feeling like a different system.
+
+---
+
+## 5. Optional Micro-Interaction on Scroll
+
+To tie it all together with the header:
+
+* Fade the hero card in from 8–12px below on load
+* Slight stagger between left column and mockup
+
+If you’re already using Framer Motion:
+
+```tsx
+<motion.div
+  initial={{ opacity: 0, y: 16 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, ease: "easeOut" }}
+>
+  {/* hero card */}
+</motion.div>
+```
+
+---
+
+If your dev applies these tweaks, the hero will be fully aligned with the “premium AI glass + gradients + chips” language you’ve established in features, stats, roadmap, and pricing—and it’ll feel like the natural, polished starting point for the rest of the page.

@@ -1,0 +1,99 @@
+Add a new widget at the top of Mission Control called **Mission Status** (placed above the “Missions” cards, aligned with existing layout and spacing).
+
+Goal: introduce **discoverable complexity**. The dashboard is powerful but feels complex; Mission Status is the simple “where am I / what do I do next” layer.
+
+Requirements
+
+1. Placement + layout
+
+* Add a new top widget section (same width/container as the Missions panel).
+* Title: “Mission Status”.
+* Visually consistent with existing dark/glass styling (same card radius, border, shadow, blur).
+* Should not introduce bright/neon colors. Reuse existing tokens.
+
+2. What the widget shows (simple + actionable)
+
+* A single, easy-to-understand overall health outcome:
+
+  * “You’re doing good” / “Needs attention” (wording can be refined, but keep it short)
+* A compact summary line with 2–3 key counts pulled from existing page data:
+
+  * Example: “3 priority actions • 2 blockers • 1 integration missing”
+  * Use the data already present on Mission Control (priority actions, blockers, integrations state, etc.). No new backend requirement if we can compute from current data.
+* “Next step” recommendation:
+
+  * Choose the next recommended action based on severity/priority:
+
+    * If blockers exist → next step points to resolving the top blocker
+    * Else if priority actions exist → next step points to the highest priority action
+    * Else → next step is “Run Diagnostics” or “Validate”
+  * Show the next step as one short sentence (no paragraphs).
+
+3. Two primary interactions (the whole point)
+   A) Primary button: **Fix Everything**
+
+* A single button that triggers an “apply all recommended fixes” flow.
+* Behavior:
+
+  * If we already have the Site Change Executor / Fix It pipeline, this should create ONE consolidated change set (or PR) that includes all safe, auto-fixable items currently uncovered.
+  * If there are items that require user setup/credentials or are not auto-fixable, exclude them from auto-fix and surface a short line under the button like:
+
+    * “Some items require setup (2).”
+* UX:
+
+  * Clicking “Fix Everything” opens a confirmation modal:
+
+    * Shows list of fix categories + counts (e.g., “Metadata (4), Internal links (2), Sitemap (1), Performance (3)”)
+    * Shows what will happen: “Creates a GitHub PR” (or “Applies changes via executor”), depending on how Fix It works today.
+    * Confirm + Cancel
+  * On confirm: show toast “Fix set started” and show in-progress state (spinner + disabled button).
+  * On success: toast “Fix set created” and show a link/button “View Fix Set” (or “View PR”).
+  * On error: toast “Couldn’t start fixes” and re-enable the button.
+
+B) Secondary button: **Go to Next Mission**
+
+* Takes user directly into the recommended next mission item (or opens the review drawer/modal for it).
+* If the next mission is a blocker, navigate/scroll to the blocker section and focus it.
+* If it’s a priority action card, scroll to that card and open its “Review” state.
+
+4. Status logic (simple scoring)
+
+* Implement a lightweight “status tier” derived from existing signals:
+
+  * If blockers > 0 → status = “Needs attention”
+  * Else if priority actions > 0 → status = “Doing okay”
+  * Else → status = “Looking good”
+* The status should be a single badge/pill consistent with other badges (no repeated “Impact: Medium” style duplication).
+* Remove any literal text “placeholder” if used in this widget.
+
+5. Styling guidance (match current theme)
+
+* Use the same glass panel recipe as other top panels:
+
+  * Subtle blur, thin border, soft shadow
+  * Slight glossy highlight at the top edge (very subtle)
+* Text hierarchy:
+
+  * Title (same size as Missions title)
+  * Status line slightly larger than body text
+  * Summary line muted
+  * Buttons match existing primary/secondary button styling (primary uses the existing gold accent; secondary uses the existing subtle purple/blue outline style)
+
+6. Implementation notes
+
+* Prefer reusing existing components: Card/Panel wrapper, Badge, Button, Toast, Modal.
+* The widget should be self-contained in a new component file, e.g.:
+
+  * `client/src/components/mission-control/MissionStatusWidget.tsx`
+* Wire it into `client/src/pages/MissionControl.tsx` near the top where page-level data is already available.
+* For “Fix Everything”, reuse the same handler and API plumbing used by the existing “Fix It” / Site Change Executor integration (do not invent a new flow).
+* Ensure the buttons have real `onClick` handlers and update UI state (disabled/loading) so nothing feels “dead”.
+
+Acceptance criteria
+
+* Mission Status appears at the top, matches theme, and is easy to understand in 3 seconds.
+* It clearly says good/bad state, shows a tiny summary, and provides:
+
+  * Fix Everything (works end-to-end, shows progress + result)
+  * Go to Next Mission (navigates to the right place and opens the mission)
+* No extra noisy labels (no duplicated “Medium impact”, no “placeholder” text).

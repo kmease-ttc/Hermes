@@ -1,0 +1,78 @@
+Got it. If Bitwarden now says:
+
+`base_url = https://seo-kbase.replit.app/api`
+
+…and Hermes is still showing **404**, there are only **three** plausible causes left.
+
+## 1) The worker at `seo-kbase.replit.app` is not actually serving `/api/*` in production
+
+This happens if:
+
+* the worker wasn’t republished after the API-only changes, or
+* the app behind that domain isn’t the worker you think it is (domain pointing to an older repl), or
+* the API routes are mounted at a different prefix (e.g. `/health` not `/api/health`)
+
+**Do this first (fast):**
+Open these URLs in a browser (or curl) and see what you get:
+
+* `https://seo-kbase.replit.app/api/health`
+* `https://seo-kbase.replit.app/api/capabilities`
+
+Expected: **200 JSON**, not HTML.
+If either one is 404 in the browser, Hermes is correct and the worker isn’t deployed/mounted correctly.
+
+## 2) Hermes is still constructing the wrong URL (double `/api` or wrong endpoint)
+
+Even if Bitwarden is correct, Hermes can still be doing something like:
+
+* `${baseUrl}/api/health`  → becomes `/api/api/health` (404)
+* calling `/api/smoke` instead of `/api/smoke-test`
+
+**Check this in Hermes diagnostics:**
+Integrations → SEO Knowledge Base → run Test Connection → open Diagnostics → **Endpoint Built** should show EXACT URL.
+
+You want to see:
+
+* `.../api/health`
+* `.../api/smoke-test`
+
+If you see:
+
+* `.../api/api/...` → Hermes URL join is still wrong in that code path.
+
+## 3) Hermes isn’t actually using the Bitwarden secret you updated
+
+This is *very* common when you rename secrets (you said it’s “kbase-api”): the integration might still reference the old secret key/name.
+
+**Check in Hermes integration config/DB:**
+Find the `seo_kbase` integration record and confirm the field that points to Bitwarden is exactly the secret you updated (e.g. `kbase-api`, `SEO_KBASE_CONNECTION`, etc.).
+
+If Hermes is still pointing at an older secret, it will keep using the old base_url.
+
+---
+
+# The quickest “tell me exactly which one it is” test
+
+1. In your browser, open:
+   `https://seo-kbase.replit.app/api/health`
+
+* If that’s **404** → it’s the **worker deployment/routing** (cause #1)
+* If that’s **200 JSON** → it’s **Hermes URL construction or wrong secret mapping** (cause #2 or #3)
+
+---
+
+# If it’s Hermes: add one debug line to end the guessing
+
+In Hermes, update the connection test + smoke test code to **always log the final URL it is calling** into the Diagnostics “Endpoint Built” details.
+
+You want the diagnostics payload to include:
+
+* `constructed_health_url`
+* `constructed_smoke_url`
+* `base_url_source` (bitwarden secret name)
+
+That will immediately show whether Hermes is using the right secret and building the right path.
+
+---
+
+If you tell me the result of opening **`https://seo-kbase.replit.app/api/health`** (what status and whether you see JSON or a 404 page), I can tell you *exactly* which fix to apply next without any more back-and-forth.

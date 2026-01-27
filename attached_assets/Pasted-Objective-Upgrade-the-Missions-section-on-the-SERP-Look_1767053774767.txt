@@ -1,0 +1,116 @@
+Objective
+Upgrade the Missions section on the SERP / Lookout dashboard so it surfaces **actionable, keyword-driven ranking improvements** without overwhelming the UI, and so the **“Fix Everything”** action executes all suggested improvements in a controlled way.
+
+Core Concept
+
+* Every tracked keyword should conceptually have an improvement plan.
+* The Missions section should only show the **top 3–5 highest-impact actions** at any given time.
+* The full action set still exists in the background and is executed when the user clicks **“Fix Everything.”**
+
+Mission Generation Logic (Authoritative)
+
+1. For each keyword in the canonical target keyword list:
+
+   * Analyze:
+
+     * Current position
+     * Priority (lead impact)
+     * Difficulty
+     * Trend (up/down/stagnant)
+     * Existing content coverage (if available)
+   * Generate 1–N potential improvement actions (not all are shown).
+
+2. Possible action types per keyword (examples, not exhaustive):
+
+   * Create new landing page for keyword
+   * Improve existing page relevance (title, H1, copy)
+   * Add internal links pointing to target page
+   * Add supporting content (blog / FAQ)
+   * Improve on-page intent match (transactional vs informational)
+   * Strengthen local signals (location modifiers, schema)
+   * Optimize page speed / CWV for the ranking URL
+   * Add schema (FAQ, LocalBusiness, MedicalService, etc.)
+
+3. Score each action using:
+
+   * Keyword priority (highest weight)
+   * Distance from top positions (e.g., #6–#15 > #50)
+   * Effort vs impact
+   * Whether similar action already exists or is in progress
+
+Mission Display Rules (Critical)
+
+* The Missions section should display ONLY the **top 3–5 actions**, sorted by:
+
+  1. Highest expected lead impact
+  2. Lowest execution risk
+* Each mission card must include:
+
+  * Action title (clear and concrete)
+  * Affected keyword(s) (1–3 max, grouped if similar)
+  * Reason (1 short sentence: “High-intent keyword stuck at #8”)
+  * Estimated impact (High / Medium)
+  * Estimated effort (Low / Medium)
+
+Example Mission Cards
+
+* “Improve landing page for ‘psychiatrist near me’ (currently #8)”
+* “Create new page targeting ‘telepsychiatry orlando’ (high-priority keyword, no dedicated page)”
+* “Add internal links to ‘anxiety psychiatrist orlando’ page from 5 high-authority pages”
+* “Optimize title/H1 for ‘adhd psychiatrist orlando’ to improve intent match”
+
+Do NOT list one mission per keyword in the UI.
+
+Fix Everything Behavior (Very Important)
+When the user clicks **“Fix Everything”**:
+
+1. The system should:
+
+   * Expand the scope from the visible 3–5 missions
+   * Execute ALL currently generated improvement actions for ALL keywords (full action set)
+2. Actions should be:
+
+   * Batched and sequenced safely (do not run everything at once)
+   * Logged in the Audit Log
+   * Marked with status: queued → in progress → completed / failed
+3. The Missions UI should:
+
+   * Immediately show “Fixing everything…” state
+   * Replace individual missions with a progress summary:
+
+     * “Executing 27 improvements across 95 keywords”
+     * Progress indicator (optional but preferred)
+
+Data & Architecture Notes
+
+* Store generated actions in a table like `keyword_actions`:
+
+  * id
+  * keyword_id (nullable if grouped)
+  * action_type
+  * description
+  * impact_score
+  * effort_score
+  * status
+  * created_at
+* Missions section reads from this table but limits display to top 3–5.
+* “Fix Everything” triggers execution of all actions with status = pending.
+
+Non-Goals
+
+* Do not clutter Missions with long keyword lists.
+* Do not auto-execute actions without user intent.
+* Do not require the user to manually approve each keyword-level action.
+
+Acceptance Criteria
+
+* Missions section always shows a small, high-quality list of actions.
+* Actions clearly tie back to keywords and rankings.
+* Clicking “Fix Everything” reliably executes the full improvement plan.
+* The system scales to 100 keywords without overwhelming the UI.
+
+This prompt should be used to update:
+
+* Mission generation logic
+* Mission display logic
+* “Fix Everything” execution behavior

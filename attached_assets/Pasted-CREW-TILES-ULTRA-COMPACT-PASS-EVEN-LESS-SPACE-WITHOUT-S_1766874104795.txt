@@ -1,0 +1,66 @@
+CREW TILES – ULTRA COMPACT PASS (EVEN LESS SPACE) WITHOUT SHRINKING AVATAR
+
+Context:
+We like the bot size. Do NOT reduce avatar scale or the perceived size of the bots.
+We need to compress the tile UI chrome even more:
+- The info icon + Active badge must be tucked tighter into corners
+- The name must sit MUCH closer to the bot (reduce gap another 50–70%)
+- Remove any reserved vertical space for labels; use overlays instead
+
+Non-negotiable:
+1) Do NOT shrink the avatar image.
+2) Reduce spacing by changing layout strategy: use overlay layers, not stacked layout.
+3) Name, info icon, and badge must remain inside the tile frame.
+
+---
+
+### 1) TOP OVERLAY: TIGHT CORNERS
+- Move info icon and Active badge to absolute overlays:
+  - info icon: top-left, inset 6px
+  - Active badge: top-right, inset 6px
+- Reduce their footprint:
+  - info icon container: 18px (icon 12px)
+  - badge text: text-xs or text-sm, but compact padding (px-2 py-0.5)
+- Ensure overlay does not push avatar down (no layout flow impact).
+
+---
+
+### 2) NAME AS BOTTOM OVERLAY BAR (KEY CHANGE)
+Stop reserving vertical space for the name.
+
+- Add a bottom overlay strip inside the tile:
+  - position: absolute; left: 0; right: 0; bottom: 0;
+  - height: ~46–54px
+  - background: subtle gradient up (transparent -> dark) so text is readable
+- Place the name inside that strip:
+  - font size: increase (text-lg)
+  - font weight: semibold
+  - line-height: tight
+- This allows the avatar to visually sit closer to the name without needing a big gap.
+
+Important:
+- The avatar can visually overlap behind the bottom strip slightly (that’s fine).
+- The name must NEVER render outside the tile.
+
+---
+
+### 3) AVATAR POSITIONING (KEEP SIZE, MOVE DOWN)
+- Keep avatar container size the same
+- Move avatar DOWN slightly so feet approach the name overlay:
+  - translateY(+8px to +16px) OR reduce top padding to near zero
+- Remove any spacer/gap utilities that add vertical breathing room.
+
+Goal:
+- Feet-to-name spacing reduced by another 50–70% from current.
+
+---
+
+### 4) REDUCE TILE PADDING (FRAME TIGHTENING)
+- Reduce internal padding to near zero:
+  - top padding: 0 (overlays handle it)
+  - side padding: 0–6px max
+  - bottom padding: 0 (name overlay handles it)
+
+---
+
+###

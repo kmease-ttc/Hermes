@@ -1,0 +1,314 @@
+DEV INSTRUCTIONS — GROWTH AUTOMATION FOR SMALL LOCAL BUSINESSES (PHASE 1 + PHASE 2)
+
+Goal
+Drive qualified traffic + leads from small local businesses WITHOUT Google Ads and WITHOUT adding new site pages right now.
+
+Success metrics (track weekly)
+	•	Sessions from UTMs (source/medium/campaign)
+	•	Signup conversions + conversion rate
+	•	Replies booked / demos requested
+	•	Email deliverability (bounce rate < 2%, spam complaints ~0)
+
+Core principle
+Automate “distribution + outreach,” not spam. Keep volume low, quality high, and always include manual approval where platforms are strict.
+
+⸻
+
+PHASE 1 — AUTOPILOT EXPOSURE (LOW RISK, START HERE)
+We will publish 1 helpful “local business” post per week and syndicate it automatically.
+	1.	Create a “Content Syndication” service
+Repo structure
+
+	•	/content/
+	•	2025-12-13-why-local-sites-dont-rank.md
+	•	2025-12-20-quick-local-seo-fixes.md
+	•	/scripts/
+	•	publish.ts (or publish.py)
+	•	/config/
+	•	channels.json
+	•	authors.json
+	•	/.env (secrets)
+
+Post format (frontmatter required)
+Each markdown file must include:
+	•	title
+	•	slug
+	•	canonical_url (https://arclo.pro/blog/ OR https://arclo.pro/ if no blog)
+	•	excerpt
+	•	tags (local seo, small business, website)
+	•	cta_url (https://arclo.pro/?utm_source=…)
+	•	cta_text
+
+Example UTM standard
+	•	utm_source = {medium|substack|linkedin|gmb|reddit|ih}
+	•	utm_medium = {syndication|social|community|outreach}
+	•	utm_campaign = {launch_week1|launch_week2|…}
+	•	utm_content = {post_slug}
+
+	2.	Pick channels that are automatable safely
+Do NOT automate Facebook Groups posting (high ban risk).
+Do automate:
+A) Medium (optional if we have account + API access)
+B) Substack (newsletter + Notes) (if API is limited, fall back to “email newsletter send” + manual Notes)
+C) LinkedIn company page (best for local businesses; can be semi-automated via scheduling tool or manual with generated copy)
+D) Google Business Profile “Posts” (if you have a GBP for Arclo; great for local credibility)
+
+Implementation approach (pragmatic)
+	•	Build automation for:
+	•	Generating “ready-to-post” channel-specific copy from markdown
+	•	Scheduling + logging
+	•	If a platform lacks clean API access, output a “posting packet” and place it in /outbox/ as JSON + a human-post checklist.
+
+	3.	Build a “Posting Packet Generator” (automated output)
+Input: /content/.md
+Output per channel:
+
+	•	headline
+	•	short post (<= 300 chars)
+	•	long post (600–1200 chars)
+	•	3 hashtags (local-business-friendly)
+	•	CTA line with UTM link
+	•	1 image suggestion prompt (optional)
+
+Write packets to:
+	•	/outbox///.json
+
+	4.	Add scheduling (Cron)
+
+	•	Weekly publish job every Tuesday 9:00am Central
+	•	Command: npm run publish – –date=today (or python script)
+	•	The job:
+	•	picks next unpublished markdown
+	•	generates posting packets
+	•	attempts API publish where supported
+	•	logs results + failures
+
+	5.	Logging + analytics for Phase 1
+Create a small table (SQLite or Postgres; keep it simple)
+Table: syndication_posts
+
+	•	id
+	•	slug
+	•	channel
+	•	status (queued|published|failed)
+	•	published_url
+	•	utm_url
+	•	created_at
+	•	published_at
+	•	error_text
+
+Add dashboard endpoint (admin-only)
+	•	/admin/growth/syndication
+	•	show each post, channel status, published URLs, clicks (if available), and signups attributed (from your analytics tool)
+
+Definition of done (Phase 1)
+	•	Dev can drop a markdown file into /content and it reliably produces posting packets
+	•	At least one channel publishes automatically OR produces a clean manual packet
+	•	UTMs are consistent and show up in analytics
+
+⸻
+
+PHASE 2 — AUTOMATED OUTREACH ENGINE (THIS WILL DRIVE LEADS)
+We will identify local businesses with weak web presence, score them, generate a personalized outreach message, and send low-volume email with compliance + deliverability safeguards.
+
+Target audience
+Local service businesses (plumbers, HVAC, cleaning, landscaping, dental, med spa, electricians, roofing, etc.)
+
+High-level system
+A) Lead discovery → B) Website checks → C) Scoring → D) Personalized message → E) Send + track → F) Reply handling
+
+IMPORTANT GUARDRAILS
+	•	Start at 20 emails/day for 7 days; only increase if deliverability is good.
+	•	Always include:
+	•	Unsubscribe link
+	•	Physical address
+	•	“Why you’re receiving this” line
+	•	Do NOT scrape or message personal emails; focus on business contact emails.
+
+2.1 Lead discovery (sources)
+Implement connectors in this order:
+
+Connector A: Google Places API (preferred)
+	•	Query by city + category (e.g., “plumber in Austin TX”)
+	•	Collect:
+	•	business name
+	•	website
+	•	phone
+	•	address
+	•	rating/review count
+	•	place_id
+Store in leads table.
+
+Connector B: “Newly registered domains” (optional later)
+Skip for now; Places is enough.
+
+2.2 Website checks (automated audit)
+For each lead with a website:
+Fetch homepage HTML and compute quick signals:
+
+Signals (MVP)
+	•	has_https (true/false)
+	•	ttfb_ms (rough)
+	•	has_h1 (true/false)
+	•	title_length
+	•	meta_description_present
+	•	has_viewport_meta (mobile)
+	•	broken_links_count (optional)
+	•	lighthouse_mobile_score (optional; expensive, run only on top prospects)
+	•	has_schema (basic check for JSON-LD)
+	•	is_wordpress/wix/squarespace (fingerprint optional)
+
+Implementation notes
+	•	Use a simple headless fetcher (Playwright OR axios + cheerio).
+	•	Timeouts: 10–15 seconds max per site.
+	•	Retry once on failure.
+	•	Cache results 7 days.
+
+2.3 Lead scoring
+Score 0–100 based on “pain + ability to pay”
+Example weights (tune later):
+	•	No HTTPS: +25
+	•	Missing meta description: +10
+	•	No H1: +10
+	•	Slow TTFB: +10
+	•	Low review count but high category intent (e.g., roofer): +10
+	•	Has website but clearly outdated: +10 (heuristic: old generator tags, tiny title, etc.)
+	•	Has no website at all: +30 (if only a Facebook page or null website)
+
+Store:
+	•	score
+	•	score_reasons (array of strings)
+
+2.4 Personalization generator
+For each lead above threshold (start with score >= 60):
+Generate:
+	•	1–2 sentence “what we noticed” using score_reasons
+	•	A short “what Arclo does” line
+	•	A single CTA
+
+Template (must be short)
+Subject options (rotate 3)
+	•	Quick website fixes for {BusinessName}
+	•	Noticed a couple site issues at {BusinessName}
+	•	{BusinessName} — quick SEO/website upgrade
+
+Body (structure)
+Line 1: personalization (“I noticed …”)
+Line 2: outcome (“We automatically …”)
+Line 3: CTA with link (UTM + lead id)
+Line 4: compliance footer + unsubscribe
+
+Add a “preview link” (optional but powerful)
+	•	Generate a “light audit report” page for that lead:
+/audit/{lead_id}
+Include:
+	•	3 issues detected
+	•	3 fixes Arclo would do
+	•	CTA button
+
+This does NOT require new “marketing pages,” it’s a functional lead artifact.
+
+2.5 Sending infrastructure
+Use SendGrid (you already have it) or a dedicated outbound tool.
+
+Requirements
+	•	Dedicated sending domain or subdomain recommended (e.g., mail.arclo.pro) once volume grows
+	•	SPF, DKIM, DMARC configured
+	•	List-Unsubscribe header enabled
+
+Rate limits
+	•	Day 1–7: 20/day
+	•	Day 8–14: 40/day only if bounce < 2% and spam complaints are ~0
+	•	Always randomize send times within business hours
+
+Tables
+leads
+	•	id
+	•	source (google_places)
+	•	business_name
+	•	website
+	•	city
+	•	category
+	•	phone
+	•	address
+	•	place_id
+	•	created_at
+
+audits
+	•	id
+	•	lead_id
+	•	fetched_at
+	•	signals_json
+	•	score
+	•	score_reasons_json
+	•	status (ok|failed)
+	•	error_text
+
+outreach_messages
+	•	id
+	•	lead_id
+	•	audit_id
+	•	subject
+	•	body
+	•	status (draft|approved|sent|bounced|replied|unsubscribed)
+	•	send_at
+	•	sent_at
+	•	provider_message_id
+	•	utm_url
+
+events (optional)
+	•	id
+	•	provider_message_id
+	•	type (delivered|open|click|bounce|spam|unsubscribe|reply)
+	•	timestamp
+	•	payload_json
+
+2.6 Human-in-the-loop approval (required at first)
+Build a simple admin queue:
+	•	/admin/growth/outreach
+Shows 20 drafted emails/day with:
+	•	lead summary
+	•	detected issues
+	•	generated email
+Buttons:
+	•	Approve + schedule
+	•	Edit + approve
+	•	Skip
+
+Do NOT auto-send without approval until you’ve tuned the templates.
+
+2.7 Reply handling
+At minimum:
+	•	Route replies to a shared inbox (support@ or sales@)
+	•	Log “reply received” in DB (via inbound parse webhook if supported, or manual tagging)
+
+2.8 Tracking
+Every outreach email CTA link must include:
+	•	lead_id
+	•	campaign
+So you can attribute signups to outreach.
+
+Definition of done (Phase 2 MVP)
+	•	Lead discovery pulls 200–500 leads for 1 metro + 1–2 categories
+	•	Audits run and score leads
+	•	20 outreach drafts/day appear in admin queue
+	•	Approved emails send successfully with proper unsubscribe/compliance
+	•	You can see clicks/signups tied to lead_id
+
+⸻
+
+EXECUTION PLAN (DO THIS IN THIS ORDER)
+Sprint 1 (2–3 days)
+	•	Implement Phase 1 posting packet generator + UTM standard + logging
+	•	Set up weekly cron + admin view
+
+Sprint 2 (3–5 days)
+	•	Implement Places lead discovery + basic audit + scoring + admin approval queue
+	•	Send 20/day for one metro + one category
+
+Initial targeting recommendation (keep it narrow)
+Metro: Austin TX
+Category: cleaning services OR landscaping (pick one)
+Reason: easy to message, lots of fragmented small businesses, high pain tolerance for “we handle it for you”
+
+If you want, next message I can write the exact Replit agent implementation prompt to build Phase 1 + Phase 2 (including DB schema + routes + cron + SendGrid hooks) in your current stack.

@@ -1,0 +1,234 @@
+Yes — and good catch. What you’re seeing is a **classic card alignment failure** caused by variable-height content and mixed CTA stacks. This is not a visual nit; it directly affects perceived quality.
+
+Below are **very explicit, dev-ready instructions** to make these cards align perfectly and feel production-grade.
+
+---
+
+# Fix Example Card Alignment — Implementation Instructions
+
+## Root Cause (Why It’s Broken)
+
+The cards are misaligned because:
+
+1. **Variable text height**
+
+   * Different business names
+   * Different number of service pills
+2. **CTAs are not anchored**
+
+   * Buttons flow naturally instead of being pinned
+3. **Image heights may be consistent, but content blocks are not**
+4. **Cards are not using a constrained vertical layout**
+
+Result:
+
+* Buttons don’t line up
+* Card bottoms float unevenly
+* Grid feels sloppy instead of portfolio-quality
+
+---
+
+## Required Fix: Structural Card Layout
+
+Each card **must** use a **3-zone layout** with fixed rules.
+
+### Card Structure (Mandatory)
+
+```
+Card (flex / grid container)
+├── Media (fixed height)
+├── Content (flex-grow)
+│   ├── Title
+│   ├── Meta (industry)
+│   ├── Services (pill group)
+└── Actions (anchored bottom)
+    ├── View demo
+    └── Analyze / Generate
+```
+
+---
+
+## Step-by-Step Fix
+
+### 1. Fix the Card Container
+
+**Card root**
+
+* Must be a vertical flex container
+* Must stretch to equal height in grid
+
+```css
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+```
+
+If using CSS Grid for the parent:
+
+```css
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  align-items: stretch;
+}
+```
+
+---
+
+### 2. Lock Image Height (Already Mostly Done, Verify)
+
+The image area **must be identical height across all cards**.
+
+```css
+.card-media {
+  height: 200px; /* choose one value and lock it */
+  overflow: hidden;
+}
+
+.card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+```
+
+No auto height. No aspect-ratio hacks here.
+
+---
+
+### 3. Make Content Area Flexible (Critical)
+
+This is what absorbs variability in text.
+
+```css
+.card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+```
+
+---
+
+### 4. Normalize Service Pills Height
+
+This is one of the biggest offenders.
+
+#### Rules:
+
+* **Max 2 lines of pills**
+* Overflow hidden
+* Consistent vertical footprint
+
+```css
+.card-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 56px; /* tune for 2 rows */
+  overflow: hidden;
+}
+```
+
+Optional (recommended):
+
+* Add `+ more` indicator if pills overflow
+
+---
+
+### 5. Anchor the CTA Section to the Bottom (Most Important)
+
+Buttons **must never float based on content length**.
+
+```css
+.card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+```
+
+This guarantees:
+
+* All CTAs align horizontally across the grid
+* Visual rhythm is restored
+
+---
+
+### 6. Normalize Button Heights
+
+Ensure both buttons have identical heights everywhere.
+
+```css
+.card-actions button,
+.card-actions a {
+  height: 44px;
+}
+```
+
+No auto height. No text wrapping.
+
+---
+
+### 7. Optional: Equalize Title Height (If Still Off)
+
+If titles vary significantly:
+
+```css
+.card-title {
+  min-height: 56px; /* ~2 lines */
+}
+```
+
+This is optional but often helps with visual harmony.
+
+---
+
+## Visual QA Checklist (Must Pass)
+
+This fix is done when:
+
+* ✅ All “View demo” buttons line up horizontally
+* ✅ All primary CTAs line up horizontally
+* ✅ Card bottoms are perfectly aligned
+* ✅ No card looks taller or shorter than its neighbor
+* ✅ Grid looks intentional, not organic
+* ✅ Scrolling doesn’t reveal jitter or misalignment
+
+If you squint and see straight lines — you’re done.
+
+---
+
+## Why This Matters (Internal)
+
+Misaligned cards subconsciously signal:
+
+* Template
+* MVP
+* Incomplete
+
+Aligned cards signal:
+
+* Portfolio
+* Confidence
+* Production readiness
+
+This page is doing **trust work**. Alignment is non-negotiable.
+
+---
+
+## One-Line Rule Going Forward
+
+> **Cards are not content flows — they are layout systems. Anchor everything.**
+
+If you want next:
+
+* I can review **mobile alignment rules**
+* Or define a **shared Card component contract**
+* Or help convert this to a **single reusable ExampleCard component** to prevent regressions
+
+This was the right thing to pause and fix.

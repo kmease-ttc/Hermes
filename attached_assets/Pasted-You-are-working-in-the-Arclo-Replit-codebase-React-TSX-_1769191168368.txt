@@ -1,0 +1,87 @@
+You are working in the Arclo Replit codebase (React + TSX). The homepage header/nav is regressing: it has too much vertical padding and no clear separation from the hero background. Fix the header layout to match the older “clean” version: tighter height, clearer separation, consistent alignment, and correct button styling.
+
+GOALS
+1) Header should feel anchored and premium:
+   - Height ~64–72px on desktop
+   - Less vertical padding than current
+   - Clear separation from hero via subtle border + shadow and/or translucent background
+2) Keep the current white/clean visual style.
+3) Do NOT change hero typography/layout beyond what’s needed for header spacing.
+
+WHAT TO FIND
+- Locate the header component used on the marketing homepage.
+- Search for the nav links: “Examples”, “How It Works”, “Pricing”, “Log In”
+- Search for the buttons: “Generate My Site” and “Analyze My Website”
+- Likely files: src/AppLayout.tsx, src/components/*Header*.tsx, src/pages/*Home*.tsx, or similar.
+
+IMPLEMENTATION REQUIREMENTS
+A) Create/Update a dedicated header CSS module (or global CSS file) to enforce consistent spacing and separation.
+   - Add a class like .arcloHeader (or similar) applied to the header root.
+   - Use:
+     - position: sticky; top: 0; z-index: 50;
+     - height: 72px; (or min-height 72px)
+     - padding: 0 24px; (desktop)
+     - background: rgba(255,255,255,0.72);
+     - backdrop-filter: blur(12px);
+     - border-bottom: 1px solid rgba(15,23,42,0.08);
+     - box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+   - Keep the header content vertically centered.
+
+B) Constrain the inner header content so it aligns with the page content:
+   - Add an inner wrapper .arcloHeaderInner:
+     - max-width: 1120px (or existing site max width)
+     - margin: 0 auto;
+     - height: 100%;
+     - display: flex; align-items: center; justify-content: space-between;
+     - gap: 16px;
+
+C) Nav spacing + typography:
+   - .arcloNavLinks:
+     - display: flex; align-items: center; gap: 20px;
+     - font-size: 14–15px; font-weight: 500;
+     - color: #334155 (or existing slate)
+     - hover color slightly darker
+   - Ensure nav isn’t vertically cramped; keep everything centered.
+
+D) Button styles (keep consistent with hero):
+   - Secondary button “Generate My Site” should be an outlined/soft button:
+     - background: rgba(255,255,255,0.9);
+     - border: 1px solid rgba(15,23,42,0.12);
+     - box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+     - height: 40px; padding: 0 14–16px; border-radius: 12px;
+   - Primary button “Analyze My Website” should be the gradient pill:
+     - height: 40px; padding: 0 16–18px; border-radius: 12px;
+     - gradient background already exists — reuse it
+     - IMPORTANT: remove the weird 1px purple artifact at the right edge:
+       - ensure no outline/border is bleeding through
+       - set border: none; outline: none;
+       - ensure background-clip/padding-box isn’t causing a seam
+       - if needed set: background-clip: padding-box; and explicitly set box-shadow
+   - Both buttons must align baseline/height and not shift the header height.
+
+E) Reduce the “compressed” feeling above the fold:
+   - Ensure the hero section has enough top spacing BELOW the header:
+     - Add hero container padding-top: 56–72px (depending on your layout)
+     - But DO NOT reintroduce excessive whitespace. Make it balanced.
+
+FILES TO CHANGE
+1) Header component TSX (where links + buttons live)
+2) Add/modify a CSS file for the header:
+   - Prefer: src/styles/arclo-header.css (or existing marketingTheme.css / arclo-base.css if that’s your pattern)
+3) Import the CSS where needed (AppLayout.tsx or the header component).
+
+DELIVERABLES
+- Provide a short summary of what you changed.
+- List the exact files edited.
+- Confirm:
+  1) Header height is ~72px and centered
+  2) Clear separation (border/shadow/backdrop) is visible
+  3) Primary button has no 1px purple seam
+  4) Overall above-the-fold spacing feels like the older clean version
+
+TESTING
+- Run the app and confirm on:
+  - Desktop width (>=1200px)
+  - Tablet (~768px)
+- Ensure sticky header doesn’t overlap hero text.
+- Ensure contrast remains high and header stays readable over gradient background.

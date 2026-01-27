@@ -1,0 +1,247 @@
+Great — here is a **clear, developer-ready Figma reference layout description** that you can hand directly to your designer *or* use to recreate the hero in Figma exactly as intended.
+
+Everything below is written in the exact structure Figma designers expect: spacing, sizing, typography, layering, and visual assets.
+
+---
+
+# **🎨 Figma Reference Layout – Arclo Hero Section**
+
+This describes **exact artboard layout, spacing, components, and hierarchy** so a designer can drop it directly into Figma and produce the final hero.
+
+---
+
+# **1. Artboard Setup**
+
+* **Frame Size:** 1440 × 1024 (Desktop)
+* **Grid:** 12-column layout, 80px margins, 24px gutters
+* **Background:** `#FFFFFF`
+
+---
+
+# **2. Top Navigation Bar**
+
+**Height:** 72px
+**Layout:** Horizontal stack with spacing 32px
+
+Left:
+
+* **Logo** (Height 48px — no background, no border, transparent PNG)
+
+Right (menu items):
+
+* “What We Do”
+* “Pricing”
+* “About”
+* **Primary Button:** “Generate My Website”
+
+Nav text color: `#111827`
+Nav font: **Inter Medium 15px**
+CTA button:
+
+* Background: `#4F46E5`
+* Corner radius: 999px (pill)
+* Padding: 12px 24px
+* Text: **SemiBold 15px**, color white
+
+Divider below nav: none (keep ultra clean)
+
+---
+
+# **3. Hero Section Layout**
+
+Vertical spacing from nav: **120px**
+
+Use a **split-stack layout**:
+
+Left column = text
+Right column = hero image
+
+Spacing between columns: **80px**
+
+---
+
+# **4. Hero Text Block (Left Column)**
+
+### **Headline**
+
+```
+Grow Your Business  
+With an AI Website  
+That Runs Itself.
+```
+
+* Font: **Manrope ExtraBold**
+* Size: **64px**
+* Line height: **72px**
+* Color: `#0F172A`
+* Max width: 580px
+
+### **Subheadline**
+
+```
+Everything your website needs — built, written, fixed,  
+and improved automatically.
+```
+
+* Font: **Inter Regular**
+* Size: **20px**
+* Line height: **32px**
+* Color: `#4B5563`
+* Max width: 520px
+* Top margin from headline: **24px**
+
+### **CTA Row**
+
+Horizontal stack, spacing 24px
+
+**Primary CTA:**
+
+* Text: “Generate My Free Site”
+* Button style:
+
+  * Background: `#111827`
+  * Border radius: 999px
+  * Padding: 16px 28px
+  * Text color: white
+  * Shadow: subtle `0 4px 16px rgba(0,0,0,0.08)`
+
+**Secondary CTA:**
+
+* Text: “See It in Action →”
+* Font: **Inter Medium 17px**
+* Color: `#111827`
+* No button container (text-only link style)
+
+### **Reassurance Line**
+
+```
+No effort. No setup. No SEO knowledge required.
+```
+
+* Font: Inter Regular 14px
+* Color: `#9CA3AF`
+* Alignment: left
+* Top margin: 20px
+
+---
+
+# **5. Hero Visual (Right Column)**
+
+This is the key to projecting **quality + automation**.
+
+### **Main Website Mockup**
+
+* A large rounded-corner card representing a beautiful website homepage
+* Size: **600px width**
+* Corner radius: **24px**
+* Shadow: `0px 20px 40px rgba(0,0,0,0.06)`
+* Place the mockup angled at **+2 degrees** rotation (very subtle)
+
+### **Overlay Automation Tags**
+
+Floating labels around the mockup, lightly animated (in Figma use smart animate):
+
+**Label Style:**
+
+* Background: white
+* Border radius: 12px
+* Padding: 8px 14px
+* Shadow: `0 8px 24px rgba(79,70,229,0.15)` (indigo glow)
+* Font: Inter Medium 14px
+* Color: `#4F46E5`
+
+**Place 4 labels:**
+
+1. **Top-left:**
+
+   ```
+   Content Written ✓
+   ```
+
+2. **Top-right:**
+
+   ```
+   SEO Fixed ✓
+   ```
+
+3. **Right-center:**
+
+   ```
+   Daily Improvements ✓
+   ```
+
+4. **Bottom-left:**
+
+   ```
+   Pages Generated ✓
+   ```
+
+### **Optional AI Glow**
+
+Under the mockup, place a soft radial gradient:
+
+* Size: 700px
+* Color: `rgba(79, 70, 229, 0.15)` → transparent
+* Blur: 120px
+* Positioned centered under the mockup
+
+This makes it look “AI-powered,” premium, and magical.
+
+---
+
+# **6. Whitespace Requirements**
+
+Vertical padding bottom of hero: **140px**
+
+Ensure the hero feels airy and premium:
+
+* No extra icons
+* No busy backgrounds
+* No gridlines
+* No decorative clutter
+
+---
+
+# **7. Visual Tone Reference (for Designer)**
+
+Tell your designer to reference:
+
+* **Linear.app homepage** (spacing, typography)
+* **Framer homepage** (mockup style)
+* **Notion AI page** (AI tags around UI)
+* **Apple iCloud landing** (white space + premium)
+
+---
+
+# **8. Deliverables**
+
+Designer should produce:
+
+### **1. Figma Frame**
+
+1440 × 1024 hero layout, following specs above.
+
+### **2. Exported Assets**
+
+* Website mockup PNG/SVG
+* Automation tag components
+* Radial AI glow layer
+
+### **3. Implementation Notes for Dev**
+
+* Responsive breakpoints
+* How mockup scales down on tablet/mobile
+* Whether tags collapse or reposition on mobile
+
+---
+
+# If you want…
+
+I can also generate a **visual mockup image** directly for you to drop into Figma as a starting point.
+
+Would you like:
+
+A) A clean website mockup
+B) A full hero composite
+C) Just the automation tags
+D) All of the above

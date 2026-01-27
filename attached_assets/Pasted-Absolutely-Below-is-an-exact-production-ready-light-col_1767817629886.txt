@@ -1,0 +1,169 @@
+Absolutely. Below is an **exact, production-ready light color palette** designed specifically for a **hands-off automated SEO service**. This palette is optimized for **trust, calm, and conversion**, while still feeling modern and “AI-powered” without the darkness.
+
+---
+
+## Hermes — Light Mode Marketing Palette (Recommended)
+
+### 1. Core Backgrounds (this is the biggest change)
+
+**Primary Page Background**
+
+* `#F8FAFC` (Very light cool gray)
+* Use for: hero, main sections
+* Why: feels clean, calm, SaaS-native, not stark white
+
+**Secondary Section Background**
+
+* `#FFFFFF` (Pure white)
+* Use for: feature blocks, cards, comparison sections
+
+**Subtle Alt Section Background**
+
+* `#F1F5F9`
+* Use for: alternating sections, “What’s included”, FAQs
+
+---
+
+### 2. Text Colors (readable, not aggressive)
+
+**Primary Text (Headlines)**
+
+* `#0F172A` (Slate 900)
+* Strong but not black → avoids harsh contrast
+
+**Body Text**
+
+* `#334155` (Slate 700)
+* Comfortable long-form reading
+
+**Muted / Helper Text**
+
+* `#64748B` (Slate 500)
+* For subcopy, disclaimers, helper lines
+
+---
+
+### 3. Primary Brand / CTA Colors (keep your green, soften delivery)
+
+**Primary CTA Button**
+
+* `#22C55E` (Emerald 500)
+* Text: `#FFFFFF`
+* Hover: `#16A34A`
+
+This keeps the “growth / SEO” signal without feeling neon or aggressive.
+
+**Secondary CTA / Outline Button**
+
+* Border: `#22C55E`
+* Text: `#16A34A`
+* Background: transparent → `#ECFDF5` on hover
+
+---
+
+### 4. Accent & Status Colors (used sparingly)
+
+**Accent Blue (trust / automation)**
+
+* `#3B82F6`
+* Use for links, subtle highlights, icons
+
+**Success / Positive Signal**
+
+* `#10B981`
+
+**Warning / Attention (rare)**
+
+* `#F59E0B`
+
+---
+
+### 5. Card & Container Styling (important for “calm” feel)
+
+**Card Background**
+
+* `#FFFFFF`
+
+**Card Border**
+
+* `#E2E8F0`
+
+**Card Shadow**
+
+```css
+box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+```
+
+Rounded corners:
+
+* `border-radius: 12px` (minimum)
+* 16px is even better for approachability
+
+---
+
+### 6. Header / Navigation (light, not dominant)
+
+**Navbar Background**
+
+* `#FFFFFF` (or `rgba(255,255,255,0.85)` with blur)
+
+**Navbar Border Bottom**
+
+* `#E5E7EB`
+
+**Logo / Brand Mark**
+
+* Keep current green
+* Avoid placing on dark backgrounds
+
+---
+
+### 7. Footer (this is where dark is OK)
+
+**Footer Background**
+
+* `#020617` (Near-black slate)
+* Text: `#CBD5E1`
+
+This preserves contrast and brand seriousness **after** conversion intent is established.
+
+---
+
+## What This Achieves Psychologically
+
+This palette communicates:
+
+* “This is easy”
+* “This is safe”
+* “This works quietly in the background”
+* “I don’t need to understand SEO to use this”
+
+It removes:
+
+* Tool anxiety
+* Perceived effort
+* The “dashboard before signup” vibe
+
+---
+
+## Strong Recommendation (Important)
+
+**Marketing pages should always default to this light palette.**
+If you want dark mode:
+
+* Make it optional
+* Use it post-login
+* Never lead with it
+
+---
+
+## If you want next:
+
+I can:
+
+* Map these colors directly to your Tailwind config
+* Redesign the hero using *only* these colors
+* Provide a dark-mode palette that complements (not competes)
+* Annotate your screenshot with exact swaps
+
+Just tell me what you want to do next.

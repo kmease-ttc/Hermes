@@ -1,0 +1,149 @@
+You are fixing a **data lineage and source-of-truth bug** in the Arclo / Hermes crew system.
+
+## Problem Summary
+
+The **Capabilities & Performance dashboard** is rendering blank or placeholder values (e.g., dashes) for crew members, even though their **individual crew dashboards contain real metrics**.
+
+Example:
+
+* Scotty shows a dash on Capabilities & Performance
+* Scotty shows **91% Crawl Health**, **88% Index Coverage**, **72% CWV**, etc. on his own dashboard
+
+This indicates a **broken lineage between crew dashboards and the aggregate dashboard**.
+
+## Core Requirement (Non-Negotiable)
+
+Every metric shown on **Capabilities & Performance** MUST be:
+
+1. Pulled directly from the **same source used by the crew member’s dashboard**
+2. One-to-one mapped (no recomputation, no parallel logic)
+3. Impossible to diverge or drift
+
+If a value exists on the crew dashboard, it must appear identically on Capabilities & Performance.
+
+---
+
+## Architecture Rules to Implement
+
+### 1. Establish a Single Source of Truth Per Crew Member
+
+Each crew member must expose a canonical data object, for example:
+
+```
+crew_metrics[crew_id] = {
+  primary_metric: {
+    label: "Crawl Health",
+    value: 91,
+    unit: "%",
+    status: "improving"
+  },
+  secondary_metrics: {...},
+  last_updated: timestamp,
+  is_sample: boolean
+}
+```
+
+This object must be:
+
+* Generated once
+* Used by **both**:
+
+  * Crew dashboard page
+  * Capabilities & Performance cards
+
+No duplicate metric calculations are allowed.
+
+---
+
+### 2. Explicit Metric Binding (No Implicit UI Logic)
+
+Each Capabilities & Performance card must declare **exactly** which crew metric it binds to:
+
+```
+capabilities_card.scotty.metric_source = crew_metrics["scotty"].primary_metric
+```
+
+No placeholders, no hardcoded defaults, no UI-side guesses.
+
+---
+
+### 3. Remove Placeholder Rendering Logic
+
+If a crew metric exists:
+
+* Never show a dash
+* Never show a blank bar
+* Never show a fallback value
+
+If a metric does NOT exist:
+
+* Show a labeled state:
+
+  * “Not configured”
+  * “Sample data”
+  * “Awaiting crawl”
+
+But **never silently hide real data**.
+
+---
+
+### 4. Enforce Lineage at the Type Level
+
+Introduce a shared interface / schema used by both views:
+
+```
+CrewMetric {
+  label
+  value
+  unit
+  trend
+  status
+  is_sample
+}
+```
+
+Both dashboards must consume this interface directly.
+
+If the interface breaks, the build should fail.
+
+---
+
+### 5. Sample Data Must Be Explicitly Marked
+
+If a metric is sample or placeholder:
+
+* It must be tagged `is_sample = true`
+* The UI must render a visible “Sample” label
+
+No unlabeled placeholders anywhere in the product.
+
+---
+
+### 6. Add a Guardrail Test
+
+Add an automated check:
+
+* For each crew member:
+
+  * If crew dashboard metric exists
+  * Then Capabilities & Performance must render the same value
+
+Fail the test if:
+
+* Value mismatches
+* Value missing
+* Value replaced with placeholder
+
+---
+
+## Success Criteria
+
+* Scotty’s Capabilities card shows **the same 91% value** as Scotty’s dashboard
+* Every crew member card is backed by real lineage
+* No duplicated metric logic
+* No silent placeholders
+* One source of truth per crew member
+
+Do not redesign the UI.
+Do not invent new metrics.
+Fix lineage only.

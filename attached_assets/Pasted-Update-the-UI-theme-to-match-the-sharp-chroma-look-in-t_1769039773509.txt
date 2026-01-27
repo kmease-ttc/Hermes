@@ -1,0 +1,170 @@
+Update the UI theme to match the “sharp chroma” look in the reference image (logo + gradient buttons). Current glows/gradients are too washed out. Fix by increasing saturation, contrast, and edge crispness while keeping text readable.
+
+This is a styling-only task. Do not change layout.
+
+---
+
+## 1) Replace gradients with sharper, higher-contrast stops (use these exact values)
+
+Set these CSS variables (or theme tokens) in the global theme file (e.g. `src/index.css` or `src/styles/theme.css`):
+
+:root {
+/* High-chroma brand gradient (matches logo/button sharpness) */
+--brand-gradient: linear-gradient(90deg,
+#6D28D9 0%,
+#7C3AED 18%,
+#A855F7 36%,
+#EC4899 58%,
+#F97316 78%,
+#F59E0B 100%
+);
+
+/* Secondary gradients */
+--brand-gradient-vertical: linear-gradient(180deg,
+rgba(109, 40, 217, 0.16) 0%,
+rgba(236, 72, 153, 0.12) 55%,
+rgba(245, 158, 11, 0.10) 100%
+);
+
+--success-gradient: linear-gradient(90deg,
+#059669 0%,
+#10B981 35%,
+#22C55E 70%,
+#A3E635 100%
+);
+
+--info-gradient: linear-gradient(90deg,
+#0284C7 0%,
+#38BDF8 35%,
+#6366F1 70%,
+#A855F7 100%
+);
+
+/* Text remains high contrast */
+--text: #0B1220;
+--muted: #334155;
+}
+
+No pastel gradients allowed for primary actions.
+
+---
+
+## 2) Make buttons match the “Analyze My Website” sharp gradient style
+
+In the shared Button component, implement these variants:
+
+### Variant: primaryGradient
+
+* background: var(--brand-gradient)
+* color: #FFFFFF
+* font-weight: 600
+* border: 1px solid rgba(255,255,255,0.18)
+* shadow: 0 10px 30px rgba(109,40,217,0.22)
+
+Hover:
+
+* increase contrast (not opacity):
+  filter: saturate(1.1) contrast(1.05)
+
+Active:
+
+* filter: saturate(1.05) contrast(1.0)
+
+### Variant: successGradient
+
+* background: var(--success-gradient)
+* color: #FFFFFF
+
+All “Subscribe / Finish setup / Upgrade” CTAs must use one of these gradient variants. No gray buttons.
+
+---
+
+## 3) Restore sharp “glow” without washing out cards
+
+Current glow looks pastel/soft. Replace with crisp, higher-chroma glow layers.
+
+Add utility classes:
+
+.glow-brand {
+box-shadow:
+0 18px 45px rgba(109, 40, 217, 0.18),
+0 10px 30px rgba(236, 72, 153, 0.14),
+0 6px 18px rgba(245, 158, 11, 0.12);
+}
+
+.glow-success {
+box-shadow:
+0 18px 45px rgba(16, 185, 129, 0.16),
+0 8px 24px rgba(34, 197, 94, 0.12);
+}
+
+.glow-info {
+box-shadow:
+0 18px 45px rgba(56, 189, 248, 0.14),
+0 8px 24px rgba(99, 102, 241, 0.12);
+}
+
+Key rule: glows affect shadows/borders, NOT text color.
+
+---
+
+## 4) Border hue “sharpness” (crisp gradient borders)
+
+Use the gradient-border mask approach, but make it more vivid:
+
+.glow-border::before {
+opacity: 1; /* previously too low */
+background: var(--brand-gradient);
+}
+
+Do NOT blur borders.
+
+---
+
+## 5) Glass stays, but tint must be subtle and readable
+
+Keep glassmorphism:
+
+* background: rgba(255,255,255,0.72)
+* blur: 14px
+
+For tinted cards:
+
+* add a very light overlay (only 6–10% opacity)
+  Example:
+* success tint: rgba(16, 185, 129, 0.07)
+* brand tint: rgba(109, 40, 217, 0.06)
+
+Do NOT use tinted text. Text stays --text / --muted.
+
+---
+
+## 6) “Sharpness” rules (prevent washed look)
+
+* Never use text colors lighter than #334155 on white.
+* Never set entire card opacity.
+* Never put body text on gradients.
+* Prefer “saturate/contrast” for hover, not opacity fades.
+
+---
+
+## 7) Apply to Dashboard
+
+* KPI tiles: glass + crisp border + readable numbers
+* “Top Performers” card: glass + glow-success
+* “What To Do Next” card: glass + glow-brand
+* Locked Agent cards: glass + glow-border + “Locked” badge
+* All CTAs: primaryGradient or successGradient
+
+---
+
+## Acceptance check
+
+If you screenshot the Dashboard:
+
+* gradients look vivid and sharp (not pastel)
+* CTAs match the Analyze button style
+* cards have crisp glow, not foggy wash
+* numbers are instantly readable
+
+Implement now, then visually verify in Preview.

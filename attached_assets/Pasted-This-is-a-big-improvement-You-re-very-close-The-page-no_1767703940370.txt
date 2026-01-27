@@ -1,0 +1,215 @@
+This is a big improvement. You’re very close. The page no longer feels bloated — but it still feels a bit heavier than it needs to at the very top, and that’s now mostly a copy hierarchy issue, not design.
+
+I’ll break this into (1) what’s working, (2) what’s still causing friction, and (3) very specific tweaks + dev instructions.
+
+⸻
+
+1. What’s Working Well (Keep These)
+
+You fixed the right things:
+	•	✅ Clear primary action (URL → scan)
+	•	✅ “No setup / no logins / ~60 seconds” is excellent friction-reduction copy
+	•	✅ CTA is visually strong and obvious
+	•	✅ Dark theme + gradient feels premium, not gimmicky
+	•	✅ Headline is benefit-oriented (action plan, no setup)
+
+This already converts much better than the previous version.
+
+⸻
+
+2. What Still Feels Heavy (Very Specific)
+
+There are three pressure points, all above the fold:
+
+A. Headline is still doing two jobs
+
+“Get a complete SEO action plan from your website — no setup required.”
+
+This explains what it is and why it’s easy. That’s slightly too much for the very first line.
+
+It’s a good headline, just ~20% too long for mobile-first scanning.
+
+⸻
+
+B. Subheadline repeats the same idea in a denser way
+
+“Enter your website URL and Arclo automatically scans it for technical issues, keyword opportunities, and competitor gaps — then turns it into a clear, prioritized plan.”
+
+This is accurate, but:
+	•	Long sentence
+	•	Multiple concepts
+	•	Feels like documentation, not persuasion
+
+Users already decided what it does from the headline.
+Now they need reassurance, not detail.
+
+⸻
+
+C. CTA label is slightly misaligned with the promise
+
+Button says:
+
+Free Health Check
+
+But the headline promise is:
+
+SEO action plan
+
+Those are close, but not identical. This creates a tiny moment of hesitation:
+
+“Is this a quick check… or something more useful?”
+
+Small mismatch, but worth fixing.
+
+⸻
+
+3. Exact Improvements (Low Effort, High Impact)
+
+1️⃣ Simplify the headline (do this first)
+
+Current
+
+Get a complete SEO action plan from your website — no setup required.
+
+Recommended
+
+Get a complete SEO action plan — no setup required.
+
+Or even stronger:
+
+Your SEO action plan — no setup required.
+
+This reduces cognitive load immediately.
+
+Dev instruction
+	•	Change H1 text only
+	•	Do not change font size or layout yet
+
+⸻
+
+2️⃣ Replace the subheadline with a lighter reassurance line
+
+Current
+
+Enter your website URL and Arclo automatically scans it for technical issues, keyword opportunities, and competitor gaps — then turns it into a clear, prioritized plan.
+
+Replace with one of these (pick one):
+	•	“See exactly what’s holding your site back and what to fix first.”
+	•	“Find the issues costing you traffic — and the fastest way to fix them.”
+	•	“Understand what to fix, why it matters, and what to do next.”
+
+These are:
+	•	Shorter
+	•	Outcome-focused
+	•	Less technical
+
+Dev instruction
+	•	Keep it to one line
+	•	Max ~90 characters
+	•	No commas if possible
+
+⸻
+
+3️⃣ Align the CTA text with the promise
+
+Current CTA
+
+Free Health Check
+
+Better options
+	•	Get Free SEO Action Plan
+	•	Get My Free SEO Plan
+	•	Run Free SEO Plan
+
+This reinforces that the output is a plan, not a shallow scan.
+
+Dev instruction
+	•	Update button label only
+	•	Keep color, size, animation unchanged
+
+⸻
+
+4️⃣ Move the “Built for people…” line closer to the CTA
+
+Right now it’s visually separated and easy to miss.
+
+That line is emotionally strong:
+
+Built for people who don’t want to think about SEO
+
+It works best as emotional validation just before action.
+
+Dev instruction
+	•	Move this line to:
+	•	Just above the URL input or
+	•	Just below the CTA button
+	•	Reduce opacity slightly so it feels supportive, not dominant
+
+⸻
+
+4. Ideal Final Above-the-Fold (Exact Copy)
+
+Here’s what the hero should read like after tweaks:
+
+Eyebrow (small)
+Built for people who don’t want to think about SEO
+
+H1
+Get a complete SEO action plan — no setup required.
+
+Subheadline
+See exactly what’s holding your site back and what to fix first.
+
+Input
+Enter your website (example.com)
+
+CTA
+Get Free SEO Action Plan
+
+Microcopy
+No logins • No integrations • Takes ~60 seconds
+
+That’s it. No extra explanation needed above the fold.
+
+⸻
+
+5. Why This Will Convert Better
+
+These changes:
+	•	Reduce reading time by ~30–40%
+	•	Eliminate duplication
+	•	Align promise → button → outcome
+	•	Make the decision feel obvious, not evaluative
+
+You want users thinking:
+
+“Sure, I’ll try it.”
+
+Not:
+
+“Let me fully understand this first.”
+
+⸻
+
+6. Explicit Dev To-Do List (You Can Paste This)
+	1.	Shorten H1 to remove “from your website”
+	2.	Replace subheadline with a single outcome-focused sentence
+	3.	Change CTA text to reference “SEO plan”
+	4.	Reposition “Built for people who don’t want to think about SEO” closer to the CTA
+	5.	Do not add any new sections or animations
+
+This is a copy polish pass, not a redesign.
+
+⸻
+
+Bottom line
+
+You’re 90% there.
+The page looks good — it just needs to say less, faster.
+
+If you want, next I can:
+	•	Write 2 A/B headline variants to test
+	•	Tune this specifically for cold traffic vs warm traffic
+	•	Review the scan → report transition screen for drop-off
+
+But this version is already a solid foundation.

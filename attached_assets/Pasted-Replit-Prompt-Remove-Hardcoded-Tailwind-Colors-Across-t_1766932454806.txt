@@ -1,0 +1,65 @@
+Replit Prompt: Remove Hardcoded Tailwind Colors Across the Entire App (Enforce Semantic Tokens + Global Design System)
+
+Problem
+Multiple pages/components still use hardcoded Tailwind color utilities (e.g., text-green-500, bg-red-100, border-yellow-200, text-gray-400, bg-slate-900). This bypasses our glass design system and causes inconsistent styling + poor dark-mode adaptation.
+
+Goal
+Eliminate hardcoded Tailwind color usage across the whole repo and replace it with the design system’s semantic tokens (e.g., text-semantic-success, bg-semantic-danger-soft, border-semantic-warning, text-muted, bg-card, etc.) so the UI stays consistent everywhere.
+
+Scope
+
+* Entire repo: client/, shared/, server/ where UI strings/classes exist
+* Pages, UI components, tables, badges, alerts, cards, icons, charts, status pills
+* Not just Integrations.tsx
+
+Rules / Constraints
+
+* Do not change layouts or business logic.
+* Only change styling tokens/classes.
+* No page-specific color fixes unless unavoidable; prefer shared component variants.
+* Red remains reserved for error/negative deltas; gold for attention/queues; crew colors only for identity/ownership; purple for system/primary controls.
+
+Step-by-step plan
+
+1. Define the “allowed” color system (single source of truth)
+   Confirm the canonical semantic token classes and/or CSS vars already in the design system, including:
+
+* Surfaces: bg-page, bg-panel, bg-card, bg-card-soft
+* Text: text-primary, text-muted, text-faint
+* Borders: border-subtle, border-strong
+* Semantics: text-semantic-success, text-semantic-warning, text-semantic-danger, text-semantic-info
+* Semantic fills: bg-semantic-success-soft, bg-semantic-warning-soft, bg-semantic-danger-soft, bg-semantic-info-soft
+* Accents: text-gold, bg-gold-soft, border-gold (attention)
+* Crew accents should come from crew tokens, not raw Tailwind colors
+
+If any of these are missing, create them in the global design system (globals.css + tailwind config utilities) before refactoring.
+
+2. Repo-wide scan for hardcoded colors
+   Run ripgrep searches across the repo for hardcoded utilities, including:
+
+* text-(red|green|yellow|blue|purple|pink|orange|gray|slate|zinc|neutral|stone)-(50..950)
+* bg-(red|green|yellow|blue|purple|pink|orange|gray|slate|zinc|neutral|stone)-(50..950)
+* border-(red|green|yellow|blue|purple|pink|orange|gray|slate|zinc|neutral|stone)-(50..950)
+* ring-(same list)
+* from-*/via-*/to-* gradients using raw palette
+* arbitrary colors like bg-[#...] text-[#...]
+
+Also scan for inline style colors:
+
+* style={{ color: ... }}
+* style={{ backgroundColor: ... }}
+  unless they are CSS-variable based.
+
+3. Replace hardcoded colors with semantic tokens (systematically)
+   For each occurrence:
+
+* Map hardcoded colors to semantic intent:
+
+  * green-* → semantic-success
+  * red-* → semantic-danger (errors) or “negative delta” (keep semantic-danger)
+  * yellow/orange-* → semantic-warning OR gold (only if it represents attention/queue)
+  * gray/slate/zinc-* → text-muted / bg-card / border-subtle (not raw grays)
+  * blue/purple/pink-* → semantic-info OR crew accent tokens OR primary (only if it’s truly primary action)
+* Replace with semantic token class names (not raw Tailwind palette).
+
+Do NO

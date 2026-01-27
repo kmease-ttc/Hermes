@@ -1,0 +1,11 @@
+Reason,Source,Validation,Pages
+Soft 404,Website,Failed,401
+Page with redirect,Website,Failed,334
+Excluded by ‘noindex’ tag,Website,Failed,50
+Not found (404),Website,Failed,21
+Alternate page with proper canonical tag,Website,Failed,12
+Duplicate without user-selected canonical,Website,Failed,10
+Blocked by robots.txt,Website,Failed,1
+"Duplicate, Google chose different canonical than user",Google systems,Not Started,2
+Crawled - currently not indexed,Google systems,Started,119
+Discovered - currently not indexed,Google systems,Passed,0

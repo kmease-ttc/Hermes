@@ -1,0 +1,209 @@
+Below are **copy-ready implementation instructions** you can hand directly to your dev team. This is written as a **design + data sourcing spec**, not product copy.
+
+---
+
+# Replace Example Icons with Real Photos — Implementation Instructions
+
+## Objective
+
+Replace the current **icon-based example cards** (Plumbing, HVAC, Dental Clinic, Landscaping) with **real, high-quality photos** that make the examples feel tangible, trustworthy, and “real-world.”
+
+The goal is to:
+
+* Increase perceived credibility
+* Make examples feel like *actual businesses*
+* Reduce the “template / placeholder” feel
+* Improve conversion by anchoring examples in reality
+
+---
+
+## High-Level Design Requirements
+
+1. **Photos replace icons entirely**
+
+   * No icons visible once photos are implemented
+   * Cards should feel like “mini websites,” not feature tiles
+
+2. **Photos must look real, not stocky**
+
+   * Avoid overly staged, corporate stock photos
+   * Prefer natural, in-context images (real storefronts, technicians, interiors, work in progress)
+
+3. **Consistent visual treatment across all cards**
+
+   * Same aspect ratio
+   * Same corner radius
+   * Same overlay/gradient treatment (if any)
+
+---
+
+## Photo Sourcing Strategy (Required)
+
+### Option A — Preferred (Best Quality)
+
+**Use Unsplash or Pexels via keyword + location targeting**
+
+For each industry card, pull **1 primary photo** using a deterministic query so results are reproducible.
+
+Recommended queries:
+
+* **Plumbing**
+
+  * `local plumber working`
+  * `plumber residential repair`
+  * `plumbing service technician`
+
+* **HVAC**
+
+  * `hvac technician residential`
+  * `air conditioning repair technician`
+  * `hvac service home`
+
+* **Dental Clinic**
+
+  * `modern dental clinic interior`
+  * `dentist office patient`
+  * `dental clinic exam room`
+
+* **Landscaping**
+
+  * `landscaping crew residential`
+  * `landscaper working yard`
+  * `landscape maintenance crew`
+
+**Rules:**
+
+* Prefer photos with people or real environments
+* Avoid extreme close-ups of tools only
+* Avoid logos, signage with visible brand names
+* Avoid overly polished “marketing” shots
+
+---
+
+### Option B — Fallback (If API limits / reliability issues)
+
+**Manually curate 3–5 approved images per industry and store locally**
+
+* Save images under `/public/examples/{industry}/`
+* Pick 1 default per card
+* Optional: rotate images on refresh later
+
+---
+
+## Image Specs
+
+* **Aspect ratio:** 16:9 (recommended)
+* **Minimum resolution:** 1600×900
+* **Crop style:** center-weighted (faces/work visible)
+* **File format:** `.jpg` or optimized `.webp`
+
+---
+
+## Card Layout Changes
+
+### Before
+
+* Icon centered in colored container
+* Flat color background
+
+### After
+
+* **Photo fills the top portion of the card**
+* Text content remains unchanged below
+
+### Required Card Structure
+
+```
+[ Photo (16:9) ]
+-------------------------
+Industry Name
+City, State
+View demo →
+```
+
+---
+
+## Styling Requirements
+
+1. **Photo container**
+
+   * Rounded corners match existing card radius
+   * `object-fit: cover`
+   * Fixed height (e.g., 180–220px desktop, responsive on mobile)
+
+2. **Optional overlay (recommended)**
+
+   * Subtle bottom gradient (transparent → white)
+   * Improves text contrast if overlaying title later
+
+3. **Hover behavior**
+
+   * Slight zoom (`scale(1.03)`) OR
+   * Subtle shadow elevation
+   * No animation overload
+
+---
+
+## Accessibility & SEO
+
+* **Alt text required for every image**
+
+  * Format:
+
+    * `Plumbing service example website`
+    * `HVAC company website example`
+    * `Dental clinic website example`
+    * `Landscaping business website example`
+
+* Use `loading="lazy"` for all example images
+
+---
+
+## Data Model Update (If Needed)
+
+If examples are data-driven:
+
+```ts
+{
+  industry: "Plumbing",
+  location: "Austin, TX",
+  demoUrl: "...",
+  imageUrl: "/examples/plumbing/plumber-working.jpg"
+}
+```
+
+Do **not** embed image URLs inline in JSX. Use structured data so examples are easy to update later.
+
+---
+
+## Future-Proofing (Optional, Not Required Now)
+
+* Allow multiple images per example and rotate
+* Tie image selection to generated site theme
+* Replace static photos later with screenshots of real generated sites
+
+---
+
+## Success Criteria
+
+This change is complete when:
+
+* Icons are fully removed
+* Each example card visually reads as a *real business*
+* Page feels more like a portfolio than a template gallery
+* No visual regressions on mobile
+* Load performance remains acceptable
+
+---
+
+## Summary (Internal)
+
+> Replace symbolic icons with real-world photos to increase trust, realism, and conversion. These examples should feel like *actual businesses we’ve already helped*, not abstract demos.
+
+If you want next steps after this:
+
+* Add **before/after SEO metrics** on hover
+* Add **“Generated in 60 seconds”** badge
+* Add **industry-specific copy under each example**
+
+Just say the word.

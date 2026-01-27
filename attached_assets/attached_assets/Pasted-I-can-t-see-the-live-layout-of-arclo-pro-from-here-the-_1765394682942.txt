@@ -1,0 +1,253 @@
+I can’t see the live layout of arclo.pro from here (the HTML is being rendered almost entirely by client-side JS), so I’m going to treat this like a full productized SaaS site review from first principles and give you a concrete “head of UX” punch-list you can hand your dev/designer.
+
+I’ll assume:
+	•	Arclo = autonomous SEO + website generation for SMBs/marketers
+	•	You want: credibility, clarity, and signups (free trial / demo / waitlist / purchase).
+
+I’ll structure this as: principle → exact instructions for your dev.
+
+⸻
+
+1. Overall Story & Structure
+
+Principle: Above all, the site has to answer three questions in 5 seconds:
+	1.	What is this?
+	2.	Who is it for?
+	3.	What do I do next?
+
+Dev instructions:
+	•	Make sure the page follows a standard high-converting SaaS structure:
+	1.	Hero (clarity + social proof + primary CTA)
+	2.	“How it works” in 3–4 steps (with visuals)
+	3.	Outcomes/value (metrics and benefits, not just features)
+	4.	Detailed feature sections
+	5.	Pricing (simple, 2–3 plans max)
+	6.	Social proof (logos, quotes, results)
+	7.	Final CTA section (“Ready to put SEO on autopilot?”)
+	•	Keep each section visually distinct with background shifts (white / very light gray / very dark band) so the scroll feels intentional, not like a long wall of text.
+
+⸻
+
+2. Navigation & Information Architecture
+
+Principle: Nav should be minimal and conversion-oriented.
+
+Dev instructions:
+	•	Limit top nav to 4–5 max primary items:
+	•	Product
+	•	Pricing
+	•	Resources (or “How it Works”)
+	•	About (optional)
+	•	CTA button: “Start free” / “Request access”
+	•	Make the primary CTA a contrasting button on the right; everything else text-only.
+	•	On mobile:
+	•	Collapse to a hamburger.
+	•	Keep the primary CTA visible either as a button in the header or as a sticky bottom bar (“Start free in 2 minutes”).
+
+If you’ve currently got extra items (Blog, Docs, etc.) in the header, move them into:
+	•	Footer, or
+	•	A “Resources” dropdown.
+
+⸻
+
+3. Hero Section
+
+Principle: Clarity > cleverness. One hero, one primary action.
+
+Dev instructions:
+	•	Headline formula: [Outcome] with [distinct mechanism]
+	•	Example: “Autonomous SEO that designs, builds, and optimizes your site for you.”
+	•	Subhead: 1–2 short sentences clarifying who it’s for and what’s unique.
+	•	Example: “Arclo watches your rankings, builds new pages, and keeps your site optimized—so you can focus on running your business, not chasing algorithms.”
+	•	CTAs:
+	•	Primary: “Start free audit” or “Generate my first site”
+	•	Secondary (text link under button): “Watch 2-minute demo”
+	•	Visual:
+	•	Replace any flat gradient or generic pattern with:
+	•	A real product mockup (browser window showing Arclo dashboard / generated site), or
+	•	A split: left = copy; right = stacked screenshots/cards showcasing “Before/After” SEO visibility or traffic.
+	•	Add social proof above the fold:
+	•	Example: “Trusted by X websites” or logos of your 3 internal brands in grayscale.
+
+⸻
+
+4. Visual Design & Layout
+
+Principle: Opinionated, consistent system. Avoid “template” vibes.
+
+Dev instructions:
+	•	Typography:
+	•	Set a clear type scale:
+	•	H1: 36–48px
+	•	H2: 28–32px
+	•	H3: ~22–24px
+	•	Body: 16–18px
+	•	Limit to 1–2 font families (e.g., headline + body).
+	•	Line length target ~60–80 chars on desktop; don’t let text run full width.
+	•	Spacing:
+	•	Use a consistent spacing scale (4/8 px multiples).
+	•	Each major section should have at least 80–120px vertical padding on desktop, 48–64px on mobile.
+	•	Color:
+	•	Define a palette:
+	•	Primary brand color (for CTAs and key highlights).
+	•	One accent color for charts/illustrations.
+	•	Neutral grays (3–4 steps) for backgrounds, borders, text.
+	•	CTAs must have high contrast against background; avoid muted buttons.
+	•	Cards & hierarchy:
+	•	Use cards for features, plans, and steps with:
+	•	16–24px padding
+	•	8–16px border radius
+	•	Soft shadow or subtle border
+	•	Always visually emphasize the main action/plan with a different background or border.
+
+If anything currently feels like “plain text on white,” wrap that content in cards or use contrasting sections.
+
+⸻
+
+5. Copy & Messaging
+
+Principle: Benefits first, features second, jargon last.
+
+Dev instructions:
+	•	Rewrite all section headings so they read as outcomes, not features:
+	•	Instead of “Automated Content Generation” → “New content for every opportunity.”
+	•	Instead of “SEO Reporting” → “Know exactly which pages are paying off.”
+	•	For each feature:
+	•	Use a 3-line pattern:
+	•	Short, outcome-oriented title.
+	•	1-sentence benefit.
+	•	One supporting detail or example.
+	•	Avoid vague claims like “AI-powered” unless tied to a tangible benefit:
+	•	“AI builds SEO-ready pages overnight while you sleep.”
+
+You can feed your dev/editor a content checklist: every section should answer “so what?” in the first sentence.
+
+⸻
+
+6. “How It Works” Section
+
+Principle: Reduce anxiety and mental load with a clear path.
+
+Dev instructions:
+	•	Add a “How Arclo works” strip with 3–4 steps:
+	1.	Connect your site / domain.
+	2.	Arclo runs an SEO & content audit.
+	3.	It proposes new pages + changes.
+	4.	You approve and publish.
+	•	Each step gets:
+	•	Icon or small illustration.
+	•	Short heading.
+	•	1–2 lines of copy max.
+	•	If you have approvals/guardrails, highlight them (“You always approve before anything goes live”).
+
+⸻
+
+7. Pricing & Plans
+
+Principle: Simple, scannable, and anchored to value.
+
+Dev instructions:
+	•	Stick to 2 or 3 plans:
+	•	Starter (for solo site owners).
+	•	Growth (main, highlighted plan).
+	•	Pro/Agency (for bigger accounts).
+	•	Each plan card should show:
+	•	Monthly price.
+	•	“Best for…” description.
+	•	3–5 bullet benefits.
+	•	CTA: “Start free” or “Talk to us.”
+	•	Visually highlight 1 plan as “Most popular” with a label + slightly larger card.
+	•	If you charge per number of keywords/pages/sites, show this as a simple table row, not dense text.
+
+If current pricing feels confusing or cramped, use a single column layout on mobile and avoid extensive fine print.
+
+⸻
+
+8. Social Proof, Trust, and Risk Reversal
+
+Principle: Reduce perceived risk; show real humans and outcomes.
+
+Dev instructions:
+	•	Add at least one of:
+	•	Testimonials (even if from your own brands, clearly labeled).
+	•	Before/after analytics screenshots (blur numbers if needed).
+	•	“What you get in the first 30 days” with concrete expected outputs.
+	•	Include trust markers:
+	•	“Powered by OpenAI, Cloudflare, SendGrid, …” (use their logos) in a band near the hero or footer.
+	•	Security/privacy commitments as a small section in the footer (“Your data and content stay yours. We do X/Y to keep it safe.”).
+	•	Add a short FAQ section addressing:
+	•	“Will Arclo change my live site without approval?”
+	•	“What if I already have an SEO agency?”
+	•	“Can I cancel any time?”
+
+⸻
+
+9. Forms & Conversion Flows
+
+Principle: Less friction, more clarity.
+
+Dev instructions:
+	•	Primary CTA should take the user to:
+	•	A short signup form, or
+	•	A “create my site / audit” flow.
+	•	For first touch, limit fields to:
+	•	Name
+	•	Email
+	•	Website URL
+	•	Optional: company size or role
+	•	Show what happens next directly on the button page:
+	•	“In the next 10 minutes we’ll: 1) crawl your site, 2) identify top 10 urgent fixes, 3) email you a report.”
+	•	Use inline validation, clear error messages, and success states (e.g., simple confirmation screen with timeline).
+
+If you have multiple CTAs (demo, waitlist, audit), make sure one is visually primary and the others secondary.
+
+⸻
+
+10. Mobile & Responsiveness
+
+Principle: Design for mobile first; many early users will check on phone.
+
+Dev instructions:
+	•	Check every section at:
+	•	375px width (iPhone),
+	•	768px width (iPad).
+	•	Ensure:
+	•	No text < 14px.
+	•	Hero copy fits without awkward line breaks.
+	•	Buttons are at least 44px tall with generous tap area.
+	•	Images reflow under text (not tiny thumbnails).
+	•	Consider a sticky bottom CTA on mobile:
+	•	“Run free SEO scan” with a single tap.
+
+⸻
+
+11. Accessibility & Basics
+
+Principle: Meet at least WCAG AA basics.
+
+Dev instructions:
+	•	Check color contrast (use a contrast checker) for:
+	•	Text vs background.
+	•	Buttons vs background.
+	•	Ensure:
+	•	All interactive elements are reachable by keyboard (tab order).
+	•	Links and buttons are visually distinct.
+	•	Images and icons have alt text or aria-hidden where appropriate.
+	•	Headings follow logical order (h1 → h2 → h3).
+	•	Don’t rely solely on color to communicate states (e.g., add icons/labels for errors).
+
+⸻
+
+12. Performance & Perceived Speed (UX side)
+
+Principle: Fast feels trustworthy and modern.
+
+Dev instructions (non-SEO but UX relevant):
+	•	Optimize hero images & screenshots:
+	•	Use modern formats (WebP/AVIF) and proper sizes.
+	•	Avoid heavy animations or giant Lottie files above the fold.
+	•	Use skeleton loaders or subtle shimmer effects for any async data (e.g., if you show live metric examples) instead of blank gaps.
+
+⸻
+
+If you paste me the current hero copy + section headings (or screenshots), I can turn this into a very specific “v1 → v2” diff (old text/new text, old layout/new layout) that your dev can implement line by line. After this UX pass, we can go straight into a technical SEO checklist tailored to Arclo’s stack.

@@ -1,0 +1,289 @@
+Got it. I’ll structure this cleanly and then execute Step 1 immediately.
+
+⸻
+
+The 4 Suggested Steps (Clean & Actionable)
+
+Step 1 — Create the first core blog posts
+Write the initial set of high-quality blog posts that:
+	•	Target Arclo’s core keyword themes
+	•	Use proper blog best practices (H1/H2, internal links, tags, meta)
+	•	Are written for non-technical small business owners
+	•	Cross-link to each other
+
+Step 2 — Generate the keyword map (internal)
+Create and store Arclo’s top ~100 keyword list, clustered by theme, and map which blogs support which clusters.
+
+Step 3 — Add images and image prompts
+Generate a featured image + supporting images for each blog using consistent, industry-relevant prompts and proper alt text.
+
+Step 4 — Turn the blog into a ranking system
+Create hub-and-spoke internal linking, a publishing cadence, and rules so every new blog strengthens existing ones.
+
+⸻
+
+✅ STARTING WITH STEP 1: CORE BLOG POSTS
+
+Below are 4 fully written, production-ready blog posts to launch the /blog page correctly.
+They are written to rank, cross-link, and explain Arclo without SEO jargon.
+
+⸻
+
+Blog 1
+
+Title (H1)
+
+How Local Businesses Actually Get Found on Google (Without Doing SEO)
+
+Primary keyword (internal): local business get found on Google
+Supporting keywords: small business website, local SEO, show up on Google, customers finding your business
+
+Meta title
+How Local Businesses Get Found on Google | Arclo
+
+Meta description
+Learn how local businesses show up on Google without managing SEO. Simple steps that bring more customers automatically.
+
+Tags
+local business, google visibility, small business website, marketing basics
+
+⸻
+
+Content
+
+Most local business owners don’t care about “SEO.”
+They care about one thing: customers finding them.
+
+If you’ve ever wondered why some businesses show up everywhere on Google while others don’t, the answer is simpler than it sounds.
+
+How Google Finds Your Business
+Google looks for three main things:
+	•	What you do
+	•	Where you do it
+	•	Whether your website is clear and up to date
+
+If your site makes those things obvious, Google sends customers your way.
+
+Why Most Websites Don’t Show Up
+Most small business websites fail because:
+	•	They only talk about the business once
+	•	They don’t clearly list services
+	•	They don’t mention service areas
+	•	They never get updated
+
+That makes it hard for Google to understand who should see the site.
+
+What Actually Works
+Businesses that show up on Google usually have:
+	•	Pages for each service they offer
+	•	Pages for the cities or areas they serve
+	•	Clear contact information
+	•	Content that gets updated over time
+
+This is exactly what Arclo builds and maintains automatically.
+
+The Easiest Way to Get Found
+You don’t need to manage keywords or learn SEO tools.
+
+You need a website that:
+	•	Clearly explains what you do
+	•	Clearly shows where you work
+	•	Keeps improving over time
+
+Arclo handles all of that for you.
+
+👉 Related reading:
+	•	Why Service Pages Matter for Small Businesses￼
+	•	Why Most Small Business Websites Don’t Get Calls￼
+
+⸻
+
+Blog 2
+
+Title (H1)
+
+Why Service Pages Are the Secret to Getting More Customers
+
+Primary keyword: service pages for small businesses
+Supporting keywords: business services pages, website structure, google searches, local customers
+
+Meta title
+Why Service Pages Bring More Customers | Arclo
+
+Meta description
+Learn why service pages help customers find your business and how Arclo creates them automatically.
+
+Tags
+service pages, website structure, customer growth, local businesses
+
+⸻
+
+Content
+
+If your website only has a homepage and an “About” page, you’re invisible to most customers.
+
+What Is a Service Page?
+A service page explains one thing you do.
+
+For example:
+	•	Air Conditioning Repair
+	•	Heating Installation
+	•	Emergency HVAC Service
+
+Each page gives Google and customers a clear answer to what you offer.
+
+Why They Matter
+When someone searches “AC repair near me,” Google looks for a page that clearly matches that service.
+
+If your site doesn’t have one, you don’t show up.
+
+Common Mistake
+Many businesses list services in a bullet list on the homepage.
+That’s not enough.
+
+Google wants clear, focused pages.
+
+How Arclo Handles This
+Arclo:
+	•	Builds pages for every service you offer
+	•	Writes the content for you
+	•	Keeps those pages updated automatically
+
+You don’t need to think about it — customers just find you.
+
+👉 Related reading:
+	•	How Local Businesses Get Found on Google￼
+	•	Why Outdated Websites Stop Customers From Calling￼
+
+⸻
+
+Blog 3
+
+Title (H1)
+
+Why Location Pages Help You Show Up in More Searches
+
+Primary keyword: location pages for local businesses
+Supporting keywords: service area pages, local searches, google visibility, nearby customers
+
+Meta title
+Why Location Pages Help You Show Up | Arclo
+
+Meta description
+Learn how location pages help local businesses show up for more searches and attract nearby customers.
+
+Tags
+location pages, service areas, local marketing, google searches
+
+⸻
+
+Content
+
+Most customers don’t just search for a service — they search for a service near them.
+
+What Are Location Pages?
+Location pages explain where you work.
+
+Examples:
+	•	HVAC Services in San Marcos
+	•	Plumbing Services in Austin
+	•	AC Repair in New Braunfels
+
+Each page tells Google and customers that you serve that area.
+
+Why They Work
+Google wants to show results that are:
+	•	Relevant
+	•	Nearby
+	•	Clear
+
+Location pages make all three obvious.
+
+Why Businesses Miss This
+Most business owners don’t have time to:
+	•	Write dozens of pages
+	•	Keep them updated
+	•	Make sure they’re accurate
+
+So they skip it.
+
+How Arclo Solves This
+Arclo automatically:
+	•	Creates pages for the cities you serve
+	•	Keeps them updated
+	•	Expands them over time as your business grows
+
+👉 Related reading:
+	•	Why Service Pages Are the Secret to Getting More Customers￼
+	•	How Arclo Replaces SEO Agencies￼
+
+⸻
+
+Blog 4
+
+Title (H1)
+
+Why Most Small Business Websites Don’t Get Calls (And How to Fix It)
+
+Primary keyword: small business website not getting calls
+Supporting keywords: website conversions, contact buttons, customer leads, local business websites
+
+Meta title
+Why Your Website Isn’t Getting Calls | Arclo
+
+Meta description
+Learn why most small business websites don’t convert visitors into calls and how Arclo fixes it automatically.
+
+Tags
+website conversions, customer calls, small business websites, leads
+
+⸻
+
+Content
+
+Getting website visitors is useless if no one calls you.
+
+Common Reasons Websites Don’t Convert
+	•	No clear “Call Now” button
+	•	Contact info buried at the bottom
+	•	Confusing layout
+	•	Generic content that doesn’t build trust
+
+Customers leave instead of calling.
+
+What Customers Need
+Visitors want:
+	•	To know you offer what they need
+	•	To trust you
+	•	To contact you quickly
+
+If that’s not obvious in the first few seconds, they’re gone.
+
+How Arclo Fixes This
+Arclo:
+	•	Adds clear call-to-action buttons
+	•	Makes phone numbers easy to tap
+	•	Structures pages so customers know what to do next
+	•	Keeps improving layout and content automatically
+
+👉 Related reading:
+	•	How Local Businesses Get Found on Google￼
+	•	Why Service Pages Matter for Small Businesses￼
+
+⸻
+
+What’s Next
+
+Step 1 is complete:
+	•	4 core blogs
+	•	Proper structure
+	•	Internal cross-linking
+	•	Non-technical language
+	•	Covers multiple core keyword themes
+
+If you want, next we can:
+	•	Do Step 2: generate and lock the 100-keyword map
+	•	Do Step 3: write image prompts + alt text for each blog
+	•	Do Step 4: design the long-term blog strategy and cadence
+
+Just tell me which step to do next.

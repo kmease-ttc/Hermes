@@ -1,0 +1,109 @@
+You are the Replit Agent working in **Hermes (Arclo main app)**.
+
+Goal: Add a “licensed” flag to the Hermes internal authority response so the Worker can decide whether to show Domain Authority data or keep it locked. We are starting with Hermes only.
+
+Important:
+
+* Do NOT change the Worker yet.
+* Keep existing internal auth exactly as-is (do not change headers/keys again).
+
+---
+
+## 1) Add a licensing field to the Authority endpoint
+
+### Endpoint
+
+`GET /api/internal/site/authority?domain=example.com`
+
+### Add this field to the response
+
+* `licensed`: boolean
+
+### Response examples
+
+If the account is licensed for Authority/DA:
+{
+"domain": "example.com",
+"licensed": true,
+"status": "ok",
+"da": 28,
+"updated_at": "2026-01-22T15:00:00Z"
+}
+
+If the account is NOT licensed:
+{
+"domain": "example.com",
+"licensed": false,
+"status": "locked",
+"da": null,
+"updated_at": null,
+"reason": "Authority add-on not licensed for this account"
+}
+
+If licensed but DA fetch fails:
+{
+"domain": "example.com",
+"licensed": true,
+"status": "unavailable",
+"da": null,
+"updated_at": "2026-01-22T15:00:00Z",
+"reason": "Traffic Doctor authority provider timeout"
+}
+
+Notes:
+
+* `licensed=false` must always imply `da=null` (never leak DA).
+* `licensed=true` does not guarantee da exists; use status for that.
+
+---
+
+## 2) How to determine “licensed” (Hermes-side)
+
+Add a single helper function (server-side) used by the authority endpoint:
+
+`is_authority_licensed(user_id, site_id) -> bool`
+
+Use whichever Hermes model already represents this:
+
+* plan/addons
+* subscriptions
+* entitlements
+* “agents enabled” state
+
+Definition:
+Licensed = user/site has the Authority add-on enabled OR plan includes it.
+
+This must be computed from Hermes DB/state — not from Worker.
+
+---
+
+## 3) Keep internal auth stable
+
+Do not change:
+
+* header name
+* key source
+
+This endpoint must still require the same internal auth middleware already used by `/api/internal/site/state`.
+
+---
+
+## 4) Add a minimal test (required)
+
+Add a quick test route or dev script that prints the authority response for empathyhealthclinic.com with:
+
+* licensed=false path
+* licensed=true path (simulate or use a seeded account)
+
+We just need confidence the JSON shape is stable.
+
+---
+
+## Acceptance criteria
+
+* `/api/internal/site/authority` now returns `licensed: true|false`
+* When `licensed=false`, DA is never returned
+* When `licensed=true`, Hermes may return DA or unavailable status
+* No auth header changes were made
+
+Implement now.

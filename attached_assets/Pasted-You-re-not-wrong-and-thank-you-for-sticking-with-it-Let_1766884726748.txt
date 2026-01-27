@@ -1,0 +1,174 @@
+You’re not wrong — and thank you for sticking with it.
+Let me say this very clearly, as Head of UI, and then give you the exact move that will finally make this read as “on a ship” without blowing anything up.
+
+⸻
+
+Why it still doesn’t feel like a ship (even though everything else is right)
+
+Right now you have:
+	•	✅ Correct crew cards
+	•	✅ Correct sizing
+	•	✅ Correct grid
+	•	✅ Correct empty-slot behavior
+	•	❌ No spatial cue that the grid belongs to a ship
+
+What’s happening is subtle but important:
+
+A grid floating on a dark gradient will never read as “inside a ship,” no matter how good the cards are.
+
+The ship image you keep referencing is tall, vertical, and has a spine.
+Your current background is flat and radial, so the eye reads “dashboard,” not “vessel.”
+
+You’ve been asking for one thing, and it keeps getting lost:
+
+“Put the ship in the background so the crew looks slotted into it.”
+
+That means the ship must define the vertical structure, not the grid.
+
+⸻
+
+The correct solution (this is the unlock)
+
+You do NOT need a new layout.
+You do NOT need new cards.
+You do NOT need new spacing logic.
+
+You need one new background asset and one container rule.
+
+The ship must be:
+	•	Vertical
+	•	Centered
+	•	Taller than the viewport
+	•	Visibly structural (spine + decks)
+
+And the crew grid must be positioned on top of that spine.
+
+⸻
+
+The exact implementation that will finally work
+
+1. Replace the current background with a VERTICAL SHIP INTERIOR
+
+Not radial. Not circular.
+A long ship like the one you posted (nose → body → engine).
+
+Key requirement
+The ship background image must be taller than the crew grid.
+
+Think:
+	•	top = bridge
+	•	middle = decks
+	•	bottom = engine
+
+⸻
+
+2. Anchor the crew grid to the ship’s spine
+
+Instead of centering the grid in the container:
+	•	Create a ShipFrame container that:
+	•	is tall (e.g. min-height: 1600px)
+	•	has the ship background image
+	•	Inside it, place the crew grid:
+	•	centered horizontally
+	•	vertically aligned with the ship’s “decks”
+
+Visually:
+
+[ Ship Background (tall) ]
+        |
+        |   [ Crew Grid Row 1 ]
+        |
+        |   [ Crew Grid Row 2 ]
+        |
+        |   [ Crew Grid Row 3 ]
+        |
+        |   [ Crew Grid Row 4 ]
+        |
+
+This is what makes it read as “slotted into a ship.”
+
+⸻
+
+3. Push everything else down (this is OK and REQUIRED)
+
+You said this explicitly (and you’re right):
+
+“There are a lot of crew members so it’s ok if the ship is longer and pushes other elements below the fold.”
+
+So do it.
+	•	Mission Control stays above
+	•	Ship takes the whole vertical middle
+	•	Active Capabilities / Set Bonuses come after the ship
+
+This is not a dashboard — it’s a system view.
+
+⸻
+
+The exact prompt you should give Replit now
+
+Copy/paste this. This is the last structural change.
+
+SHIP BACKGROUND & LAYOUT PASS — MAKE CREW GRID READ AS PART OF A SHIP
+
+Context:
+The crew cards and grid layout are APPROVED and must not change.
+The only remaining issue is that the background does not read as a ship.
+
+Goal:
+Make the crew grid feel like it is physically slotted into a spaceship interior.
+
+Do NOT redesign cards or grid.
+
+---
+
+1) Replace the current abstract/radial background with a VERTICAL SHIP INTERIOR background:
+- Tall ship (bridge → body → engine)
+- Centered vertically
+- Subtle, dark, structural (panels, spine, decks)
+- Background image should be taller than the grid
+
+2) Create a ShipFrame container:
+- min-height: 1600px (desktop)
+- background-image: ship interior
+- background-size: contain or cover (no tiling)
+- background-position: center top
+- Allow page scrolling
+
+3) Place the existing crew grid INSIDE the ShipFrame:
+- Grid stays exactly the same (same columns, rows, spacing)
+- Center the grid horizontally
+- Align grid rows to the ship’s visible decks
+
+4) Push all other UI (Active Capabilities, Set Bonuses, etc.) BELOW the ShipFrame:
+- It is OK if they are far below the fold
+
+5) Acceptance criteria:
+- At first glance, it is obvious the crew is inside a ship
+- The ship is taller than the viewport
+- The grid feels docked into the ship, not floating
+- No card, grid, or spacing regressions
+
+
+⸻
+
+Why this will finally satisfy what you’ve been asking for
+	•	You keep the exact cards you love
+	•	You keep the exact grid that fits all roles
+	•	The ship becomes a physical container, not a decoration
+	•	The page finally reads as:
+“This is my crew, on my ship”
+
+No more loops after this.
+
+⸻
+
+Head of UI verdict
+
+You’re done designing.
+This is now just correct background composition.
+
+If you want, next I can:
+	•	Write the exact CSS/Tailwind for ShipFrame
+	•	Or help you generate the final ship background prompt that matches your example exactly
+
+But this is the right move.

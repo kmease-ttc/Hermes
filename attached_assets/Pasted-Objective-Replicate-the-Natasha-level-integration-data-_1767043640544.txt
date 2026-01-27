@@ -1,0 +1,159 @@
+Objective
+Replicate the “Natasha-level” integration + data flow across ALL crew dashboards (except Speedy/Speedster which is already working), so each dashboard is fully wired to its worker integration, persists results, and renders real data with graceful fallbacks when the integration is down.
+
+Scope
+Apply this to every crew member dashboard page (Natasha, Scotty, Atlas, Socrates, etc.). Speedy/Speedster is already working—use it as the reference pattern. Natasha is now verified—use it as the second reference pattern.
+
+Non-Negotiables
+
+* Every crew dashboard must load even if its worker/integration is down (no “failed” page).
+* Every crew dashboard must share the exact same layout structure as Mission Control:
+
+  1. Unified Header (single block; no duplicates)
+  2. Mission Status
+  3. Missions (queue)
+  4. KPIs (key metrics)
+  5. Details/Inspector (tabs + drilldowns)
+* All pages must use shared components/shells, not copy-pasted layouts.
+
+What “Fully Wired” Means (Definition of Done per dashboard)
+For each crew dashboard:
+
+1. The UI calls the correct worker endpoint (or orchestrator route) to fetch latest data.
+2. Results are saved to the database (per crew, per domain, timestamped).
+3. UI loads the most recent saved results on page load (fast initial render).
+4. “Refresh” triggers a new run + re-fetches + updates DB + updates UI.
+5. If no saved results exist:
+
+   * show consistent sample/placeholder data (not empty)
+   * show a clear “Connect integration / Run first analysis” CTA
+6. If worker is down or errors:
+
+   * render page normally
+   * show last known results
+   * show a non-blocking warning banner/toast
+7. KPIs are computed from real data when available; otherwise computed from placeholders.
+
+Implementation Plan (Do This for All Dashboards)
+A) Standardize a Reusable Data Pattern
+Create a shared per-crew “data layer” used by every dashboard:
+
+* `useCrewDashboardData(crewKey, domain)` hook
+
+  * loads latest saved results from DB on mount
+  * exposes `refresh()` method (calls worker + persists + refetches)
+  * returns `{ data, status, lastUpdated, error, isLoading, isRefreshing }`
+* `crewApi.ts` client helpers for each worker run endpoint
+* A shared `normalizeCrewData(crewKey, raw)` mapper so each dashboard returns a standard shape:
+
+  * `missionStatus`
+  * `missions[]`
+  * `kpis[]`
+  * `details` payload (tabs)
+  * optional `alerts[]`
+
+B) Add/Verify DB Tables & Persistence
+For each crew:
+
+* Store worker results in a shared table keyed by:
+
+  * `crew_key`
+  * `domain`
+  * `result_json`
+  * `created_at`
+* Add a “latest result” query helper:
+
+  * `getLatestCrewResult(crew_key, domain)`
+* Add an upsert/insert helper:
+
+  * `saveCrewResult(crew_key, domain, result_json)`
+
+C) Wire Every Dashboard Page
+For each crew dashboard route:
+
+* Replace any direct mock data with:
+
+  * `const { data, refresh, ... } = useCrewDashboardData(crewKey, domain)`
+* Ensure the UI renders from `data` only (standardized shape)
+* Hook up:
+
+  * Refresh button -> `refresh()`
+  * Settings button -> existing settings route/modal
+* Ensure the Details/Inspector tabs render from `data.details`
+
+D) Worker Contract Verification (per crew)
+For each crew worker, verify the API returns required fields (or add mapping):
+
+* Must return at minimum:
+
+  * `missions[]` (recommended actions)
+  * `kpis` inputs needed (or computed fields)
+  * `details` section payload
+* If a worker currently returns incomplete data:
+
+  * add server-side adapter/mapping to translate to the standard shape
+  * provide reasonable defaults so UI never breaks
+
+E) Graceful Degradation Rules (must implement)
+
+* If worker call fails:
+
+  * show last saved result
+  * set banner: “Worker offline — showing last saved snapshot”
+* If there is no saved result:
+
+  * show seeded sample data
+  * mission status: “Not configured” / “No snapshot yet”
+  * CTA: “Run first analysis”
+
+F) Remove Layout Drift
+Ensure every crew page uses:
+
+* `CrewDashboardShell`
+* `CrewDashboardHeader`
+* `MissionStatusCard`
+* `MissionsPanel`
+* `KpiGrid`
+* `InspectorTabs`
+  No custom header blocks. No duplicate header rendering.
+
+Batch Execution Approach (How to Implement Efficiently)
+
+1. Enumerate all crew routes/pages (list them in code: `crewRegistry`)
+2. For each crewKey, define:
+
+   * `runEndpoint`
+   * `normalizeMapper`
+   * `sampleData`
+3. Migrate dashboards one-by-one in a loop:
+
+   * Wire hook
+   * Hook refresh
+   * Persist results
+   * Validate rendering
+4. Add a simple dev-only “integration checklist” page that shows for each crew:
+
+   * last updated timestamp
+   * last run status
+   * whether KPIs are non-empty
+   * whether missions exist
+   * whether worker endpoint responds
+
+Acceptance Criteria (must verify for each crew)
+
+* Page loads with no errors when worker is up
+* Page loads with last known results when worker is down
+* Refresh updates timestamp + DB row + UI
+* Missions panel displays meaningful actions (or placeholders)
+* KPI grid shows real values (or placeholders)
+* Inspector tabs render and do not show empty blocks
+* No duplicate headers, consistent layout across all crews
+
+Deliverable
+A PR that:
+
+* Introduces shared `useCrewDashboardData` + normalization layer
+* Adds DB helpers for saving/loading per-crew snapshots
+* Migrates all crew dashboards to the shared pattern
+* Adds seeded sample data + graceful error handling for each crew
+* Leaves Speedy/Speedster untouched except for adopting the shared hook if beneficial

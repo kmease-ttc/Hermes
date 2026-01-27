@@ -1,0 +1,60 @@
+Replit Prompt: Mission Control should reuse the exact “My Crew” glass styling (same surfaces, borders, glow, spacing)
+
+Goal
+Mission Control needs to look like it belongs to the same design system as My Crew. Use the exact same “cold glass” styling from the My Crew page as the base styling for Mission Control.
+
+What “cold styling” means (copy from My Crew, don’t reinvent)
+
+* Same glass surface background (opacity/blur)
+* Same border color/weight and corner radius
+* Same inner glow / shadow treatment
+* Same header typography + muted subtext
+* Same spacing and section containers (panels/cards)
+* Same default button styling (primary/secondary/ghost) as My Crew
+
+Scope
+
+* Mission Control page layout containers (the whole board)
+* Section wrappers (Key Metrics, Blockers, Crew Summary, etc.)
+* All cards inside Mission Control should use the same Card component/variant used by My Crew
+* Any “panel” background behind groups should match My Crew panel styling
+
+How to implement
+
+1. Identify the exact components/classes used on My Crew
+
+* Locate the primary wrapper panel component on My Crew (likely a shared Card/Panel component or a set of Tailwind classes).
+* Locate any special “cold glass” class utilities used there (e.g., bg opacity, backdrop blur, border, shadow).
+
+2. Extract into shared variants (if not already)
+
+* Create a single reusable variant for:
+
+  * PagePanel / SectionPanel
+  * Card
+* Example:
+
+  * <SectionPanel variant="coldGlass" />
+  * <Card variant="coldGlass" />
+
+If variants already exist, make Mission Control use the same one as My Crew.
+
+3. Replace Mission Control one-offs
+
+* Remove any Mission Control-specific backgrounds/gradients that don’t exist on My Crew (unless explicitly desired later).
+* Ensure Mission Control sections use the same base “surface” classes as My Crew.
+
+4. Validate consistency
+
+* Side-by-side compare My Crew and Mission Control:
+
+  * identical glass feel
+  * identical border/glow intensity
+  * identical corner radius and padding rhythm
+    If anything looks warmer/brighter/different, adjust Mission Control to match My Crew exactly.
+
+Acceptance criteria
+
+* If I screenshot a card from Mission Control and a card from My Crew, they look like the same UI kit.
+* Mission Control no longer has its own separate glass interpretation; it’s the same cold glass system.
+* Any future design tweaks made to the My Crew glass base automatically apply to Mission Control through shared components/tokens.

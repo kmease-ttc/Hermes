@@ -1,0 +1,259 @@
+“Fix This” Button for Detected Drops (Action Execution + Data Enrichment)
+
+Objective
+In each “Detected Drop” card (Analysis page), add a button (label flexible) that:
+
+1. Retrieves additional context data relevant to that specific anomaly (“Enrich”)
+2. Optionally applies a fix to the website (“Implement”)
+3. Returns results back into the card (status + what changed + next steps)
+
+This creates a closed loop: Detect → Explain → Recommend → Execute → Verify.
+
+---
+
+## 1) UX / UI Requirements
+
+1.1 Button Placement (per drop card)
+Under “Suggested Action”, add a primary CTA button:
+
+* Default label: “Fix this”
+  Alternative labels: “Apply Fix”, “Run Fix”, “Resolve”
+
+Next to it, add a secondary button:
+
+* “Get more data” (if you want to keep “Fix this” purely execution)
+  Or implement one button with a modal that offers both options.
+
+Recommended UX:
+
+* Primary button: “Fix this”
+* Secondary button: “Get more data”
+* Clicking “Fix this” opens a modal with 2 toggles:
+
+  * “Gather more context first” (default ON)
+  * “Apply changes automatically” (default OFF unless user enables)
+
+1.2 Confirmation & Preview
+Before making changes to the site:
+
+* Show a preview of what will change (diff-like view)
+* Require explicit confirmation
+  This prevents accidental edits.
+
+1.3 Result Reporting
+After running:
+
+* Show status chip on the card:
+
+  * “Queued”, “Running”, “Applied”, “Failed”, “Needs Review”
+* Show a short run log summary:
+
+  * “Pulled GSC query breakdown”
+  * “Updated meta title on /xyz”
+  * “Triggered re-crawl”
+* Show verification signal:
+
+  * “Re-check scheduled for tomorrow”
+  * “Immediate re-check: OK / still failing”
+
+---
+
+## 2) Technical Design: Action Orchestration Layer
+
+2.1 Create a generic “Action Runner”
+Do not hardcode for a single website. Use a plugin/connector model.
+
+Define:
+
+* Action types (enrichment, implementation)
+* Capability discovery per site (what the website supports)
+* Idempotent execution (safe to run multiple times)
+
+2.2 Drop → Action Mapping
+Each detected drop has:
+
+* metric type (e.g., gsc_clicks)
+* severity
+* suggested action text
+* supporting context (date range, baseline, z-score)
+
+Add an internal field:
+
+* recommendedActionCode (enum) derived from the anomaly type
+  Examples:
+* CHECK_GSC_QUERY_LOSSES
+* CHECK_INDEXATION_STATUS
+* CHECK_RECENT_PAGE_CHANGES
+* UPDATE_META_TITLES
+* ADD_INTERNAL_LINKS
+* REQUEST_RECRAWL
+
+The button triggers actionCode(s), not raw text.
+
+---
+
+## 3) Website Integration Requirements (Empathy Health)
+
+We need two classes of calls:
+
+A) Enrichment Calls (Read / Inspect)
+Examples:
+
+* Fetch current title/meta for top affected pages
+* Fetch robots/noindex status for affected URLs
+* Fetch sitemap status / lastmod
+* Fetch top losing queries and pages from GSC (if not already)
+* Fetch recent deploy/commit changes (if site is tied to repo)
+
+B) Implementation Calls (Write / Change)
+Examples:
+
+* Update title/meta on a page
+* Add internal links
+* Trigger a recrawl (ping sitemap, submit to indexing where possible)
+* Create/modify content blocks (if CMS supports)
+
+Important: The implementation mechanism depends on how Empathy Health is built:
+
+* If it’s a CMS (WordPress/Webflow/etc.): use CMS API
+* If it’s a repo (Next.js/etc.): create a PR via GitHub API
+* If it’s a custom backend: expose a private admin endpoint
+
+Pick one as the primary “write path” and support others later.
+
+---
+
+## 4) Required Interfaces (Connectors)
+
+4.1 WebsiteConnector Interface
+Implement a connector for the target website platform:
+
+WebsiteConnector capabilities:
+
+* canReadMeta(url): boolean
+* canWriteMeta(url): boolean
+* canEditContent(url): boolean
+* canTriggerRecrawl(): boolean
+
+Methods:
+
+* fetchPageMeta(url)
+* updatePageMeta(url, {title, description})
+* fetchIndexingSignals(url) (robots, canonical, noindex)
+* fetchInternalLinks(url) (optional)
+* triggerRecrawl(url or site)
+
+4.2 StrategyResolver (Drop → Plan)
+Given a drop, produce an executable plan:
+
+* enrichmentSteps[]
+* implementationSteps[]
+* verificationSteps[]
+
+Example plan for “GSC clicks down, impressions stable”
+Enrichment:
+
+1. Pull top losing queries and landing pages (for that date range)
+2. For top 3 pages, fetch current title/meta and compare vs intent
+   Implementation (optional):
+3. Propose new title/meta variants and apply if approved
+   Verification:
+4. Schedule re-check tomorrow + SERP snapshot now
+
+---
+
+## 5) Execution Flow
+
+5.1 Click “Fix this”
+
+* Create an ActionRun record:
+
+  * siteId
+  * anomalyId
+  * actionPlan JSON
+  * status = queued
+* Start background execution worker (or inline MVP)
+* Stream progress to UI (polling acceptable MVP)
+
+5.2 Store Outputs
+Persist:
+
+* enrichment results (structured)
+* changes applied (structured)
+* errors
+* suggested follow-ups
+
+5.3 Update the Drop Card
+Display:
+
+* “What we found” (short summary)
+* “What we changed” (if any)
+* “Next step” (if still unresolved)
+
+---
+
+## 6) Data Model Additions
+
+Table: action_runs
+
+* id
+* siteId
+* anomalyId
+* createdAt
+* status (queued/running/applied/failed/needs_review)
+* planJson
+* outputJson (findings, changes, verification)
+* errorText (nullable)
+
+Table: anomaly_actions (optional)
+
+* anomalyId
+* recommendedActionCode
+* createdAt
+
+---
+
+## 7) Safety & Guardrails
+
+* Enrichment actions are always safe and can run without confirmation.
+* Write actions require:
+
+  * preview
+  * explicit confirmation
+  * capability check
+  * rollback plan (or at minimum, store “before” state)
+* Rate limit execution to avoid repeated loops.
+* If connector cannot write, still allow:
+
+  * enrichment
+  * generating a patch/PR instructions
+  * showing copy/paste changes
+
+---
+
+## 8) MVP Definition (Deliver Quickly)
+
+MVP should support:
+
+* Button on each drop card
+* Enrichment-only execution:
+
+  * pull top losing pages/queries
+  * fetch meta/indexing flags for top affected URLs
+  * show findings in-card
+* “Apply fix” can be Phase 2 if write path is not ready yet
+
+Phase 2:
+
+* Add “Apply fix” with one write capability:
+
+  * update title/meta OR trigger recrawl OR open PR
+
+---
+
+## 9) Acceptance Criteria
+
+* Each Detected Drop card has a CTA that triggers an automated workflow.
+* Workflow returns additional context and displays it clearly in the card.
+* If write capabilities exist, user can approve an implementation and see confirmation of what changed.
+* The system is site-scoped and uses connector capabilities (not hard-coded logic).

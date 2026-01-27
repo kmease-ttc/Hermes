@@ -1,0 +1,288 @@
+You’re right — this screenshot **perfectly exposes the identity/lineage break**. The UI is doing what you told it to do, but the **data contract underneath is still split**, so the home page literally cannot know which number belongs to Scotty.
+
+I’ll do three things, very concretely:
+
+1. **Explain exactly why the number is missing (root cause)**
+2. **Define the single fix that resolves Scotty and all other agents**
+3. **Give you a prescriptive prompt + checklist you can reuse for all 11 agents**
+
+No hand-waving. This is a systems problem, not a UI one.
+
+---
+
+## 1. Why Scotty shows a number on his page but NOT on the home page
+
+### What you *expect*:
+
+* Scotty (agent) runs
+* Scotty produces KPIs
+* Home page shows Scotty’s KPI
+
+### What is *actually happening*:
+
+You currently have **at least 3 different “Scotty” identities** in play:
+
+| Layer                 | What Scotty is called                                 |
+| --------------------- | ----------------------------------------------------- |
+| Worker (Replit app)   | `SEO_TECHNICAL_CRAWLER`, `crawl_render`, or similar   |
+| Secrets / Bitwarden   | `SEO_TECHNICAL_CRAWLER_API_KEY`                       |
+| Integrations table    | “Scotty – Technical SEO”                              |
+| Crew manifest         | `{ id: "scotty" }`                                    |
+| Scotty dashboard page | Directly calling the worker or reading a local result |
+| Mission Control       | Looking for a KPI by `crewId = "scotty"`              |
+
+### The failure point (this is the bug):
+
+👉 **The Scotty dashboard page is not using the same data source as Mission Control.**
+
+* Scotty page:
+
+  * Calls the worker directly **or**
+  * Reads data keyed by something like `technical_seo` or `crawl_render`
+* Mission Control:
+
+  * Reads from a normalized table keyed by `crewId = "scotty"`
+* Result:
+
+  * Scotty page has data
+  * Mission Control asks:
+
+    > “Give me `primaryKpi.id` for `crewId = scotty`”
+    > and gets **nothing**
+  * UI renders the KPI widget with no number
+
+So the UI is correct — it’s faithfully rendering “no data”.
+
+This confirms your instinct: **Arclo does not understand these are the same thing**.
+
+---
+
+## 2. The ONE fix that resolves Scotty (and prevents this forever)
+
+You do **not** need more conditionals or fallbacks.
+
+You need **one canonical ingestion rule**:
+
+> **No page is allowed to read KPIs unless they come from the canonical crew pipeline keyed by `crewId`.**
+
+That’s it.
+
+### Concretely:
+
+#### ❌ What must stop
+
+* Scotty page calling the worker directly
+* Scotty page using mock / placeholder KPI values
+* Integrations UI inferring status independently
+* Mission Control using fallback numbers
+
+#### ✅ What must happen instead
+
+All of these must read from the **same function**:
+
+```
+getCrewOverview(siteId, crewId)
+```
+
+And that function must read from **one place**:
+
+```
+crew_runs
+crew_kpis
+crew_findings
+```
+
+If Scotty ran and produced KPIs → they exist in DB → everyone sees them
+If Scotty didn’t → no one sees fake numbers
+
+---
+
+## 3. The exact contract Scotty is missing (this is the key)
+
+Right now, Mission Control is looking for:
+
+```
+crewId = "scotty"
+primaryKpi.id = "technicalHealthScore"
+```
+
+But Scotty’s worker output is **never being normalized into that KPI ID**.
+
+### You likely have something like this instead:
+
+* `crawl_health`
+* `index_coverage`
+* `critical_issues`
+
+…but **no composite KPI written as `technicalHealthScore`**.
+
+So Mission Control says:
+
+> “Show me technicalHealthScore for scotty”
+
+…and DB says:
+
+> “I have no such KPI.”
+
+That’s why the number is blank.
+
+---
+
+## 4. The exact fix for Scotty (step by step)
+
+### Step 1 — Lock Scotty’s primary KPI in the registry
+
+In `crewRegistry.ts`:
+
+```ts
+scotty: {
+  crewId: "scotty",
+  displayName: "Scotty",
+  category: "Technical SEO",
+  dashboards: {
+    route: "/app/agents/scotty",
+    primaryKpi: {
+      id: "technicalHealthScore",
+      label: "Technical Health",
+      unit: "score" // 0–100
+    }
+  }
+}
+```
+
+This tells **every UI** what number Scotty must expose.
+
+---
+
+### Step 2 — Normalize Scotty worker output into that KPI
+
+In your Scotty ingestion adapter (this is the missing piece):
+
+```ts
+function normalizeScottyRunToKpis(runResult): CrewKpi[] {
+  const score = calculateTechnicalHealthScore({
+    crawl: runResult.crawl_summary,
+    indexability: runResult.indexability,
+    criticalIssues: runResult.critical_issues,
+    render: runResult.render_checks
+  });
+
+  return [
+    {
+      crewId: "scotty",
+      kpiId: "technicalHealthScore",
+      value: score,
+      unit: "score",
+      measuredAt: new Date()
+    }
+  ];
+}
+```
+
+⚠️ **This must run every time Scotty runs** and must write to `crew_kpis`.
+
+---
+
+### Step 3 — Scotty dashboard page must stop using direct data
+
+Replace whatever Scotty page currently does with:
+
+```
+GET /api/crew/scotty/overview
+```
+
+And render:
+
+* KPI from `overview.primaryKpi`
+* Findings from `overview.findings`
+
+If that endpoint has no data:
+
+* Show “Run diagnostics to establish baseline”
+* Do NOT compute locally
+
+---
+
+### Step 4 — Mission Control already works (once data exists)
+
+Mission Control is already doing the right thing:
+
+```
+crewRegistry[crewId].dashboards.primaryKpi.id
+```
+
+Once `technicalHealthScore` exists in DB for `scotty`, **the number will appear automatically**.
+
+No UI change needed.
+
+---
+
+## 5. How to apply this to all 11 agents (this is reusable)
+
+Every agent must answer **one question**:
+
+> “What is the ONE KPI this agent is responsible for on the home page?”
+
+Then you enforce the same pipeline:
+
+1. Registry defines `primaryKpi.id`
+2. Worker adapter **must emit that KPI**
+3. Adapter writes to `crew_kpis` with `crewId`
+4. All UIs read from `getCrewOverview`
+
+If any step is missing → blank KPI (by design)
+
+---
+
+## 6. The test that would have caught this immediately
+
+Add this test (this is the guardrail you asked for earlier):
+
+```ts
+it("every active crew must produce its primary KPI after a run", async () => {
+  for (const crew of activeCrews) {
+    const overview = await getCrewOverview(siteId, crew.crewId);
+
+    expect(
+      overview.kpis.some(k => k.kpiId === crew.primaryKpi.id)
+    ).toBe(true);
+  }
+});
+```
+
+This test would currently **fail for Scotty**, which proves the diagnosis.
+
+---
+
+## 7. Why this matters (and why you were right)
+
+You weren’t “overthinking” lineage.
+
+You built:
+
+* workers ✔
+* dashboards ✔
+* integrations ✔
+* UI ✔
+
+But without a **canonical KPI contract**, the system *cannot* know that:
+
+> “this number from that worker belongs in this card”
+
+Once you fix Scotty **this way**, the entire platform snaps into alignment.
+
+---
+
+### Bottom line
+
+* The UI is correct
+* The home page is correct
+* The bug is **missing KPI normalization into the canonical crew contract**
+* Fix that once → Scotty works → all agents can follow the same pattern
+
+If you want, next I can:
+
+* Write the **exact normalize adapter** for one more agent (Speedster) as a template
+* Or help you write the **migration script** to backfill KPIs for past runs
+
+But you found the real problem.

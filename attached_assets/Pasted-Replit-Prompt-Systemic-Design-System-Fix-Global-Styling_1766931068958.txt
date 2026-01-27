@@ -1,0 +1,158 @@
+Replit Prompt: Systemic Design System Fix (Global Styling + Component Variants) — Make UI Changes Apply Across Entire App
+
+Problem
+Right now design changes are being applied page-by-page (local class tweaks) instead of through a shared design system. This causes inconsistent UI: some buttons update, others keep the old style (e.g., “Run Smoke Tests”), and some sections become unreadable (e.g., “Next Actions” looks invisible).
+
+Goal
+Implement a single, global design system so that changes to button styles, labels, cards, badges, and backgrounds automatically apply everywhere in the site, without having to manually restyle each page.
+
+Non-negotiables
+
+* One source of truth for common UI styling (buttons, cards, badges, pills, inputs, tables, alerts, sections).
+* No per-page “random Tailwind class piles” for shared UI elements.
+* Use a shared theme/token approach (CSS variables) so palette changes take effect globally.
+* Replace “special one-off components” with variants of shared components.
+* Ensure contrast/accessibility: anything important must be readable against the dark background.
+
+What to build (step-by-step)
+
+1. Create global theme tokens (CSS variables)
+   Where: client/src/styles/globals.css (or whatever global stylesheet is already imported by the app)
+   Add a token set for:
+
+* surface backgrounds (page bg, panels, cards)
+* border colors
+* text colors (primary, muted)
+* accent colors (primary purple, secondary gold, danger red, success green, info blue, pink)
+* shadows/glow intensities
+* button gradient (if used) as a token, not hardcoded
+
+Example tokens (use your existing palette, not new random colors):
+--bg, --panel, --card
+--border, --border-strong
+--text, --muted
+--primary, --primary-2
+--secondary
+--danger
+--success
+--info
+--pink
+--ring
+--glow
+
+Then make sure base elements reference tokens:
+body background, default text, borders, etc.
+
+2. Standardize core UI components with variants
+   Use shadcn-style components in client/src/components/ui (or wherever your UI kit lives).
+   The core is:
+
+* Button
+* Card
+* Badge / Pill
+* Input / Select
+* Table styles
+* Alert (blockers / warnings)
+
+For each, implement variants:
+Button variants:
+
+* primary (default)
+* secondary
+* ghost
+* outline
+* danger
+* success
+  Sizes: sm / md / lg
+  States: hover, active, focus-visible, disabled, loading
+
+Card variants:
+
+* default glass
+* highlighted (tinted completion style)
+* warning/danger (tinted by danger)
+* success (tinted by success)
+
+Badge variants:
+
+* neutral
+* success
+* warning
+* danger
+* info
+
+Important:
+Do NOT style buttons directly in pages anymore.
+All buttons must be <Button variant="..."> from the shared component.
+If any page uses <button className="...">, refactor it to use <Button>.
+
+3. Enforce “no raw button” rule
+   Search the repo for:
+
+* "<button"
+* "className=.*bg-"
+* "rounded.*px-"
+  Replace with:
+* shared <Button />
+* shared <Card />
+* shared <Badge />
+* shared <Input />
+
+If a “button” must be custom (rare), it still must use the same classes exported by the Button component.
+
+4. Fix current inconsistencies explicitly (prove the system works)
+   Integrations page issues to fix immediately after refactor:
+
+* “Run Smoke Tests” must use the exact same button component/variant as “Run QA” / “Run Daily Diagnosis”
+* “Test Connections” should be a consistent secondary/outline variant
+* Any other CTA in that area should align to the same system
+
+“Next Actions” visibility issue:
+
+* This section needs a shared component pattern:
+
+  * a panel/card container with proper contrast
+  * list rows that have visible background, border, and text
+  * badges (P2/P4) that are readable
+    Implement as:
+* <Card variant="default"> wrapper
+* list rows with a subtle surface background and border using tokens
+* ensure text uses --text and muted uses --muted
+  Goal: it must be clearly readable, not “white on white” or invisible.
+
+5. Adopt a “theme-first” approach for color changes
+   When the user wants to tweak “purple gradient” or button colors:
+
+* Change only tokens in the theme (globals.css)
+* Everything updates automatically (buttons, badges, highlighted cards, etc.)
+  Avoid hardcoding a purple gradient into only two buttons.
+
+6. Add a lightweight “Style Audit” dev helper (optional but recommended)
+   Create a dev-only page or console warning that checks for:
+
+* raw <button> usage outside UI components
+* non-standard class patterns on buttons/cards
+  This prevents regressions.
+
+Acceptance criteria
+
+* Change a primary button token (or Button variant styling) once and see the change everywhere across the app.
+* Integrations page: all buttons are consistent (Run QA, Refresh, Run Daily Diagnosis, Test Connections, Run Smoke Tests).
+* Next Actions section is readable and uses the same card/list styling system as the rest of the app.
+* Mission Control, My Crew, Integrations all share the same card + button + badge language with no random deviations.
+* No new per-page “design-only” changes; styling lives in theme tokens + UI components.
+
+Deliverables
+
+* Global theme tokens in global CSS
+* Updated Button/Card/Badge components with variants
+* Refactor pages to use shared components
+* Fix Integrations buttons + Next Actions visibility using shared components only
+
+Do this now
+Start with:
+
+1. Implement theme tokens
+2. Standardize Button + Card + Badge
+3. Refactor Integrations page (so we can visually confirm)
+4. Refactor Mission Control and My Crew next

@@ -1,0 +1,172 @@
+Perfect — here is exactly what needs to happen to polish the hero section, remove the Empathy Health Clinic screenshot, and replace it with a **generic but beautiful example site** that:
+
+1. Looks premium
+2. Appeals to *any* local business
+3. Doesn’t pigeonhole Arclo into one vertical
+4. Works perfectly with your floating value props
+
+Below are the **developer-ready instructions** plus the **creative direction** for the new hero image.
+
+---
+
+# ✅ **Hero Section Update — Developer Instructions**
+
+## **1. Remove the Empathy Health Clinic mockup**
+
+Replace the screenshot with a **neutral, beautiful example website** that looks like something Arclo would generate.
+
+The example site should be *fictional* and *industry-agnostic*.
+
+---
+
+# 🎨 **2. Use This Visual Direction for the New Hero Example**
+
+### **New Example Site Theme**
+
+A clean, modern “local business” website. Could be:
+
+* A home services company
+* A wellness clinic
+* A real estate professional
+* A generic service provider
+
+But avoid anything that clearly references *your actual brands*.
+
+### **Mockup Structure (recommended)**
+
+A premium look like this:
+
+**Header (inside mockup)**
+
+* Logo placeholder
+* Nav items: Home · Services · About · Contact
+* Rounded CTA: “Book Now” or “Get Free Quote”
+
+**Hero image inside mockup**
+
+* Beautiful local landscape / neutral service image
+* Slight gradient overlay for readability
+
+**Headline inside mockup**
+
+```
+Professional Service You Can Count On.
+```
+
+**Subcopy**
+
+```
+Serving the community with fast, reliable, high-quality work.
+```
+
+**CTA row**
+
+* "Get Started"
+* "See Pricing"
+
+### **Color palette inside mockup**
+
+* Blues & neutrals (safe for global audiences)
+* High contrast, clean
+* Rounded corners: 24px radius
+
+### **Export specs**
+
+* Transparent PNG
+* 1600×1000 or similar
+* Soft shadow
+* No hard background edges
+
+---
+
+# ✨ **3. Preserve the Floating Value Props (They Look Great)**
+
+Keep the four floating tags you already have — they are *chef’s kiss* for perceived value.
+
+Suggested arrangement in final hero:
+
+* **Top left:** “Site Improved Daily ✓”
+* **Top right:** “Content Written ✓”
+* **Bottom right:** “SEO Issues Fixed ✓”
+* **Bottom left:** “Pages Generated ✓”
+
+BUT — make sure they orbit the *new generic mockup*, not a real clinic site.
+
+---
+
+# 🔧 **4. Technical Instructions for Your Developer**
+
+### Replace the mockup image import:
+
+```tsx
+import HeroExample from "/assets/hero/example-mockup.png";
+```
+
+### Update the `<img>` in the hero:
+
+```tsx
+<img
+  src={HeroExample}
+  alt="Example website created automatically by Arclo"
+  className="w-full max-w-[520px] rounded-3xl shadow-2xl"
+>
+```
+
+### Ensure floating tags stay consistent:
+
+```tsx
+<div className="absolute top-8 left-4 ...">Site Improved Daily ✓</div>
+<div className="absolute top-8 right-4 ...">Content Written ✓</div>
+<div className="absolute bottom-8 right-4 ...">SEO Issues Fixed ✓</div>
+<div className="absolute bottom-8 left-4 ...">Pages Generated ✓</div>
+```
+
+### Keep spacing consistent
+
+Make sure the mockup sits slightly inset into the hero card with:
+
+* `pt-8` above mockup
+* `pb-8` below
+* Ensure no background seams
+
+---
+
+# ⭐ **5. Optional Improvements to Make the Hero Pop**
+
+These will make it look even more premium:
+
+### Add a soft gradient glow behind the mockup:
+
+```
+bg-[radial-gradient(circle_at_center,_rgba(79,70,229,0.15),_transparent_60%)]
+```
+
+### Add a subtle float animation to the mockup:
+
+```css
+animate-[float_6s_ease-in-out_infinite]
+```
+
+### Light drop-shadow for floating tags:
+
+```
+shadow-[0_8px_16px_rgba(0,0,0,0.08)]
+```
+
+---
+
+# 📣 **If you'd like, I can generate the new hero mockup PNG (fictional example site) right now.**
+
+Just say:
+
+**“Generate the new hero example site mockup.”**
+
+It will be:
+
+* Industry-neutral
+* Premium
+* Clean
+* Looks like an Arclo-generated website
+* Works perfectly with your floating AI value props
+
+Want me to generate it?

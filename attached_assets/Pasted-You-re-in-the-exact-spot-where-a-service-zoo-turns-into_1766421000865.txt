@@ -1,0 +1,183 @@
+You’re in the exact spot where a “service zoo” turns into a platform: you don’t need more services right now — you need **one reliable way to know what’s real, what ran, and what’s missing**.
+
+Here’s the reset that will get you un-lost.
+
+## 1) Do you need the Site Change Executor right now?
+
+No — not to start getting value.
+
+Right now your goal is:
+
+* run diagnostics
+* collect data
+* generate findings + tickets
+* see what’s broken / missing
+* improve services
+
+You can keep changes manual (or “copy/paste apply”) while you stabilize the nervous system.
+
+When you *do* need the executor:
+
+* when you’re applying lots of fixes daily
+* when you need audit trails/rollback
+* when you want multi-site automation without fear
+
+So: **defer executor until the diagnosis loop is solid.**
+But design everything as if an executor exists (approved actions, diffs, audit).
+
+## 2) What you should use the dashboard for (today)
+
+Your dashboard should answer, per service:
+
+* **Is it connected?**
+* **Has it ever run for Empathy Health Clinic?**
+* **When did it last run?**
+* **What did it pull back?** (counts + summary)
+* **What should it have pulled back but didn’t?** (missing outputs)
+
+If it can’t answer those 5, it’s not doing its job.
+
+## 3) The fastest way to “reconcile” what’s built vs not built
+
+You don’t need memory. You need **a single truth source**.
+
+### One canonical list (services catalog)
+
+Mark each service as one of:
+
+* **Built + runnable**
+* **Built but not configured**
+* **Planned / blocked** (Google Ads, executor)
+* **Deprecated / not a service** (Bitwarden should be a dependency, not a service)
+
+### Add three fields per service (must exist in DB or catalog)
+
+* `build_state`: `built | planned | deprecated`
+* `config_state`: `ready | missing_config | blocked`
+* `run_state`: `never_ran | last_run_success | last_run_failed | stale`
+
+Your dashboard should be able to compute these automatically.
+
+## 4) What to do next: one “Empathy Health Clinic Trial Run” plan
+
+This is the simplest path to discover what you don’t know.
+
+### Step A — pick one site as the “reference site”
+
+Empathy Health Clinic = reference.
+Everything is tested against this first.
+
+### Step B — run a single “Daily Diagnosis” workflow (even if partial)
+
+Run these in order:
+
+1. Website Registry & Settings
+
+* Confirm the site record exists (domain, GSC property, GA4 property id, competitor list)
+
+2. Google Data Connector
+
+* If GA4/GSC isn’t authorized yet, mark it as **blocked** (not failed)
+
+3. Crawl & Render Service
+
+* Run a crawl for: homepage + 10 key pages (limit)
+* Output: status codes, canonicals, indexability, broken links, render check results
+
+4. Core Web Vitals
+
+* Run PSI for: homepage + top 5 pages
+* Output: LCP/CLS/INP deltas, regressions, “what worsened” summary
+
+5. SERP & Keyword
+
+* Generate “Top 25 tracked” to start (not 100)
+* Output: ranks, in-top-10 count, opportunities count
+
+6. Content QA (optional for first pass)
+
+* Validate 1–2 pages only, to ensure the pipeline works
+
+### Step C — everything writes “runs”
+
+Every one of those must create a `service_run` record with:
+
+* site
+* start/end
+* status
+* summary
+* metrics
+* missing outputs
+
+That’s how you regain control.
+
+## 5) What you’re missing right now (based on what you said)
+
+Two likely gaps that make you feel lost:
+
+### Gap 1: “Test Connection” isn’t equivalent to “This ran”
+
+You can have green checks and still have never actually produced anything.
+
+Fix: **your dashboard must be run-based** (last run + outputs), not config-based.
+
+### Gap 2: No “Daily Diagnosis Run” that ties everything together
+
+You need one parent object like:
+
+* `diagnostic_runs` (one per site per day)
+
+  * contains child `service_runs`
+
+Then the dashboard can say:
+
+* “Today’s run: partial (GA4 blocked, crawl ok, vitals ok, serp ok)”
+
+## 6) Developer instructions (what to implement so you stop losing track)
+
+### A) Add a “Run Now” button for Empathy Health Clinic
+
+* Button: “Run Daily Diagnosis”
+* Calls: `POST /api/diagnostics/run?site_id=...`
+* Creates a `diagnostic_run` record
+* Triggers the subset of services that are ready
+* Skips blocked services (Google Ads, executor, GA4/GSC if pending)
+* Writes service_runs throughout
+* Returns a summary payload to the dashboard
+
+### B) Make the dashboard show the only 3 things you care about
+
+For each service row:
+
+* Last run time/status
+* Summary (1 line)
+* Key metrics (counts)
+  And a “View details” drawer with the definition + last run outputs.
+
+Hide base_url, configured, secrets, etc behind “Diagnostics View”.
+
+### C) Enforce “Blocked ≠ Failed”
+
+If Google Ads isn’t built or Google OAuth isn’t approved:
+
+* show **Blocked** (yellow)
+* not Failed (red)
+  This alone will reduce confusion a ton.
+
+## 7) What I’d do if I were you this afternoon (practical sequence)
+
+1. In the dashboard, select Empathy Health Clinic
+2. Click “Run Daily Diagnosis” (even if only 3 services run)
+3. Open each service detail and confirm it shows:
+
+   * definition
+   * last run
+   * what it returned
+4. For any service showing “never ran”:
+
+   * either wire it into the workflow or mark it planned/blocked
+5. Fix the top 1–2 services that fail first (usually crawl/render + vitals)
+
+That will immediately tell you what’s real and what’s missing.
+
+If you want, paste what the Integrations page currently lists (just the service names it shows). I’ll classify each one as: **Built+Runnable**, **Built+NeedsConfig**, **Blocked**, or **Shouldn’t be on the list**, and I’ll give you the exact “Daily Diagnosis v1” workflow definition that matches your current reality.

@@ -1,0 +1,163 @@
+Replit Prompt: Integrations QA Fix Pack (Button Styling, Modal White Box, Blocked Reason, Cold Start Resilience)
+
+Context
+We’re QA’ing the Integrations page. Styling is improved, but there are still inconsistencies and a likely cold-start issue causing “worked yesterday, failing today.”
+
+Goals
+A) Finish applying the new design system styling to the remaining old-styled controls.
+B) Fix the weird empty white box that appears when clicking Configure.
+C) Improve “Blocked” UX by always showing the reason + what’s required.
+D) Add cold-start resilience (double-ping / warm-up) so intermittent 503/timeout doesn’t show as a hard failure.
+
+Part 1 — Fix remaining styling inconsistencies
+
+1. Update “Ask” + “Run Smoke Tests” buttons to new button system
+   Issue:
+
+* “Ask” and “Run Smoke Tests” still use the old purple styling and do not match the current design system.
+
+Fix:
+
+* Replace any raw <button> or old className stacks with shared <Button /> component.
+* Use current variants:
+
+  * Ask: secondary/outline (glass) with subtle accent (NOT old purple)
+  * Run Smoke Tests: primary action variant used elsewhere (the new one), not old purple
+
+Acceptance:
+
+* These buttons visually match the rest of the site (same radius, border, glow, hover states).
+* No legacy purple gradients remain.
+
+2. Style “Test Connections” button (currently looks blank)
+   Issue:
+
+* The button is transparent/unstyled and reads like a dead control.
+
+Fix:
+
+* Use <Button variant="outline"> or <Button variant="secondary"> with a visible border and subtle text/icon accent.
+* Keep it see-through glass, but with a clear outline + hover glow (semantic “info” tint or neutral accent).
+
+Acceptance:
+
+* It looks clickable and consistent with other controls.
+
+3. Make all “Configure” buttons in Next Actions use gold (attention scheme)
+   Issue:
+
+* Configure is part of “Next Actions” (attention queue), so it should use gold to match the Priority Actions / Watch / attention scheme.
+
+Fix:
+
+* Configure buttons should be <Button variant="attention"> (gold) or <Button variant="warningSoft"> depending on your token naming.
+* Do not hardcode colors; use semantic token for attention/gold.
+
+Acceptance:
+
+* Configure is gold-themed and consistent across all Next Actions rows.
+
+Part 2 — Remove the weird empty white box on Configure
+Issue:
+
+* Clicking Configure shows a large white rectangle that appears empty (likely a leftover placeholder panel or a light-mode surface).
+
+Fix:
+
+* Inspect the Configure modal (or pre-modal panel) for a container using bg-white / bg-slate-50 / bg-card-light.
+* Remove it if it’s unused, OR restyle it as a glass panel:
+
+  * bg-card (dark glass)
+  * border-subtle
+  * text-muted
+    If it’s meant to show instructions, populate it with actual content (see Part 3).
+
+Acceptance:
+
+* No empty white box appears.
+* Any remaining panel has content and matches the glass theme.
+
+Part 3 — Blocked reason + requirements must always be visible
+
+4. If a service is “Blocked”, show WHY inside the modal
+   Issue:
+
+* “Blocked” label is present but it doesn’t explain what is missing or how to fix it.
+
+Fix:
+
+* Add a “Blocked reason” section in the service modal:
+
+  * Title: “Why this is blocked”
+  * Bullet list of missing inputs/credentials (derived from the service definition)
+  * CTA(s): “Open Settings”, “Copy required keys”, “Configure now”
+* This should be driven by real config validation logic:
+
+  * Compare expected inputs vs which config keys are present (env/secrets)
+  * If OAuth required but missing tokens: say so
+  * If developer token approval required: say so
+  * If base URL missing: say so
+
+Acceptance:
+
+* For Google Ads modal: clearly states it requires OAuth tokens + Ads Customer ID + developer token approval (if applicable) and which are missing.
+* For any Blocked service: user sees exactly what to add and where.
+
+Part 4 — Cold start resilience (worked yesterday, fails today)
+
+5. Add warm-up + retry for worker calls
+   Hypothesis:
+
+* Worker endpoints are sometimes asleep (cold start) causing 503/timeout, and we’re surfacing that as “Worker connection failed.”
+
+Fix:
+
+* For any worker-based service test/smoke:
+
+  1. Perform a quick warm-up ping (GET /health or GET /) with short timeout (e.g., 2–3s)
+  2. If it fails with 502/503/timeout, wait 1–2 seconds and retry warm-up once
+  3. Then run the real test call with normal timeout
+* If the first real call fails with a likely cold-start signature (timeout/503), retry once automatically.
+
+UI behavior:
+
+* Show a status message: “Warming up service…” during warm-up
+* If retry happens, show: “Retrying after cold start…”
+* Only mark as failure after retries are exhausted.
+* Store error type in logs so we can tell cold-start vs true misconfig.
+
+Acceptance:
+
+* A service that is healthy but sleeping succeeds after warm-up without manual retries.
+* “Worker connection failed” is reduced significantly.
+* When it truly fails, the UI states the error code and whether it was after retries.
+
+Part 5 — Unify service modal behavior across “Next Actions” and table inspector
+Requirement:
+
+* The service modal shown from Next Actions and from the service table must be the same component and same data source so behavior is consistent.
+
+Fix:
+
+* Ensure both entry points call the same modal component and load service details through the same selector/hook.
+
+Acceptance:
+
+* No differences in styling or content between the two entry points.
+
+Deliverables
+
+* Replace remaining legacy-styled buttons with shared Button variants
+* Gold Configure buttons
+* Remove/restyle empty white box
+* Blocked reason section populated from config validation
+* Warm-up + retry logic for worker tests/smoke tests
+* Consistent modal component used everywhere
+
+Do this now
+Start with Integrations page:
+
+1. Convert Ask / Run Smoke Tests / Test Connections / Configure to shared Button variants
+2. Remove white box
+3. Add blocked reason section
+4. Implement warm-up + retry and re-run smoke tests to con

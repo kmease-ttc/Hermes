@@ -1,0 +1,52 @@
+You are working in the Replit project “Hermes SEO / Arclo”. The marketing homepage currently has a broken / missing footer and several sections have contrast regressions, but this task is ONLY to add a proper, production-quality website footer that matches the new “white + subtle cosmic gradient” design language.
+
+GOAL
+Create a real SaaS footer (not a CTA block). It must be clearly visible, high-contrast, responsive, accessible, and consistent with the Arclo gradient + pill/button styling used in the hero.
+
+REQUIREMENTS
+1) Footer must be present on the marketing homepage (and ideally all marketing pages using the same layout).
+2) Footer sections:
+   - Brand block (logo + “Arclo” + 1-line description)
+   - Product links (Examples, How It Works, Pricing, Analyze, Generate)
+   - Company links (Privacy, Terms, Security, Contact)
+   - Resources links (Docs, Support, Changelog, Status) — if these pages don’t exist yet, use “#” but keep the structure.
+3) Bottom bar:
+   - “© {currentYear} Arclo. All rights reserved.”
+   - Small inline legal links (Privacy, Terms)
+4) Optional but recommended:
+   - Social icons (X/Twitter, LinkedIn) as simple SVGs with accessible labels.
+5) Visual style:
+   - Background: white with subtle gradient wash (very faint purple/pink/orange), plus a thin top border.
+   - Layout: max-width container aligned with the rest of the page.
+   - Link styles: dark text with hover gradient underline or slight color shift; must be readable.
+   - Typography: same as site (Inter-ish), headings slightly stronger.
+   - Spacing: generous padding (top/bottom), not cramped.
+   - Contrast: all footer text must be readable (no “white on white” issues).
+6) Accessibility:
+   - Use <footer> landmark
+   - Link focus states (visible outline)
+   - SVG icons have aria-label or sr-only text
+
+IMPLEMENTATION PLAN (DO THIS EXACTLY)
+A) Create component:
+   - src/components/marketing/SiteFooter.tsx
+
+B) Create footer styles in the existing styles system:
+   - Add footer styles to src/styles/marketingTheme.css OR src/styles/arclo-base.css (choose whichever is currently used for marketing page styling)
+   - Prefer CSS variables already used (tokens), but if missing add minimal variables locally for footer only.
+
+C) Wire it up:
+   - Find the marketing homepage component (likely src/pages or src/components/landing/*).
+   - Insert <SiteFooter /> at the very bottom after the FAQ/CTA section.
+   - Ensure it renders on the page and doesn’t overlap.
+
+D) QA
+   - Desktop: footer shows 4 columns + brand block; bottom bar aligned.
+   - Mobile: stacks vertically with good spacing.
+   - Check focus outlines + hover states.
+
+DELIVERABLES
+- Commit-ready code changes only (no pseudocode).
+- If any referenced page routes don’t exist, keep href as “#” for now but maintain structure.
+
+NOW IMPLEMENT IT.
