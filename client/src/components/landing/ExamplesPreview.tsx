@@ -40,30 +40,30 @@ const EXAMPLES = [
 
 export function ExamplesPreview() {
   return (
-    <section className="px-5 md:px-6 py-12 md:py-16">
+    <section className="px-4 sm:px-5 md:px-6 py-12 md:py-16">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-4 tracking-tight">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-foreground mb-4 tracking-tight">
           See What Arclo Builds
         </h2>
-        <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
+        <p className="text-center text-sm sm:text-base text-muted-foreground mb-8 sm:mb-10 max-w-xl mx-auto">
           Real examples of websites generated for local businesses.
         </p>
-        
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {EXAMPLES.map((example) => (
             <Card 
               key={example.id}
               className="bg-card border border-border shadow-[0_20px_40px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 overflow-hidden"
               data-testid={`card-example-${example.id}`}
             >
-              <div className={`h-32 ${example.bgColor} flex items-center justify-center`}>
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${example.color} flex items-center justify-center`}>
-                  <example.icon className="h-8 w-8 text-white" />
+              <div className={`h-24 sm:h-32 ${example.bgColor} flex items-center justify-center`}>
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br ${example.color} flex items-center justify-center`}>
+                  <example.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
-              <CardContent className="p-4 text-center">
-                <h3 className="font-semibold text-foreground mb-1">{example.industry}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{example.city}</p>
+              <CardContent className="p-3 sm:p-4 text-center">
+                <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1">{example.industry}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{example.city}</p>
                 <Link href={`${ROUTES.EXAMPLES}?demo=${example.id}`}>
                   <span className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:opacity-80 cursor-pointer">
                     View demo <ExternalLink className="h-3 w-3" />

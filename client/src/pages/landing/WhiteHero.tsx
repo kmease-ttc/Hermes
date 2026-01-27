@@ -1,5 +1,5 @@
-import React from "react";
-import { Building2, CalendarX, ClipboardList, Sparkles } from "lucide-react";
+import React, { useState, useCallback } from "react";
+import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X } from "lucide-react";
 
 /**
  * White Hero (high-contrast) — matches the approved "clean white" mock.
@@ -7,6 +7,7 @@ import { Building2, CalendarX, ClipboardList, Sparkles } from "lucide-react";
  * - Subtle cosmic glow in the background
  * - Reduced copy (no redundant paragraph)
  * - Clear primary vs secondary CTAs
+ * - Mobile hamburger menu for small screens
  */
 
 const TRUST_PILLS = [
@@ -17,6 +18,9 @@ const TRUST_PILLS = [
 ];
 
 export default function WhiteHero() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const toggleMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
+
   return (
     <div className="arclo-hero-wrap">
       <div className="arclo-hero-glow" />
@@ -25,7 +29,6 @@ export default function WhiteHero() {
         <header className="arclo-nav">
           <div className="arclo-nav-left">
             <a className="arclo-logo" href="/">
-              {/* Swap this SVG for your real logo component if you already have one */}
               <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
                 <defs>
                   <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
@@ -48,13 +51,35 @@ export default function WhiteHero() {
           </nav>
 
           <div className="arclo-nav-right">
-            <a className="arclo-btn arclo-btn-secondary" href="/generate">
+            <a className="arclo-btn arclo-btn-secondary arclo-hide-mobile" href="/generate">
               Generate My Site
             </a>
             <a className="arclo-btn arclo-btn-primary" href="/analyze">
               Analyze My Website
             </a>
+            <button
+              className="arclo-hamburger"
+              onClick={toggleMenu}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+
+          {/* Mobile slide-down menu */}
+          {mobileMenuOpen && (
+            <div className="arclo-mobile-menu" role="navigation" aria-label="Mobile navigation">
+              <a href="/examples" onClick={toggleMenu}>Examples</a>
+              <a href="/how-it-works" onClick={toggleMenu}>How It Works</a>
+              <a href="/pricing" onClick={toggleMenu}>Pricing</a>
+              <a href="/login" onClick={toggleMenu}>Log In</a>
+              <div className="arclo-mobile-menu-cta">
+                <a className="arclo-btn arclo-btn-secondary" href="/generate">Generate My Site</a>
+                <a className="arclo-btn arclo-btn-primary" href="/analyze">Analyze My Website</a>
+              </div>
+            </div>
+          )}
         </header>
 
         <main className="arclo-hero">
