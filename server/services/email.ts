@@ -100,9 +100,12 @@ export async function sendVerificationEmail(email: string, token: string, displa
 
 export async function sendPasswordResetEmail(email: string, token: string, displayName?: string): Promise<boolean> {
   try {
+    console.log(`[Email] Attempting to send password reset email to ${email}`);
     const { client, fromEmail } = getSendGridClient();
+    console.log(`[Email] SendGrid client ready, from: ${fromEmail}`);
     const baseUrl = getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    console.log(`[Email] Reset URL: ${resetUrl}`);
     
     const msg = {
       to: email,
@@ -140,11 +143,14 @@ export async function sendPasswordResetEmail(email: string, token: string, displ
       `,
     };
 
-    await client.send(msg);
-    console.log(`[Email] Password reset email sent to ${email}`);
+    const response = await client.send(msg);
+    console.log(`[Email] Password reset email sent to ${email}, status: ${response[0]?.statusCode}`);
     return true;
   } catch (error: any) {
     console.error('[Email] Failed to send password reset email:', error.message);
+    if (error.response) {
+      console.error('[Email] SendGrid error body:', JSON.stringify(error.response.body));
+    }
     return false;
   }
 }

@@ -384,7 +384,8 @@ export function registerAuthRoutes(app: Express): void {
       });
 
       // Send reset email
-      await sendPasswordResetEmail(email, token, user.displayName || undefined);
+      const emailSent = await sendPasswordResetEmail(email, token, user.displayName || undefined);
+      console.log("[Auth] Password reset email result:", emailSent ? "sent" : "failed");
 
       return res.json(genericResponse);
     } catch (error: any) {
