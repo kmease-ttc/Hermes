@@ -60,8 +60,6 @@ import {
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type KpiDescriptor,
   type InspectorTab,
   type WidgetState,
@@ -1499,152 +1497,6 @@ export default function NatashaContent() {
     monitors: ["Competitor Rankings", "Share of Voice", "Content Gaps", "SERP Features"],
   };
 
-  // Calculate mission status
-  const missionStatus: MissionStatusState = useMemo(() => {
-    const blockers = data.contentGaps.filter(g => g.opportunity === "high").length;
-    const priorities = data.missions.length;
-    const autoFixable = data.missions.filter(m => m.difficulty === "easy").length;
-
-    let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    if (blockers > 0 || summary.highPriorityGaps > 2) {
-      tier = "needs_attention";
-    } else if (priorities > 0) {
-      tier = "doing_okay";
-    }
-
-    const parts: string[] = [];
-    if (priorities > 0) parts.push(`${priorities} missions`);
-    if (summary.keywordsLosing > 0) parts.push(`${summary.keywordsLosing} keywords losing`);
-    if (summary.totalGaps > 0) parts.push(`${summary.totalGaps} gaps`);
-
-    return {
-      tier,
-      summaryLine: parts.length > 0 ? parts.join(" • ") : "All competitive metrics stable",
-      nextStep: data.missions[0]?.title || "Run analysis to discover opportunities",
-      priorityCount: priorities,
-      blockerCount: blockers,
-      autoFixableCount: autoFixable,
-      status: error ? "unavailable" : isLoading ? "loading" : "ready",
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [data, summary, error, isLoading, unifiedScore]);
-
-  // Convert competitive missions to MissionItem format - ALWAYS have at least one mission
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    
-    // Add real missions from API data
-    if (data.missions.length > 0) {
-      data.missions.forEach((m) => {
-        items.push({
-          id: m.id,
-          title: m.title,
-          reason: m.description,
-          expectedOutcome: m.expectedImpact === "high" ? "Significant visibility gain" : "Incremental improvement",
-          status: "pending" as const,
-          impact: m.expectedImpact,
-          effort: m.difficulty === "easy" ? "S" : m.difficulty === "medium" ? "M" : "L",
-          agents: [m.executingCrew],
-          category: m.type,
-          action: {
-            label: "Fix it",
-            onClick: () => toast.success(`Executing: ${m.title}`),
-            disabled: isRunning,
-          },
-        });
-      });
-    }
-    
-    // Add content gap missions - deduplicated by keyword
-    if (data.contentGaps.length > 0) {
-      const highPriorityGaps = data.contentGaps.filter(g => g.opportunity === "high");
-      
-      // Deduplicate by keyword and count competitors per keyword
-      const keywordMap = new Map<string, { gap: typeof highPriorityGaps[0]; competitorCount: number; competitors: string[] }>();
-      highPriorityGaps.forEach((gap) => {
-        const keyword = gap.keyword?.toLowerCase().trim() || '';
-        if (!keyword) return;
-        
-        if (keywordMap.has(keyword)) {
-          const existing = keywordMap.get(keyword)!;
-          existing.competitorCount++;
-          if (gap.competitorDomain) {
-            existing.competitors.push(gap.competitorDomain);
-          }
-        } else {
-          keywordMap.set(keyword, {
-            gap,
-            competitorCount: 1,
-            competitors: gap.competitorDomain ? [gap.competitorDomain] : [],
-          });
-        }
-      });
-      
-      // Create one mission per unique keyword
-      Array.from(keywordMap.entries()).forEach(([keyword, { gap, competitorCount, competitors }], idx) => {
-        items.push({
-          id: `content-gap-${gap.id || idx}`,
-          title: `Create content for "${gap.keyword}"`,
-          reason: competitorCount > 1 
-            ? `${competitorCount} competitors ranking for this keyword`
-            : gap.suggestedAction || `${gap.competitorDomain || 'Competitor'} ranking for this`,
-          status: "pending" as const,
-          impact: "high",
-          effort: gap.difficulty && gap.difficulty > 60 ? "L" : gap.difficulty && gap.difficulty > 30 ? "M" : "S",
-          action: {
-            label: "Fix it",
-            onClick: () => toast.success(`Preparing content for: ${gap.keyword}`),
-            disabled: isRunning,
-          },
-        });
-      });
-    }
-    
-    // Always have at least placeholder missions if no real data
-    if (items.length === 0) {
-      items.push(
-        {
-          id: "identify-content-gaps",
-          title: "Identify competitive content gaps",
-          reason: data.configured ? "Analyzing competitor content strategies" : "Run analysis to discover content opportunities",
-          status: "pending" as const,
-          impact: "high",
-          action: {
-            label: "Fix it",
-            onClick: handleRefresh,
-            disabled: isRunning,
-          },
-        },
-        {
-          id: "analyze-backlinks",
-          title: "Analyze competitor backlink strategies",
-          reason: data.configured ? "Tracking authority gaps" : "Configure to monitor link building opportunities",
-          status: "pending" as const,
-          impact: "medium",
-          action: {
-            label: "Fix it",
-            onClick: handleRefresh,
-            disabled: isRunning,
-          },
-        },
-        {
-          id: "monitor-rankings",
-          title: "Monitor competitor ranking changes",
-          reason: data.configured ? "Watching for rank fluctuations" : "Connect integrations to track SERP positions",
-          status: "pending" as const,
-          impact: "medium",
-          action: {
-            label: "Fix it",
-            onClick: handleRefresh,
-            disabled: isRunning,
-          },
-        }
-      );
-    }
-    
-    return items;
-  }, [data.missions, data.contentGaps, data.configured, isRunning, handleRefresh]);
-
   // KPIs for the strip
   const kpis: KpiDescriptor[] = useMemo(() => {
     const kpiStatus: WidgetState = error ? "unavailable" : isLoading ? "loading" : "ready";
@@ -1867,8 +1719,6 @@ export default function NatashaContent() {
         crew={crewIdentity}
         agentScore={marketSov}
         agentScoreTooltip="Market SOV — Your visibility across all target keywords (CTR-weighted)"
-        missionStatus={missionStatus}
-        missions={missions}
         kpis={kpis}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
         inspectorTabs={inspectorTabs}
@@ -1876,7 +1726,6 @@ export default function NatashaContent() {
         headerActions={headerActions}
         onRefresh={handleRefresh}
         onSettings={() => toast.info("Settings coming soon")}
-        onFixEverything={() => toast.info("Fix everything coming soon")}
         isRefreshing={isRunning || crewIsRefreshing}
         dataUpdatedAt={crewDataUpdatedAt}
       />

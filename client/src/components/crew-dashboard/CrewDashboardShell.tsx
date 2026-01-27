@@ -15,7 +15,6 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useOptionalCrewTheme } from "@/components/crew/CrewPageLayout";
-import { MissionOverviewWidget } from "./widgets/MissionOverviewWidget";
 import { KpiStripWidget } from "./widgets/KpiStripWidget";
 import { RefreshingBadge } from "@/components/ui/stale-indicator";
 import type { CrewDashboardShellProps, WidgetState, HeaderAction } from "./types";
@@ -183,9 +182,6 @@ export function CrewDashboardShell({
   crew,
   agentScore,
   agentScoreTooltip,
-  missionStatus,
-  missions,
-  recentlyCompleted,
   kpis = [],
   customMetrics,
   inspectorTabs,
@@ -193,8 +189,6 @@ export function CrewDashboardShell({
   headerActions = [],
   onRefresh,
   onSettings,
-  onFixEverything,
-  onViewAllMissions,
   isRefreshing = false,
   isError = false,
   dataUpdatedAt,
@@ -203,9 +197,6 @@ export function CrewDashboardShell({
   const crewTheme = useOptionalCrewTheme();
   const accentColor = crewTheme?.theme.color.primary ?? crew.accentColor;
   
-  const missionStatusState: WidgetState =
-    missionStatus.status || (missionStatus.priorityCount >= 0 ? "ready" : "loading");
-
   const kpiState: WidgetState =
     kpis.length > 0 && kpis.some((k) => k.value !== null) ? "ready" : "empty";
 
@@ -279,7 +270,7 @@ export function CrewDashboardShell({
             <AgentScoreDisplay
               score={agentScore}
               tooltip={agentScoreTooltip}
-              isLoading={missionStatusState === "loading"}
+              isLoading={isRefreshing}
             />
 
             {headerActions.map((action) => (
@@ -344,18 +335,7 @@ export function CrewDashboardShell({
         )}
       </div>
 
-      {/* Mission Overview Widget - merged Status + Missions + Recently Completed */}
-      <MissionOverviewWidget
-        status={missionStatus}
-        missions={missions}
-        recentlyCompleted={recentlyCompleted}
-        state={missionStatusState}
-        onFixEverything={onFixEverything}
-        onViewAllMissions={onViewAllMissions}
-        onRetry={onRefresh}
-      />
-
-      {/* 4. Custom Metrics - render custom metrics component if provided */}
+      {/* Custom Metrics - render custom metrics component if provided */}
       {customMetrics}
 
       {/* 5. KPIs Strip - only show when there are KPIs and no custom metrics */}

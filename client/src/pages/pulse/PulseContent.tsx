@@ -33,8 +33,6 @@ import {
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type KpiDescriptor,
   type InspectorTab,
   type MissionPromptConfig,
@@ -559,41 +557,6 @@ export default function PulseContent() {
     monitors: ["Website Traffic", "Conversions", "User Behavior"],
   };
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    const totalDrops = parsed?.totalDrops || 0;
-    const severeDrops = parsed?.drops?.filter(d => Math.abs(d.zScore) >= 3).length || 0;
-    const moderateDrops = parsed?.drops?.filter(d => Math.abs(d.zScore) >= 2 && Math.abs(d.zScore) < 3).length || 0;
-
-    let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    let summaryLine = "All health checks passing, no anomalies detected";
-    let nextStep = "Continue monitoring traffic metrics";
-
-    if (!report) {
-      tier = "needs_attention";
-      summaryLine = "No analysis data available";
-      nextStep = "Run analysis to start monitoring traffic";
-    } else if (severeDrops > 0) {
-      tier = "needs_attention";
-      summaryLine = `${severeDrops} severe traffic anomal${severeDrops > 1 ? 'ies' : 'y'} detected`;
-      nextStep = "Investigate severe drops immediately";
-    } else if (moderateDrops > 0) {
-      tier = "doing_okay";
-      summaryLine = `${moderateDrops} moderate anomal${moderateDrops > 1 ? 'ies' : 'y'} to review`;
-      nextStep = "Review moderate drops for patterns";
-    }
-
-    return {
-      tier,
-      summaryLine,
-      nextStep,
-      blockerCount: severeDrops,
-      priorityCount: moderateDrops,
-      autoFixableCount: 0,
-      status: isLoading ? "loading" as const : "ready" as const,
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [parsed, report, isLoading, unifiedScore]);
-
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
       id: "drops",
@@ -652,68 +615,6 @@ export default function PulseContent() {
       },
     ];
   }, [parsed]);
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    
-    if (!report) {
-      items.push({
-        id: "run-first-analysis",
-        title: "Run initial traffic analysis",
-        reason: "Data not connected yet — run analysis to activate this crew",
-        status: "pending",
-        impact: "high",
-        action: {
-          label: "Fix it",
-          onClick: () => rerunMutation.mutate(),
-          disabled: rerunMutation.isPending,
-        },
-      });
-      return items;
-    }
-    
-    if (parsed && parsed.totalDrops > 0) {
-      items.push({
-        id: "investigate-drops",
-        title: `Investigate ${parsed.totalDrops} traffic anomalies`,
-        reason: "Review detected drops and run diagnostics",
-        status: "pending",
-        impact: "high",
-        action: {
-          label: "Fix it",
-          onClick: () => {
-            const dropsSection = document.getElementById('detected-drops');
-            dropsSection?.scrollIntoView({ behavior: 'smooth' });
-          },
-        },
-      });
-    }
-    if (parsed?.healthChecks?.some(h => h.status !== 'healthy')) {
-      items.push({
-        id: "fix-health-issues",
-        title: "Fix health check failures",
-        reason: `${parsed.healthChecks.filter(h => h.status !== 'healthy').length} health checks need attention`,
-        status: "pending",
-        impact: "medium",
-        action: {
-          label: "Fix it",
-          onClick: () => toast.info("Review health checks in the Health Checks tab"),
-        },
-      });
-    }
-    
-    if (items.length === 0) {
-      items.push({
-        id: "monitor-traffic",
-        title: "Continue monitoring traffic",
-        reason: "No issues detected — all systems healthy",
-        status: "done",
-        impact: "low",
-      });
-    }
-    
-    return items;
-  }, [parsed, report, rerunMutation]);
 
   const inspectorTabs: InspectorTab[] = useMemo(() => [
     {
@@ -820,8 +721,6 @@ export default function PulseContent() {
       crew={crew}
       agentScore={parsed?.healthChecks ? Math.round((parsed.healthChecks.filter(h => h.status === 'healthy').length / parsed.healthChecks.length) * 100) : null}
       agentScoreTooltip="Health score based on system checks"
-      missionStatus={missionStatus}
-      missions={missions}
       kpis={kpis}
       customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
       inspectorTabs={inspectorTabs}

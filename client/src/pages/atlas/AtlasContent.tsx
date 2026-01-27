@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type HeaderAction,
 } from "@/components/crew-dashboard";
@@ -1072,105 +1070,6 @@ export default function AtlasContent() {
   const warningCount = findings.filter(f => f.severity === "warning").length;
   const autoFixableCount = findings.filter(f => f.isAutoFixable).length;
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    if (criticalCount > 0) {
-      return {
-        tier: "needs_attention",
-        summaryLine: `${criticalCount} critical AI visibility issue${criticalCount > 1 ? "s" : ""} found`,
-        nextStep: "Fix missing schemas and incomplete entities to improve AI discoverability",
-        priorityCount: criticalCount + warningCount,
-        blockerCount: criticalCount,
-        autoFixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    if (warningCount > 0) {
-      return {
-        tier: "doing_okay",
-        summaryLine: `${warningCount} AI optimization opportunity${warningCount > 1 ? "ies" : "y"} available`,
-        nextStep: "Address warnings to boost AI discoverability",
-        priorityCount: warningCount,
-        blockerCount: 0,
-        autoFixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    return {
-      tier: "looking_good",
-      summaryLine: "AI optimization looks strong",
-      nextStep: "Continue monitoring for new opportunities",
-      priorityCount: 0,
-      blockerCount: 0,
-      autoFixableCount: 0,
-      status: isLoading ? "loading" : "ready",
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [criticalCount, warningCount, autoFixableCount, unifiedScore, isLoading]);
-
-  const missions: MissionItem[] = useMemo(() => [
-    {
-      id: "ai-readiness-scan",
-      title: "AI Readiness Scan",
-      reason: "Analyzes structured data, entity coverage, and LLM answerability across your site",
-      status: scanMutation.isPending ? "in_progress" : "pending",
-      impact: "high",
-      effort: "M",
-      action: {
-        label: "Scan",
-        onClick: () => scanMutation.mutate(),
-        disabled: scanMutation.isPending,
-      },
-    },
-    {
-      id: "improve-structured-data",
-      title: "Improve Structured Data",
-      reason: `Fix ${findings.filter(f => f.category === "Structured Data" && f.isAutoFixable).length} schema issues for better AI parsing`,
-      status: fixStructuredDataMutation.isPending && !fixingIssue ? "in_progress" : "pending",
-      impact: "high",
-      effort: "S",
-      action: {
-        label: "Fix All",
-        onClick: () => fixStructuredDataMutation.mutate(undefined),
-        disabled: fixStructuredDataMutation.isPending,
-      },
-    },
-    {
-      id: "improve-llm-summaries",
-      title: "Improve LLM Summaries",
-      reason: "Add AI-friendly summaries to pages missing structured content",
-      status: improveSummariesMutation.isPending ? "in_progress" : "pending",
-      impact: "medium",
-      effort: "M",
-      action: {
-        label: "Improve",
-        onClick: () => improveSummariesMutation.mutate(),
-        disabled: improveSummariesMutation.isPending,
-      },
-    },
-    {
-      id: "entity-optimization",
-      title: "Entity Optimization",
-      reason: "Standardize and complete entity data (providers, services, locations)",
-      status: optimizeEntitiesMutation.isPending ? "in_progress" : "pending",
-      impact: "medium",
-      effort: "L",
-      action: {
-        label: "Optimize",
-        onClick: () => optimizeEntitiesMutation.mutate(),
-        disabled: optimizeEntitiesMutation.isPending,
-      },
-    },
-  ], [
-    scanMutation.isPending,
-    fixStructuredDataMutation.isPending,
-    improveSummariesMutation.isPending,
-    optimizeEntitiesMutation.isPending,
-    findings,
-    fixingIssue,
-  ]);
-
   const handleFixFinding = (finding: AtlasFinding) => {
     fixStructuredDataMutation.mutate(finding);
   };
@@ -1445,8 +1344,6 @@ export default function AtlasContent() {
         crew={crewIdentity}
         agentScore={metrics.aiVisibilityScore}
         agentScoreTooltip="AI Visibility Score based on structured data, entity coverage, and LLM answerability"
-        missionStatus={missionStatus}
-        missions={missions}
         customMetrics={customMetrics}
         inspectorTabs={inspectorTabs}
         headerActions={headerActions}

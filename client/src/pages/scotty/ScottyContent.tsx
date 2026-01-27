@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type KpiDescriptor,
   type MissionPromptConfig,
@@ -615,101 +613,6 @@ export default function ScottyContent() {
   const warningCount = data.findings.filter(f => f.severity === "warning").length;
   const fixableCount = data.findings.filter(f => f.fixable).length;
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    if (criticalCount > 0) {
-      return {
-        tier: "needs_attention",
-        summaryLine: `${criticalCount} critical issue${criticalCount > 1 ? "s" : ""} blocking SEO`,
-        nextStep: "Fix critical technical issues to unblock crawling and indexing",
-        priorityCount: criticalCount + warningCount,
-        blockerCount: criticalCount,
-        autoFixableCount: fixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    if (warningCount > 0) {
-      return {
-        tier: "doing_okay",
-        summaryLine: `${warningCount} warning${warningCount > 1 ? "s" : ""} to address`,
-        nextStep: "Review and fix warnings to improve technical health",
-        priorityCount: warningCount,
-        blockerCount: 0,
-        autoFixableCount: fixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    return {
-      tier: "on_track",
-      summaryLine: "Site is technically healthy",
-      nextStep: "Continue monitoring for new issues",
-      priorityCount: 0,
-      blockerCount: 0,
-      autoFixableCount: 0,
-      status: isLoading ? "loading" : "ready",
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [criticalCount, warningCount, fixableCount, unifiedScore, isLoading]);
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-
-    items.push({
-      id: "run-crawl",
-      title: "Run Site Crawl",
-      reason: "Crawl all pages to detect status codes, render issues, and technical problems",
-      status: runCrawlMutation.isPending ? "in_progress" : "pending",
-      impact: "high",
-      effort: "M",
-      action: {
-        label: "Start Crawl",
-        onClick: () => runCrawlMutation.mutate(),
-        disabled: runCrawlMutation.isPending,
-      },
-    });
-
-    items.push({
-      id: "check-indexing",
-      title: "Check Indexing Status",
-      reason: "Validate indexability flags and Google Search Console index state",
-      status: checkIndexingMutation.isPending ? "in_progress" : "pending",
-      impact: "high",
-      effort: "S",
-      action: {
-        label: "Check Index",
-        onClick: () => checkIndexingMutation.mutate(),
-        disabled: checkIndexingMutation.isPending,
-      },
-    });
-
-    items.push({
-      id: "audit-cwv",
-      title: "Audit Core Web Vitals",
-      reason: "Run CWV worker to check LCP, CLS, and INP for all pages",
-      status: auditCwvMutation.isPending ? "in_progress" : "pending",
-      impact: "medium",
-      effort: "M",
-      action: {
-        label: "Audit CWV",
-        onClick: () => auditCwvMutation.mutate(),
-        disabled: auditCwvMutation.isPending,
-      },
-    });
-
-    if (fixableCount > 0) {
-      items.push({
-        id: "fix-queue",
-        title: `Technical Fix Queue (${fixableCount})`,
-        reason: `${fixableCount} deployable fix${fixableCount > 1 ? "es" : ""} ready to apply`,
-        status: "pending",
-        impact: "high",
-        effort: "S",
-      });
-    }
-
-    return items;
-  }, [runCrawlMutation.isPending, checkIndexingMutation.isPending, auditCwvMutation.isPending, fixableCount]);
 
   const findingsTab: InspectorTab = {
     id: "findings",
@@ -893,17 +796,6 @@ export default function ScottyContent() {
           crew={crewIdentity}
           agentScore={null}
           agentScoreTooltip="Technical health score"
-          missionStatus={{
-            tier: "needs_attention",
-            summaryLine: "Crawl service not configured",
-            nextStep: "Configure the crawl-render worker to get started",
-            priorityCount: 1,
-            blockerCount: 1,
-            autoFixableCount: 0,
-            status: "ready",
-            performanceScore: null,
-          }}
-          missions={[]}
           kpis={[]}
           inspectorTabs={[]}
           headerActions={[]}
@@ -938,8 +830,6 @@ export default function ScottyContent() {
         crew={crewIdentity}
         agentScore={health.crawlHealthPercent}
         agentScoreTooltip="Crawl health percentage - % of URLs returning valid 200 responses"
-        missionStatus={missionStatus}
-        missions={missions}
         kpis={kpis}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
         inspectorTabs={inspectorTabs}

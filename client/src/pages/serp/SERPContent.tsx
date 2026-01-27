@@ -17,8 +17,6 @@ import { getCrewMember } from "@/config/agents";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type KpiDescriptor,
   type InspectorTab,
   type MissionPromptConfig,
@@ -646,39 +644,6 @@ export default function SERPContent() {
     monitors: ["Keyword Rankings", "Position Changes", "SERP Features"],
   }), [crewMember]);
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    const totalKeywords = overview?.totalKeywords || 0;
-    const inTop10 = stats.inTop10 || 0;
-    const notRanking = stats.notRanking || 0;
-    const coveragePercent = totalKeywords > 0 ? (inTop10 / totalKeywords) * 100 : 0;
-
-    let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    let summaryLine = `${inTop10} of ${totalKeywords} keywords in top 10`;
-    let nextStep = "Continue monitoring rankings";
-    
-    if (coveragePercent < 30 || notRanking > totalKeywords * 0.3) {
-      tier = "needs_attention";
-      summaryLine = `${notRanking} keywords not ranking`;
-      nextStep = "Focus on recovering non-ranking keywords";
-    } else if (coveragePercent < 60) {
-      tier = "doing_okay";
-      nextStep = "Work on improving positions";
-    }
-
-    const status = missionsLoading ? "loading" : isFixingEverything ? "loading" : "ready";
-
-    return {
-      tier,
-      summaryLine,
-      nextStep,
-      priorityCount: missionsData?.totalPending || (totalKeywords - inTop10 - notRanking),
-      blockerCount: notRanking,
-      autoFixableCount: missionsData?.totalPending || 0,
-      status: status as "loading" | "ready" | "empty" | "unavailable",
-      performanceScore: unifiedScore,
-    };
-  }, [overview, stats, missionsData, missionsLoading, isFixingEverything, unifiedScore]);
-
   const kpis: KpiDescriptor[] = useMemo(() => {
     const totalKeywords = overview?.totalKeywords || 0;
     const rankingKeywords = stats.ranking || 0;
@@ -764,127 +729,6 @@ export default function SERPContent() {
       },
     ];
   }, [stats, overview]);
-
-  const getImpactLabel = (score: number | undefined): "high" | "medium" | "low" => {
-    if (score === undefined) return "medium";
-    if (score >= 70) return "high";
-    if (score >= 40) return "medium";
-    return "low";
-  };
-
-  const getEffortLabel = (score: number | undefined): "S" | "M" | "L" => {
-    if (score === undefined) return "M";
-    if (score <= 30) return "S";
-    if (score <= 60) return "M";
-    return "L";
-  };
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    
-    if (isFixingEverything && fixStatus) {
-      items.push({
-        id: "fixing-everything",
-        title: `Executing ${fixStatus.completed + fixStatus.queued + fixStatus.inProgress} improvements`,
-        reason: `${fixStatus.completed} completed, ${fixStatus.queued + fixStatus.inProgress} remaining`,
-        status: "in_progress" as const,
-        impact: "high" as const,
-      });
-      return items;
-    }
-
-    if (missionsData?.missions && missionsData.missions.length > 0) {
-      missionsData.missions.slice(0, 5).forEach(m => {
-        items.push({
-          id: `mission-${m.id}`,
-          title: m.title,
-          reason: m.reason || m.targetKeywords?.slice(0, 3).join(", ") || undefined,
-          status: "pending" as const,
-          impact: getImpactLabel(m.impactScore),
-          effort: getEffortLabel(m.effortScore),
-          action: {
-            label: "Fix it",
-            onClick: () => fixEverything.mutate(),
-            disabled: isFixingEverything,
-          },
-        });
-      });
-      return items;
-    }
-
-    if ((overview?.totalKeywords || 0) === 0) {
-      items.push({
-        id: "setup-keywords",
-        title: "Set up keyword tracking",
-        reason: "Generate target keywords to start monitoring",
-        status: "pending" as const,
-        impact: "high" as const,
-        action: {
-          label: "Generate",
-          onClick: handleGenerate,
-          disabled: generateKeywords.isPending,
-        },
-      });
-      return items;
-    }
-
-    if (stats.notRanking > 0) {
-      items.push({
-        id: "recover-rankings",
-        title: "Recover non-ranking keywords",
-        reason: `${stats.notRanking} keywords not in search results`,
-        status: "pending" as const,
-        impact: "high" as const,
-        action: {
-          label: "Fix it",
-          onClick: () => fixEverything.mutate(),
-          disabled: isFixingEverything,
-        },
-      });
-    }
-
-    if (stats.inTop10 < (overview?.totalKeywords || 0) && stats.inTop10 > 0) {
-      items.push({
-        id: "improve-rankings",
-        title: "Improve rankings for target keywords",
-        reason: `${(overview?.totalKeywords || 0) - stats.inTop10} keywords outside top 10`,
-        status: "pending" as const,
-        impact: "medium" as const,
-        action: {
-          label: "Fix it",
-          onClick: () => fixEverything.mutate(),
-          disabled: isFixingEverything,
-        },
-      });
-    }
-
-    if (stats.losers > 0) {
-      items.push({
-        id: "optimize-losers",
-        title: "Optimize pages losing positions",
-        reason: `${stats.losers} keywords dropped in rankings`,
-        status: "pending" as const,
-        impact: "high" as const,
-        action: {
-          label: "Fix it",
-          onClick: () => fixEverything.mutate(),
-          disabled: isFixingEverything,
-        },
-      });
-    }
-
-    if (items.length === 0) {
-      items.push({
-        id: "monitor-rankings",
-        title: "Continue monitoring rankings",
-        reason: `${stats.inTop10} in top 10, ${stats.numberOne} at #1 position`,
-        status: "done" as const,
-        impact: "low" as const,
-      });
-    }
-
-    return items;
-  }, [stats, overview, missionsData, isFixingEverything, fixStatus, generateKeywords.isPending, handleGenerate]);
 
   // Fetch near wins data
   const { data: nearWinsData } = useQuery<{
@@ -1177,24 +1021,6 @@ export default function SERPContent() {
 
   // Show setup state if no keywords exist
   if (!hasKeywords && !isLoading) {
-    const emptyMissionStatus: MissionStatusState = {
-      tier: "needs_attention",
-      summaryLine: "No keywords tracked yet",
-      nextStep: "Generate target keywords to start tracking",
-      priorityCount: 1,
-      blockerCount: 0,
-      autoFixableCount: 0,
-      status: "ready",
-    };
-
-    const setupMissions: MissionItem[] = [{
-      id: "generate-keywords",
-      title: "Generate target keywords",
-      reason: "Set up keyword tracking to start monitoring rankings",
-      status: "pending",
-      impact: "high",
-    }];
-
     const setupMissionPrompt: MissionPromptConfig = {
       label: "Ask Lookout",
       placeholder: "e.g., What keywords should I track for my business?",
@@ -1218,8 +1044,6 @@ export default function SERPContent() {
         crew={crew}
         agentScore={null}
         agentScoreTooltip="Generate keywords to start tracking"
-        missionStatus={emptyMissionStatus}
-        missions={setupMissions}
         kpis={[
           { id: "keywords", label: "Keywords", value: "0", tooltip: "No keywords tracked yet" },
           { id: "top-10", label: "Top 10", value: "—", tooltip: "No rankings yet" },
@@ -1336,8 +1160,6 @@ export default function SERPContent() {
         crew={crew}
         agentScore={agentScore}
         agentScoreTooltip="Percentage of keywords ranking in top 10"
-        missionStatus={missionStatus}
-        missions={missions}
         kpis={kpis}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewMember.color} />}
         inspectorTabs={inspectorTabs}
@@ -1345,10 +1167,8 @@ export default function SERPContent() {
         headerActions={headerActions}
         onRefresh={() => {
           runCheck.mutate(50);
-          queryClient.invalidateQueries({ queryKey: ['serp-missions'] });
         }}
         onSettings={() => {}}
-        onFixEverything={() => fixEverything.mutate()}
         isRefreshing={runCheck.isPending || isFixingEverything || crewIsRefreshing}
         dataUpdatedAt={crewDataUpdatedAt}
       >

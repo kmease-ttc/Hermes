@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type HeaderAction,
   type KpiDescriptor,
@@ -933,17 +931,6 @@ export default function PopularContent() {
     },
   ] : [];
 
-  const tier: MissionStatusState["tier"] =
-    score >= 80 ? "looking_good" : score >= 50 ? "doing_okay" : "needs_attention";
-
-  const priorityCount = issues.filter(
-    (i) => i.severity === "high" || i.severity === "critical"
-  ).length;
-
-  const autoFixableCount = issues.reduce((count, issue) => {
-    return count + issue.recommendedActions.filter((a) => a.applicable && a.actionType === "fix").length;
-  }, 0);
-
   const crewIdentity: CrewIdentity = {
     crewId: "popular",
     crewName: crewMember.nickname,
@@ -960,27 +947,6 @@ export default function PopularContent() {
     capabilities: crewMember.capabilities || ["GA4 Data", "GSC Data", "Traffic Metrics"],
     monitors: ["Sessions", "Users", "Search Clicks", "Impressions"],
   };
-
-  const missionStatus: MissionStatusState = {
-    tier,
-    summaryLine: `Score: ${unifiedScore ?? score}/100`,
-    nextStep: priorityCount > 0
-      ? `Investigate ${priorityCount} high-priority issue${priorityCount !== 1 ? "s" : ""}`
-      : "All clear - monitor for changes",
-    priorityCount,
-    blockerCount: issues.filter((i) => i.status === "needs_data").length,
-    autoFixableCount,
-    performanceScore: unifiedScore ?? score,
-  };
-
-  const missions: MissionItem[] = issues.slice(0, 5).map((issue) => ({
-    id: issue.id,
-    title: issue.displayTitle,
-    reason: `${issue.severity} severity - ${issue.status}`,
-    status: issue.status === "confirmed" ? "done" : issue.status === "validating" ? "in_progress" : "pending",
-    impact: issue.severity === "critical" || issue.severity === "high" ? "high" : issue.severity === "medium" ? "medium" : "low",
-    category: issue.key.metricFamily,
-  }));
 
   const kpis: KpiDescriptor[] = kpisRaw.map((kpi) => ({
     id: kpi.id,
@@ -1084,8 +1050,6 @@ export default function PopularContent() {
           crew={crewIdentity}
           agentScore={score}
           agentScoreTooltip="Traffic health score based on analytics trends"
-          missionStatus={missionStatus}
-          missions={missions}
           kpis={kpis}
           inspectorTabs={inspectorTabs}
           headerActions={headerActions}

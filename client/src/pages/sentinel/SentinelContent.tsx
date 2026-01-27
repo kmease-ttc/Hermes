@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type KpiDescriptor,
   type MissionPromptConfig,
@@ -642,43 +640,6 @@ export default function SentinelContent() {
   const mildCount = decayingContent.filter(c => c.decaySeverity === "mild").length;
   const fixableCount = decayingContent.filter(c => c.fixable).length;
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    if (criticalCount > 0) {
-      return {
-        tier: "needs_attention" as const,
-        summaryLine: `${criticalCount} critical page${criticalCount > 1 ? "s" : ""} need refresh`,
-        nextStep: "Refresh critical content to recover lost rankings",
-        priorityCount: criticalCount + warningCount,
-        blockerCount: criticalCount,
-        autoFixableCount: fixableCount,
-        status: isLoading ? ("loading" as const) : ("ready" as const),
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    if (warningCount > 0) {
-      return {
-        tier: "doing_okay" as const,
-        summaryLine: `${warningCount} page${warningCount > 1 ? "s" : ""} showing early decay`,
-        nextStep: "Monitor closely or consider a proactive refresh",
-        priorityCount: warningCount + mildCount,
-        blockerCount: 0,
-        autoFixableCount: fixableCount,
-        status: isLoading ? ("loading" as const) : ("ready" as const),
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    return {
-      tier: "looking_good" as const,
-      summaryLine: "All content is healthy",
-      nextStep: "Continue monitoring for decay signals",
-      priorityCount: mildCount,
-      blockerCount: 0,
-      autoFixableCount: 0,
-      status: isLoading ? ("loading" as const) : ("ready" as const),
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [criticalCount, warningCount, mildCount, fixableCount, unifiedScore, isLoading]);
-
   const missionPrompt: MissionPromptConfig = {
     label: "Ask Sentinel",
     placeholder: "e.g., Why is this page losing rankings? What content needs refreshing?",
@@ -687,39 +648,6 @@ export default function SentinelContent() {
       toast.info("Analyzing your content decay question...");
     },
   };
-
-  const missions: MissionItem[] = [
-    {
-      id: "detect-decay",
-      label: "Detect Content Decay",
-      description: "Scan indexed content for ranking and traffic declines",
-      icon: <Search className="w-4 h-4" />,
-      action: () => detectDecayMutation.mutate(),
-      isLoading: detectDecayMutation.isPending,
-      badge: metrics.decayingPages > 0 ? `${metrics.decayingPages} found` : undefined,
-    },
-    {
-      id: "prioritize-refresh",
-      label: "Prioritize Content Refresh",
-      description: "Rank decaying pages by traffic impact and effort",
-      icon: <BarChart3 className="w-4 h-4" />,
-      action: () => prioritizeMutation.mutate(),
-      isLoading: prioritizeMutation.isPending,
-      badge: criticalCount > 0 || warningCount > 0 
-        ? `${criticalCount} critical, ${warningCount} warning` 
-        : undefined,
-    },
-    {
-      id: "refresh-critical",
-      label: "Refresh Critical Content",
-      description: "Queue all critical pages for content refresh",
-      icon: <RefreshCw className="w-4 h-4" />,
-      action: () => bulkRefreshMutation.mutate(),
-      isLoading: bulkRefreshMutation.isPending,
-      disabled: criticalCount === 0,
-      badge: criticalCount > 0 ? `${criticalCount} to refresh` : undefined,
-    },
-  ];
 
   const headerActions: HeaderAction[] = [
     {
@@ -805,8 +733,6 @@ export default function SentinelContent() {
         crew={crewIdentity}
         agentScore={100 - (metrics.avgDecaySeverity ?? 0)}
         agentScoreTooltip="Content health score - inverse of average decay severity"
-        missionStatus={missionStatus}
-        missions={missions}
         missionPrompt={missionPrompt}
         inspectorTabs={[]}
         headerActions={headerActions}

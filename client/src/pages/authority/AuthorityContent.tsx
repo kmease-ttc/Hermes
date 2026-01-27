@@ -45,8 +45,6 @@ import {
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type KpiDescriptor,
   type InspectorTab,
   type MissionPromptConfig,
@@ -628,36 +626,6 @@ export default function AuthorityContent() {
 
   const avgPercentile = benchmarks ? benchmarks.reduce((acc, b) => acc + getPercentileVsTop10(b), 0) / benchmarks.length : null;
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    const belowCount = benchmarks?.filter(b => getComparisonStatus(b) === 'below').length || 0;
-    const averageCount = benchmarks?.filter(b => getComparisonStatus(b) === 'average').length || 0;
-
-    let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    let summaryLine = "Authority metrics looking healthy";
-    let nextStep = "Continue monitoring backlink growth";
-
-    if (belowCount > 2) {
-      tier = "needs_attention";
-      summaryLine = `${belowCount} metrics below industry average`;
-      nextStep = "Focus on improving lowest-performing areas";
-    } else if (belowCount > 0 || averageCount > 3) {
-      tier = "doing_okay";
-      summaryLine = `${belowCount} below avg, ${averageCount} on par`;
-      nextStep = "Work on gaining high-quality backlinks";
-    }
-
-    return {
-      tier,
-      summaryLine,
-      nextStep,
-      blockerCount: belowCount,
-      priorityCount: averageCount,
-      autoFixableCount: 0,
-      status: isLoading ? "loading" as const : "ready" as const,
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [benchmarks, isLoading, unifiedScore]);
-
   const kpis: KpiDescriptor[] = useMemo(() => [
     {
       id: "authority",
@@ -759,63 +727,6 @@ export default function AuthorityContent() {
         status: avgPosition ? getPositionStatus(avgPosition) : ("neutral" as const),
       },
     ];
-  }, [benchmarks]);
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    const belowBenchmarks = benchmarks?.filter(b => getComparisonStatus(b) === 'below') || [];
-    
-    if (belowBenchmarks.length > 0) {
-      items.push({
-        id: "improve-below-avg",
-        title: `Improve ${belowBenchmarks.length} below-average metrics`,
-        reason: `Focus on: ${belowBenchmarks.slice(0, 2).map(b => b.label).join(', ')}`,
-        status: "pending",
-        impact: "high",
-        action: {
-          label: "Fix it",
-          onClick: () => toast.info("Opening improvement recommendations..."),
-        },
-      });
-    }
-
-    items.push({
-      id: "acquire-backlinks",
-      title: "Acquire high-quality backlinks",
-      reason: "Improve domain authority through link building",
-      status: "pending",
-      impact: "high",
-      action: {
-        label: "Fix it",
-        onClick: () => toast.info("Backlink acquisition strategies coming soon"),
-      },
-    });
-
-    items.push({
-      id: "referring-domain-diversity",
-      title: "Improve referring domain diversity",
-      reason: "Spread link equity across more unique domains",
-      status: "pending",
-      impact: "medium",
-      action: {
-        label: "Fix it",
-        onClick: () => toast.info("Domain diversity analysis coming soon"),
-      },
-    });
-
-    items.push({
-      id: "guest-posts",
-      title: "Build authority through guest posts",
-      reason: "Create content partnerships for quality links",
-      status: "pending",
-      impact: "medium",
-      action: {
-        label: "Fix it",
-        onClick: () => toast.info("Guest posting opportunities coming soon"),
-      },
-    });
-
-    return items;
   }, [benchmarks]);
 
   const inspectorTabs: InspectorTab[] = useMemo(() => [
@@ -962,8 +873,6 @@ export default function AuthorityContent() {
         crew={crew}
         agentScore={avgPercentile ? Math.round(avgPercentile) : null}
         agentScoreTooltip="Overall authority percentile vs industry"
-        missionStatus={missionStatus}
-        missions={missions}
         kpis={kpis}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
         inspectorTabs={inspectorTabs}

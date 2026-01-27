@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type HeaderAction,
 } from "@/components/crew-dashboard";
@@ -532,55 +530,8 @@ export default function DraperContent() {
   const displayFindings = isPreviewMode ? MOCK_FINDINGS : findings;
   const displayActions = isPreviewMode ? MOCK_ACTIONS : actions;
 
-  const missions: MissionItem[] = [
-    {
-      id: "campaign-review",
-      title: "Campaign Review",
-      description: "Identify underperforming campaigns, bad search terms, and missing negatives.",
-      status: "ready",
-      priority: 1,
-      onFix: () => enqueueAction.mutate({ action_type: "campaign_review", note: "Full campaign review" }),
-    },
-    {
-      id: "spend-analysis",
-      title: "Spend Analysis",
-      description: "Find wasted spend and reallocate budget.",
-      status: "ready",
-      priority: 2,
-      onFix: () => enqueueAction.mutate({ action_type: "spend_analysis", note: "Analyze and optimize spend" }),
-    },
-    {
-      id: "ad-copy-optimization",
-      title: "Ad Copy Optimization",
-      description: "Improve CTR and quality score with stronger messaging.",
-      status: "ready",
-      priority: 3,
-      onFix: () => enqueueAction.mutate({ action_type: "ad_copy_optimization", note: "Optimize ad copy" }),
-    },
-    {
-      id: "landing-page-alignment",
-      title: "Landing Page Alignment",
-      description: "Ensure ads route to the best matching page for conversion.",
-      status: "ready",
-      priority: 4,
-      onFix: () => enqueueAction.mutate({ action_type: "landing_page_alignment", note: "Align landing pages" }),
-    },
-  ];
-
   const highPriorityCount = displayFindings.filter((f: DraperFinding) => f.impact === "High").length;
   const completedCount = displayActions.filter((a: DraperAction) => a.status === "done").length;
-  const pendingCount = missions.filter(m => m.status === "pending" || m.status === "ready").length;
-  
-  const missionStatus: MissionStatusState = {
-    tier: highPriorityCount > 0 ? "needs_attention" : completedCount > 0 ? "looking_good" : "doing_okay",
-    summaryLine: `${highPriorityCount} high-impact issues, ${completedCount} actions completed`,
-    nextStep: pendingCount > 0 ? "Review campaign findings" : "All actions complete",
-    priorityCount: highPriorityCount,
-    blockerCount: 0,
-    autoFixableCount: pendingCount,
-    status: snapshotLoading ? "loading" : "ready",
-    performanceScore: unifiedScore ?? null,
-  };
 
   const kpis = [
     {
@@ -923,8 +874,6 @@ export default function DraperContent() {
 
         <CrewDashboardShell
           crew={crew}
-          missionStatus={missionStatus}
-          missions={missions}
           kpis={kpis}
           inspectorTabs={inspectorTabs}
           headerActions={headerActions}

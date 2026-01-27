@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type HeaderAction,
 } from "@/components/crew-dashboard";
@@ -947,103 +945,6 @@ export default function HemingwayContent() {
   const warningCount = findings.filter(f => f.severity === "warning").length;
   const autoFixableCount = findings.filter(f => f.fixType === "auto").length;
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    if (meta.status !== "ok" && !isPreviewMode) {
-      return {
-        tier: "needs_attention",
-        summaryLine: meta.userMessage,
-        nextStep: meta.actions[0]?.label || "Configure Hemingway",
-        priorityCount: 1,
-        blockerCount: 1,
-        autoFixableCount: 0,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    if (criticalCount > 0) {
-      return {
-        tier: "needs_attention",
-        summaryLine: `${criticalCount} page${criticalCount > 1 ? "s" : ""} with critical quality issues`,
-        nextStep: "Review and fix pages with low quality scores or high readability grades",
-        priorityCount: criticalCount + warningCount,
-        blockerCount: criticalCount,
-        autoFixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    if (warningCount > 0) {
-      return {
-        tier: "doing_okay",
-        summaryLine: `${warningCount} page${warningCount > 1 ? "s" : ""} could be improved`,
-        nextStep: "Address warnings to boost overall content quality",
-        priorityCount: warningCount,
-        blockerCount: 0,
-        autoFixableCount,
-        status: isLoading ? "loading" : "ready",
-        performanceScore: unifiedScore ?? null,
-      };
-    }
-    return {
-      tier: "looking_good",
-      summaryLine: "Content quality is strong",
-      nextStep: "Continue monitoring for quality regressions",
-      priorityCount: 0,
-      blockerCount: 0,
-      autoFixableCount: 0,
-      status: isLoading ? "loading" : "ready",
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [criticalCount, warningCount, autoFixableCount, unifiedScore, isLoading, meta, isPreviewMode]);
-
-  const missions: MissionItem[] = useMemo(() => [
-    {
-      id: "analyze-content-quality",
-      title: "Analyze Content Quality",
-      reason: "Runs quality analysis across all indexed pages, scoring readability and E-E-A-T",
-      status: analyzeContentMutation.isPending ? "in_progress" : "pending",
-      impact: "high",
-      effort: "M",
-      action: {
-        label: "Analyze",
-        onClick: () => analyzeContentMutation.mutate(),
-        disabled: analyzeContentMutation.isPending,
-      },
-    },
-    {
-      id: "identify-weak-pages",
-      title: "Identify Weak Pages",
-      reason: "Surfaces pages below quality thresholds for prioritized improvement",
-      status: identifyWeakPagesMutation.isPending ? "in_progress" : "pending",
-      impact: "high",
-      effort: "S",
-      action: {
-        label: "Identify",
-        onClick: () => identifyWeakPagesMutation.mutate(),
-        disabled: identifyWeakPagesMutation.isPending,
-      },
-    },
-    {
-      id: "improve-content-quality",
-      title: "Improve Content Quality",
-      reason: `Queue improvements for ${autoFixableCount} auto-fixable issues (structure, headings, clarity)`,
-      status: improveContentMutation.isPending && !fixingIssue ? "in_progress" : "pending",
-      impact: "medium",
-      effort: "L",
-      action: {
-        label: "Fix All",
-        onClick: () => improveContentMutation.mutate(undefined),
-        disabled: improveContentMutation.isPending || autoFixableCount === 0,
-      },
-    },
-  ], [
-    analyzeContentMutation.isPending,
-    identifyWeakPagesMutation.isPending,
-    improveContentMutation.isPending,
-    autoFixableCount,
-    fixingIssue,
-  ]);
-
   const handleFixFinding = (finding: PageFinding) => {
     improveContentMutation.mutate(finding);
   };
@@ -1225,8 +1126,6 @@ export default function HemingwayContent() {
         crew={crewIdentity}
         agentScore={metrics.contentQualityScore}
         agentScoreTooltip="Content quality score based on readability, structure, and E-E-A-T signals"
-        missionStatus={missionStatus}
-        missions={missions}
         customMetrics={customMetrics}
         inspectorTabs={inspectorTabs}
         headerActions={headerActions}

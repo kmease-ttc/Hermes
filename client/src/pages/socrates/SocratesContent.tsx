@@ -52,8 +52,6 @@ import { buildRoute } from "@shared/routes";
 import {
   CrewDashboardShell,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type MissionPromptConfig,
   type HeaderAction,
@@ -514,21 +512,6 @@ interface LastExecutionResponse {
   lastExecution?: LastExecution;
 }
 
-interface MissionStateResponse {
-  ok: boolean;
-  lastCompleted: {
-    missionId: string;
-    completedAt: string;
-    cooldownEndsAt: string;
-    runId?: string;
-    summary?: string;
-    writeVerified?: boolean;
-  } | null;
-  completedMissionIds: string[];
-  cooldownHours: number;
-  isInCooldown: boolean;
-}
-
 export function SocratesContent() {
   const { currentSite } = useSiteContext();
   const queryClient = useQueryClient();
@@ -578,17 +561,6 @@ export function SocratesContent() {
     },
     staleTime: 30000,
   });
-
-  const { data: missionState } = useQuery<MissionStateResponse>({
-    queryKey: ["mission-state", "seo_kbase", siteId],
-    queryFn: async () => {
-      const res = await fetch(`/api/missions/state?siteId=${siteId}&crewId=seo_kbase`);
-      if (!res.ok) return { ok: false, lastCompleted: null, completedMissionIds: [], cooldownHours: 24, isInCooldown: false };
-      return res.json();
-    },
-    staleTime: 30000,
-  });
-
 
   const runMutation = useMutation({
     mutationFn: async () => {
@@ -662,138 +634,6 @@ export function SocratesContent() {
     capabilities: ["Read", "Write", "Search", "Synthesize"],
     monitors: data?.configured ? ["Worker Connected"] : ["Local Storage"],
   };
-
-  const tier = data?.totalLearnings && data.totalLearnings >= 10 
-    ? "looking_good" 
-    : data?.totalLearnings && data.totalLearnings > 0 
-      ? "doing_okay" 
-      : "needs_attention";
-
-  const missionStatus: MissionStatusState = {
-    tier: !data?.configured ? "needs_attention" : tier,
-    summaryLine: !data?.configured 
-      ? "Knowledge Base not configured"
-      : data?.isRealData 
-        ? `${data.totalLearnings} learnings collected` 
-        : "Waiting for agent data",
-    nextStep: !data?.configured
-      ? "Set up SEO_KBASE secret to activate this crew"
-      : data?.isRealData 
-        ? "Review insights from agents" 
-        : "Run diagnostics to collect learnings",
-    priorityCount: data?.recommendationsCount || 0,
-    blockerCount: !data?.configured ? 1 : 0,
-    autoFixableCount: data?.recommendationsCount || 0,
-    status: isLoading ? "loading" : "ready",
-    performanceScore: unifiedScore ?? null,
-  };
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    const completedIds = missionState?.completedMissionIds || [];
-    const isInCooldown = missionState?.isInCooldown || false;
-    const lastCompleted = missionState?.lastCompleted;
-    
-    const getCooldownMessage = () => {
-      if (!lastCompleted?.cooldownEndsAt) return "";
-      const cooldownEnds = new Date(lastCompleted.cooldownEndsAt);
-      const hoursRemaining = Math.max(0, Math.ceil((cooldownEnds.getTime() - Date.now()) / (1000 * 60 * 60)));
-      return hoursRemaining > 0 ? `Try again in ${hoursRemaining}h` : "";
-    };
-    
-    if (!data?.configured) {
-      items.push({
-        id: "configure",
-        title: "Configure Knowledge Base integration",
-        reason: "Set up SEO_KBASE secret in Settings to enable external worker",
-        status: completedIds.includes("configure") ? "done" : "pending",
-        impact: "high",
-        action: {
-          label: "Fix it",
-          onClick: () => window.location.href = "/settings",
-          disabled: false,
-        },
-      });
-    }
-    
-    const lastCompletedMissionId = lastCompleted?.missionId;
-    const collectCompleted = completedIds.includes("collect_learnings") || completedIds.includes("collect") || lastCompletedMissionId === "collect" || lastCompletedMissionId === "collect_learnings";
-    if (!collectCompleted && (!data?.isRealData || (data?.totalLearnings || 0) < 5)) {
-      const cooldownMsg = getCooldownMessage();
-      items.push({
-        id: "collect",
-        title: "Add new learnings from diagnostics",
-        reason: isInCooldown && cooldownMsg ? cooldownMsg : "Run diagnostics to collect insights from all agents",
-        status: data?.isRealData ? "in_progress" : "pending",
-        impact: "high",
-        action: {
-          label: isInCooldown ? "In Cooldown" : "Fix it",
-          onClick: () => runMutation.mutate(),
-          disabled: runMutation.isPending || isInCooldown,
-        },
-      });
-    }
-    
-    const synthesizeCompleted = completedIds.includes("synthesize") || lastCompletedMissionId === "synthesize";
-    if (!synthesizeCompleted && data?.recentLearnings && data.recentLearnings.length > 0 && !data?.patternsCount) {
-      items.push({
-        id: "synthesize",
-        title: "Review and categorize findings",
-        reason: "Categorize learnings to identify cross-agent patterns",
-        status: "pending",
-        impact: "medium",
-        action: {
-          label: isInCooldown ? "In Cooldown" : "Fix it",
-          onClick: () => runMutation.mutate(),
-          disabled: runMutation.isPending || isInCooldown,
-        },
-      });
-    }
-    
-    const exportCompleted = completedIds.includes("export") || lastCompletedMissionId === "export";
-    if (!exportCompleted && data?.recommendationsCount && data.recommendationsCount > 0) {
-      items.push({
-        id: "export",
-        title: "Export insights to AI prompts",
-        reason: `${data.recommendationsCount} recommendations ready for export`,
-        status: "pending",
-        impact: "medium",
-        action: {
-          label: "Fix it",
-          onClick: () => toast.info("Copy insights using the copy button on each learning card"),
-          disabled: false,
-        },
-      });
-    }
-    
-    if (lastCompleted) {
-      const completedTimeAgo = lastCompleted.completedAt 
-        ? formatDistanceToNow(new Date(lastCompleted.completedAt), { addSuffix: true })
-        : null;
-      const cooldownMsg = getCooldownMessage();
-      items.push({
-        id: `completed-${lastCompleted.runId || lastCompleted.missionId}`,
-        title: lastCompleted.summary || "Recently completed action",
-        reason: isInCooldown && cooldownMsg 
-          ? `Completed ${completedTimeAgo}. ${cooldownMsg}` 
-          : completedTimeAgo ? `Completed ${completedTimeAgo}` : "Recently completed",
-        status: "done",
-        impact: "low",
-      });
-    }
-    
-    if (items.length === 0) {
-      items.push({
-        id: "maintain",
-        title: "Knowledge Base is up to date",
-        reason: "Continue monitoring for new insights",
-        status: "done",
-        impact: "low",
-      });
-    }
-    
-    return items;
-  }, [data, runMutation.isPending, missionState]);
 
   const keyMetrics = [
     {
@@ -964,21 +804,12 @@ export function SocratesContent() {
     },
   ];
 
-  const recentlyCompleted = missionState?.lastCompleted ? {
-    id: missionState.lastCompleted.runId || missionState.lastCompleted.missionId || 'last-completed',
-    title: missionState.lastCompleted.summary || 'Mission completed',
-    completedAt: missionState.lastCompleted.completedAt,
-  } : null;
-
   return (
     <CrewPageLayout crewId="socrates">
       <CrewDashboardShell
         crew={crew}
         agentScore={data?.totalLearnings ? Math.min(100, data.totalLearnings * 5) : null}
         agentScoreTooltip="Based on learnings collected from all agents"
-        missionStatus={missionStatus}
-        missions={missions}
-        recentlyCompleted={recentlyCompleted}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crew.accentColor} />}
         inspectorTabs={inspectorTabs}
         missionPrompt={missionPrompt}

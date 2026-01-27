@@ -104,8 +104,8 @@ export interface CrewDashboardShellProps {
   crew: CrewIdentity;
   agentScore?: number | null;
   agentScoreTooltip?: string;
-  missionStatus: MissionStatusState;
-  missions: MissionItem[];
+  missionStatus?: MissionStatusState;
+  missions?: MissionItem[];
   recentlyCompleted?: CompletedAction | null;
   kpis?: KpiDescriptor[];
   customMetrics?: ReactNode;

@@ -63,8 +63,6 @@ import {
   CrewDashboardShell,
   type HeaderAction,
   type CrewIdentity,
-  type MissionStatusState,
-  type MissionItem,
   type InspectorTab,
   type MissionPromptConfig,
   type KpiDescriptor,
@@ -637,109 +635,6 @@ export default function SpeedsterContent() {
     },
   ], [coreVitals, passRate, passRateChange, performanceTrend, lcpTrend, inpTrend, clsTrend]);
 
-  const missionStatus: MissionStatusState = useMemo(() => {
-    const poorCount = vitals.filter(v => v.status === 'poor').length;
-    const needsWorkCount = vitals.filter(v => v.status === 'needs-improvement').length;
-    const unknownCount = vitals.filter(v => v.status === 'unknown').length;
-    const autoFixable = fixPlan?.items?.length || 0;
-
-    let tier: "looking_good" | "doing_okay" | "needs_attention" = "looking_good";
-    let summaryLine = "All Core Web Vitals passing";
-    let nextStep = "Continue monitoring performance";
-
-    if (unknownCount === vitals.length) {
-      tier = "needs_attention";
-      summaryLine = "No Core Web Vitals data available";
-      nextStep = "Run the Core Web Vitals worker to collect metrics";
-    } else if (poorCount > 0) {
-      tier = "needs_attention";
-      summaryLine = `${poorCount} vital${poorCount > 1 ? 's' : ''} in poor range`;
-      nextStep = "Focus on fixing poor metrics first";
-    } else if (needsWorkCount > 0) {
-      tier = "doing_okay";
-      summaryLine = `${needsWorkCount} vital${needsWorkCount > 1 ? 's' : ''} need improvement`;
-      nextStep = "Work on improving these metrics";
-    }
-
-    return {
-      tier,
-      summaryLine,
-      nextStep,
-      blockerCount: poorCount,
-      priorityCount: needsWorkCount,
-      autoFixableCount: autoFixable,
-      status: isLoading ? "loading" as const : "ready" as const,
-      performanceScore: unifiedScore ?? null,
-    };
-  }, [vitals, fixPlan, isLoading, unifiedScore]);
-
-  const missions: MissionItem[] = useMemo(() => {
-    const items: MissionItem[] = [];
-    
-    // Fix Plan as the top mission
-    if (fixPlan?.items && fixPlan.items.length > 0) {
-      items.push({
-        id: "execute-fix-plan",
-        title: `Fix Plan: ${fixPlan.items.length} recommended changes`,
-        reason: fixPlan.items.map(item => item.title).slice(0, 2).join(", ") + 
-          (fixPlan.items.length > 2 ? `, +${fixPlan.items.length - 2} more` : ""),
-        status: "pending",
-        impact: "high",
-        action: {
-          label: fixPlan.cooldown.allowed ? "Fix It" : "Override & Fix",
-          onClick: () => {
-            setFixResult(null);
-            if (!fixPlan.cooldown.allowed) {
-              setShowCooldownOverride(true);
-            } else {
-              setShowFixModal(true);
-            }
-          },
-          disabled: executePlanMutation.isPending,
-        },
-        meta: {
-          consultedSocrates: fixPlan.consultedSocrates,
-          priorLearningsCount: fixPlan.priorLearningsCount,
-          cooldownActive: !fixPlan.cooldown.allowed,
-          maxChanges: fixPlan.maxChangesRecommended,
-        },
-      });
-    } else if (!isPlanLoading) {
-      items.push({
-        id: "generate-fix-plan",
-        title: "Generate Fix Plan",
-        reason: "Analyze current vitals and propose optimizations",
-        status: "pending",
-        impact: "medium",
-        action: {
-          label: generatePlanMutation.isPending ? "Generating..." : "Generate Plan",
-          onClick: () => generatePlanMutation.mutate(),
-          disabled: generatePlanMutation.isPending,
-        },
-      });
-    }
-    
-    if (vitals.some(v => v.status === 'poor')) {
-      items.push({
-        id: "fix-poor-vitals",
-        title: "Fix poor Core Web Vitals",
-        reason: `${vitals.filter(v => v.status === 'poor').length} metric(s) are in the poor range`,
-        status: "pending",
-        impact: "high",
-      });
-    }
-    if (vitals.some(v => v.status === 'needs-improvement')) {
-      items.push({
-        id: "improve-vitals",
-        title: "Improve vitals needing work",
-        reason: `${vitals.filter(v => v.status === 'needs-improvement').length} metric(s) need improvement`,
-        status: "pending",
-        impact: "medium",
-      });
-    }
-    return items;
-  }, [vitals, fixPlan, isPlanLoading, generatePlanMutation.isPending, executePlanMutation.isPending]);
-
   const inspectorTabs: InspectorTab[] = useMemo(() => [
     {
       id: "vitals",
@@ -998,8 +893,6 @@ export default function SpeedsterContent() {
         crew={crew}
         agentScore={performanceScore}
         agentScoreTooltip="Performance score from Core Web Vitals analysis"
-        missionStatus={missionStatus}
-        missions={missions}
         kpis={kpis}
         inspectorTabs={inspectorTabs}
         missionPrompt={missionPrompt}
