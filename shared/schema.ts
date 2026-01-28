@@ -3548,6 +3548,16 @@ export const insertActionExecutionAuditSchema = createInsertSchema(actionExecuti
 export type InsertActionExecutionAudit = z.infer<typeof insertActionExecutionAuditSchema>;
 export type ActionExecutionAudit = typeof actionExecutionAudit.$inferSelect;
 
+// 9.1: Website Policies - What can/can't be automated per site
+export const websitePolicies = pgTable("website_policies", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
+
+  // Action categories that can be auto-executed
+  canAutoFixTechnical: boolean("can_auto_fix_technical").notNull().default(false), // Missing alt tags, meta descriptions, etc.
+  canAutoPublishContent: boolean("can_auto_publish_content").notNull().default(false), // New blog posts, pages
+  canAutoUpdateContent: boolean("can_auto_update_content").notNull().default(false), // Refresh existing content
+  canAutoOptimizeImages: boolean("can_auto_optimize_images").notNull().default(false), // Compress, resize, WebP conversion
   canAutoUpdateCode: boolean("can_auto_update_code").notNull().default(false), // JS/CSS changes, schema markup
 
   // Risk levels that require approval (1=safe, 10=dangerous)

@@ -84,7 +84,7 @@ const WORKER_KEYS = [
   "notifications",
 ] as const;
 
-async function callWorker(
+export async function callWorker(
   config: WorkerConfig,
   mapping: ServiceSecretMapping,
   siteId: string,

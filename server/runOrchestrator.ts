@@ -10,7 +10,7 @@ import { db } from './db.js';
 import { getKbaseClient } from '@arclo/kbase-client';
 import { callWorker } from './workerOrchestrator.js';
 import { resolveWorkerConfig } from './workerConfigResolver.js';
-import { getServiceSecretMapping } from '../shared/serviceSecretMap.js';
+import { getServiceBySlug as getServiceSecretMapping } from '../shared/serviceSecretMap.js';
 import { synthesizeAndWriteDiagnosis } from './kbase/index.js';
 import {
   STANDARD_RUN_PLAN,
