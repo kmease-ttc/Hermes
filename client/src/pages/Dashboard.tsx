@@ -749,7 +749,7 @@ export default function Dashboard() {
         {/* Keyword Rankings - Two Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Improving Keywords */}
-          <GlassCard variant="marketing">
+          <GlassCard variant="marketing" tint="green">
             <GlassCardHeader>
               <div className="flex items-center justify-between">
                 <GlassCardTitle className="flex items-center gap-2">
@@ -795,7 +795,7 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Declining Keywords */}
-          <GlassCard variant="marketing">
+          <GlassCard variant="marketing" tint="pink">
             <GlassCardHeader>
               <div className="flex items-center justify-between">
                 <GlassCardTitle className="flex items-center gap-2">
@@ -844,7 +844,7 @@ export default function Dashboard() {
         {/* Bottom Section - Three Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Pages to Optimize */}
-          <GlassCard variant="marketing">
+          <GlassCard variant="marketing" tint="purple">
             <GlassCardHeader>
               <GlassCardTitle className="flex items-center gap-2">
                 <Target className="w-5 h-5" style={{ color: "#7c3aed" }} />
@@ -882,7 +882,7 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Top Performers */}
-          <GlassCard variant="marketing">
+          <GlassCard variant="marketing" tint="amber">
             <GlassCardHeader>
               <GlassCardTitle className="flex items-center gap-2">
                 <Trophy className="w-5 h-5" style={{ color: "#f59e0b" }} />
@@ -919,7 +919,7 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Competitors */}
-          <GlassCard variant="marketing-accent">
+          <GlassCard variant="marketing-accent" tint="blue">
             <GlassCardHeader>
               <GlassCardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" style={{ color: "#7c3aed" }} />
