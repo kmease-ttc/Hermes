@@ -8,7 +8,7 @@ import {
   getUserById,
   verifyUser,
   setCorsHeaders,
-} from "../_lib/auth";
+} from "../_lib/auth.js";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token required"),

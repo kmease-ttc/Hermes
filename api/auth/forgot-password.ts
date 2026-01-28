@@ -6,8 +6,8 @@ import {
   deleteUserVerificationTokens,
   createVerificationToken,
   setCorsHeaders,
-} from "../_lib/auth";
-import { sendPasswordResetEmail } from "../_lib/email";
+} from "../_lib/auth.js";
+import { sendPasswordResetEmail } from "../_lib/email.js";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Valid email required"),

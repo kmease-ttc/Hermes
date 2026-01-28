@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { getPool, User, VerificationToken } from "./db";
+import { getPool, User, VerificationToken } from "./db.js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // Password hashing using PBKDF2 (OWASP recommended)

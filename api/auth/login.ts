@@ -8,7 +8,7 @@ import {
   setSessionCookie,
   buildSessionUserResponse,
   setCorsHeaders,
-} from "../_lib/auth";
+} from "../_lib/auth.js";
 
 const loginSchema = z.object({
   email: z.string().email("Valid email required"),

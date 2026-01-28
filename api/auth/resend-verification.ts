@@ -6,8 +6,8 @@ import {
   deleteUserVerificationTokens,
   createVerificationToken,
   setCorsHeaders,
-} from "../_lib/auth";
-import { sendVerificationEmail } from "../_lib/email";
+} from "../_lib/auth.js";
+import { sendVerificationEmail } from "../_lib/email.js";
 
 const resendVerificationSchema = z.object({
   email: z.string().email("Valid email required"),

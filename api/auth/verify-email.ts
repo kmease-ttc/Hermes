@@ -5,7 +5,7 @@ import {
   consumeVerificationToken,
   verifyUser,
   setCorsHeaders,
-} from "../_lib/auth";
+} from "../_lib/auth.js";
 
 const verifyEmailSchema = z.object({
   token: z.string().min(1, "Token required"),
