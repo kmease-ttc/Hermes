@@ -10515,14 +10515,14 @@ Keep responses concise and actionable.`;
       const session = (req as any).session;
       const userId = session?.userId;
       if (!userId) {
-        logger.warn("API", "Site creation attempted without session", { hasSession: !!session });
+        logger.warn("API", "Add site attempted without session", { hasSession: !!session });
         return res.status(401).json({ error: "Please sign in to add a website. Your session may have expired." });
       }
 
       const parseResult = createSiteSchema.safeParse(req.body);
       if (!parseResult.success) {
         const errors = parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
-        logger.warn("API", "Site creation validation failed", { errors });
+        logger.warn("API", "Add site validation failed", { errors });
         return res.status(400).json({ error: "Validation failed", details: errors });
       }
 
@@ -10555,16 +10555,16 @@ Keep responses concise and actionable.`;
 
       await storage.saveAuditLog({
         siteId: newSite.siteId,
-        action: "site_created",
+        action: "site_added",
         actor: "api",
         details: { displayName: data.displayName, baseUrl: data.baseUrl },
       });
 
-      logger.info("API", "Site created", { siteId: newSite.siteId, displayName: data.displayName });
+      logger.info("API", "Site added to dashboard", { siteId: newSite.siteId, displayName: data.displayName });
       res.status(201).json(newSite);
     } catch (error: any) {
-      logger.error("API", "Failed to create site", { error: error.message, stack: error.stack });
-      res.status(500).json({ error: `Failed to save website: ${error.message}` });
+      logger.error("API", "Failed to add site to dashboard", { error: error.message, stack: error.stack });
+      res.status(500).json({ error: `Failed to add site to dashboard: ${error.message}` });
     }
   });
 

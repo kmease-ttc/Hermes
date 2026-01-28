@@ -253,7 +253,7 @@ export default function Dashboard() {
   const [showConfigOverlay, setShowConfigOverlay] = useState(false);
   const queryClient = useQueryClient();
 
-  const createSite = useMutation({
+  const addSite = useMutation({
     mutationFn: async ({ name, domain }: { name: string; domain: string }) => {
       const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
       const baseUrl = `https://${cleanDomain}`;
@@ -264,10 +264,28 @@ export default function Dashboard() {
         credentials: "include",
       });
       if (!res.ok) {
-        const errBody = await res.json().catch(() => null);
-        const message = errBody?.details?.join(", ")
-          || (typeof errBody?.error === 'string' ? errBody.error : errBody?.error?.message)
-          || `Failed to create site (${res.status})`;
+        // Try to read the response body as text first, then parse as JSON
+        const text = await res.text().catch(() => "");
+        let message = `Failed to add site (${res.status})`;
+        try {
+          const errBody = JSON.parse(text);
+          // Handle both { error: "string" } and { error: { message: "string" } } formats
+          if (errBody?.details && Array.isArray(errBody.details)) {
+            message = errBody.details.join(", ");
+          } else if (typeof errBody?.error === "string") {
+            message = errBody.error;
+          } else if (errBody?.error?.message) {
+            message = errBody.error.message;
+          } else if (errBody?.message) {
+            message = errBody.message;
+          }
+        } catch {
+          // Response was not JSON — use the raw text if short enough
+          if (text && text.length < 200) {
+            message = text;
+          }
+        }
+        console.error("[Dashboard] Add site failed:", res.status, text);
         throw new Error(message);
       }
       return res.json();
@@ -285,7 +303,7 @@ export default function Dashboard() {
       return;
     }
     if (siteName.trim() && siteDomain.trim()) {
-      createSite.mutate({ name: siteName.trim(), domain: siteDomain.trim() });
+      addSite.mutate({ name: siteName.trim(), domain: siteDomain.trim() });
     }
   };
 
@@ -350,7 +368,7 @@ export default function Dashboard() {
                   background: "#FFFFFF",
                   color: "#0F172A",
                 }}
-                disabled={createSite.isPending}
+                disabled={addSite.isPending}
               />
             </div>
             <div>
@@ -366,13 +384,13 @@ export default function Dashboard() {
                   background: "#FFFFFF",
                   color: "#0F172A",
                 }}
-                disabled={createSite.isPending}
+                disabled={addSite.isPending}
               />
               <p className="mt-1.5 text-sm" style={{ color: "#64748B" }}>Enter the domain without http:// or https://</p>
             </div>
             <button
               type="submit"
-              disabled={!siteName.trim() || !siteDomain.trim() || createSite.isPending}
+              disabled={!siteName.trim() || !siteDomain.trim() || addSite.isPending}
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:-translate-y-0.5"
               style={{
                 background: "linear-gradient(90deg, #6D28D9 0%, #D946EF 40%, #F59E0B 100%)",
@@ -380,7 +398,7 @@ export default function Dashboard() {
                 textShadow: "0 1px 2px rgba(0,0,0,0.15)",
               }}
             >
-              {createSite.isPending ? (
+              {addSite.isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <ArrowRight className="w-5 h-5" />
@@ -388,8 +406,8 @@ export default function Dashboard() {
               Add Website
             </button>
           </form>
-          {createSite.isError && (
-            <p className="mt-4 text-red-600 text-sm text-center">{createSite.error.message}</p>
+          {addSite.isError && (
+            <p className="mt-4 text-red-600 text-sm text-center">{addSite.error.message}</p>
           )}
         </div>
       </div>
