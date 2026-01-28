@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const BASE = 'http://localhost:5000';
+const PORT = process.env.PORT || '5000';
+const BASE = `http://localhost:${PORT}`;
 const TEST_EMAIL = `test-site-${Date.now()}@arclo-test.local`;
 const TEST_PASSWORD = 'TestPass123!secure';
 const TEST_SITE_NAME = 'Test Dashboard Site';
