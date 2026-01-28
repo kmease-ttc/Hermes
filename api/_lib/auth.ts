@@ -150,7 +150,7 @@ export async function createUser(data: {
 }): Promise<User> {
   const result = await pool().query(
     `INSERT INTO users (email, password_hash, display_name, role, plan, addons)
-     VALUES (LOWER($1), $2, $3, $4, $5, $6) RETURNING *`,
+     VALUES (LOWER($1), $2, $3, $4, $5, $6::jsonb) RETURNING *`,
     [
       data.email,
       data.passwordHash,
