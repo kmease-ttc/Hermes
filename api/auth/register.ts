@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { email, password, displayName, scanId } = parsed.data;
 
-    let step = "getUserByEmail";
+    step = "getUserByEmail";
     // Check if user exists
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
