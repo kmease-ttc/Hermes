@@ -1,6 +1,11 @@
 {
   "buildCommand": "npx vite build",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "api/_lib/**"
+    }
+  },
   "rewrites": [
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
