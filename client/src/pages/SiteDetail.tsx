@@ -10,7 +10,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Save, Globe, Loader2, MapPin, Pencil, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Save, Globe, Loader2, MapPin, Pencil, AlertTriangle, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { GeoScopeSelector, type GeoScopeValue } from "@/components/site/GeoScopeSelector";
 
@@ -125,6 +126,19 @@ export default function SiteDetail() {
       setPendingGeoScope(loadedGeoScope);
     }
   }, [site]);
+
+  // Auto-generate default sitemap URL when baseUrl is set and sitemaps field is empty
+  useEffect(() => {
+    if (formData.baseUrl && !formData.sitemaps.trim()) {
+      try {
+        const url = new URL(formData.baseUrl.startsWith('http') ? formData.baseUrl : `https://${formData.baseUrl}`);
+        const base = `${url.protocol}//${url.hostname}`;
+        setFormData(f => ({ ...f, sitemaps: `${base}/sitemap.xml` }));
+      } catch {
+        // Invalid URL, skip auto-generation
+      }
+    }
+  }, [formData.baseUrl]);
 
   const saveSite = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -420,7 +434,26 @@ export default function SiteDetail() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="ga4PropertyId">GA4 Property ID</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="ga4PropertyId">GA4 Property ID</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href="https://analytics.google.com/analytics/web/#/a/property/settings"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <HelpCircle className="h-3.5 w-3.5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p>Find this in Google Analytics → Admin → Property Settings. It's the numeric ID shown at the top (e.g. 123456789).</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="ga4PropertyId"
                     value={formData.ga4PropertyId}
@@ -430,7 +463,26 @@ export default function SiteDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gscProperty">Search Console Property</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="gscProperty">Search Console Property</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href="https://search.google.com/search-console"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <HelpCircle className="h-3.5 w-3.5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p>Your verified property URL from Google Search Console. Use "sc-domain:example.com" for domain properties or "https://example.com/" for URL-prefix properties.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="gscProperty"
                     value={formData.gscProperty}
@@ -440,7 +492,26 @@ export default function SiteDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="adsCustomerId">Google Ads Customer ID</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="adsCustomerId">Google Ads Customer ID</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href="https://ads.google.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <HelpCircle className="h-3.5 w-3.5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p>Found at the top of your Google Ads account, formatted as XXX-XXX-XXXX.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="adsCustomerId"
                     value={formData.adsCustomerId}

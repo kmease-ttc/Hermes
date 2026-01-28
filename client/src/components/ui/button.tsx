@@ -32,17 +32,17 @@ export function Button({
 
   const styles: Record<ButtonVariant, string> = {
     primary:
-      "bg-brand-gradient text-white shadow-card hover:opacity-95 focus:ring-brand-pink/60 focus:ring-offset-surface-primary",
+      "bg-primary text-primary-foreground shadow-card hover:opacity-95 focus:ring-primary/60 focus:ring-offset-background",
     primaryGradient:
-      "bg-gradient-to-r from-[#15803D] to-[#0EA5E9] text-white shadow-card hover:opacity-90 focus:ring-[#15803D]/50 focus:ring-offset-surface-primary",
+      "bg-gradient-to-r from-[#15803D] to-[#0EA5E9] text-white shadow-card hover:opacity-90 focus:ring-[#15803D]/50 focus:ring-offset-background",
     secondary:
-      "bg-surface-primary text-text-primary shadow-card ring-1 ring-surface-border hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
+      "bg-secondary text-foreground shadow-card ring-1 ring-border hover:bg-accent focus:ring-primary/50 focus:ring-offset-background",
     ghost:
-      "text-text-primary hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
+      "text-foreground hover:bg-accent focus:ring-primary/50 focus:ring-offset-background",
     danger:
-      "bg-red-600 text-white hover:bg-red-700 focus:ring-red-400/60 focus:ring-offset-surface-primary",
+      "bg-red-600 text-white hover:bg-red-700 focus:ring-red-400/60 focus:ring-offset-background",
     outline:
-      "bg-transparent text-text-primary ring-1 ring-surface-border hover:bg-surface-soft focus:ring-brand-orange/50 focus:ring-offset-surface-primary",
+      "bg-transparent text-foreground ring-1 ring-border hover:bg-accent focus:ring-primary/50 focus:ring-offset-background",
   };
 
   return (

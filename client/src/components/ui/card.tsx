@@ -15,7 +15,7 @@ const CardRoot = React.forwardRef<
   <div
     ref={ref}
     className={cx(
-      "rounded-2xl border border-surface-border bg-surface-primary shadow-card",
+      "rounded-2xl border border-border bg-card shadow-card",
       className
     )}
     {...props}
@@ -53,7 +53,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cx("text-sm text-text-secondary", className)}
+    className={cx("text-sm text-muted-foreground", className)}
     {...props}
   />
 ));
@@ -97,16 +97,16 @@ type ArcloCardProps = {
 };
 
 const toneClasses: Record<NonNullable<ArcloCardProps["tone"]>, string> = {
-  default: "bg-surface-primary",
-  soft: "bg-surface-primary",
-  brand: "bg-surface-primary",
+  default: "bg-card",
+  soft: "bg-card",
+  brand: "bg-card",
 };
 
 export function ArcloCard({ title, description, rightSlot, children, footer, className, tone = "default" }: ArcloCardProps) {
   return (
     <div
       className={cx(
-        "relative overflow-hidden rounded-2xl border border-surface-border shadow-card",
+        "relative overflow-hidden rounded-2xl border border-border shadow-card",
         "transition-shadow hover:shadow-cardHover",
         toneClasses[tone],
         className
@@ -119,8 +119,8 @@ export function ArcloCard({ title, description, rightSlot, children, footer, cla
       {(title || description || rightSlot) ? (
         <div className="flex items-start justify-between gap-4 px-6 pt-6">
           <div className="min-w-0">
-            {title ? <div className="text-sm font-semibold text-text-primary">{title}</div> : null}
-            {description ? <div className="mt-1 text-xs text-text-secondary">{description}</div> : null}
+            {title ? <div className="text-sm font-semibold text-foreground">{title}</div> : null}
+            {description ? <div className="mt-1 text-xs text-muted-foreground">{description}</div> : null}
           </div>
           {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}
         </div>
@@ -128,7 +128,7 @@ export function ArcloCard({ title, description, rightSlot, children, footer, cla
 
       {children ? <div className="px-6 pb-6 pt-5">{children}</div> : null}
 
-      {footer ? <div className="border-t border-surface-border px-6 py-4">{footer}</div> : null}
+      {footer ? <div className="border-t border-border px-6 py-4">{footer}</div> : null}
     </div>
   );
 }
