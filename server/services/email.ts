@@ -295,6 +295,109 @@ export async function sendMonthlySummaryEmail(email: string, data: MonthlySummar
   }
 }
 
+interface AchievementMilestoneEmailData {
+  displayName?: string;
+  siteName: string;
+  milestones: Array<{
+    trackName: string;
+    categoryLabel: string;
+    categoryColor: string;
+    newTier: string;
+    newLevel: number;
+    headline: string;
+  }>;
+}
+
+const TIER_COLORS: Record<string, string> = {
+  bronze: '#b45309',
+  silver: '#64748b',
+  gold: '#eab308',
+  platinum: '#06b6d4',
+  mythic: '#a855f7',
+};
+
+export async function sendAchievementMilestoneEmail(email: string, data: AchievementMilestoneEmailData): Promise<boolean> {
+  try {
+    const { client, fromEmail } = getSendGridClient();
+    const baseUrl = getBaseUrl();
+    const achievementsUrl = `${baseUrl}/app/achievements`;
+
+    const count = data.milestones.length;
+    const subject = count === 1
+      ? `Your site hit a new milestone`
+      : `Your site hit ${count} new milestones`;
+
+    const milestonesHtml = data.milestones.map(m => {
+      const tierColor = TIER_COLORS[m.newTier] || TIER_COLORS.bronze;
+      return `
+        <tr>
+          <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${m.categoryColor}; flex-shrink: 0;"></div>
+              <div>
+                <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 4px;">
+                  ${m.headline}
+                </div>
+                <div style="font-size: 13px; color: #6b7280;">
+                  ${m.categoryLabel} &middot; Level ${m.newLevel} &middot;
+                  <span style="color: ${tierColor}; font-weight: 500; text-transform: capitalize;">${m.newTier}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const msg = {
+      to: email,
+      from: fromEmail,
+      subject,
+      text: `Hi ${data.displayName || 'there'},\n\nYour site ${data.siteName} hit ${count === 1 ? 'a new milestone' : `${count} new milestones`}:\n\n${data.milestones.map(m => `- ${m.headline} (${m.categoryLabel}, Level ${m.newLevel})`).join('\n')}\n\nView all achievements: ${achievementsUrl}\n\nBest,\nThe Arclo Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Arclo</h1>
+          </div>
+          <div style="padding: 40px 30px; background: #f9fafb;">
+            <h2 style="color: #111827; margin-top: 0; font-size: 20px;">
+              Your site is making progress
+            </h2>
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+              Hi ${data.displayName || 'there'}, <strong>${data.siteName}</strong> just hit ${count === 1 ? 'a new milestone' : `${count} new milestones`}.
+            </p>
+            <div style="background: white; border-radius: 12px; margin: 24px 0; border: 1px solid #e5e7eb; overflow: hidden;">
+              <table style="width: 100%; border-collapse: collapse;">
+                ${milestonesHtml}
+              </table>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${achievementsUrl}" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+                View Achievements
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+              Consistency builds results. Keep going.
+            </p>
+          </div>
+          <div style="padding: 20px 30px; background: #111827; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              &copy; ${new Date().getFullYear()} Arclo. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `,
+    };
+
+    await client.send(msg);
+    console.log(`[Email] Achievement milestone email sent to ${email} (${count} milestones)`);
+    return true;
+  } catch (error: any) {
+    console.error('[Email] Failed to send achievement milestone email:', error.message);
+    return false;
+  }
+}
+
 interface SignupNotificationData {
   email: string;
   websiteUrl?: string;

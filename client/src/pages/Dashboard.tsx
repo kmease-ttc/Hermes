@@ -59,6 +59,13 @@ interface DashboardData {
   hasRealData: boolean;
 }
 
+const DASHBOARD_BG = {
+  background: `radial-gradient(1200px circle at 10% 0%, rgba(139, 92, 246, 0.06), transparent 40%),
+               radial-gradient(1200px circle at 90% 10%, rgba(236, 72, 153, 0.04), transparent 40%),
+               radial-gradient(800px circle at 50% 80%, rgba(245, 158, 11, 0.03), transparent 40%),
+               #FFFFFF`,
+};
+
 export default function Dashboard() {
   const { selectedSite, setSelectedSiteId } = useSiteContext();
   const siteId = selectedSite?.siteId;
@@ -103,10 +110,13 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={DASHBOARD_BG}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div
+            className="h-12 w-12 rounded-full border-2 border-transparent mx-auto mb-4 animate-spin"
+            style={{ borderTopColor: "#7c3aed", borderRightColor: "#ec4899" }}
+          />
+          <p style={{ color: "#475569" }}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -114,41 +124,73 @@ export default function Dashboard() {
 
   if (!siteId || !dashboardData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
-        <GlassCard className="max-w-lg w-full p-10">
+      <div className="min-h-screen flex items-center justify-center" style={DASHBOARD_BG}>
+        <div
+          className="max-w-lg w-full rounded-2xl p-10"
+          style={{
+            background: "linear-gradient(180deg, #FFFFFF, #F8FAFC)",
+            border: "1px solid rgba(15, 23, 42, 0.06)",
+            boxShadow: "0 20px 40px rgba(15, 23, 42, 0.08)",
+          }}
+        >
           <div className="text-center mb-8">
-            <Globe className="w-14 h-14 text-purple-600 mx-auto mb-5" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Add Your Website</h2>
-            <p className="text-gray-700">Start tracking your SEO performance, keyword rankings, and more.</p>
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08), rgba(245,158,11,0.08))",
+                border: "1px solid rgba(124, 58, 237, 0.12)",
+              }}
+            >
+              <Globe className="w-7 h-7" style={{ color: "#7c3aed" }} />
+            </div>
+            <h2 className="text-2xl font-bold mb-3" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
+              Add Your Website
+            </h2>
+            <p style={{ color: "#475569" }}>Start tracking your SEO performance, keyword rankings, and more.</p>
           </div>
           <form onSubmit={handleAddSite} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-purple-700 mb-2">Website Name</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#0F172A" }}>Website Name</label>
               <input
                 type="text"
                 value={siteName}
                 onChange={(e) => setSiteName(e.target.value)}
                 placeholder="Empathy Health Clinic"
-                className="w-full px-4 py-3 rounded-lg border-2 border-purple-200 bg-white text-gray-900 placeholder-purple-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base outline-none"
+                style={{
+                  border: "1px solid rgba(15, 23, 42, 0.18)",
+                  background: "#FFFFFF",
+                  color: "#0F172A",
+                }}
                 disabled={createSite.isPending}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-purple-700 mb-2">Domain</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#0F172A" }}>Domain</label>
               <input
                 type="text"
                 value={siteDomain}
                 onChange={(e) => setSiteDomain(e.target.value)}
                 placeholder="www.yoursite.com"
-                className="w-full px-4 py-3 rounded-lg border-2 border-purple-200 bg-white text-gray-900 placeholder-purple-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base outline-none"
+                style={{
+                  border: "1px solid rgba(15, 23, 42, 0.18)",
+                  background: "#FFFFFF",
+                  color: "#0F172A",
+                }}
                 disabled={createSite.isPending}
               />
-              <p className="mt-1.5 text-sm text-gray-500">Enter the domain without http:// or https://</p>
+              <p className="mt-1.5 text-sm" style={{ color: "#64748B" }}>Enter the domain without http:// or https://</p>
             </div>
             <button
               type="submit"
               disabled={!siteName.trim() || !siteDomain.trim() || createSite.isPending}
-              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: "linear-gradient(90deg, #6D28D9 0%, #D946EF 40%, #F59E0B 100%)",
+                boxShadow: "0 14px 26px rgba(124,58,237,.18), 0 10px 18px rgba(245,158,11,.12)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              }}
             >
               {createSite.isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -161,7 +203,7 @@ export default function Dashboard() {
           {createSite.isError && (
             <p className="mt-4 text-red-600 text-sm text-center">{createSite.error.message}</p>
           )}
-        </GlassCard>
+        </div>
       </div>
     );
   }
@@ -169,93 +211,142 @@ export default function Dashboard() {
   const { summary, costMetrics, improvingKeywords, decliningKeywords, pagesToOptimize, topPerformers, competitors } = dashboardData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 p-6">
+    <div className="min-h-screen p-6" style={DASHBOARD_BG}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Dashboard
+          <h1 className="text-4xl font-bold mb-2" style={{ color: "#0F172A", letterSpacing: "-0.03em" }}>
+            Dash<span
+              style={{
+                backgroundImage: "linear-gradient(90deg, #7c3aed, #ec4899, #f59e0b)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >board</span>
           </h1>
-          <p className="text-gray-600">
-            {dashboardData.domain} • Last updated: {new Date(dashboardData.lastUpdated).toLocaleString()}
+          <p style={{ color: "#475569" }}>
+            {dashboardData.domain} &middot; Last updated: {new Date(dashboardData.lastUpdated).toLocaleString()}
           </p>
         </div>
 
         {/* Summary KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <GlassCard variant="purple" hover>
+          <GlassCard variant="marketing" hover>
             <GlassCardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-600">Total Keywords</p>
-                <Target className="w-5 h-5 text-purple-600" />
+                <p className="text-sm font-medium" style={{ color: "#475569" }}>Total Keywords</p>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(245,158,11,0.08))",
+                    border: "1px solid rgba(124, 58, 237, 0.12)",
+                  }}
+                >
+                  <Target className="w-4 h-4" style={{ color: "#7c3aed" }} />
+                </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{summary.totalKeywords.toLocaleString()}</p>
+              <p className="text-3xl font-bold" style={{ color: "#0F172A" }}>{summary.totalKeywords.toLocaleString()}</p>
             </GlassCardContent>
           </GlassCard>
 
-          <GlassCard variant="white" hover>
+          <GlassCard variant="marketing" hover>
             <GlassCardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-600">Top 3 Rankings</p>
-                <Trophy className="w-5 h-5 text-amber-600" />
+                <p className="text-sm font-medium" style={{ color: "#475569" }}>Top 3 Rankings</p>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(236,72,153,0.08))",
+                    border: "1px solid rgba(245, 158, 11, 0.12)",
+                  }}
+                >
+                  <Trophy className="w-4 h-4" style={{ color: "#f59e0b" }} />
+                </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{summary.inTop3.toLocaleString()}</p>
+              <p className="text-3xl font-bold" style={{ color: "#0F172A" }}>{summary.inTop3.toLocaleString()}</p>
             </GlassCardContent>
           </GlassCard>
 
-          <GlassCard variant="white" hover>
+          <GlassCard variant="marketing" hover>
             <GlassCardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-600">Top 10 Rankings</p>
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+                <p className="text-sm font-medium" style={{ color: "#475569" }}>Top 10 Rankings</p>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(236,72,153,0.12))",
+                    border: "1px solid rgba(236, 72, 153, 0.12)",
+                  }}
+                >
+                  <TrendingUp className="w-4 h-4" style={{ color: "#ec4899" }} />
+                </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{summary.inTop10.toLocaleString()}</p>
+              <p className="text-3xl font-bold" style={{ color: "#0F172A" }}>{summary.inTop10.toLocaleString()}</p>
             </GlassCardContent>
           </GlassCard>
 
-          <GlassCard variant="white" hover>
+          <GlassCard variant="marketing" hover>
             <GlassCardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-600">Improved</p>
-                <ArrowUp className="w-5 h-5 text-green-600" />
+                <p className="text-sm font-medium" style={{ color: "#475569" }}>Improved</p>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "rgba(34, 197, 94, 0.08)",
+                    border: "1px solid rgba(34, 197, 94, 0.15)",
+                  }}
+                >
+                  <ArrowUp className="w-4 h-4" style={{ color: "#22c55e" }} />
+                </div>
               </div>
-              <p className="text-3xl font-bold text-green-600">+{summary.improved}</p>
+              <p className="text-3xl font-bold" style={{ color: "#22c55e" }}>+{summary.improved}</p>
             </GlassCardContent>
           </GlassCard>
 
-          <GlassCard variant="white" hover>
+          <GlassCard variant="marketing" hover>
             <GlassCardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-600">Declined</p>
-                <ArrowDown className="w-5 h-5 text-red-600" />
+                <p className="text-sm font-medium" style={{ color: "#475569" }}>Declined</p>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.15)",
+                  }}
+                >
+                  <ArrowDown className="w-4 h-4" style={{ color: "#ef4444" }} />
+                </div>
               </div>
-              <p className="text-3xl font-bold text-red-600">-{summary.declined}</p>
+              <p className="text-3xl font-bold" style={{ color: "#ef4444" }}>-{summary.declined}</p>
             </GlassCardContent>
           </GlassCard>
         </div>
 
         {/* Cost Metrics */}
-        <GlassCard variant="purple">
+        <GlassCard variant="marketing-accent">
           <GlassCardHeader>
-            <GlassCardTitle className="text-purple-900">At-Risk Metrics</GlassCardTitle>
+            <GlassCardTitle>
+              <span style={{ color: "#0F172A" }}>At-Risk Metrics</span>
+            </GlassCardTitle>
           </GlassCardHeader>
           <GlassCardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Traffic at Risk</p>
-                <p className="text-2xl font-bold text-gray-900">{costMetrics.trafficAtRisk.toLocaleString()}</p>
+                <p className="text-sm mb-1" style={{ color: "#475569" }}>Traffic at Risk</p>
+                <p className="text-2xl font-bold" style={{ color: "#0F172A" }}>{costMetrics.trafficAtRisk.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Clicks Lost</p>
-                <p className="text-2xl font-bold text-gray-900">{costMetrics.clicksLost.toLocaleString()}</p>
+                <p className="text-sm mb-1" style={{ color: "#475569" }}>Clicks Lost</p>
+                <p className="text-2xl font-bold" style={{ color: "#0F172A" }}>{costMetrics.clicksLost.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Leads Lost</p>
-                <p className="text-2xl font-bold text-gray-900">{costMetrics.leadsLost}</p>
+                <p className="text-sm mb-1" style={{ color: "#475569" }}>Leads Lost</p>
+                <p className="text-2xl font-bold" style={{ color: "#0F172A" }}>{costMetrics.leadsLost}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Revenue at Risk</p>
-                <p className="text-2xl font-bold text-gray-900">{costMetrics.revenueAtRisk}</p>
+                <p className="text-sm mb-1" style={{ color: "#475569" }}>Revenue at Risk</p>
+                <p className="text-2xl font-bold" style={{ color: "#0F172A" }}>{costMetrics.revenueAtRisk}</p>
               </div>
             </div>
           </GlassCardContent>
@@ -264,31 +355,39 @@ export default function Dashboard() {
         {/* Keyword Rankings - Two Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Improving Keywords */}
-          <GlassCard variant="white">
+          <GlassCard variant="marketing">
             <GlassCardHeader>
               <div className="flex items-center justify-between">
                 <GlassCardTitle className="flex items-center gap-2">
-                  <ArrowUp className="w-5 h-5 text-green-600" />
+                  <ArrowUp className="w-5 h-5" style={{ color: "#22c55e" }} />
                   Improving Keywords
                 </GlassCardTitle>
-                <span className="text-sm text-gray-600">{improvingKeywords.length} keywords</span>
+                <span className="text-sm" style={{ color: "#64748B" }}>{improvingKeywords.length} keywords</span>
               </div>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-3">
                 {improvingKeywords.slice(0, 5).map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-green-50/50 rounded-lg border border-green-200/30">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-xl"
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(15, 23, 42, 0.06)",
+                      borderLeft: "3px solid #22c55e",
+                    }}
+                  >
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{item.keyword}</p>
-                      <p className="text-xs text-gray-600 truncate">{item.url}</p>
+                      <p className="font-medium" style={{ color: "#0F172A" }}>{item.keyword}</p>
+                      <p className="text-xs truncate" style={{ color: "#64748B" }}>{item.url}</p>
                     </div>
                     <div className="text-right ml-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">#{item.currentPosition}</span>
-                        <ArrowUp className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-600">+{item.change}</span>
+                        <span className="text-sm" style={{ color: "#64748B" }}>#{item.currentPosition}</span>
+                        <ArrowUp className="w-4 h-4" style={{ color: "#22c55e" }} />
+                        <span className="text-sm font-semibold" style={{ color: "#22c55e" }}>+{item.change}</span>
                       </div>
-                      <p className="text-xs text-gray-500">{item.searchVolume.toLocaleString()} vol</p>
+                      <p className="text-xs" style={{ color: "#94A3B8" }}>{item.searchVolume.toLocaleString()} vol</p>
                     </div>
                   </div>
                 ))}
@@ -297,31 +396,39 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Declining Keywords */}
-          <GlassCard variant="white">
+          <GlassCard variant="marketing">
             <GlassCardHeader>
               <div className="flex items-center justify-between">
                 <GlassCardTitle className="flex items-center gap-2">
-                  <ArrowDown className="w-5 h-5 text-red-600" />
+                  <ArrowDown className="w-5 h-5" style={{ color: "#ef4444" }} />
                   Declining Keywords
                 </GlassCardTitle>
-                <span className="text-sm text-gray-600">{decliningKeywords.length} keywords</span>
+                <span className="text-sm" style={{ color: "#64748B" }}>{decliningKeywords.length} keywords</span>
               </div>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-3">
                 {decliningKeywords.slice(0, 5).map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-red-50/50 rounded-lg border border-red-200/30">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-xl"
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(15, 23, 42, 0.06)",
+                      borderLeft: "3px solid #ef4444",
+                    }}
+                  >
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{item.keyword}</p>
-                      <p className="text-xs text-gray-600 truncate">{item.url}</p>
+                      <p className="font-medium" style={{ color: "#0F172A" }}>{item.keyword}</p>
+                      <p className="text-xs truncate" style={{ color: "#64748B" }}>{item.url}</p>
                     </div>
                     <div className="text-right ml-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">#{item.currentPosition}</span>
-                        <ArrowDown className="w-4 h-4 text-red-600" />
-                        <span className="text-sm font-semibold text-red-600">{item.change}</span>
+                        <span className="text-sm" style={{ color: "#64748B" }}>#{item.currentPosition}</span>
+                        <ArrowDown className="w-4 h-4" style={{ color: "#ef4444" }} />
+                        <span className="text-sm font-semibold" style={{ color: "#ef4444" }}>{item.change}</span>
                       </div>
-                      <p className="text-xs text-gray-500">{item.searchVolume.toLocaleString()} vol</p>
+                      <p className="text-xs" style={{ color: "#94A3B8" }}>{item.searchVolume.toLocaleString()} vol</p>
                     </div>
                   </div>
                 ))}
@@ -333,23 +440,31 @@ export default function Dashboard() {
         {/* Bottom Section - Three Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Pages to Optimize */}
-          <GlassCard variant="white">
+          <GlassCard variant="marketing">
             <GlassCardHeader>
               <GlassCardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-600" />
+                <Target className="w-5 h-5" style={{ color: "#7c3aed" }} />
                 Pages to Optimize
               </GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-3">
                 {pagesToOptimize.slice(0, 4).map((page, idx) => (
-                  <div key={idx} className="p-3 bg-purple-50/50 rounded-lg border border-purple-200/30">
-                    <p className="font-medium text-gray-900 text-sm mb-1 truncate">{page.title}</p>
-                    <p className="text-xs text-gray-600 mb-2 truncate">{page.url}</p>
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl"
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(15, 23, 42, 0.06)",
+                      borderLeft: "3px solid #7c3aed",
+                    }}
+                  >
+                    <p className="font-medium text-sm mb-1 truncate" style={{ color: "#0F172A" }}>{page.title}</p>
+                    <p className="text-xs mb-2 truncate" style={{ color: "#64748B" }}>{page.url}</p>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">{page.keywords} keywords</span>
-                      <span className="text-gray-600">Avg: #{page.avgPosition}</span>
-                      <span className="font-semibold text-purple-600">{page.potential}</span>
+                      <span style={{ color: "#64748B" }}>{page.keywords} keywords</span>
+                      <span style={{ color: "#64748B" }}>Avg: #{page.avgPosition}</span>
+                      <span className="font-semibold" style={{ color: "#7c3aed" }}>{page.potential}</span>
                     </div>
                   </div>
                 ))}
@@ -358,23 +473,31 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Top Performers */}
-          <GlassCard variant="white">
+          <GlassCard variant="marketing">
             <GlassCardHeader>
               <GlassCardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-600" />
+                <Trophy className="w-5 h-5" style={{ color: "#f59e0b" }} />
                 Top Performers
               </GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-3">
                 {topPerformers.slice(0, 4).map((performer, idx) => (
-                  <div key={idx} className="p-3 bg-amber-50/50 rounded-lg border border-amber-200/30">
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl"
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(15, 23, 42, 0.06)",
+                      borderLeft: "3px solid #f59e0b",
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium text-gray-900 text-sm">{performer.keyword}</p>
-                      <span className="text-lg font-bold text-amber-600">#{performer.position}</span>
+                      <p className="font-medium text-sm" style={{ color: "#0F172A" }}>{performer.keyword}</p>
+                      <span className="text-lg font-bold" style={{ color: "#f59e0b" }}>#{performer.position}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-1 truncate">{performer.url}</p>
-                    <p className="text-xs text-gray-500">{performer.searchVolume.toLocaleString()} searches/mo</p>
+                    <p className="text-xs mb-1 truncate" style={{ color: "#64748B" }}>{performer.url}</p>
+                    <p className="text-xs" style={{ color: "#94A3B8" }}>{performer.searchVolume.toLocaleString()} searches/mo</p>
                   </div>
                 ))}
               </div>
@@ -382,20 +505,27 @@ export default function Dashboard() {
           </GlassCard>
 
           {/* Competitors */}
-          <GlassCard variant="purple">
+          <GlassCard variant="marketing-accent">
             <GlassCardHeader>
-              <GlassCardTitle className="text-purple-900 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Competitors
+              <GlassCardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" style={{ color: "#7c3aed" }} />
+                <span style={{ color: "#0F172A" }}>Competitors</span>
               </GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-3">
                 {competitors.slice(0, 4).map((competitor, idx) => (
-                  <div key={idx} className="p-3 bg-white/40 rounded-lg border border-purple-200/30">
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl"
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(15, 23, 42, 0.06)",
+                    }}
+                  >
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-gray-900 text-sm truncate">{competitor.domain}</p>
-                      <span className="text-sm font-semibold text-purple-700">
+                      <p className="font-medium text-sm truncate" style={{ color: "#0F172A" }}>{competitor.domain}</p>
+                      <span className="text-sm font-semibold" style={{ color: "#7c3aed" }}>
                         {competitor.keywordsRanking} kw
                       </span>
                     </div>

@@ -2214,12 +2214,12 @@ export const insertActionApprovalSchema = createInsertSchema(actionApprovals).om
 export type InsertActionApproval = z.infer<typeof insertActionApprovalSchema>;
 export type ActionApproval = typeof actionApprovals.$inferSelect;
 
-// Achievement Tracks - Exponential progression system for crew achievements
+// Achievement Tracks - Exponential progression system for outcome-based achievements
 export const achievementTracks = pgTable("achievement_tracks", {
   id: serial("id").primaryKey(),
   siteId: text("site_id").notNull(),
-  crewId: text("crew_id").notNull(), // speedster, natasha, authority, pulse, serp, socrates
-  key: text("key").notNull(), // e.g., "vitals_scans", "performance_improvements"
+  crewId: text("crew_id").notNull(), // category slug: website_traffic, leads, content_creation, content_updates, technical_improvements
+  key: text("key").notNull(), // e.g., "sessions_increased", "blog_posts_published"
   name: text("name").notNull(), // Display name
   description: text("description").notNull(),
   icon: text("icon").notNull(), // Lucide icon name
@@ -2250,6 +2250,63 @@ export const ACHIEVEMENT_TIERS = {
 } as const;
 
 export type AchievementTier = keyof typeof ACHIEVEMENT_TIERS;
+
+// Achievement Categories - outcome-based groupings
+export const ACHIEVEMENT_CATEGORIES = {
+  website_traffic: {
+    label: "Website Traffic",
+    icon: "TrendingUp",
+    color: "#10b981",
+    description: "Sessions, users, and engagement trends",
+  },
+  leads: {
+    label: "Leads",
+    icon: "Target",
+    color: "#8b5cf6",
+    description: "Conversions, form submissions, and goal completions",
+  },
+  content_creation: {
+    label: "Content Creation",
+    icon: "FileText",
+    color: "#f59e0b",
+    description: "Blog posts published and new pages created",
+  },
+  content_updates: {
+    label: "Content Updates",
+    icon: "RefreshCw",
+    color: "#3b82f6",
+    description: "Pages refreshed, content decay reversed, metadata improved",
+  },
+  technical_improvements: {
+    label: "Technical Improvements",
+    icon: "Shield",
+    color: "#ef4444",
+    description: "Core Web Vitals, crawl errors, and security improvements",
+  },
+} as const;
+
+export type AchievementCategory = keyof typeof ACHIEVEMENT_CATEGORIES;
+
+// Achievement Milestones - logs tier upgrades and significant level-ups for notifications
+export const achievementMilestones = pgTable("achievement_milestones", {
+  id: serial("id").primaryKey(),
+  siteId: text("site_id").notNull(),
+  trackId: integer("track_id").notNull(),
+  categoryId: text("category_id").notNull(),
+  trackKey: text("track_key").notNull(),
+  level: integer("level").notNull(),
+  tier: text("tier").notNull(),
+  previousTier: text("previous_tier"),
+  headline: text("headline").notNull(),
+  notifiedAt: timestamp("notified_at"),
+  achievedAt: timestamp("achieved_at").defaultNow().notNull(),
+});
+
+export const insertAchievementMilestoneSchema = createInsertSchema(achievementMilestones).omit({
+  id: true,
+});
+export type InsertAchievementMilestone = z.infer<typeof insertAchievementMilestoneSchema>;
+export type AchievementMilestone = typeof achievementMilestones.$inferSelect;
 
 // SEO Agent Snapshots - Track Market SOV and metrics over time for Trends
 export const seoAgentSnapshots = pgTable("seo_agent_snapshots", {
@@ -3705,6 +3762,9 @@ export const digestSchedule = pgTable("digest_schedule", {
 
   // Status
   enabled: boolean("enabled").notNull().default(true),
+
+  // Alert category preferences (which real-time alerts the user wants)
+  alertPreferences: jsonb("alert_preferences").$type<Record<string, boolean>>(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

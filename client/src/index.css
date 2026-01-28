@@ -365,7 +365,7 @@
   
   --color-overlay-surface: rgba(255, 255, 255, 0.98);
   
-  background: #F9FAFB;
+  background: #FFFFFF;
 }
 
 .dashboard-light .bg-gray-900,
@@ -384,7 +384,28 @@
 }
 
 body:has(.dashboard-light) {
-  background: #F9FAFB !important;
+  background: #FFFFFF !important;
+}
+
+/* ========================================
+   DASHBOARD-LIGHT BENCHMARK GLOW OVERRIDES
+   Stronger glows on white background
+   ======================================== */
+
+.dashboard-light .glass-panel {
+  background: #FFFFFF;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 8px 32px -4px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-light .glass-panel.shadow-purple {
+  border-color: rgba(168, 85, 247, 0.20);
+  box-shadow:
+    0 1px 3px rgba(168, 85, 247, 0.06),
+    0 8px 32px -4px rgba(168, 85, 247, 0.12),
+    0 0 0 1px rgba(168, 85, 247, 0.04);
 }
 
 /* ========================================

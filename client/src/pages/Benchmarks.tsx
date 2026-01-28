@@ -112,9 +112,9 @@ function BenchmarkCard({ metric }: { metric: BenchmarkMetric }) {
   const percentile = getPercentileLabel(metric);
   
   const cardStyles = {
-    good: { glow: 'shadow-[inset_0_1px_0_0_rgba(34,197,94,0.15),0_0_20px_-5px_rgba(34,197,94,0.2)]', border: 'border-semantic-success-border', badgeBg: 'bg-semantic-success-soft', badgeText: 'text-semantic-success', lineColor: '#22C55E' },
-    average: { glow: 'shadow-[inset_0_1px_0_0_rgba(234,179,8,0.15),0_0_20px_-5px_rgba(234,179,8,0.2)]', border: 'border-semantic-warning-border', badgeBg: 'bg-semantic-warning-soft', badgeText: 'text-semantic-warning', lineColor: '#EAB308' },
-    poor: { glow: 'shadow-[inset_0_1px_0_0_rgba(239,68,68,0.15),0_0_20px_-5px_rgba(239,68,68,0.2)]', border: 'border-semantic-danger-border', badgeBg: 'bg-semantic-danger-soft', badgeText: 'text-semantic-danger', lineColor: '#EF4444' },
+    good: { glow: 'shadow-[0_1px_3px_rgba(34,197,94,0.08),0_8px_28px_-4px_rgba(34,197,94,0.18),0_0_0_1px_rgba(34,197,94,0.06)]', border: 'border-semantic-success-border', badgeBg: 'bg-semantic-success-soft', badgeText: 'text-semantic-success', lineColor: '#22C55E' },
+    average: { glow: 'shadow-[0_1px_3px_rgba(234,179,8,0.08),0_8px_28px_-4px_rgba(234,179,8,0.18),0_0_0_1px_rgba(234,179,8,0.06)]', border: 'border-semantic-warning-border', badgeBg: 'bg-semantic-warning-soft', badgeText: 'text-semantic-warning', lineColor: '#EAB308' },
+    poor: { glow: 'shadow-[0_1px_3px_rgba(239,68,68,0.08),0_8px_28px_-4px_rgba(239,68,68,0.18),0_0_0_1px_rgba(239,68,68,0.06)]', border: 'border-semantic-danger-border', badgeBg: 'bg-semantic-danger-soft', badgeText: 'text-semantic-danger', lineColor: '#EF4444' },
   };
   const styles = cardStyles[status];
 
@@ -132,8 +132,8 @@ function BenchmarkCard({ metric }: { metric: BenchmarkMetric }) {
   };
 
   return (
-    <Card 
-      className={cn("transition-all overflow-hidden rounded-2xl backdrop-blur-sm bg-card/80 border", styles.border, styles.glow)} 
+    <Card
+      className={cn("transition-all overflow-hidden rounded-2xl bg-white border hover:-translate-y-0.5", styles.border, styles.glow)}
       data-testid={`benchmark-${metric.id}`}
     >
       <CardContent className="p-5">

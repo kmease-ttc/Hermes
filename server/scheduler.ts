@@ -212,6 +212,67 @@ async function generateWeeklyKBaseSynthesis() {
   }
 }
 
+async function computeDailyAchievements() {
+  try {
+    logger.info('Scheduler', 'Starting daily achievement computation');
+    const sites = await storage.getSites(true);
+
+    for (const site of sites) {
+      try {
+        const { computeAchievementsForSite } = await import('./services/achievementComputation');
+        const result = await computeAchievementsForSite(site.siteId);
+
+        if (result.milestonesAchieved.length > 0) {
+          // Get site owner email
+          const siteData = await storage.getSiteById(site.siteId);
+          const ownerEmail = siteData?.ownerContact;
+
+          if (ownerEmail && ownerEmail.includes('@')) {
+            const { sendAchievementMilestoneEmail } = await import('./services/email');
+            const { ACHIEVEMENT_CATEGORIES } = await import('@shared/schema');
+
+            const milestoneData = result.milestonesAchieved.map(m => {
+              const cat = ACHIEVEMENT_CATEGORIES[m.categoryId as keyof typeof ACHIEVEMENT_CATEGORIES];
+              return {
+                trackName: m.trackKey,
+                categoryLabel: cat?.label || m.categoryId,
+                categoryColor: cat?.color || '#6b7280',
+                newTier: m.tier,
+                newLevel: m.level,
+                headline: m.headline,
+              };
+            });
+
+            await sendAchievementMilestoneEmail(ownerEmail, {
+              displayName: siteData?.ownerName || undefined,
+              siteName: siteData?.displayName || site.siteId,
+              milestones: milestoneData,
+            });
+
+            // Mark milestones as notified
+            for (const milestone of result.milestonesAchieved) {
+              await storage.markMilestoneNotified(milestone.id);
+            }
+          }
+        }
+
+        logger.info('Scheduler', `Achievement computation complete for ${site.siteId}`, {
+          tracksUpdated: result.tracksUpdated,
+          milestones: result.milestonesAchieved.length,
+        });
+      } catch (siteError: any) {
+        logger.error('Scheduler', `Achievement computation failed for ${site.siteId}`, {
+          error: siteError.message,
+        });
+      }
+    }
+
+    logger.info('Scheduler', 'Daily achievement computation completed for all sites');
+  } catch (error: any) {
+    logger.error('Scheduler', 'Daily achievement computation failed', { error: error.message });
+  }
+}
+
 export function startScheduler() {
   cron.schedule('0 7 * * *', runDailyDiagnostics, {
     scheduled: true,
@@ -223,5 +284,10 @@ export function startScheduler() {
     timezone: 'America/Chicago',
   });
 
-  logger.info('Scheduler', 'Schedulers started: Daily diagnostics (7am), Weekly KBase synthesis (Mondays 8am)');
+  cron.schedule('0 9 * * *', computeDailyAchievements, {
+    scheduled: true,
+    timezone: 'America/Chicago',
+  });
+
+  logger.info('Scheduler', 'Schedulers started: Daily diagnostics (7am), Weekly KBase synthesis (Mondays 8am), Daily achievements (9am)');
 }

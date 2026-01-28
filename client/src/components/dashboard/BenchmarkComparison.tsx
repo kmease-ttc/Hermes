@@ -312,7 +312,7 @@ function MetricCard({ data }: { data: BenchmarkMetric }) {
   };
   
   return (
-    <div className="w-full p-4 bg-card/60 backdrop-blur-sm rounded-lg border border-border">
+    <div className="w-full p-4 bg-white rounded-xl border border-border shadow-[0_1px_3px_rgba(0,0,0,0.04),0_6px_24px_-4px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-0.5">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-foreground">
           {metricLabels[data.metric] || data.metric}

@@ -60,8 +60,10 @@ import { synthesisRouter } from './routes/synthesis';
 import orchestrationRouter from './routes/orchestration';
 import systemControlRoutes from './routes/systemControl';
 import contentRoutes from './routes/content';
+import notificationRoutes from './routes/notifications';
 import { generatedSites, siteGenerationJobs, crewFindings, insertAgentActionLogSchema, insertOutcomeEventLogSchema, type InsertAgentActionLog, type InsertOutcomeEventLog, seoReports, completedWork, sites, users, seoAgentCompetitors, type InsertSeoReport, findings, serpKeywords, type Finding } from "@shared/schema";
 import { processUnattributedEvents } from "./services/socratesAttribution";
+import { computeAchievementsForSite } from "./services/achievementComputation";
 import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 import { enqueueJob } from "./siteGeneration/worker";
@@ -8867,13 +8869,13 @@ Return JSON:
     }
   });
 
-  // Agent Achievements Endpoints
-  app.get("/api/achievements", async (req, res) => {
+  // Agent Achievements Endpoints (legacy - per-agent event milestones)
+  app.get("/api/agent-achievements", async (req, res) => {
     try {
       const siteId = (req.query.siteId as string) || "default";
       const agentSlug = req.query.agentSlug as string;
       const limit = parseInt(req.query.limit as string) || 20;
-      
+
       if (agentSlug) {
         const achievements = await storage.getAchievements(agentSlug, siteId, limit);
         res.json(achievements);
@@ -8882,25 +8884,24 @@ Return JSON:
         res.json(achievements);
       }
     } catch (error: any) {
-      logger.error("Achievements", "Failed to fetch achievements", { error: error.message });
+      logger.error("Achievements", "Failed to fetch agent achievements", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/achievements", async (req, res) => {
+  app.post("/api/agent-achievements", async (req, res) => {
     try {
       const { siteId = "default", agentSlug, type, title, description, value, achievedAt } = req.body;
-      
+
       if (!agentSlug || !type || !title) {
         return res.status(400).json({ error: "agentSlug, type, and title are required" });
       }
-      
-      // Check for duplicate
+
       const exists = await storage.hasAchievement(agentSlug, siteId, type, title);
       if (exists) {
         return res.status(409).json({ error: "Achievement already exists" });
       }
-      
+
       const achievement = await storage.saveAchievement({
         siteId,
         agentSlug,
@@ -8910,46 +8911,44 @@ Return JSON:
         value: value || null,
         achievedAt: achievedAt ? new Date(achievedAt) : undefined,
       });
-      
-      logger.info("Achievements", "Added achievement", { siteId, agentSlug, type, title });
+
+      logger.info("Achievements", "Added agent achievement", { siteId, agentSlug, type, title });
       res.json(achievement);
     } catch (error: any) {
-      logger.error("Achievements", "Failed to add achievement", { error: error.message });
+      logger.error("Achievements", "Failed to add agent achievement", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.delete("/api/achievements/:id", async (req, res) => {
+  app.delete("/api/agent-achievements/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid achievement ID" });
       }
-      
+
       await storage.deleteAchievement(id);
-      logger.info("Achievements", "Deleted achievement", { id });
+      logger.info("Achievements", "Deleted agent achievement", { id });
       res.json({ ok: true });
     } catch (error: any) {
-      logger.error("Achievements", "Failed to delete achievement", { error: error.message });
+      logger.error("Achievements", "Failed to delete agent achievement", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
 
-  // Compute achievements from snapshots and rankings
-  app.post("/api/achievements/compute", async (req, res) => {
+  // Compute agent achievements from snapshots and rankings (legacy)
+  app.post("/api/agent-achievements/compute", async (req, res) => {
     try {
       const { siteId = "default", agentSlug = "natasha" } = req.body;
-      
+
       const newAchievements: Array<{ type: string; title: string; description: string; value: any }> = [];
-      
-      // Get snapshots for this agent
+
       const snapshots = await storage.getAgentSnapshots(agentSlug, siteId, 30);
-      
+
       if (snapshots.length >= 2) {
         const latest = snapshots[0];
         const previous = snapshots[1];
-        
-        // Check for SOV increase achievement
+
         if (latest.marketSovPct > previous.marketSovPct) {
           const increase = (latest.marketSovPct - previous.marketSovPct).toFixed(1);
           const title = `SOV Increased by ${increase}%`;
@@ -8963,8 +8962,7 @@ Return JSON:
             });
           }
         }
-        
-        // Check for ranking improvements
+
         if (latest.top3Count > previous.top3Count) {
           const gained = latest.top3Count - previous.top3Count;
           const title = `Gained ${gained} Top 3 Position${gained > 1 ? 's' : ''}`;
@@ -8978,8 +8976,7 @@ Return JSON:
             });
           }
         }
-        
-        // Check for new #1 positions
+
         if (latest.top1Count > previous.top1Count) {
           const gained = latest.top1Count - previous.top1Count;
           const title = `Claimed ${gained} #1 Position${gained > 1 ? 's' : ''}`;
@@ -8994,12 +8991,10 @@ Return JSON:
           }
         }
       }
-      
-      // Check for milestone achievements
+
       if (snapshots.length > 0) {
         const latest = snapshots[0];
-        
-        // SOV milestones: 10%, 25%, 50%, 75%
+
         const sovMilestones = [10, 25, 50, 75];
         for (const milestone of sovMilestones) {
           if (latest.marketSovPct >= milestone) {
@@ -9015,8 +9010,7 @@ Return JSON:
             }
           }
         }
-        
-        // Top 10 keyword count milestones
+
         const keywordMilestones = [5, 10, 25, 50, 100];
         for (const milestone of keywordMilestones) {
           if (latest.top10Count >= milestone) {
@@ -9033,8 +9027,7 @@ Return JSON:
           }
         }
       }
-      
-      // Save new achievements
+
       for (const ach of newAchievements) {
         await storage.saveAchievement({
           siteId,
@@ -9045,9 +9038,9 @@ Return JSON:
           value: ach.value,
         });
       }
-      
-      logger.info("Achievements", "Computed achievements", { siteId, agentSlug, newCount: newAchievements.length });
-      
+
+      logger.info("Achievements", "Computed agent achievements", { siteId, agentSlug, newCount: newAchievements.length });
+
       res.json({
         ok: true,
         siteId,
@@ -9056,7 +9049,7 @@ Return JSON:
         count: newAchievements.length,
       });
     } catch (error: any) {
-      logger.error("Achievements", "Failed to compute achievements", { error: error.message });
+      logger.error("Achievements", "Failed to compute agent achievements", { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -18170,17 +18163,17 @@ Return JSON in this exact format:
   });
 
   // ========================================
-  // Achievement Tracks API
+  // Achievement Tracks API (Outcome Categories)
   // ========================================
 
   const achievementQuerySchema = z.object({
     siteId: z.string().min(1).default("default"),
-    crewId: z.string().optional(),
+    categoryId: z.string().optional(),
   });
 
   const achievementInitializeSchema = z.object({
     siteId: z.string().min(1).default("default"),
-    crewId: z.string().min(1, "crewId is required"),
+    categoryId: z.string().min(1, "categoryId is required"),
   });
 
   const achievementInitializeAllSchema = z.object({
@@ -18189,25 +18182,25 @@ Return JSON in this exact format:
 
   const achievementIncrementSchema = z.object({
     siteId: z.string().min(1).default("default"),
-    crewId: z.string().min(1, "crewId is required"),
+    categoryId: z.string().min(1, "categoryId is required"),
     key: z.string().min(1, "key is required"),
     amount: z.number().int().positive().default(1),
   });
 
-  // Get all achievement tracks for a site (optionally filtered by crew)
+  // Get all achievement tracks for a site (optionally filtered by category)
   app.get("/api/achievements", async (req, res) => {
     try {
       const parsed = achievementQuerySchema.safeParse({
         siteId: req.query.siteId || "default",
-        crewId: req.query.crewId,
+        categoryId: req.query.categoryId,
       });
-      
+
       if (!parsed.success) {
         return res.status(400).json({ ok: false, error: parsed.error.message });
       }
-      
-      const { siteId, crewId } = parsed.data;
-      const tracks = await storage.getAchievementTracks(siteId, crewId);
+
+      const { siteId, categoryId } = parsed.data;
+      const tracks = await storage.getAchievementTracks(siteId, categoryId);
       res.json({ ok: true, data: tracks });
     } catch (error: any) {
       logger.error("Achievements", "Failed to get achievements", { error: error.message });
@@ -18215,17 +18208,17 @@ Return JSON in this exact format:
     }
   });
 
-  // Initialize achievements for a crew (creates default tracks if none exist)
+  // Initialize achievements for a single category
   app.post("/api/achievements/initialize", async (req, res) => {
     try {
       const parsed = achievementInitializeSchema.safeParse(req.body);
-      
+
       if (!parsed.success) {
         return res.status(400).json({ ok: false, error: parsed.error.message });
       }
-      
-      const { siteId, crewId } = parsed.data;
-      const tracks = await storage.initializeCrewAchievements(siteId, crewId);
+
+      const { siteId, categoryId } = parsed.data;
+      const tracks = await storage.initializeCategoryAchievements(siteId, categoryId);
       res.json({ ok: true, data: tracks });
     } catch (error: any) {
       logger.error("Achievements", "Failed to initialize achievements", { error: error.message });
@@ -18233,24 +18226,17 @@ Return JSON in this exact format:
     }
   });
 
-  // Initialize achievements for all crews
+  // Initialize achievements for all categories
   app.post("/api/achievements/initialize-all", async (req, res) => {
     try {
       const parsed = achievementInitializeAllSchema.safeParse(req.body);
-      
+
       if (!parsed.success) {
         return res.status(400).json({ ok: false, error: parsed.error.message });
       }
-      
+
       const { siteId } = parsed.data;
-      const crewIds = ["speedster", "natasha", "authority", "pulse", "serp", "socrates"];
-      
-      const allTracks = [];
-      for (const crewId of crewIds) {
-        const tracks = await storage.initializeCrewAchievements(siteId, crewId);
-        allTracks.push(...tracks);
-      }
-      
+      const allTracks = await storage.initializeAllCategoryAchievements(siteId);
       res.json({ ok: true, data: allTracks, count: allTracks.length });
     } catch (error: any) {
       logger.error("Achievements", "Failed to initialize all achievements", { error: error.message });
@@ -18262,21 +18248,47 @@ Return JSON in this exact format:
   app.post("/api/achievements/increment", async (req, res) => {
     try {
       const parsed = achievementIncrementSchema.safeParse(req.body);
-      
+
       if (!parsed.success) {
         return res.status(400).json({ ok: false, error: parsed.error.message });
       }
-      
-      const { siteId, crewId, key, amount } = parsed.data;
-      const track = await storage.incrementAchievementProgress(siteId, crewId, key, amount);
-      
-      if (!track) {
+
+      const { siteId, categoryId, key, amount } = parsed.data;
+      const result = await storage.incrementAchievementProgress(siteId, categoryId, key, amount);
+
+      if (!result) {
         return res.status(404).json({ ok: false, error: "Achievement track not found" });
       }
-      
-      res.json({ ok: true, data: track });
+
+      res.json({ ok: true, data: result.track, tierChanged: result.tierChanged });
     } catch (error: any) {
       logger.error("Achievements", "Failed to increment achievement", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Compute achievements from real data sources
+  app.post("/api/achievements/compute", async (req, res) => {
+    try {
+      const { siteId = "default" } = req.body;
+      const result = await computeAchievementsForSite(siteId);
+      logger.info("Achievements", "Computed achievements", { siteId, ...result });
+      res.json({ ok: true, ...result });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to compute achievements", { error: error.message });
+      res.status(500).json({ ok: false, error: error.message });
+    }
+  });
+
+  // Get recent milestones for a site
+  app.get("/api/achievements/milestones", async (req, res) => {
+    try {
+      const siteId = (req.query.siteId as string) || "default";
+      const limit = parseInt(req.query.limit as string) || 20;
+      const milestones = await storage.getRecentMilestones(siteId, limit);
+      res.json({ ok: true, data: milestones });
+    } catch (error: any) {
+      logger.error("Achievements", "Failed to get milestones", { error: error.message });
       res.status(500).json({ ok: false, error: error.message });
     }
   });
@@ -20568,6 +20580,7 @@ Return JSON in this exact format:
   app.use('/api/orchestration', orchestrationRouter);
   app.use('/api/system', systemControlRoutes); // Step 10.6: Kill switches & system control
   app.use('/api/content', contentRoutes); // Blog content generation for multi-site
+  app.use('/api', notificationRoutes); // Notification preferences
 
   // ============================================================
   // Internal API Endpoints (Hermes ↔ SERP Worker Communication)

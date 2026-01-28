@@ -179,8 +179,15 @@ export default function SiteDetail() {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to save site');
+        let message = 'Failed to save site';
+        try {
+          const error = await res.json();
+          message = error.error || message;
+        } catch {
+          // Response wasn't JSON (e.g. HTML error page)
+          message = `Server error (${res.status})`;
+        }
+        throw new Error(message);
       }
       return res.json();
     },

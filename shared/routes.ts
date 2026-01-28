@@ -88,6 +88,7 @@ export const ROUTES = {
   SITES: "/app/sites",
   SITE_DETAIL: "/app/sites/:siteId",
   SITE_NEW: "/app/sites/new",
+  NOTIFICATIONS: "/app/notifications",
   HELP: "/app/help",
   
   // Managed Websites (target sites Hermes can modify)
@@ -249,6 +250,7 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.BENCHMARKS,
   ROUTES.ACHIEVEMENTS,
   ROUTES.INTEGRATIONS,
+  ROUTES.NOTIFICATIONS,
   ROUTES.SETTINGS,
   ROUTES.SETTINGS_WEBSITES,
   ROUTES.SITES,

@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 interface GlassCardProps {
   children: ReactNode;
   className?: string;
-  variant?: "default" | "purple" | "white";
+  variant?: "default" | "purple" | "white" | "marketing" | "marketing-accent";
   hover?: boolean;
 }
 
@@ -14,11 +14,40 @@ export function GlassCard({
   variant = "default",
   hover = false
 }: GlassCardProps) {
+  const isMarketing = variant === "marketing" || variant === "marketing-accent";
+
   const variants = {
     default: "bg-white/60 border-white/20",
     purple: "bg-purple-500/10 border-purple-300/20",
     white: "bg-white/80 border-white/30",
+    marketing: "",
+    "marketing-accent": "",
   };
+
+  if (isMarketing) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border transition-all duration-200",
+          hover && "hover:-translate-y-1 cursor-pointer",
+          className
+        )}
+        style={{
+          background: variant === "marketing-accent"
+            ? "linear-gradient(180deg, #FAFAFE, #F5F3FF)"
+            : "linear-gradient(180deg, #FFFFFF, #F8FAFC)",
+          border: variant === "marketing-accent"
+            ? "1px solid rgba(124, 58, 237, 0.12)"
+            : "1px solid rgba(15, 23, 42, 0.06)",
+          boxShadow: hover
+            ? undefined
+            : "0 20px 40px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

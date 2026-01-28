@@ -177,6 +177,10 @@ import {
   type AchievementTrack,
   type InsertAchievementTrack,
   ACHIEVEMENT_TIERS,
+  ACHIEVEMENT_CATEGORIES,
+  achievementMilestones,
+  type AchievementMilestone,
+  type InsertAchievementMilestone,
   kbInsights,
   type KbInsight,
   type InsertKbInsight,
@@ -537,8 +541,15 @@ export interface IStorage {
   getAchievementTrackByKey(siteId: string, crewId: string, key: string): Promise<AchievementTrack | undefined>;
   createAchievementTrack(track: InsertAchievementTrack): Promise<AchievementTrack>;
   updateAchievementTrack(id: number, updates: Partial<InsertAchievementTrack>): Promise<AchievementTrack | undefined>;
-  incrementAchievementProgress(siteId: string, crewId: string, key: string, amount?: number): Promise<AchievementTrack | undefined>;
-  initializeCrewAchievements(siteId: string, crewId: string): Promise<AchievementTrack[]>;
+  incrementAchievementProgress(siteId: string, crewId: string, key: string, amount?: number): Promise<{ track: AchievementTrack; tierChanged: boolean; previousTier: string } | undefined>;
+  initializeCategoryAchievements(siteId: string, categoryId: string): Promise<AchievementTrack[]>;
+  initializeAllCategoryAchievements(siteId: string): Promise<AchievementTrack[]>;
+
+  // Achievement Milestones
+  createAchievementMilestone(milestone: InsertAchievementMilestone): Promise<AchievementMilestone>;
+  getUnnotifiedMilestones(siteId: string): Promise<AchievementMilestone[]>;
+  getRecentMilestones(siteId: string, limit?: number): Promise<AchievementMilestone[]>;
+  markMilestoneNotified(id: number): Promise<void>;
   
   // KB Insights
   getInsights(siteId: string, limit?: number): Promise<KbInsight[]>;
@@ -2826,19 +2837,20 @@ class DBStorage implements IStorage {
     return updated;
   }
   
-  async incrementAchievementProgress(siteId: string, crewId: string, key: string, amount: number = 1): Promise<AchievementTrack | undefined> {
+  async incrementAchievementProgress(siteId: string, crewId: string, key: string, amount: number = 1): Promise<{ track: AchievementTrack; tierChanged: boolean; previousTier: string } | undefined> {
     const track = await this.getAchievementTrackByKey(siteId, crewId, key);
     if (!track) return undefined;
-    
+
+    const previousTier = track.currentTier;
     let newValue = track.currentValue + amount;
     let newLevel = track.currentLevel;
     let newThreshold = track.nextThreshold;
     let newTier = track.currentTier;
-    
+
     while (newValue >= newThreshold) {
       newLevel++;
       newThreshold = Math.round(track.baseThreshold * Math.pow(track.growthFactor, newLevel - 1));
-      
+
       const tierEntries = Object.entries(ACHIEVEMENT_TIERS);
       for (const [tier, range] of tierEntries) {
         if (newLevel >= range.minLevel && newLevel <= range.maxLevel) {
@@ -2847,71 +2859,65 @@ class DBStorage implements IStorage {
         }
       }
     }
-    
-    return this.updateAchievementTrack(track.id, {
+
+    const updated = await this.updateAchievementTrack(track.id, {
       currentValue: newValue,
       currentLevel: newLevel,
       nextThreshold: newThreshold,
       currentTier: newTier,
     });
+
+    if (!updated) return undefined;
+
+    return {
+      track: updated,
+      tierChanged: newTier !== previousTier,
+      previousTier,
+    };
   }
-  
-  async initializeCrewAchievements(siteId: string, crewId: string): Promise<AchievementTrack[]> {
-    const existing = await this.getAchievementTracks(siteId, crewId);
+
+  async initializeCategoryAchievements(siteId: string, categoryId: string): Promise<AchievementTrack[]> {
+    const existing = await this.getAchievementTracks(siteId, categoryId);
     if (existing.length > 0) return existing;
-    
-    const trackDefinitions: Record<string, Array<{ key: string; name: string; description: string; icon: string }>> = {
-      speedster: [
-        { key: "vitals_scans", name: "Vitals Scanner", description: "Core Web Vitals scans completed", icon: "Zap" },
-        { key: "performance_wins", name: "Performance Champion", description: "Performance improvements delivered", icon: "TrendingUp" },
-        { key: "stability_streak", name: "Stability Keeper", description: "Days without performance regression", icon: "Shield" },
-        { key: "benchmarks_beaten", name: "Benchmark Breaker", description: "Industry benchmarks exceeded", icon: "Target" },
-        { key: "autonomous_fixes", name: "Auto-Pilot Master", description: "Autonomous fixes executed successfully", icon: "Bot" },
+
+    const trackDefinitions: Record<string, Array<{ key: string; name: string; description: string; icon: string; baseThreshold: number; growthFactor: number }>> = {
+      website_traffic: [
+        { key: "sessions_increased", name: "Sessions Growth", description: "Days where sessions exceeded the 30-day average", icon: "TrendingUp", baseThreshold: 5, growthFactor: 1.7 },
+        { key: "users_grew", name: "User Growth", description: "Days where unique users exceeded the prior day", icon: "Users", baseThreshold: 5, growthFactor: 1.7 },
+        { key: "bounce_rate_improved", name: "Bounce Rate Wins", description: "Days where bounce rate was below the 30-day average", icon: "ArrowDownRight", baseThreshold: 5, growthFactor: 1.8 },
+        { key: "engagement_streak", name: "Engagement Streak", description: "Days with above-average session duration", icon: "Timer", baseThreshold: 3, growthFactor: 1.6 },
       ],
-      natasha: [
-        { key: "content_audits", name: "Content Auditor", description: "Content audits completed", icon: "FileSearch" },
-        { key: "metadata_fixes", name: "Meta Master", description: "Metadata issues fixed", icon: "Tags" },
-        { key: "content_gaps", name: "Gap Finder", description: "Content gaps identified", icon: "Search" },
-        { key: "seo_scores", name: "Score Improver", description: "SEO scores improved", icon: "TrendingUp" },
-        { key: "pages_optimized", name: "Page Optimizer", description: "Pages optimized", icon: "FileText" },
+      leads: [
+        { key: "conversions_tracked", name: "Conversions Tracked", description: "Total conversion events recorded", icon: "Target", baseThreshold: 3, growthFactor: 1.7 },
+        { key: "goal_completions", name: "Goals Completed", description: "Days with at least one conversion", icon: "CheckCircle", baseThreshold: 5, growthFactor: 1.5 },
+        { key: "conversion_streaks", name: "Conversion Momentum", description: "Consecutive days with conversions", icon: "Flame", baseThreshold: 3, growthFactor: 1.6 },
       ],
-      authority: [
-        { key: "backlinks_found", name: "Link Hunter", description: "Backlinks discovered", icon: "Link" },
-        { key: "domain_rating", name: "Authority Builder", description: "Domain rating improvements", icon: "Award" },
-        { key: "toxic_removed", name: "Toxic Cleaner", description: "Toxic links disavowed", icon: "Trash2" },
-        { key: "outreach_wins", name: "Outreach Pro", description: "Successful outreach campaigns", icon: "Send" },
-        { key: "mentions_tracked", name: "Mention Monitor", description: "Brand mentions tracked", icon: "AtSign" },
+      content_creation: [
+        { key: "blog_posts_published", name: "Blog Posts Published", description: "Blog posts reaching published state", icon: "FileText", baseThreshold: 2, growthFactor: 1.8 },
+        { key: "new_pages_created", name: "New Pages Created", description: "Non-blog content pages published", icon: "FilePlus", baseThreshold: 2, growthFactor: 1.8 },
+        { key: "content_quality_scores", name: "Quality Content", description: "Content drafts that scored above 80 in QA", icon: "Award", baseThreshold: 3, growthFactor: 1.7 },
       ],
-      pulse: [
-        { key: "diagnostics_run", name: "Diagnostic Expert", description: "Diagnostic runs completed", icon: "Activity" },
-        { key: "issues_detected", name: "Issue Detector", description: "Issues detected early", icon: "AlertTriangle" },
-        { key: "uptime_days", name: "Uptime Guardian", description: "Days with 100% uptime", icon: "CheckCircle" },
-        { key: "anomalies_caught", name: "Anomaly Catcher", description: "Anomalies caught before impact", icon: "Eye" },
-        { key: "reports_generated", name: "Report Master", description: "Health reports generated", icon: "FileBarChart" },
+      content_updates: [
+        { key: "pages_refreshed", name: "Pages Refreshed", description: "Content update actions executed", icon: "RefreshCw", baseThreshold: 3, growthFactor: 1.7 },
+        { key: "content_decay_reversed", name: "Decay Reversed", description: "Content decay findings resolved", icon: "TrendingUp", baseThreshold: 3, growthFactor: 1.8 },
+        { key: "metadata_improved", name: "Metadata Polished", description: "Metadata improvements completed", icon: "Tags", baseThreshold: 5, growthFactor: 1.6 },
+        { key: "click_growth_pages", name: "Click Growth", description: "Pages with click growth comparing 7-day periods", icon: "MousePointerClick", baseThreshold: 3, growthFactor: 1.7 },
       ],
-      serp: [
-        { key: "keywords_tracked", name: "Keyword Tracker", description: "Keywords being tracked", icon: "Search" },
-        { key: "ranking_wins", name: "Ranking Champion", description: "Keyword position improvements", icon: "TrendingUp" },
-        { key: "top_10_entries", name: "Top 10 Achiever", description: "Keywords in top 10", icon: "Trophy" },
-        { key: "serp_features", name: "Feature Snatcher", description: "SERP features captured", icon: "Star" },
-        { key: "competitor_beats", name: "Competitor Crusher", description: "Competitors outranked", icon: "Swords" },
-      ],
-      socrates: [
-        { key: "insights_generated", name: "Insight Generator", description: "Strategic insights generated", icon: "Lightbulb" },
-        { key: "patterns_found", name: "Pattern Finder", description: "Patterns identified in data", icon: "Brain" },
-        { key: "recommendations", name: "Advisor", description: "Recommendations provided", icon: "MessageSquare" },
-        { key: "predictions_made", name: "Predictor", description: "Accurate predictions made", icon: "TrendingUp" },
-        { key: "strategies_formed", name: "Strategist", description: "Strategies formulated", icon: "Map" },
+      technical_improvements: [
+        { key: "cwv_improved", name: "Core Web Vitals Wins", description: "Worker results showing improved LCP, CLS, or INP", icon: "Zap", baseThreshold: 3, growthFactor: 1.8 },
+        { key: "crawl_errors_fixed", name: "Crawl Errors Fixed", description: "Crawlability findings resolved", icon: "Bug", baseThreshold: 5, growthFactor: 1.6 },
+        { key: "security_headers_added", name: "Security Hardened", description: "Security-related findings resolved", icon: "Shield", baseThreshold: 3, growthFactor: 2.0 },
+        { key: "indexation_wins", name: "Indexation Wins", description: "Indexation findings resolved", icon: "Search", baseThreshold: 3, growthFactor: 1.7 },
       ],
     };
-    
-    const definitions = trackDefinitions[crewId] || [];
+
+    const definitions = trackDefinitions[categoryId] || [];
     const createdTracks: AchievementTrack[] = [];
-    
+
     for (const def of definitions) {
       const track = await this.createAchievementTrack({
         siteId,
-        crewId,
+        crewId: categoryId,
         key: def.key,
         name: def.name,
         description: def.description,
@@ -2919,15 +2925,61 @@ class DBStorage implements IStorage {
         currentLevel: 1,
         currentTier: "bronze",
         currentValue: 0,
-        nextThreshold: 5,
-        baseThreshold: 5,
-        growthFactor: 1.7,
+        nextThreshold: def.baseThreshold,
+        baseThreshold: def.baseThreshold,
+        growthFactor: def.growthFactor,
         lastUpdated: new Date(),
       });
       createdTracks.push(track);
     }
-    
+
     return createdTracks;
+  }
+
+  async initializeAllCategoryAchievements(siteId: string): Promise<AchievementTrack[]> {
+    const categoryIds = Object.keys(ACHIEVEMENT_CATEGORIES);
+    const allTracks: AchievementTrack[] = [];
+    for (const categoryId of categoryIds) {
+      const tracks = await this.initializeCategoryAchievements(siteId, categoryId);
+      allTracks.push(...tracks);
+    }
+    return allTracks;
+  }
+
+  // Achievement Milestones
+  async createAchievementMilestone(milestone: InsertAchievementMilestone): Promise<AchievementMilestone> {
+    const [created] = await db
+      .insert(achievementMilestones)
+      .values(milestone)
+      .returning();
+    return created;
+  }
+
+  async getUnnotifiedMilestones(siteId: string): Promise<AchievementMilestone[]> {
+    return db
+      .select()
+      .from(achievementMilestones)
+      .where(and(
+        eq(achievementMilestones.siteId, siteId),
+        isNull(achievementMilestones.notifiedAt)
+      ))
+      .orderBy(desc(achievementMilestones.achievedAt));
+  }
+
+  async getRecentMilestones(siteId: string, limit: number = 20): Promise<AchievementMilestone[]> {
+    return db
+      .select()
+      .from(achievementMilestones)
+      .where(eq(achievementMilestones.siteId, siteId))
+      .orderBy(desc(achievementMilestones.achievedAt))
+      .limit(limit);
+  }
+
+  async markMilestoneNotified(id: number): Promise<void> {
+    await db
+      .update(achievementMilestones)
+      .set({ notifiedAt: new Date() })
+      .where(eq(achievementMilestones.id, id));
   }
 
   // KB Insights

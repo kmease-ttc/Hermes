@@ -69,8 +69,8 @@ export function AgentCard({
   return (
     <Card 
       className={cn(
-        "agent-card relative overflow-hidden transition-all rounded-xl border-l-[3px] border border-border shadow-sm text-foreground",
-        isActive ? "bg-card" : "bg-muted",
+        "agent-card relative overflow-hidden transition-all rounded-xl border-l-[3px] glass-card glass-card-purple text-foreground",
+        !isActive && "glass-card-disabled",
         onClick && !showUnlockOverlay && "cursor-pointer hover:shadow-md",
         className
       )}

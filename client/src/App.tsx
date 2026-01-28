@@ -59,6 +59,7 @@ import SharedReport from "@/pages/SharedReport";
 import WebsiteReportPage from "@/pages/WebsiteReportPage";
 import DeveloperReportPage from "@/pages/DeveloperReportPage";
 import SettingsIntegrations from "@/pages/SettingsIntegrations";
+import Notifications from "@/pages/Notifications";
 import Websites from "@/pages/Websites";
 import ManagedWebsiteDetail from "@/pages/ManagedWebsiteDetail";
 import { ROUTES, buildRoute, resolveAgentSlug } from "@shared/routes";
@@ -172,6 +173,7 @@ function Router() {
       </Route>
       <Route path={ROUTES.SITE_NEW}><ProtectedRoute component={SiteDetail} /></Route>
       <Route path={ROUTES.SITE_DETAIL}><ProtectedRoute component={SiteDetail} /></Route>
+      <Route path={ROUTES.NOTIFICATIONS}><ProtectedRoute component={Notifications} /></Route>
       <Route path={ROUTES.HELP}><ProtectedRoute component={Help} /></Route>
       <Route path={ROUTES.DEV_PALETTE}><ProtectedRoute component={CrewPalette} /></Route>
       <Route path={ROUTES.DEV_LINEAGE}><ProtectedRoute component={DevLineage} /></Route>

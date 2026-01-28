@@ -123,6 +123,7 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
 
   const isGetRequest = req.method === "GET" || req.method === "HEAD";
   const isPostRequest = req.method === "POST";
+  const isPatchRequest = req.method === "PATCH";
   
   // Check if path matches dashboard GET paths (for GET requests)
   const matchesGetPath = DASHBOARD_GET_PATHS.some(path => 
@@ -158,6 +159,12 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
   // Allow same-origin POST requests on UI action paths (browser requests only)
   if (isPostRequest && matchesSameOriginPath && isSameOriginRequest(req)) {
     logger.debug("API", "Allowing same-origin UI request", { path: req.path });
+    return next();
+  }
+
+  // Allow same-origin PATCH requests on dashboard paths (browser UI updates)
+  if (isPatchRequest && matchesPostPath && isSameOriginRequest(req)) {
+    logger.debug("API", "Allowing same-origin PATCH request", { path: req.path });
     return next();
   }
 
