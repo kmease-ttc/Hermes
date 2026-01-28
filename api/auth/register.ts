@@ -30,13 +30,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   let step = "init";
-  let bodyType = "";
-  let bodyPreview = "";
+  let bodyType = "unknown";
+  let bodyPreview = "unknown";
   try {
-    step = "parse";
-    bodyType = typeof req.body;
-    bodyPreview = JSON.stringify(req.body)?.substring(0, 100) || "null";
+    step = "getBodyType";
+    try {
+      bodyType = typeof req.body;
+    } catch (e) {
+      bodyType = "error: " + (e as Error).message;
+    }
 
+    step = "getBodyPreview";
+    try {
+      bodyPreview = String(req.body)?.substring(0, 100) || "null";
+    } catch (e) {
+      bodyPreview = "error: " + (e as Error).message;
+    }
+
+    step = "parse";
     // Vercel should auto-parse JSON body, but let's check
     let body = req.body;
     if (typeof body === "string") {
