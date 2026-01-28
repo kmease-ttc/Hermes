@@ -20,9 +20,9 @@ export const CREW_TOOLTIPS: Record<string, CrewTooltip> = {
   },
   serp_intel: {
     name: "Lookout",
-    role: "SERP Tracking",
-    shortDescription: "Tracks keyword positions daily and detects ranking changes before they become problems.",
-    handledSignals: ["Position changes", "SERP features", "Ranking trends"],
+    role: "SERP & Keyword Intelligence",
+    shortDescription: "Maintains a prioritized keyword set and tracks ranking position, movement, and volatility so Arclo focuses on the right search battles.",
+    handledSignals: ["Position gains & losses", "Competitor displacement", "Ranking volatility", "Striking-distance keywords", "Page-keyword cannibalization"],
   },
   google_data_connector: {
     name: "Popular",

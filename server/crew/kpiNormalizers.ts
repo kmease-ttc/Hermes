@@ -88,31 +88,53 @@ function normalizeSpeedsterOutput(crewId: string, siteId: string, response: any)
   const kpis: Omit<InsertCrewKpi, "runId">[] = [];
   const vitalsSummary = response?.vitals_summary || {};
   const workerKpis = response?.kpis || {};
-  
+  const now = new Date();
+
   const performanceScore = workerKpis.performance_score ?? vitalsSummary.performance_score ?? null;
   if (performanceScore !== null) {
     // Primary KPI: performanceScore
-    kpis.push({
-      siteId,
-      crewId,
-      metricKey: "performanceScore",
-      value: performanceScore,
-      unit: "score",
-      measuredAt: new Date(),
-    });
+    kpis.push({ siteId, crewId, metricKey: "performanceScore", value: performanceScore, unit: "score", measuredAt: now });
+    // Also store under canonical key
+    kpis.push({ siteId, crewId, metricKey: "vitals.performance_score", value: performanceScore, unit: "score", measuredAt: now });
   }
-  
-  if (workerKpis.lcp !== undefined || vitalsSummary.lcp !== undefined) {
-    kpis.push({
-      siteId,
-      crewId,
-      metricKey: "vitals.lcp",
-      value: workerKpis.lcp ?? vitalsSummary.lcp,
-      unit: "seconds",
-      measuredAt: new Date(),
-    });
+
+  // Core Web Vitals (the 3 Google ranking signals)
+  const lcp = workerKpis.lcp ?? vitalsSummary.lcp ?? null;
+  if (lcp !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.lcp", value: lcp, unit: "seconds", measuredAt: now });
   }
-  
+
+  const cls = workerKpis.cls ?? vitalsSummary.cls ?? null;
+  if (cls !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.cls", value: cls, unit: "score", measuredAt: now });
+  }
+
+  const inp = workerKpis.inp ?? vitalsSummary.inp ?? null;
+  if (inp !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.inp", value: inp, unit: "milliseconds", measuredAt: now });
+  }
+
+  // Additional performance metrics
+  const fcp = workerKpis.fcp ?? workerKpis.fcp_ms ?? vitalsSummary.fcp ?? null;
+  if (fcp !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.fcp", value: fcp, unit: "seconds", measuredAt: now });
+  }
+
+  const ttfb = workerKpis.ttfb ?? workerKpis.ttfb_ms ?? vitalsSummary.ttfb ?? null;
+  if (ttfb !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.ttfb", value: ttfb, unit: "milliseconds", measuredAt: now });
+  }
+
+  const tbt = workerKpis.tbt ?? workerKpis.tbt_ms ?? vitalsSummary.tbt ?? null;
+  if (tbt !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.tbt", value: tbt, unit: "milliseconds", measuredAt: now });
+  }
+
+  const speedIndex = workerKpis.speed_index ?? workerKpis.speed_index_ms ?? vitalsSummary.speed_index ?? null;
+  if (speedIndex !== null) {
+    kpis.push({ siteId, crewId, metricKey: "vitals.speed_index", value: speedIndex, unit: "milliseconds", measuredAt: now });
+  }
+
   return {
     kpis,
     summary: performanceScore !== null ? `Performance Score: ${performanceScore}/100` : "No performance data",

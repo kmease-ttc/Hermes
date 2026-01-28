@@ -30,7 +30,11 @@ export const CREW_KPI_CONTRACTS: Record<string, CrewKpiContract> = {
     whyItMatters: "Technical issues blocking search visibility",
   },
   speedster: {
-    allowedKpis: ["performanceScore", "vitals.performance_score", "vitals.lcp", "vitals.cls", "vitals.inp"],
+    allowedKpis: [
+      "performanceScore", "vitals.performance_score",
+      "vitals.lcp", "vitals.cls", "vitals.inp",
+      "vitals.fcp", "vitals.ttfb", "vitals.tbt", "vitals.speed_index",
+    ],
     primaryKpi: "performanceScore",
     label: "Performance Score",
     unit: "score",

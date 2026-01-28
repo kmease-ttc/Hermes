@@ -58,6 +58,7 @@ import websiteRoutes from './routes/websites';
 import billingRoutes from './routes/billing';
 import { synthesisRouter } from './routes/synthesis';
 import orchestrationRouter from './routes/orchestration';
+import opsDashboardRouter from './routes/opsDashboard';
 import systemControlRoutes from './routes/systemControl';
 import contentRoutes from './routes/content';
 import notificationRoutes from './routes/notifications';
@@ -10529,36 +10530,49 @@ Keep responses concise and actionable.`;
       const data = parseResult.data;
       const siteId = `site_${Date.now()}_${randomUUID().slice(0, 8)}`;
 
-      const newSite = await storage.createSite({
-        siteId,
-        userId,
-        displayName: data.displayName,
-        baseUrl: data.baseUrl,
-        category: data.category || null,
-        techStack: data.techStack || null,
-        repoProvider: data.repoProvider || null,
-        repoIdentifier: data.repoIdentifier || null,
-        deployMethod: data.deployMethod || null,
-        crawlSettings: data.crawlSettings || null,
-        sitemaps: data.sitemaps || null,
-        keyPages: data.keyPages || null,
-        integrations: data.integrations || null,
-        guardrails: data.guardrails || null,
-        cadence: data.cadence || null,
-        ownerName: data.ownerName || null,
-        ownerContact: data.ownerContact || null,
-        status: data.status || "onboarding",
-        active: true,
-        healthScore: null,
-        businessDetails: data.businessDetails || null,
-      });
+      let newSite;
+      try {
+        newSite = await storage.createSite({
+          siteId,
+          userId,
+          displayName: data.displayName,
+          baseUrl: data.baseUrl,
+          category: data.category || null,
+          techStack: data.techStack || null,
+          repoProvider: data.repoProvider || null,
+          repoIdentifier: data.repoIdentifier || null,
+          deployMethod: data.deployMethod || null,
+          crawlSettings: data.crawlSettings || null,
+          sitemaps: data.sitemaps || null,
+          keyPages: data.keyPages || null,
+          integrations: data.integrations || null,
+          guardrails: data.guardrails || null,
+          cadence: data.cadence || null,
+          ownerName: data.ownerName || null,
+          ownerContact: data.ownerContact || null,
+          status: data.status || "onboarding",
+          active: true,
+          healthScore: null,
+          businessDetails: data.businessDetails || null,
+        });
+      } catch (dbError: any) {
+        const msg = dbError.message || String(dbError);
+        logger.error("API", "Database error adding site", { error: msg, code: dbError.code, detail: dbError.detail });
+        if (msg.includes("column") && msg.includes("does not exist")) {
+          return res.status(500).json({ error: "Database schema is out of date. Please run: npm run db:push" });
+        }
+        if (dbError.code === "23505") {
+          return res.status(409).json({ error: "This site has already been added." });
+        }
+        return res.status(500).json({ error: `Failed to add site to dashboard: ${msg}` });
+      }
 
       await storage.saveAuditLog({
         siteId: newSite.siteId,
         action: "site_added",
         actor: "api",
         details: { displayName: data.displayName, baseUrl: data.baseUrl },
-      });
+      }).catch((e: any) => logger.warn("API", "Audit log failed (non-fatal)", { error: e.message }));
 
       logger.info("API", "Site added to dashboard", { siteId: newSite.siteId, displayName: data.displayName });
       res.status(201).json(newSite);
@@ -16106,6 +16120,84 @@ When answering:
         }
       }
       
+      // --- Regressions: pull from Worker-Vital-Monitor if available ---
+      let regressions: any[] = [];
+      try {
+        const cwvWorkerConfig = await resolveWorkerConfig('seo_core_web_vitals');
+        if (cwvWorkerConfig.valid && cwvWorkerConfig.base_url && cwvWorkerConfig.api_key) {
+          // Find the website ID in the worker for this site
+          const websitesRes = await fetch(`${cwvWorkerConfig.base_url}/api/v1/websites`, {
+            headers: { 'x-api-key': cwvWorkerConfig.api_key },
+          });
+          if (websitesRes.ok) {
+            const websitesData = await websitesRes.json();
+            const workerWebsite = (websitesData.websites || []).find((w: any) =>
+              w.canonicalDomain?.includes(site?.domain) || w.name === site?.name
+            );
+            if (workerWebsite) {
+              const regRes = await fetch(
+                `${cwvWorkerConfig.base_url}/api/v1/websites/${workerWebsite.id}/regressions?days=30&status=open`,
+                { headers: { 'x-api-key': cwvWorkerConfig.api_key } },
+              );
+              if (regRes.ok) {
+                const regData = await regRes.json();
+                regressions = (regData.regressions || []).slice(0, 10).map((r: any) => ({
+                  id: r.id,
+                  metric: r.metric,
+                  severity: r.severity,
+                  baselineValue: r.baseline_value ?? r.baselineValue,
+                  currentValue: r.current_value ?? r.currentValue,
+                  delta: r.delta,
+                  detectedAt: r.detected_at ?? r.detectedAt,
+                  summary: r.summary,
+                  status: r.status,
+                }));
+              }
+            }
+          }
+        }
+      } catch (regError: any) {
+        logger.warn("Speedster", "Failed to fetch regressions from worker", { error: regError.message });
+      }
+
+      // --- Data sufficiency: determine CrUX vs lab-only per metric ---
+      const dataSufficiency = {
+        hasCruxData: !!(rawData?.field || rawData?.crux || cwvDaily?.source === 'crux'),
+        hasLabData: !!(rawData?.lab || rawData?.lighthouse || performanceScore !== null),
+        dataSource: rawData?.field ? 'crux' as const :
+                    rawData?.lab ? 'lab' as const : 'none' as const,
+        scope: rawData?.field?.scope ?? rawData?.crux?.scope ?? null,
+        warning: !rawData?.field && !cwvDaily?.source?.includes('crux')
+          ? 'Field data (CrUX) unavailable for this site. Metrics shown are lab-only estimates and may not reflect real user experience.'
+          : null,
+      };
+
+      // --- Mobile vs Desktop: fetch desktop data for comparison ---
+      let mobileVsDesktop: any = null;
+      try {
+        const desktopDaily = await storage.getLatestCoreWebVitals(siteId, 'desktop');
+        if (desktopDaily && cwvDaily) {
+          mobileVsDesktop = {
+            mobile: {
+              lcp: cwvDaily.lcp, cls: cwvDaily.cls, inp: cwvDaily.inp,
+              performanceScore: cwvDaily.overallScore,
+              deviceType: 'mobile',
+            },
+            desktop: {
+              lcp: desktopDaily.lcp, cls: desktopDaily.cls, inp: desktopDaily.inp,
+              performanceScore: desktopDaily.overallScore,
+              deviceType: 'desktop',
+            },
+          };
+        }
+      } catch (mobileDesktopError: any) {
+        logger.warn("Speedster", "Failed to build mobile vs desktop comparison", { error: mobileDesktopError.message });
+      }
+
+      // Extract issue types from raw data for the issues tab
+      const issueTypes = rawData?.issueTypes || rawData?.issue_types || [];
+      const issuesSummary = rawData?.issuesSummary || rawData?.issues_summary || null;
+
       res.json({
         ok: true,
         siteId,
@@ -16122,6 +16214,12 @@ When answering:
         lastRefreshStatus: snapshot?.lastRefreshStatus,
         deviceType: cwvDaily?.deviceType || 'mobile',
         url: cwvDaily?.url || null,
+        // New fields for enhanced performance monitoring
+        regressions,
+        dataSufficiency,
+        mobileVsDesktop,
+        issueTypes,
+        issuesSummary,
       });
     } catch (error: any) {
       logger.error("API", "Failed to get speedster summary", { error: error.message });
@@ -20669,6 +20767,7 @@ Return JSON in this exact format:
 
   app.use('/api', governanceRoutes);
   app.use('/api', websiteRoutes);
+  app.use('/api/ops-dashboard', opsDashboardRouter);
   app.use('/api/synthesis', synthesisRouter);
   app.use('/api/orchestration', orchestrationRouter);
   app.use('/api/system', systemControlRoutes); // Step 10.6: Kill switches & system control

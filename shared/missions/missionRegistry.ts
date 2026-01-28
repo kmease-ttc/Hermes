@@ -71,6 +71,28 @@ export const MISSION_REGISTRY: Record<string, MissionDefinition> = {
     autoFixable: false,
     handlerKey: 'speedster.analyzePerformance',
   },
+  detect_performance_regressions: {
+    missionId: 'detect_performance_regressions',
+    crewId: 'speedster',
+    title: 'Detect Performance Regressions',
+    description: 'Pull regression data from CWV monitoring and surface material performance changes',
+    impact: 'high',
+    effort: 'S',
+    cooldownHours: 12,
+    autoFixable: false,
+    handlerKey: 'speedster.detectRegressions',
+  },
+  compare_mobile_desktop: {
+    missionId: 'compare_mobile_desktop',
+    crewId: 'speedster',
+    title: 'Compare Mobile vs Desktop',
+    description: 'Run CWV scans for both mobile and desktop strategies and surface performance differences',
+    impact: 'medium',
+    effort: 'M',
+    cooldownHours: 24,
+    autoFixable: false,
+    handlerKey: 'speedster.compareMobileDesktop',
+  },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LOOKOUT (SERP Tracking)

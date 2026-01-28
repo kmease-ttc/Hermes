@@ -16,10 +16,10 @@ const TEST_DOMAIN = 'www.test-dashboard-site.example';
  * Flow:
  *   1. Register a user
  *   2. Log in to obtain a session cookie
- *   3. POST /api/sites to create a new site
+ *   3. POST /api/sites to add a new site to the dashboard
  *   4. GET /api/sites to confirm it appears in the list
  *   5. GET /api/dashboard/:siteId to confirm the dashboard endpoint responds
- *   6. Cleanup: delete the site
+ *   6. Cleanup: remove the site
  */
 
 let sessionCookie = '';
@@ -108,7 +108,7 @@ function skipIfNoServer() {
 
 describe('Add site to dashboard', () => {
 
-  it('should reject site creation without authentication', async () => {
+  it('should reject adding a site without authentication', async () => {
     if (skipIfNoServer()) return;
 
     const res = await fetch(`${BASE}/api/sites`, {
@@ -127,7 +127,7 @@ describe('Add site to dashboard', () => {
     expect(data.error).toBeDefined();
   });
 
-  it('should reject site creation with missing displayName', async () => {
+  it('should reject adding a site with missing displayName', async () => {
     if (skipIfNoServer() || !sessionCookie) return;
 
     const res = await fetch(`${BASE}/api/sites`, {
@@ -149,7 +149,7 @@ describe('Add site to dashboard', () => {
     expect(Array.isArray(data.details)).toBe(true);
   });
 
-  it('should reject site creation with invalid baseUrl', async () => {
+  it('should reject adding a site with invalid baseUrl', async () => {
     if (skipIfNoServer() || !sessionCookie) return;
 
     const res = await fetch(`${BASE}/api/sites`, {
@@ -170,7 +170,7 @@ describe('Add site to dashboard', () => {
     expect(data.error).toContain('Validation');
   });
 
-  it('should create a site with valid data and session', async () => {
+  it('should add a site to the dashboard with valid data and session', async () => {
     if (skipIfNoServer()) return;
     if (!sessionCookie) {
       console.warn('  → skipped (no session – login may have failed; is the user verified?)');
@@ -243,7 +243,7 @@ describe('Add site to dashboard', () => {
     }
   });
 
-  it('should be able to delete the created site', async () => {
+  it('should be able to remove the added site', async () => {
     if (skipIfNoServer() || !sessionCookie || !createdSiteId) return;
 
     const res = await fetch(`${BASE}/api/sites/${createdSiteId}`, {

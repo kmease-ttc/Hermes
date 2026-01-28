@@ -75,14 +75,14 @@ export const MOCK_AGENT_INSIGHTS: Record<string, MockAgentData> = {
   serp_intel: {
     score: 68,
     findings: [
-      { label: "Keywords tracked", value: 48 },
+      { label: "Priority keywords tracked", value: 48 },
       { label: "Keywords in Top 10", value: 12 },
-      { label: "Position changes (week)", value: "+3 avg" },
+      { label: "Striking-distance (pos 11–20)", value: 9 },
     ],
     nextSteps: [
-      { step: 1, action: "Push page 2 keywords to page 1" },
-      { step: 2, action: "Defend dropping positions on core terms" },
-      { step: 3, action: "Add 5 new target keywords to tracking" },
+      { step: 1, action: "Push 9 striking-distance keywords to page 1" },
+      { step: 2, action: "Investigate 3 core terms losing position to competitors" },
+      { step: 3, action: "Resolve cannibalization on 2 keywords mapped to multiple pages" },
     ],
   },
   core_web_vitals: {
