@@ -29,7 +29,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
+  let step = "init";
   try {
+    step = "parse";
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
@@ -40,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { email, password, displayName, scanId } = parsed.data;
 
+    let step = "getUserByEmail";
     // Check if user exists
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
@@ -50,8 +53,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    step = "hashPassword";
     // Create user (unverified)
     const passwordHash = await hashPassword(password);
+
+    step = "createUser";
     const user = await createUser({
       email,
       passwordHash,
@@ -89,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: false,
       error: "Registration failed",
       details: error.message,
+      step: typeof step !== 'undefined' ? step : 'unknown',
     });
   }
 }
