@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Check if token is expired
-    if (new Date() > resetToken.expires_at) {
+    if (new Date() > new Date(resetToken.expires_at)) {
       return res.status(400).json({
         success: false,
         error: "Reset link has expired. Please request a new one.",

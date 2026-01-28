@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Check if token is expired
-    if (new Date() > verificationToken.expires_at) {
+    if (new Date() > new Date(verificationToken.expires_at)) {
       return res.status(400).json({
         success: false,
         error: "Verification link has expired. Please request a new one.",

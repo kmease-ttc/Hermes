@@ -48,9 +48,10 @@ export function setSessionCookie(res: VercelResponse, token: string): void {
 }
 
 export function clearSessionCookie(res: VercelResponse): void {
+  const secure = process.env.NODE_ENV === "production";
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`
+    `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${secure ? "; Secure" : ""}`
   );
 }
 
@@ -108,7 +109,7 @@ export async function deleteSession(token: string): Promise<void> {
 
 // Build session user response object
 export async function buildSessionUserResponse(user: User) {
-  const sitesResult = await pool().query(`SELECT site_id FROM sites`);
+  const sitesResult = await pool().query(`SELECT site_id FROM sites WHERE user_id = $1`, [user.id]);
   const websites = sitesResult.rows.map((s: any) => s.site_id);
 
   return {
