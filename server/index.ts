@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { startScheduler } from "./scheduler";
 import { initializeDatabase } from "./db";
 import { startWorker } from "./siteGeneration/worker";
+import { initializeQueueOrchestrator } from "./queueOrchestrator";
 import crypto from "crypto";
 
 const app = express();
@@ -94,6 +95,8 @@ app.use((req, res, next) => {
 
 (async () => {
   await initializeDatabase();
+  await initializeQueueOrchestrator();
+  log("✅ Queue orchestrator initialized");
   await registerRoutes(httpServer, app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

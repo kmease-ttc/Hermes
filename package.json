@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@arclo/kbase-client": "file:../Woker-Knowledge-Base/packages/kbase-client",
+    "queue-client": "file:../queue-client",
+    "arclo-contracts": "file:../arclo-contracts",
     "@bitwarden/sdk-napi": "^1.0.0",
     "@google-cloud/storage": "^7.18.0",
     "@hookform/resolvers": "^3.10.0",
