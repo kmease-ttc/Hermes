@@ -19,6 +19,7 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [existingAccount, setExistingAccount] = useState(false);
   const [success, setSuccess] = useState(false);
   const [, navigate] = useLocation();
   const searchString = useSearch();
@@ -40,8 +41,8 @@ export default function Signup() {
     },
     onSuccess: (data) => {
       if (data.existingAccount) {
-        // Redirect to login with a message
-        navigate(`/login?message=${encodeURIComponent("You already have an account. Please sign in.")}&email=${encodeURIComponent(email)}`);
+        setError(null);
+        setExistingAccount(true);
       } else {
         setSuccess(true);
       }
@@ -54,6 +55,7 @@ export default function Signup() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setExistingAccount(false);
 
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all required fields");
@@ -140,6 +142,17 @@ export default function Signup() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {existingAccount && (
+                  <Alert className="border-[#15803D]/30 bg-[#15803D]/10">
+                    <CheckCircle className="h-4 w-4 text-[#15803D]" />
+                    <AlertDescription className="text-[#15803D]">
+                      An account with this email already exists.{" "}
+                      <a href={`/login?email=${encodeURIComponent(email)}`} className="font-medium underline hover:opacity-80">
+                        Sign in instead
+                      </a>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
