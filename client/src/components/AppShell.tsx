@@ -9,7 +9,6 @@ import {
   FileText, 
   Play, 
   Settings, 
-  Plug, 
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -18,8 +17,7 @@ import {
   Target,
   Award,
   Globe,
-  Bell,
-  Key
+  Bell
 } from "lucide-react";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 import { Button } from "@/components/ui/button";
@@ -41,12 +39,10 @@ const NAV_ITEMS = [
 ];
 
 const SETTINGS_ITEMS = [
-  { path: "/app/settings", label: "General", icon: Settings },
-  { path: "/app/integrations", label: "Integrations", icon: Plug },
+  { path: "/app/settings", label: "Settings", icon: Settings },
   { path: "/app/tickets", label: "Tickets", icon: Ticket },
   { path: "/app/changes", label: "Changes", icon: FileText },
   { path: "/app/runs", label: "Runs", icon: Play },
-  { path: "/app/api-keys", label: "API Keys", icon: Key },
   { path: "/app/notifications", label: "Notifications", icon: Bell },
 ];
 

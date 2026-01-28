@@ -147,7 +147,7 @@ export default function Pricing() {
               {plans.map((plan) => (
                 <div 
                   key={plan.name}
-                  className={`rounded-lg p-6 ${plan.bgColor} border ${plan.borderColor} relative`}
+                  className={`rounded-lg p-6 ${plan.bgColor} border ${plan.borderColor} relative flex flex-col`}
                   data-testid={`pricing-card-${plan.name.toLowerCase()}`}
                 >
                   {plan.popular && (
@@ -185,7 +185,7 @@ export default function Pricing() {
                     {plan.description}
                   </p>
                   
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
                         <Check className={`w-4 h-4 ${plan.accentColor} shrink-0 mt-0.5`} />
@@ -194,7 +194,7 @@ export default function Pricing() {
                     ))}
                   </ul>
                   
-                  <Link href={plan.name === "Enterprise" ? "/contact" : plan.popular ? ROUTES.SCAN : ROUTES.SIGNUP}>
+                  <Link href={plan.name === "Enterprise" ? ROUTES.CONTACT : plan.popular ? ROUTES.SCAN : ROUTES.SIGNUP}>
                     {plan.popular ? (
                       <BrandButton 
                         variant="primary"
@@ -236,7 +236,7 @@ export default function Pricing() {
                     We work with agencies and enterprises to create tailored SEO automation solutions.
                   </p>
                 </div>
-                <Link href="/contact">
+                <Link href={ROUTES.CONTACT}>
                   <Button
                     variant="outline"
                     className="border-violet-300 text-violet-700 hover:bg-violet-100 bg-white"

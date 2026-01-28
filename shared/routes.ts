@@ -43,6 +43,7 @@ export const ROUTES = {
   HOW_IT_WORKS: "/how-it-works",
   USE_CASES: "/use-cases",
   PRICING: "/pricing",
+  CONTACT: "/contact",
   EXAMPLES: "/examples",
   EXAMPLE_PREVIEW: "/examples/:exampleId",
   MANAGED_SITE: "/managed-site",
@@ -231,6 +232,7 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.USE_CASES,
   ROUTES.PRICING,
   ROUTES.MANAGED_SITE,
+  ROUTES.CONTACT,
 
   // App routes
   ROUTES.HOME,
@@ -356,6 +358,7 @@ export function isMarketingRoute(path: string): boolean {
     ROUTES.USE_CASES,
     ROUTES.PRICING,
     ROUTES.MANAGED_SITE,
+    ROUTES.CONTACT,
     ROUTES.TERMS,
     ROUTES.PRIVACY,
   ];

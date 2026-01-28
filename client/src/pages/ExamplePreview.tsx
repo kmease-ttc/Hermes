@@ -258,6 +258,23 @@ export default function ExamplePreview() {
 
       {/* Mock website preview */}
       <div className="bg-white">
+        {/* ===== SITE HEADER ===== */}
+        <header className="bg-gray-900 text-white">
+          <div className="max-w-6xl mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
+            <span className="text-lg font-bold tracking-tight">{example.business}</span>
+            <nav className="hidden md:flex items-center gap-6 text-sm text-gray-300">
+              <span className="hover:text-white cursor-default">Services</span>
+              <span className="hover:text-white cursor-default">About</span>
+              <span className="hover:text-white cursor-default">Reviews</span>
+              <span className="hover:text-white cursor-default">Contact</span>
+            </nav>
+            <span className="inline-flex items-center gap-2 bg-white text-gray-900 font-semibold px-4 py-2 rounded-lg text-sm cursor-default">
+              <Phone className="h-3.5 w-3.5" />
+              {example.phone}
+            </span>
+          </div>
+        </header>
+
         {/* ===== HERO SECTION ===== */}
         <section className="relative">
           <div className="relative h-[420px] md:h-[520px] overflow-hidden">
@@ -266,17 +283,17 @@ export default function ExamplePreview() {
               alt={`${example.business} hero`}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/65 to-black/40" />
             <div className="absolute inset-0 flex items-center">
               <div className="max-w-6xl mx-auto px-6 md:px-10 w-full">
                 <div className="max-w-xl">
-                  <p className="text-white/80 text-sm font-medium uppercase tracking-wider mb-3">
+                  <p className="text-white text-sm font-semibold uppercase tracking-wider mb-3">
                     {example.industry} · {example.city}
                   </p>
-                  <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                  <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
                     {example.business}
                   </h1>
-                  <p className="text-lg md:text-xl text-white/90 mb-8">
+                  <p className="text-lg md:text-xl text-white mb-8 drop-shadow-md">
                     {example.tagline}
                   </p>
                   <div className="flex flex-wrap gap-3">
@@ -284,7 +301,7 @@ export default function ExamplePreview() {
                       <Phone className="h-4 w-4" />
                       Call {example.phone}
                     </span>
-                    <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-white font-semibold px-6 py-3 rounded-lg text-sm border border-white/20 cursor-default">
+                    <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-6 py-3 rounded-lg text-sm border border-white/30 cursor-default">
                       Get a Free Quote
                     </span>
                   </div>
@@ -326,7 +343,7 @@ export default function ExamplePreview() {
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
                 Our Services
               </h2>
-              <p className="text-gray-500 max-w-xl mx-auto">
+              <p className="text-gray-600 max-w-xl mx-auto">
                 Professional {example.industry.toLowerCase()} services tailored to your needs.
               </p>
             </div>
@@ -337,7 +354,7 @@ export default function ExamplePreview() {
                   className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
                 >
                   <h3 className="font-semibold text-gray-900 mb-2">{service.name}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{service.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{service.description}</p>
                   <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 mt-4 cursor-default">
                     Learn more <ChevronRight className="h-3.5 w-3.5" />
                   </span>
@@ -366,7 +383,7 @@ export default function ExamplePreview() {
               </div>
               <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Request a Free Quote</h3>
-                <p className="text-sm text-gray-500 mb-6">Get a no-obligation estimate for your project.</p>
+                <p className="text-sm text-gray-600 mb-6">Get a no-obligation estimate for your project.</p>
                 <div className="space-y-3">
                   <div className="h-10 bg-gray-100 rounded-lg border border-gray-200" />
                   <div className="h-10 bg-gray-100 rounded-lg border border-gray-200" />

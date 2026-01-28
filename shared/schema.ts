@@ -518,6 +518,7 @@ export type KeywordAction = typeof keywordActions.$inferSelect;
 export const sites = pgTable("sites", {
   id: serial("id").primaryKey(),
   siteId: text("site_id").notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   displayName: text("display_name").notNull(),
   baseUrl: text("base_url").notNull(),
   category: text("category"), // clinic, seo_tool, property_mgmt, farm_shop, etc.
@@ -540,6 +541,14 @@ export const sites = pgTable("sites", {
   active: boolean("active").default(true),
   geoScope: text("geo_scope"), // "local" | "national"
   geoLocation: jsonb("geo_location").$type<{ city?: string; state?: string; country?: string } | null>(), // Location for local scope
+  businessDetails: jsonb("business_details").$type<{
+    phone?: string;
+    email?: string;
+    address?: string;
+    hours?: string;
+    description?: string;
+    services?: string[];
+  } | null>(), // Business contact & service info
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

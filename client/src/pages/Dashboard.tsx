@@ -85,7 +85,9 @@ export default function Dashboard() {
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => null);
-        const message = errBody?.details?.join(", ") || errBody?.error || "Failed to create site";
+        const message = errBody?.details?.join(", ")
+          || (typeof errBody?.error === 'string' ? errBody.error : errBody?.error?.message)
+          || `Failed to create site (${res.status})`;
         throw new Error(message);
       }
       return res.json();

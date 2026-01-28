@@ -46,6 +46,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Pricing from "@/pages/Pricing";
+import Contact from "@/pages/Contact";
 import CreateSite from "@/pages/CreateSite";
 import WebsiteGenerator from "@/pages/WebsiteGenerator";
 import SitePreview from "@/pages/SitePreview";
@@ -139,6 +140,7 @@ function Router() {
       <Route path={ROUTES.FREE_REPORT_SHARE} component={FreeReport} />
       <Route path={ROUTES.FREE_REPORT} component={FreeReport} />
       <Route path={ROUTES.SHARED_REPORT} component={SharedReport} />
+      <Route path={ROUTES.CONTACT} component={Contact} />
       <Route path={ROUTES.MANAGED_SITE} component={ManagedSite} />
       
       {/* ============================================ */}

@@ -122,6 +122,14 @@ const createSiteSchema = z.object({
     state: z.string().optional(),
     country: z.string().optional(),
   }).optional().nullable(),
+  businessDetails: z.object({
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    address: z.string().optional(),
+    hours: z.string().optional(),
+    description: z.string().optional(),
+    services: z.array(z.string()).optional(),
+  }).optional().nullable(),
 });
 
 const updateSiteSchema = createSiteSchema.partial();
@@ -316,6 +324,46 @@ export async function registerRoutes(
       return res.status(500).json({ 
         success: false, 
         message: "Failed to submit lead" 
+      });
+    }
+  });
+
+  const contactSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email is required"),
+    company: z.string().optional(),
+    phone: z.string().optional(),
+    message: z.string().min(1, "Message is required"),
+  });
+
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const parsed = contactSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.errors[0]?.message || "Validation failed",
+        });
+      }
+
+      const data = parsed.data;
+
+      logger.info("Leads", "Contact form submission received", {
+        name: data.name,
+        email: data.email,
+        company: data.company,
+      });
+
+      return res.json({
+        success: true,
+        message: "Message sent successfully",
+      });
+    } catch (error: any) {
+      logger.error("Leads", "Failed to process contact form", { error: error.message });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send message",
       });
     }
   });
@@ -7910,24 +7958,16 @@ Return JSON:
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      
-      const user = await storage.getUserById(userId);
-      if (!user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      // Check if user has access to this siteId
-      const userSites = user.websites || [];
-      if (!userSites.includes(siteId)) {
-        return res.status(403).json({ error: "Access denied to this site" });
-      }
 
-      // Look up site to get domain
-      const sites = await storage.getSites();
-      const site = sites.find(s => s.siteId === siteId);
-      
+      // Look up site and verify ownership
+      const site = await storage.getSiteById(siteId);
+
       if (!site) {
         return res.status(404).json({ error: "Site not found" });
+      }
+
+      if ((site as any).userId && (site as any).userId !== userId) {
+        return res.status(403).json({ error: "Access denied to this site" });
       }
 
       let domain = site.baseUrl || siteId;
@@ -10413,9 +10453,15 @@ Keep responses concise and actionable.`;
   
   app.get("/api/sites", async (req, res) => {
     try {
+      const session = (req as any).session;
+      const userId = session?.userId;
       const activeOnly = req.query.active !== "false";
-      const sites = await storage.getSites(activeOnly);
-      res.json(sites);
+      const allSites = await storage.getSites(activeOnly);
+      // Filter to only return sites owned by the current user
+      const userSites = userId
+        ? allSites.filter((s: any) => s.userId === userId)
+        : [];
+      res.json(userSites);
     } catch (error: any) {
       logger.error("API", "Failed to fetch sites", { error: error.message });
       res.status(500).json({ error: error.message });
@@ -10437,6 +10483,12 @@ Keep responses concise and actionable.`;
 
   app.post("/api/sites", async (req, res) => {
     try {
+      const session = (req as any).session;
+      const userId = session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const parseResult = createSiteSchema.safeParse(req.body);
       if (!parseResult.success) {
         const errors = parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
@@ -10445,9 +10497,10 @@ Keep responses concise and actionable.`;
 
       const data = parseResult.data;
       const siteId = `site_${Date.now()}_${randomUUID().slice(0, 8)}`;
-      
+
       const newSite = await storage.createSite({
         siteId,
+        userId,
         displayName: data.displayName,
         baseUrl: data.baseUrl,
         category: data.category || null,
@@ -10466,6 +10519,7 @@ Keep responses concise and actionable.`;
         status: data.status || "onboarding",
         active: true,
         healthScore: null,
+        businessDetails: data.businessDetails || null,
       });
 
       await storage.saveAuditLog({

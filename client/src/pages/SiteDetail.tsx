@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Save, Globe, Loader2, MapPin, Pencil, AlertTriangle, HelpCircle } from "lucide-react";
+import { ArrowLeft, Save, Globe, Loader2, MapPin, Pencil, AlertTriangle, HelpCircle, Building2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "wouter";
 import { GeoScopeSelector, type GeoScopeValue } from "@/components/site/GeoScopeSelector";
@@ -39,6 +39,14 @@ interface Site {
   createdAt: string;
   geoScope: 'local' | 'national' | null;
   geoLocation: { city?: string; state?: string; country?: string } | null;
+  businessDetails: {
+    phone?: string;
+    email?: string;
+    address?: string;
+    hours?: string;
+    description?: string;
+    services?: string[];
+  } | null;
 }
 
 export default function SiteDetail() {
@@ -64,6 +72,12 @@ export default function SiteDetail() {
     ga4PropertyId: '',
     gscProperty: '',
     adsCustomerId: '',
+    businessPhone: '',
+    businessEmail: '',
+    businessAddress: '',
+    businessHours: '',
+    businessDescription: '',
+    businessServices: '',
   });
 
   const [geoScope, setGeoScope] = useState<GeoScopeValue>({
@@ -114,6 +128,12 @@ export default function SiteDetail() {
         ga4PropertyId: integrations.ga4?.property_id || '',
         gscProperty: integrations.gsc?.property || '',
         adsCustomerId: integrations.google_ads?.customer_id || '',
+        businessPhone: site.businessDetails?.phone || '',
+        businessEmail: site.businessDetails?.email || '',
+        businessAddress: site.businessDetails?.address || '',
+        businessHours: site.businessDetails?.hours || '',
+        businessDescription: site.businessDetails?.description || '',
+        businessServices: (site.businessDetails?.services || []).join('\n'),
       });
       
       const loadedGeoScope: GeoScopeValue = {
@@ -165,6 +185,14 @@ export default function SiteDetail() {
           city: geoScope.city || undefined,
           state: geoScope.state || undefined,
           country: geoScope.country || 'United States',
+        } : null,
+        businessDetails: (data.businessPhone || data.businessEmail || data.businessAddress || data.businessHours || data.businessDescription || data.businessServices) ? {
+          phone: data.businessPhone || undefined,
+          email: data.businessEmail || undefined,
+          address: data.businessAddress || undefined,
+          hours: data.businessHours || undefined,
+          description: data.businessDescription || undefined,
+          services: data.businessServices ? data.businessServices.split('\n').map(s => s.trim()).filter(Boolean) : undefined,
         } : null,
       };
 
@@ -321,6 +349,83 @@ export default function SiteDetail() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-business-details">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                Business Details
+              </CardTitle>
+              <CardDescription>Contact info, hours, and services displayed on your site</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="businessPhone">Phone Number</Label>
+                  <Input
+                    id="businessPhone"
+                    value={formData.businessPhone}
+                    onChange={(e) => setFormData(f => ({ ...f, businessPhone: e.target.value }))}
+                    placeholder="(555) 123-4567"
+                    data-testid="input-business-phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessEmail">Business Email</Label>
+                  <Input
+                    id="businessEmail"
+                    type="email"
+                    value={formData.businessEmail}
+                    onChange={(e) => setFormData(f => ({ ...f, businessEmail: e.target.value }))}
+                    placeholder="info@yourbusiness.com"
+                    data-testid="input-business-email"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessAddress">Address</Label>
+                <Input
+                  id="businessAddress"
+                  value={formData.businessAddress}
+                  onChange={(e) => setFormData(f => ({ ...f, businessAddress: e.target.value }))}
+                  placeholder="123 Main St, Suite 100, Austin, TX 78701"
+                  data-testid="input-business-address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessHours">Hours of Operation</Label>
+                <Input
+                  id="businessHours"
+                  value={formData.businessHours}
+                  onChange={(e) => setFormData(f => ({ ...f, businessHours: e.target.value }))}
+                  placeholder="Mon–Fri: 8AM–6PM · Sat: 9AM–3PM"
+                  data-testid="input-business-hours"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessDescription">Business Description</Label>
+                <Textarea
+                  id="businessDescription"
+                  value={formData.businessDescription}
+                  onChange={(e) => setFormData(f => ({ ...f, businessDescription: e.target.value }))}
+                  placeholder="A short tagline or description of your business"
+                  rows={2}
+                  data-testid="input-business-description"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessServices">Services (one per line)</Label>
+                <Textarea
+                  id="businessServices"
+                  value={formData.businessServices}
+                  onChange={(e) => setFormData(f => ({ ...f, businessServices: e.target.value }))}
+                  placeholder={"AC Repair\nFurnace Installation\nDuct Cleaning"}
+                  rows={4}
+                  data-testid="input-business-services"
+                />
               </div>
             </CardContent>
           </Card>
