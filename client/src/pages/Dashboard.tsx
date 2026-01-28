@@ -6,8 +6,9 @@ import {
   GlassCardTitle,
   GlassCardContent,
 } from "@/components/ui/GlassCard";
-import { ArrowUp, ArrowDown, TrendingUp, AlertTriangle, Trophy, Target } from "lucide-react";
+import { ArrowUp, ArrowDown, TrendingUp, AlertTriangle, Trophy, Target, Plus, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 interface RankingItem {
   keyword: string;
@@ -82,9 +83,15 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center">
         <GlassCard className="max-w-md p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+          <Globe className="w-12 h-12 text-purple-600 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">No Site Selected</h2>
-          <p className="text-gray-600">Please select a site from the dropdown to view your dashboard.</p>
+          <p className="text-gray-600 mb-6">Add a website to start tracking your SEO performance and rankings.</p>
+          <Link href="/app/sites/new">
+            <button className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors">
+              <Plus className="w-5 h-5" />
+              Add Website
+            </button>
+          </Link>
         </GlassCard>
       </div>
     );
