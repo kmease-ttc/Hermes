@@ -69,12 +69,12 @@ export function AgentCard({
   return (
     <Card 
       className={cn(
-        "agent-card relative overflow-hidden transition-all rounded-xl border-l-[3px] glass-card glass-card-purple text-foreground",
-        !isActive && "glass-card-disabled",
-        onClick && !showUnlockOverlay && "cursor-pointer hover:shadow-md",
+        "agent-card relative overflow-hidden transition-all rounded-2xl border bg-card shadow-card text-foreground",
+        !isActive && "opacity-60 border-dashed",
+        onClick && !showUnlockOverlay && "cursor-pointer hover:shadow-cardHover",
         className
       )}
-      style={{ borderLeftColor: crew.color, opacity: 1 }}
+      style={{ borderColor: crew.color, opacity: isActive ? 1 : undefined }}
       onClick={showUnlockOverlay ? undefined : onClick}
       onMouseEnter={handleMouseEnter}
       data-testid={`agent-card-${serviceId}`}
