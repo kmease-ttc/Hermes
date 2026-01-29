@@ -109,8 +109,20 @@ function ProtectedRoute({ component: Component, lightMode = false }: { component
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+
+  return null;
+}
+
 function Router() {
   return (
+    <>
+    <ScrollToTop />
     <Switch>
       {/* ============================================ */}
       {/* MARKETING ROUTES - Public funnel pages */}
@@ -255,6 +267,7 @@ function Router() {
       {/* 404 catch-all */}
       <Route component={NotFound} />
     </Switch>
+    </>
   );
 }
 

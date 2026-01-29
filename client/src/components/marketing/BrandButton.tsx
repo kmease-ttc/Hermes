@@ -49,11 +49,11 @@ export function BrandButton({
     `,
     accent: `
       rounded-xl text-white
-      bg-gradient-to-r from-success to-info
+      bg-gradient-to-r from-[#10B981] to-[#06B6D4]
       shadow-[0_14px_30px_rgba(16,185,129,0.20)]
       hover:shadow-[0_18px_40px_rgba(6,182,212,0.22)]
       hover:-translate-y-0.5
-      focus:outline-none focus:ring-4 focus:ring-success/20
+      focus:outline-none focus:ring-4 focus:ring-[#10B981]/20
     `,
     link: `
       text-brand hover:text-pink-500

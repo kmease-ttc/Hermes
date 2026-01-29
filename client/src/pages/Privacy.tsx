@@ -1,11 +1,11 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function Privacy() {
   return (
-    <DashboardLayout className="dashboard-light">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <MarketingLayout>
+      <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8">
         <div>
           <h1 className="text-3xl font-bold" data-testid="text-privacy-title">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">Last updated: January 2026</p>
@@ -97,6 +97,6 @@ export default function Privacy() {
           By using Arclo, you acknowledge that you have read and understood this Privacy Policy.
         </p>
       </div>
-    </DashboardLayout>
+    </MarketingLayout>
   );
 }

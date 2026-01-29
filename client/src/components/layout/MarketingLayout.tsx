@@ -257,9 +257,9 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
             <div className="space-y-4">
               <h4 className="font-medium text-white">Company</h4>
               <div className="flex flex-col gap-2">
-                <a href="mailto:hello@arclo.io" className="text-sm text-[#CBD5E1] hover:text-white">
-                  Contact
-                </a>
+                <Link href={ROUTES.CONTACT}>
+                  <span className="text-sm text-[#CBD5E1] hover:text-white cursor-pointer">Contact</span>
+                </Link>
                 <Link href={ROUTES.PRIVACY}>
                   <span className="text-sm text-[#CBD5E1] hover:text-white cursor-pointer">Privacy</span>
                 </Link>

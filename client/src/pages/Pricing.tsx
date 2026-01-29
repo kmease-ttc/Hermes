@@ -263,7 +263,7 @@ export default function Pricing() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto items-start">
                 {faqs.map((faq, index) => (
                   <div
                     key={index}

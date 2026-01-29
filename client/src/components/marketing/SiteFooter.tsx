@@ -100,16 +100,12 @@ export default function SiteFooter() {
               <div className="arclo-footer__heading">Company</div>
               <FooterLink href={ROUTES.PRIVACY}>Privacy</FooterLink>
               <FooterLink href={ROUTES.TERMS}>Terms</FooterLink>
-              <FooterLink href="#">Security</FooterLink>
-              <FooterLink href="#">Contact</FooterLink>
+              <FooterLink href={ROUTES.CONTACT}>Contact</FooterLink>
             </div>
 
             <div className="arclo-footer__col">
               <div className="arclo-footer__heading">Resources</div>
-              <FooterLink href="#">Docs</FooterLink>
-              <FooterLink href="/help">Support</FooterLink>
-              <FooterLink href="#">Changelog</FooterLink>
-              <FooterLink href="#">Status</FooterLink>
+              <FooterLink href={ROUTES.HELP}>Support</FooterLink>
             </div>
           </div>
         </div>
