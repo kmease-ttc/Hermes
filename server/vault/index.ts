@@ -1,5 +1,4 @@
 import type { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
-import { bitwardenProvider } from "./BitwardenProvider";
 import { logger } from "../utils/logger";
 
 class EnvVaultProvider implements VaultProvider {
@@ -38,14 +37,8 @@ class EnvVaultProvider implements VaultProvider {
 
 const envProvider = new EnvVaultProvider();
 
-export function getVaultProvider(provider: string = 'env'): VaultProvider {
-  switch (provider) {
-    case 'bitwarden':
-      return bitwardenProvider;
-    case 'env':
-    default:
-      return envProvider;
-  }
+export function getVaultProvider(): VaultProvider {
+  return envProvider;
 }
 
 export async function resolveIntegrationSecrets(
@@ -55,98 +48,76 @@ export async function resolveIntegrationSecrets(
   metaJson: any
 ): Promise<Record<string, string>> {
   const secrets: Record<string, string> = {};
-  const provider = getVaultProvider(vaultProvider);
 
-  if (vaultProvider === 'env') {
-    switch (integrationType) {
-      case 'ga4':
-        secrets.propertyId = process.env.GA4_PROPERTY_ID || metaJson?.property_id || '';
-        break;
-      case 'gsc':
-        secrets.siteUrl = process.env.GSC_SITE || metaJson?.property || '';
-        break;
-      case 'google_ads':
-        secrets.customerId = process.env.ADS_CUSTOMER_ID || metaJson?.customer_id || '';
-        secrets.developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
-        break;
-      case 'serp':
-        secrets.apiKey = process.env.SERP_API_KEY || '';
-        break;
-      case 'clarity':
-        secrets.apiKey = process.env.CLARITY_API_KEY || '';
-        break;
-      case 'google_oauth':
-        secrets.clientId = process.env.GOOGLE_CLIENT_ID || '';
-        secrets.clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
-        break;
-    }
-  } else if (vaultProvider === 'bitwarden' && vaultItemId) {
-    const secretValue = await provider.getSecret(vaultItemId);
-    if (secretValue) {
-      try {
-        const parsed = JSON.parse(secretValue);
-        Object.assign(secrets, parsed);
-      } catch {
-        secrets.value = secretValue;
-      }
-    }
+  switch (integrationType) {
+    case 'ga4':
+      secrets.propertyId = process.env.GA4_PROPERTY_ID || metaJson?.property_id || '';
+      break;
+    case 'gsc':
+      secrets.siteUrl = process.env.GSC_SITE || metaJson?.property || '';
+      break;
+    case 'google_ads':
+      secrets.customerId = process.env.ADS_CUSTOMER_ID || metaJson?.customer_id || '';
+      secrets.developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
+      break;
+    case 'serp':
+      secrets.apiKey = process.env.SERP_API_KEY || '';
+      break;
+    case 'clarity':
+      secrets.apiKey = process.env.CLARITY_API_KEY || '';
+      break;
+    case 'google_oauth':
+      secrets.clientId = process.env.GOOGLE_CLIENT_ID || '';
+      secrets.clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+      break;
   }
 
   return secrets;
 }
 
 export async function checkVaultHealth(): Promise<{
-  bitwarden: VaultHealthStatus;
   env: VaultHealthStatus;
 }> {
-  const [bitwardenStatus, envStatus] = await Promise.all([
-    bitwardenProvider.healthCheck(),
-    envProvider.healthCheck(),
-  ]);
-
-  return {
-    bitwarden: bitwardenStatus,
-    env: envStatus,
-  };
+  const envStatus = await envProvider.healthCheck();
+  return { env: envStatus };
 }
 
 export async function getServiceSecrets(
   serviceName: string
 ): Promise<{ base_url?: string; api_key?: string } | null> {
   const envKeyMap: Record<string, { baseUrl: string; apiKey: string }> = {
-    'seo_kbase': { 
-      baseUrl: 'SEO_KBASE_BASE_URL', 
-      apiKey: 'SEO_KBASE_API_KEY' 
+    'seo_kbase': {
+      baseUrl: 'SEO_KBASE_BASE_URL',
+      apiKey: 'SEO_KBASE_API_KEY'
     },
-    'seo_change_executor': { 
-      baseUrl: 'SEO_CHANGE_EXECUTOR_BASE_URL', 
-      apiKey: 'SEO_CHANGE_EXECUTOR_API_KEY' 
+    'seo_change_executor': {
+      baseUrl: 'SEO_CHANGE_EXECUTOR_BASE_URL',
+      apiKey: 'SEO_CHANGE_EXECUTOR_API_KEY'
     },
-    'seo_serp': { 
-      baseUrl: 'SEO_SERP_BASE_URL', 
-      apiKey: 'SEO_SERP_API_KEY' 
+    'seo_serp': {
+      baseUrl: 'SEO_SERP_BASE_URL',
+      apiKey: 'SEO_SERP_API_KEY'
     },
-    'seo_core_web_vitals': { 
-      baseUrl: 'SEO_CORE_WEB_VITALS_BASE_URL', 
-      apiKey: 'SEO_CORE_WEB_VITALS_API_KEY' 
+    'seo_core_web_vitals': {
+      baseUrl: 'SEO_CORE_WEB_VITALS_BASE_URL',
+      apiKey: 'SEO_CORE_WEB_VITALS_API_KEY'
     },
   };
-  
+
   const envKeys = envKeyMap[serviceName];
   if (!envKeys) {
     logger.warn("Vault", `Unknown service: ${serviceName}`);
     return null;
   }
-  
+
   const base_url = process.env[envKeys.baseUrl];
   const api_key = process.env[envKeys.apiKey];
-  
+
   if (!base_url && !api_key) {
     return null;
   }
-  
+
   return { base_url, api_key };
 }
 
 export type { VaultProvider, VaultHealthStatus, VaultSecretMeta } from "./VaultProvider";
-export { bitwardenProvider } from "./BitwardenProvider";

@@ -1,5 +1,5 @@
 import { storage } from "../storage";
-import { bitwardenProvider } from "../vault/BitwardenProvider";
+import { resolveWorkerConfig } from "../workerConfigResolver";
 import { servicesCatalog, computeMissingOutputs } from "@shared/servicesCatalog";
 import { SERVICE_SECRET_MAP, getServiceBySlug } from "@shared/serviceSecretMap";
 import type { InsertQaRun, InsertQaRunItem, QaRun, QaRunItem } from "@shared/schema";
@@ -74,10 +74,10 @@ async function testConnection(serviceSlug: string): Promise<TestResult> {
   }
 
   try {
-    if (mapping.requiresBaseUrl && mapping.bitwardenSecret) {
-      const config = await bitwardenProvider.getWorkerConfig(mapping.bitwardenSecret);
-      
-      if (!config.valid || !config.baseUrl) {
+    if (mapping.requiresBaseUrl) {
+      const config = await resolveWorkerConfig(serviceSlug);
+
+      if (!config.valid || !config.base_url) {
         return {
           serviceSlug,
           testType: "connection",
@@ -87,18 +87,18 @@ async function testConnection(serviceSlug: string): Promise<TestResult> {
         };
       }
 
-      const healthUrl = `${config.baseUrl}/health`;
+      const healthUrl = `${config.base_url}${config.health_path || "/health"}`;
       const fetchStart = Date.now();
-      
+
       try {
         const response = await fetch(healthUrl, {
           method: "GET",
-          headers: config.apiKey ? { "X-Api-Key": config.apiKey } : {},
+          headers: config.api_key ? { "X-Api-Key": config.api_key } : {},
           signal: AbortSignal.timeout(10000),
         });
-        
+
         const latencyMs = Date.now() - fetchStart;
-        
+
         if (response.ok) {
           return {
             serviceSlug,
@@ -131,17 +131,16 @@ async function testConnection(serviceSlug: string): Promise<TestResult> {
       }
     }
 
-    if (mapping.bitwardenSecret) {
-      const secrets = await bitwardenProvider.listSecrets();
-      const hasSecret = secrets.some(s => s.key === mapping.bitwardenSecret);
-      
-      if (hasSecret) {
+    // Check if env vars are configured for non-worker services
+    if (mapping.envVar) {
+      const hasEnvVar = !!process.env[mapping.envVar];
+      if (hasEnvVar) {
         return {
           serviceSlug,
           testType: "connection",
           status: "pass",
           durationMs: Date.now() - startTime,
-          details: "Secret present in vault",
+          details: "Environment variable configured",
         };
       } else {
         return {
@@ -149,7 +148,7 @@ async function testConnection(serviceSlug: string): Promise<TestResult> {
           testType: "connection",
           status: "fail",
           durationMs: Date.now() - startTime,
-          details: `Missing secret: ${mapping.bitwardenSecret}`,
+          details: `Missing env var: ${mapping.envVar}`,
         };
       }
     }
@@ -198,10 +197,10 @@ async function testSmoke(serviceSlug: string, siteId?: string): Promise<TestResu
   }
 
   try {
-    if (mapping.requiresBaseUrl && mapping.bitwardenSecret) {
-      const config = await bitwardenProvider.getWorkerConfig(mapping.bitwardenSecret);
-      
-      if (!config.valid || !config.baseUrl) {
+    if (mapping.requiresBaseUrl) {
+      const config = await resolveWorkerConfig(serviceSlug);
+
+      if (!config.valid || !config.base_url) {
         return {
           serviceSlug,
           testType: "smoke",
@@ -211,15 +210,15 @@ async function testSmoke(serviceSlug: string, siteId?: string): Promise<TestResu
         };
       }
 
-      const testUrl = `${config.baseUrl}/health/test`;
+      const testUrl = `${config.base_url}/health/test`;
       const fetchStart = Date.now();
-      
+
       try {
         const response = await fetch(testUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(config.apiKey ? { "X-Api-Key": config.apiKey } : {}),
+            ...(config.api_key ? { "X-Api-Key": config.api_key } : {}),
           },
           body: JSON.stringify({ mode: "smoke", limit: 5 }),
           signal: AbortSignal.timeout(30000),

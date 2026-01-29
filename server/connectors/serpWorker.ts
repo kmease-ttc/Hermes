@@ -1,5 +1,4 @@
 import { logger } from "../utils/logger";
-import { bitwardenProvider } from "../vault/BitwardenProvider";
 
 export interface SerpWorkerSite {
   domain: string;
