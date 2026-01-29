@@ -43,7 +43,6 @@ export const ROUTES = {
   HOW_IT_WORKS: "/how-it-works",
   USE_CASES: "/use-cases",
   PRICING: "/pricing",
-  CONTACT: "/contact",
   EXAMPLES: "/examples",
   EXAMPLE_PREVIEW: "/examples/:exampleId",
   MANAGED_SITE: "/managed-site",
@@ -89,12 +88,9 @@ export const ROUTES = {
   SITES: "/app/sites",
   SITE_DETAIL: "/app/sites/:siteId",
   SITE_NEW: "/app/sites/new",
-  NOTIFICATIONS: "/app/notifications",
-  HELP: "/app/help",
-  
-  // Managed Websites (target sites Hermes can modify)
   WEBSITES: "/app/websites",
-  WEBSITE_DETAIL: "/app/websites/:websiteId",
+  WEBSITE_REGISTRY_DETAIL: "/app/websites/:websiteId",
+  HELP: "/app/help",
   
   // Developer pages
   DEV_PALETTE: "/app/dev/palette",
@@ -125,7 +121,7 @@ export const buildRoute = {
   site: (siteId: string) => `/app/sites/${siteId}`,
   settingsTab: (tab: string) => `/app/settings?tab=${tab}`,
   settingsWebsite: (siteId: string) => `/app/settings/websites/${siteId}`,
-  website: (websiteId: string) => `/app/websites/${websiteId}`,
+  websiteDetail: (websiteId: string) => `/app/websites/${websiteId}`,
 } as const;
 
 // ============================================
@@ -232,8 +228,7 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.USE_CASES,
   ROUTES.PRICING,
   ROUTES.MANAGED_SITE,
-  ROUTES.CONTACT,
-
+  
   // App routes
   ROUTES.HOME,
   ROUTES.DASHBOARD,
@@ -252,16 +247,15 @@ const ALL_STATIC_ROUTES = new Set([
   ROUTES.BENCHMARKS,
   ROUTES.ACHIEVEMENTS,
   ROUTES.INTEGRATIONS,
-  ROUTES.NOTIFICATIONS,
   ROUTES.SETTINGS,
   ROUTES.SETTINGS_WEBSITES,
   ROUTES.SITES,
   ROUTES.SITE_NEW,
-  ROUTES.HELP,
   ROUTES.WEBSITES,
+  ROUTES.HELP,
   ROUTES.DEV_PALETTE,
   ROUTES.DEV_LINEAGE,
-
+  
   // Legal routes
   ROUTES.TERMS,
   ROUTES.PRIVACY,
@@ -275,7 +269,7 @@ const DYNAMIC_ROUTE_PATTERNS = [
   /^\/report\/free\/[a-zA-Z0-9_-]+\/share\/[a-zA-Z0-9_-]+$/,
   /^\/share\/[a-zA-Z0-9_-]+$/,
   /^\/examples\/[a-zA-Z0-9_-]+$/,
-
+  
   // App dynamic routes
   /^\/app\/agents\/[a-zA-Z0-9_-]+$/,
   /^\/app\/runs\/[a-zA-Z0-9_-]+$/,
@@ -358,7 +352,6 @@ export function isMarketingRoute(path: string): boolean {
     ROUTES.USE_CASES,
     ROUTES.PRICING,
     ROUTES.MANAGED_SITE,
-    ROUTES.CONTACT,
     ROUTES.TERMS,
     ROUTES.PRIVACY,
   ];

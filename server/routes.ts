@@ -75,7 +75,7 @@ import { CREW_KPI_CONTRACTS } from "@shared/crew/kpiSchemas";
 import { computeHealthStatus, computeDelta, type HealthStatus, type DeltaInfo } from "@shared/crew/kpiSnapshot";
 import { normalizeWorkerOutputToKpis } from "./crew/kpiNormalizers";
 import { submitJob } from "./agents/submitJob";
-import { jobQueue } from "@shared/schema";
+import { jobQueue, managedWebsites, managedWebsiteSettings, managedWebsiteIntegrations } from "@shared/schema";
 import { desc } from "drizzle-orm";
 
 const createSiteSchema = z.object({
@@ -22176,6 +22176,252 @@ Return JSON in this exact format:
         error: "Failed to fetch jobs",
         details: error.message
       });
+    }
+  });
+
+  // ============================================================
+  // Website Registry - Managed target websites
+  // ============================================================
+
+  const createWebsiteSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    domain: z.string().min(1, "Domain is required"),
+  });
+
+  const updateWebsiteSchema = z.object({
+    name: z.string().min(1).optional(),
+    status: z.enum(["active", "paused"]).optional(),
+    settings: z.object({
+      competitors: z.array(z.string()).optional(),
+      targetServicesEnabled: z.array(z.string()).optional(),
+      notes: z.string().nullable().optional(),
+    }).optional(),
+  });
+
+  const publishJobSchema = z.object({
+    job_type: z.string().min(1, "job_type is required"),
+  });
+
+  // POST /api/websites - Create a managed website
+  app.post("/api/websites", async (req, res) => {
+    try {
+      const parsed = createWebsiteSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          ok: false,
+          error: parsed.error.errors[0]?.message || "Validation failed",
+        });
+      }
+
+      const { name, domain } = parsed.data;
+      const id = randomUUID();
+
+      // Check for duplicate domain
+      const existing = await db
+        .select({ id: managedWebsites.id })
+        .from(managedWebsites)
+        .where(eq(managedWebsites.domain, domain))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(409).json({
+          ok: false,
+          error: `Website with domain "${domain}" already exists`,
+        });
+      }
+
+      const [website] = await db
+        .insert(managedWebsites)
+        .values({ id, name, domain, status: "active" })
+        .returning();
+
+      // Create default settings row
+      await db.insert(managedWebsiteSettings).values({
+        websiteId: id,
+        competitors: [],
+        targetServicesEnabled: [],
+        notes: null,
+      });
+
+      logger.info("WebsiteRegistry", `Created website: ${name} (${domain})`, { id });
+
+      res.status(201).json({ ok: true, website });
+    } catch (error: any) {
+      logger.error("WebsiteRegistry", "Failed to create website", { error: error.message });
+      res.status(500).json({ ok: false, error: "Failed to create website" });
+    }
+  });
+
+  // GET /api/websites - List all managed websites
+  app.get("/api/websites", async (req, res) => {
+    try {
+      const websites = await db
+        .select()
+        .from(managedWebsites)
+        .orderBy(desc(managedWebsites.createdAt));
+
+      res.json({ ok: true, websites });
+    } catch (error: any) {
+      logger.error("WebsiteRegistry", "Failed to list websites", { error: error.message });
+      res.status(500).json({ ok: false, error: "Failed to list websites" });
+    }
+  });
+
+  // GET /api/websites/:id - Get website detail with settings
+  app.get("/api/websites/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [website] = await db
+        .select()
+        .from(managedWebsites)
+        .where(eq(managedWebsites.id, id))
+        .limit(1);
+
+      if (!website) {
+        return res.status(404).json({ ok: false, error: "Website not found" });
+      }
+
+      const [settings] = await db
+        .select()
+        .from(managedWebsiteSettings)
+        .where(eq(managedWebsiteSettings.websiteId, id))
+        .limit(1);
+
+      const integrations = await db
+        .select()
+        .from(managedWebsiteIntegrations)
+        .where(eq(managedWebsiteIntegrations.websiteId, id));
+
+      res.json({ ok: true, website, settings: settings || null, integrations });
+    } catch (error: any) {
+      logger.error("WebsiteRegistry", "Failed to get website", { error: error.message });
+      res.status(500).json({ ok: false, error: "Failed to get website" });
+    }
+  });
+
+  // PATCH /api/websites/:id - Update website status/settings
+  app.patch("/api/websites/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const parsed = updateWebsiteSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          ok: false,
+          error: parsed.error.errors[0]?.message || "Validation failed",
+        });
+      }
+
+      const { name, status, settings } = parsed.data;
+
+      // Check website exists
+      const [existing] = await db
+        .select({ id: managedWebsites.id })
+        .from(managedWebsites)
+        .where(eq(managedWebsites.id, id))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ ok: false, error: "Website not found" });
+      }
+
+      // Update website fields
+      const websiteUpdates: Record<string, any> = { updatedAt: new Date() };
+      if (name !== undefined) websiteUpdates.name = name;
+      if (status !== undefined) websiteUpdates.status = status;
+
+      const [website] = await db
+        .update(managedWebsites)
+        .set(websiteUpdates)
+        .where(eq(managedWebsites.id, id))
+        .returning();
+
+      // Update settings if provided
+      if (settings) {
+        const settingsUpdates: Record<string, any> = { updatedAt: new Date() };
+        if (settings.competitors !== undefined) settingsUpdates.competitors = settings.competitors;
+        if (settings.targetServicesEnabled !== undefined) settingsUpdates.targetServicesEnabled = settings.targetServicesEnabled;
+        if (settings.notes !== undefined) settingsUpdates.notes = settings.notes;
+
+        await db
+          .update(managedWebsiteSettings)
+          .set(settingsUpdates)
+          .where(eq(managedWebsiteSettings.websiteId, id));
+      }
+
+      logger.info("WebsiteRegistry", `Updated website: ${id}`, { name, status });
+
+      res.json({ ok: true, website });
+    } catch (error: any) {
+      logger.error("WebsiteRegistry", "Failed to update website", { error: error.message });
+      res.status(500).json({ ok: false, error: "Failed to update website" });
+    }
+  });
+
+  // POST /api/websites/:id/jobs - Publish a job to the queue for a managed website
+  app.post("/api/websites/:id/jobs", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const parsed = publishJobSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          ok: false,
+          error: parsed.error.errors[0]?.message || "Validation failed",
+        });
+      }
+
+      const { job_type } = parsed.data;
+
+      // Verify website exists and is active
+      const [website] = await db
+        .select()
+        .from(managedWebsites)
+        .where(eq(managedWebsites.id, id))
+        .limit(1);
+
+      if (!website) {
+        return res.status(404).json({ ok: false, error: "Website not found" });
+      }
+
+      if (website.status !== "active") {
+        return res.status(400).json({ ok: false, error: "Website is paused. Activate it before publishing jobs." });
+      }
+
+      const traceId = randomUUID();
+
+      // Publish job using existing submitJob infrastructure
+      const result = await submitJob({
+        service: job_type,
+        action: "run",
+        websiteId: id,
+        params: {
+          job_type,
+          website_id: id,
+          domain: website.domain,
+          requested_by: "hermes",
+          requested_at: new Date().toISOString(),
+          trace_id: traceId,
+        },
+        priority: 60,
+      });
+
+      logger.info("WebsiteRegistry", `Job published: ${job_type} for ${website.domain}`, {
+        jobId: result.jobId,
+        traceId,
+      });
+
+      res.status(201).json({
+        ok: true,
+        job_id: result.jobId,
+        run_id: result.runId,
+        trace_id: traceId,
+        job_type,
+        website_id: id,
+        domain: website.domain,
+      });
+    } catch (error: any) {
+      logger.error("WebsiteRegistry", "Failed to publish job", { error: error.message });
+      res.status(500).json({ ok: false, error: "Failed to publish job" });
     }
   });
 

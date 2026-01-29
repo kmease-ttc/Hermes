@@ -1,13 +1,10 @@
-import { pgTable, text, serial, timestamp, jsonb, integer, boolean, real, varchar } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { pgTable, text, serial, timestamp, jsonb, integer, boolean, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // OAuth Tokens Storage
-// Step 7.1: Added websiteId for multi-tenant isolation
 export const oauthTokens = pgTable("oauth_tokens", {
   id: serial("id").primaryKey(),
-  websiteId: text("website_id").references(() => websites.id, { onDelete: "cascade" }), // Tenant isolation - nullable during migration
   provider: text("provider").notNull(), // 'google_ads', 'ga4', 'gsc'
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token"),
@@ -148,10 +145,9 @@ export type InsertReportShare = z.infer<typeof insertReportShareSchema>;
 export type ReportShare = typeof reportShares.$inferSelect;
 
 // GA4 Daily Snapshots
-// Step 7.1: siteId is now required for multi-tenant isolation
 export const ga4Daily = pgTable("ga4_daily", {
   id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(), // Multi-site support - REQUIRED for tenant isolation
+  siteId: text("site_id").default("default"), // Multi-site support
   date: text("date").notNull(), // YYYY-MM-DD
   sessions: integer("sessions").notNull(),
   users: integer("users").notNull(),
@@ -176,10 +172,9 @@ export type InsertGA4Daily = z.infer<typeof insertGA4DailySchema>;
 export type GA4Daily = typeof ga4Daily.$inferSelect;
 
 // Google Search Console Daily Snapshots
-// Step 7.1: siteId is now required for multi-tenant isolation
 export const gscDaily = pgTable("gsc_daily", {
   id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(), // Multi-site support - REQUIRED for tenant isolation
+  siteId: text("site_id").default("default"), // Multi-site support
   date: text("date").notNull(), // YYYY-MM-DD
   clicks: integer("clicks").notNull(),
   impressions: integer("impressions").notNull(),
@@ -518,14 +513,13 @@ export type KeywordAction = typeof keywordActions.$inferSelect;
 export const sites = pgTable("sites", {
   id: serial("id").primaryKey(),
   siteId: text("site_id").notNull().unique(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   displayName: text("display_name").notNull(),
   baseUrl: text("base_url").notNull(),
   category: text("category"), // clinic, seo_tool, property_mgmt, farm_shop, etc.
   techStack: text("tech_stack"), // nextjs, remix, react-static, wordpress, webflow, unknown
-  repoProvider: text("repo_provider"), // github, other
-  repoIdentifier: text("repo_identifier"), // GitHub org/repo
-  deployMethod: text("deploy_method"), // vercel, netlify, cloudflare_pages, manual
+  repoProvider: text("repo_provider"), // github, replit, other
+  repoIdentifier: text("repo_identifier"), // GitHub org/repo OR Replit project id
+  deployMethod: text("deploy_method"), // replit_deploy, vercel, netlify, cloudflare_pages, manual
   crawlSettings: jsonb("crawl_settings"), // { crawl_depth_limit, max_pages, respect_robots, user_agent }
   sitemaps: text("sitemaps").array(), // Array of sitemap URLs
   keyPages: text("key_pages").array(), // login, pricing, contact, location pages
@@ -541,14 +535,6 @@ export const sites = pgTable("sites", {
   active: boolean("active").default(true),
   geoScope: text("geo_scope"), // "local" | "national"
   geoLocation: jsonb("geo_location").$type<{ city?: string; state?: string; country?: string } | null>(), // Location for local scope
-  businessDetails: jsonb("business_details").$type<{
-    phone?: string;
-    email?: string;
-    address?: string;
-    hours?: string;
-    description?: string;
-    services?: string[];
-  } | null>(), // Business contact & service info
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -873,8 +859,8 @@ export const integrations = pgTable("integrations", {
   receivedSignals: jsonb("received_signals"), // Object mapping signal -> { received: boolean, stale: boolean, lastValue: any }
   configJson: jsonb("config_json"), // Non-sensitive configuration
   // Service Inventory Fields
-  projectUrl: text("replit_project_url"), // URL to project repo (deprecated field name)
-  baseUrl: text("base_url"), // Service base URL (e.g., https://service.vercel.app)
+  replitProjectUrl: text("replit_project_url"), // URL to Replit project
+  baseUrl: text("base_url"), // Service base URL (e.g., https://service.replit.app)
   healthEndpoint: text("health_endpoint").default("/health"), // Health check endpoint
   metaEndpoint: text("meta_endpoint").default("/meta"), // Metadata endpoint
   deploymentStatus: text("deployment_status").default("not_built"), // not_built, building, built, deploying, deployed, failed
@@ -2223,12 +2209,12 @@ export const insertActionApprovalSchema = createInsertSchema(actionApprovals).om
 export type InsertActionApproval = z.infer<typeof insertActionApprovalSchema>;
 export type ActionApproval = typeof actionApprovals.$inferSelect;
 
-// Achievement Tracks - Exponential progression system for outcome-based achievements
+// Achievement Tracks - Exponential progression system for crew achievements
 export const achievementTracks = pgTable("achievement_tracks", {
   id: serial("id").primaryKey(),
   siteId: text("site_id").notNull(),
-  crewId: text("crew_id").notNull(), // category slug: website_traffic, leads, content_creation, content_updates, technical_improvements
-  key: text("key").notNull(), // e.g., "sessions_increased", "blog_posts_published"
+  crewId: text("crew_id").notNull(), // speedster, natasha, authority, pulse, serp, socrates
+  key: text("key").notNull(), // e.g., "vitals_scans", "performance_improvements"
   name: text("name").notNull(), // Display name
   description: text("description").notNull(),
   icon: text("icon").notNull(), // Lucide icon name
@@ -2259,63 +2245,6 @@ export const ACHIEVEMENT_TIERS = {
 } as const;
 
 export type AchievementTier = keyof typeof ACHIEVEMENT_TIERS;
-
-// Achievement Categories - outcome-based groupings
-export const ACHIEVEMENT_CATEGORIES = {
-  website_traffic: {
-    label: "Website Traffic",
-    icon: "TrendingUp",
-    color: "#10b981",
-    description: "Sessions, users, and engagement trends",
-  },
-  leads: {
-    label: "Leads",
-    icon: "Target",
-    color: "#8b5cf6",
-    description: "Conversions, form submissions, and goal completions",
-  },
-  content_creation: {
-    label: "Content Creation",
-    icon: "FileText",
-    color: "#f59e0b",
-    description: "Blog posts published and new pages created",
-  },
-  content_updates: {
-    label: "Content Updates",
-    icon: "RefreshCw",
-    color: "#3b82f6",
-    description: "Pages refreshed, content decay reversed, metadata improved",
-  },
-  technical_improvements: {
-    label: "Technical Improvements",
-    icon: "Shield",
-    color: "#ef4444",
-    description: "Core Web Vitals, crawl errors, and security improvements",
-  },
-} as const;
-
-export type AchievementCategory = keyof typeof ACHIEVEMENT_CATEGORIES;
-
-// Achievement Milestones - logs tier upgrades and significant level-ups for notifications
-export const achievementMilestones = pgTable("achievement_milestones", {
-  id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  trackId: integer("track_id").notNull(),
-  categoryId: text("category_id").notNull(),
-  trackKey: text("track_key").notNull(),
-  level: integer("level").notNull(),
-  tier: text("tier").notNull(),
-  previousTier: text("previous_tier"),
-  headline: text("headline").notNull(),
-  notifiedAt: timestamp("notified_at"),
-  achievedAt: timestamp("achieved_at").defaultNow().notNull(),
-});
-
-export const insertAchievementMilestoneSchema = createInsertSchema(achievementMilestones).omit({
-  id: true,
-});
-export type InsertAchievementMilestone = z.infer<typeof insertAchievementMilestoneSchema>;
-export type AchievementMilestone = typeof achievementMilestones.$inferSelect;
 
 // SEO Agent Snapshots - Track Market SOV and metrics over time for Trends
 export const seoAgentSnapshots = pgTable("seo_agent_snapshots", {
@@ -2455,7 +2384,7 @@ export type InsertWebsiteIntegration = z.infer<typeof insertWebsiteIntegrationSc
 export type WebsiteIntegration = typeof websiteIntegrations.$inferSelect;
 
 export type IntegrationType = typeof integrationTypeEnum[number];
-export type WebsiteIntegrationStatus = typeof integrationStatusEnum[number];
+export type IntegrationStatus = typeof integrationStatusEnum[number];
 
 export interface GitHubDeployConfig {
   repoUrl: string;
@@ -2628,7 +2557,7 @@ export type FreeReport = typeof freeReports.$inferSelect;
 export type ChangeStatus = 'proposed' | 'queued' | 'applied' | 'rolled_back' | 'skipped';
 export type ChangeType = 'content' | 'technical' | 'performance' | 'config';
 export type ChangeScope = 'single_page' | 'template' | 'sitewide';
-export type ChangeRiskLevel = 'low' | 'medium' | 'high';
+export type RiskLevel = 'low' | 'medium' | 'high';
 export type ChangeTrigger = 'scheduled_run' | 'manual' | 'alert';
 
 // Central Change Log - tracks all proposed/applied/rolled-back changes
@@ -3054,14 +2983,6 @@ export const agentActionLogs = pgTable("agent_action_logs", {
   expectedImpact: jsonb("expected_impact"), // metrics expected to move
   riskLevel: text("risk_level"), // 'low', 'med', 'high'
   notes: text("notes"),
-  // Ralph Wiggum Learning System additions
-  inputsHash: text("inputs_hash"), // hash of inputs for deduplication
-  outputsSummary: text("outputs_summary"), // short summary of outputs
-  durationMs: integer("duration_ms"), // calculated from timestamps
-  success: boolean("success"), // whether the action succeeded
-  errorCode: text("error_code"), // error code if failed
-  errorMessage: text("error_message"), // error message if failed
-  tags: jsonb("tags"), // array of tags (canonical, internal_links, faq_schema, etc.)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -3087,8 +3008,6 @@ export const outcomeEventLogs = pgTable("outcome_event_logs", {
   severity: text("severity"), // 'low', 'med', 'high'
   detectionSource: text("detection_source"), // 'scheduler', 'monitor', 'manual'
   context: jsonb("context"), // urls affected, error codes, affected templates
-  // Ralph Wiggum Learning System addition
-  window: text("window"), // time window for analysis: '7d', '28d', 'custom'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -3122,30 +3041,6 @@ export const insertAttributionRecordSchema = createInsertSchema(attributionRecor
 });
 export type InsertAttributionRecord = z.infer<typeof insertAttributionRecordSchema>;
 export type AttributionRecord = typeof attributionRecords.$inferSelect;
-
-// Interventions - groups of related actions performed together (Ralph Wiggum Learning System)
-export const interventions = pgTable("interventions", {
-  id: serial("id").primaryKey(),
-  interventionId: text("intervention_id").notNull().unique(),
-  siteId: text("site_id").notNull(),
-  runId: text("run_id"),
-  actionIds: jsonb("action_ids").notNull(), // array of actionIds that are part of this intervention
-  servicesInvolved: jsonb("services_involved"), // array of service names
-  changeSummary: text("change_summary").notNull(), // human-readable description
-  changeTags: jsonb("change_tags"), // array of tags: canonical, titles, internal_links, speed, schema, etc.
-  startedAt: timestamp("started_at").notNull(),
-  endedAt: timestamp("ended_at"),
-  expectedOutcome: jsonb("expected_outcome"), // what we expect to happen
-  rollbackPossible: boolean("rollback_possible").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertInterventionSchema = createInsertSchema(interventions).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertIntervention = z.infer<typeof insertInterventionSchema>;
-export type Intervention = typeof interventions.$inferSelect;
 
 // Socrates Knowledge Base Entries - learnings derived from attribution
 export const socratesKbEntries = pgTable("socrates_kb_entries", {
@@ -3286,9 +3181,6 @@ export const jobQueue = pgTable("job_queue", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"), // when worker started processing
   completedAt: timestamp("completed_at"), // when job finished (success or failure)
-  lockExpiresAt: timestamp("lock_expires_at"), // Step 10.2: when the job lock expires (for timeout detection)
-  lockVersion: integer("lock_version").default(0).notNull(), // Step 10.2: optimistic locking version
-  lastHeartbeatAt: timestamp("last_heartbeat_at"), // Step 10.2: last worker heartbeat
 });
 
 export const insertJobQueueSchema = createInsertSchema(jobQueue).omit({
@@ -3298,201 +3190,52 @@ export const insertJobQueueSchema = createInsertSchema(jobQueue).omit({
 export type InsertJobQueue = z.infer<typeof insertJobQueueSchema>;
 export type JobQueue = typeof jobQueue.$inferSelect;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SYSTEM CONFIGURATION - Kill switches, quotas, and emergency controls (Step 10.1, 10.6)
-// ═══════════════════════════════════════════════════════════════════════════
+// ============================================================
+// Website Registry - Managed target websites
+// ============================================================
 
-export const SystemConfigTypes = {
-  KILL_SWITCH: 'kill_switch',
-  QUOTA: 'quota',
-  THROTTLE: 'throttle',
-  SETTING: 'setting',
-} as const;
-export type SystemConfigType = typeof SystemConfigTypes[keyof typeof SystemConfigTypes];
+export const websiteStatusEnum = ["active", "paused"] as const;
+export type WebsiteStatus = typeof websiteStatusEnum[number];
 
-export const SystemModes = {
-  NORMAL: 'normal',
-  OBSERVE_ONLY: 'observe_only',
-  SAFE_MODE: 'safe_mode',
-} as const;
-export type SystemMode = typeof SystemModes[keyof typeof SystemModes];
-
-// System-wide configuration and kill switches
-export const systemConfig = pgTable("system_config", {
-  id: serial("id").primaryKey(),
-  configKey: text("config_key").notNull().unique(),
-  configValue: jsonb("config_value").$type<Record<string, any>>().notNull(),
-  configType: text("config_type").notNull(), // kill_switch, quota, throttle, setting
-  description: text("description"),
-  updatedBy: text("updated_by"), // user or system that made the change
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
-export type SystemConfig = typeof systemConfig.$inferSelect;
-
-// Website-level quotas and usage tracking
-export const websiteQuotas = pgTable("website_quotas", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull(),
-  quotaType: text("quota_type").notNull(), // jobs_per_day, api_calls_per_day, pages_per_run, crawl_depth
-  quotaLimit: integer("quota_limit").notNull(),
-  quotaPeriod: text("quota_period").notNull(), // daily, hourly, per_run
-  currentUsage: integer("current_usage").default(0).notNull(),
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  pauseWhenExceeded: boolean("pause_when_exceeded").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertWebsiteQuotaSchema = createInsertSchema(websiteQuotas).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertWebsiteQuota = z.infer<typeof insertWebsiteQuotaSchema>;
-export type WebsiteQuota = typeof websiteQuotas.$inferSelect;
-
-// Service-level quotas (global budget)
-export const serviceQuotas = pgTable("service_quotas", {
-  id: serial("id").primaryKey(),
-  serviceName: text("service_name").notNull().unique(),
-  quotaType: text("quota_type").notNull(), // api_calls_per_day, jobs_per_hour
-  quotaLimit: integer("quota_limit").notNull(),
-  quotaPeriod: text("quota_period").notNull(), // daily, hourly
-  currentUsage: integer("current_usage").default(0).notNull(),
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  throttleWhenApproaching: boolean("throttle_when_approaching").default(true), // slow down at 80%
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertServiceQuotaSchema = createInsertSchema(serviceQuotas).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertServiceQuota = z.infer<typeof insertServiceQuotaSchema>;
-export type ServiceQuota = typeof serviceQuotas.$inferSelect;
-
-// System audit log for tracking kill switch and config changes
-export const systemAuditLog = pgTable("system_audit_log", {
-  id: serial("id").primaryKey(),
-  actionType: text("action_type").notNull(), // kill_switch_activated, kill_switch_deactivated, mode_changed, quota_modified
-  targetType: text("target_type").notNull(), // global, service, website
-  targetId: text("target_id"), // service name or website_id (null for global)
-  oldValue: jsonb("old_value").$type<Record<string, any>>(),
-  newValue: jsonb("new_value").$type<Record<string, any>>().notNull(),
-  reason: text("reason"),
-  triggeredBy: text("triggered_by").notNull(), // user email, 'system', or 'auto_threshold'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertSystemAuditLogSchema = createInsertSchema(systemAuditLog).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertSystemAuditLog = z.infer<typeof insertSystemAuditLogSchema>;
-export type SystemAuditLog = typeof systemAuditLog.$inferSelect;
-
-// Migration tracking table (Step 10.5)
-export const schemaMigrations = pgTable("schema_migrations", {
-  id: serial("id").primaryKey(),
-  version: text("version").notNull().unique(), // e.g., '003', '004'
-  name: text("name").notNull(),
-  appliedAt: timestamp("applied_at").defaultNow().notNull(),
-  executionTimeMs: integer("execution_time_ms"),
-  checksum: text("checksum"), // hash of migration file for verification
-  appliedBy: text("applied_by").default('system'),
-});
-
-export const insertSchemaMigrationSchema = createInsertSchema(schemaMigrations).omit({
-  id: true,
-  appliedAt: true,
-});
-export type InsertSchemaMigration = z.infer<typeof insertSchemaMigrationSchema>;
-export type SchemaMigration = typeof schemaMigrations.$inferSelect;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// MANAGED WEBSITES - Target websites that Hermes can orchestrate and modify
-// ═══════════════════════════════════════════════════════════════════════════
-
-export const WebsiteStatuses = {
-  ACTIVE: 'active',
-  PAUSED: 'paused',
-} as const;
-export type WebsiteStatus = typeof WebsiteStatuses[keyof typeof WebsiteStatuses];
-
-export const websites = pgTable("websites", {
+export const managedWebsites = pgTable("managed_websites", {
   id: text("id").primaryKey(), // UUID
   name: text("name").notNull(),
   domain: text("domain").notNull().unique(),
-  status: text("status").notNull().default("active"), // active, paused
-
-  // Step 9.1: Onboarding & Policies
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }), // Website owner
-  automationMode: text("automation_mode").notNull().default("observe"), // observe, recommend, assisted, auto
-  trustLevel: integer("trust_level").notNull().default(1), // 1-10, increases with successful runs
-  verificationStatus: text("verification_status").notNull().default("unverified"), // unverified, dns_verified, file_verified, gsc_verified
-  verificationMethod: text("verification_method"), // dns_txt, meta_tag, file_upload, gsc_property
-
-  // Google Integrations
-  gscPropertyUrl: text("gsc_property_url"), // Full GSC property URL (sc-domain:example.com or https://example.com/)
-  ga4PropertyId: text("ga4_property_id"), // GA4 measurement ID (G-XXXXXXXXXX)
-  ga4StreamId: text("ga4_stream_id"), // GA4 data stream ID
-
-  // Step 9.3: Defaults & Limits
-  runFrequencyHours: integer("run_frequency_hours").notNull().default(24), // How often to auto-run (0 = manual only)
-  maxCrawlDepth: integer("max_crawl_depth").notNull().default(100), // Max pages to crawl per run
-  maxKeywordsTracked: integer("max_keywords_tracked").notNull().default(50), // Keyword tracking limit
-  notificationCadence: text("notification_cadence").notNull().default("weekly"), // none, weekly, monthly
-  lastAutoRunAt: timestamp("last_auto_run_at"), // Track last automatic run
-
+  status: text("status").notNull().default("active"), // active | paused
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertWebsiteSchema = createInsertSchema(websites).omit({
+export const insertManagedWebsiteSchema = createInsertSchema(managedWebsites).omit({
   createdAt: true,
   updatedAt: true,
 });
-export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
-export type Website = typeof websites.$inferSelect;
+export type InsertManagedWebsite = z.infer<typeof insertManagedWebsiteSchema>;
+export type ManagedWebsite = typeof managedWebsites.$inferSelect;
 
-// Website Settings - Configuration for each managed website
-export const websiteSettings = pgTable("website_settings", {
+// Website Settings - Competitors, enabled services, notes
+export const managedWebsiteSettings = pgTable("managed_website_settings", {
   id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  competitors: jsonb("competitors").$type<string[]>().default([]), // Array of competitor domains
-  targetServicesEnabled: jsonb("target_services_enabled").$type<string[]>().default([]), // Which workers to run
+  websiteId: text("website_id").notNull().references(() => managedWebsites.id, { onDelete: "cascade" }),
+  competitors: jsonb("competitors").$type<string[]>().default([]),
+  targetServicesEnabled: jsonb("target_services_enabled").$type<string[]>().default([]),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertWebsiteSettingsSchema = createInsertSchema(websiteSettings).omit({
+export const insertManagedWebsiteSettingsSchema = createInsertSchema(managedWebsiteSettings).omit({
   id: true,
-  createdAt: true,
   updatedAt: true,
 });
-export type InsertWebsiteSettings = z.infer<typeof insertWebsiteSettingsSchema>;
-export type WebsiteSettings = typeof websiteSettings.$inferSelect;
+export type InsertManagedWebsiteSettings = z.infer<typeof insertManagedWebsiteSettingsSchema>;
+export type ManagedWebsiteSettings = typeof managedWebsiteSettings.$inferSelect;
 
-// Managed Website Integrations - Configuration references (NOT raw secrets) for each managed website
+// Website Integrations - References to secrets, not raw values
 export const managedWebsiteIntegrations = pgTable("managed_website_integrations", {
   id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  integrationType: text("integration_type").notNull(), // github_pr, cms_api, analytics, etc.
-  config: jsonb("config").$type<Record<string, string>>().default({}), // Secret key NAME references, not raw secrets
-  enabled: boolean("enabled").default(true),
+  websiteId: text("website_id").notNull().references(() => managedWebsites.id, { onDelete: "cascade" }),
+  integrationType: text("integration_type").notNull(), // e.g., 'github_pr', 'cms_api', 'vercel_deploy'
+  config: jsonb("config").$type<Record<string, string>>().default({}), // secret key names, NOT raw secrets
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -3504,564 +3247,3 @@ export const insertManagedWebsiteIntegrationSchema = createInsertSchema(managedW
 });
 export type InsertManagedWebsiteIntegration = z.infer<typeof insertManagedWebsiteIntegrationSchema>;
 export type ManagedWebsiteIntegration = typeof managedWebsiteIntegrations.$inferSelect;
-
-// Website Jobs - Track jobs published for each managed website
-export const websiteJobs = pgTable("website_jobs", {
-  id: serial("id").primaryKey(),
-  jobId: text("job_id").notNull().unique(), // UUID
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  jobType: text("job_type").notNull(), // health_check, crawl_technical_seo, etc.
-  domain: text("domain").notNull(),
-  requestedBy: text("requested_by").notNull(), // hermes, manual, scheduled
-  traceId: text("trace_id").notNull(), // UUID for tracing
-  status: text("status").notNull().default("queued"), // queued, running, completed, failed
-  result: jsonb("result").$type<Record<string, any>>(), // Job result data
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
-});
-
-export const insertWebsiteJobSchema = createInsertSchema(websiteJobs).omit({
-  id: true,
-  createdAt: true,
-  completedAt: true,
-});
-export type InsertWebsiteJob = z.infer<typeof insertWebsiteJobSchema>;
-export type WebsiteJob = typeof websiteJobs.$inferSelect;
-// ═══════════════════════════════════════════════════════════════════════════
-// TRUST LEVELS - Step 6: Graduated automation permissions per website/category
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Website Trust Levels - Tracks trust and automation permissions per website and action category
- * 
- * Trust levels:
- * - 0 (Observe): No changes, reports only
- * - 1 (Recommend): Written recommendations, no execution
- * - 2 (Assisted): Execute low-risk actions with confirmation
- * - 3 (Autonomous): Auto-execute approved actions with monitoring
- */
-export const websiteTrustLevels = pgTable("website_trust_levels", {
-  id: text("id").primaryKey(), // UUID
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  actionCategory: text("action_category").notNull(), // tech-seo, content, links, ads, indexing, performance, compliance
-  trustLevel: integer("trust_level").notNull().default(0), // 0=observe, 1=recommend, 2=assisted, 3=autonomous
-  confidence: integer("confidence").default(0), // 0-100 confidence score
-  successCount: integer("success_count").default(0),
-  failureCount: integer("failure_count").default(0),
-  lastSuccessAt: timestamp("last_success_at"),
-  lastFailureAt: timestamp("last_failure_at"),
-  lastReviewedAt: timestamp("last_reviewed_at"),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertWebsiteTrustLevelSchema = createInsertSchema(websiteTrustLevels).omit({
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertWebsiteTrustLevel = z.infer<typeof insertWebsiteTrustLevelSchema>;
-export type WebsiteTrustLevel = typeof websiteTrustLevels.$inferSelect;
-
-/**
- * Action Risk Registry - Catalog of all action types with risk metadata
- * Defines what trust level is required to auto-execute each action
- */
-export const actionRiskRegistry = pgTable("action_risk_registry", {
-  id: serial("id").primaryKey(),
-  actionCode: text("action_code").notNull().unique(), // e.g., "FIX_CANONICAL", "UPDATE_META_DESCRIPTION"
-  actionCategory: text("action_category").notNull(), // tech-seo, content, etc.
-  riskLevel: text("risk_level").notNull(), // low, medium, high
-  blastRadius: text("blast_radius").notNull(), // page, section, site
-  rollbackPossible: boolean("rollback_possible").notNull().default(true),
-  minTrustLevel: integer("min_trust_level").notNull().default(2), // Minimum trust level to auto-execute
-  requiresApproval: boolean("requires_approval").default(false), // Force manual approval regardless of trust
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertActionRiskRegistrySchema = createInsertSchema(actionRiskRegistry).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertActionRiskRegistry = z.infer<typeof insertActionRiskRegistrySchema>;
-export type ActionRiskRegistry = typeof actionRiskRegistry.$inferSelect;
-
-/**
- * Action Execution Audit - Complete audit trail of automated actions
- * Stores why each action was allowed and what the outcome was
- */
-export const actionExecutionAudit = pgTable("action_execution_audit", {
-  id: text("id").primaryKey(), // UUID
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  actionCode: text("action_code").notNull(),
-  actionCategory: text("action_category").notNull(),
-  trustLevel: integer("trust_level").notNull(), // Trust level at time of execution
-  confidence: integer("confidence").notNull(), // Confidence score at time of execution
-  executionMode: text("execution_mode").notNull(), // manual, assisted, autonomous
-  evidence: jsonb("evidence").$type<string[]>(), // What data/signals supported this action
-  rule: text("rule"), // Which rule permitted execution
-  outcome: text("outcome").notNull(), // success, failure, rollback
-  impactMetrics: jsonb("impact_metrics").$type<Record<string, any>>(), // Metrics before/after
-  executedAt: timestamp("executed_at").defaultNow().notNull(),
-  executedBy: text("executed_by").notNull(), // hermes, user, system
-});
-
-export const insertActionExecutionAuditSchema = createInsertSchema(actionExecutionAudit).omit({
-  executedAt: true,
-});
-export type InsertActionExecutionAudit = z.infer<typeof insertActionExecutionAuditSchema>;
-export type ActionExecutionAudit = typeof actionExecutionAudit.$inferSelect;
-
-// 9.1: Website Policies - What can/can't be automated per site
-export const websitePolicies = pgTable("website_policies", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-
-  // Action categories that can be auto-executed
-  canAutoFixTechnical: boolean("can_auto_fix_technical").notNull().default(false), // Missing alt tags, meta descriptions, etc.
-  canAutoPublishContent: boolean("can_auto_publish_content").notNull().default(false), // New blog posts, pages
-  canAutoUpdateContent: boolean("can_auto_update_content").notNull().default(false), // Refresh existing content
-  canAutoOptimizeImages: boolean("can_auto_optimize_images").notNull().default(false), // Compress, resize, WebP conversion
-  canAutoUpdateCode: boolean("can_auto_update_code").notNull().default(false), // JS/CSS changes, schema markup
-
-  // Risk levels that require approval (1=safe, 10=dangerous)
-  maxAutoRiskLevel: integer("max_auto_risk_level").notNull().default(3), // Auto-approve actions ≤ this level
-
-  // Blocklists
-  blockedPaths: jsonb("blocked_paths").$type<string[]>().default([]), // Paths to never touch (e.g., /checkout, /login)
-  blockedFileTypes: jsonb("blocked_file_types").$type<string[]>().default([]), // File types to never modify
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertWebsitePolicySchema = createInsertSchema(websitePolicies).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertWebsitePolicy = z.infer<typeof insertWebsitePolicySchema>;
-export type WebsitePolicy = typeof websitePolicies.$inferSelect;
-
-// 9.1: Website Verification Records
-export const websiteVerifications = pgTable("website_verifications", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  method: text("method").notNull(), // dns_txt, meta_tag, file_upload, gsc_property
-  token: text("token").notNull(), // Verification token or DNS record value
-  verified: boolean("verified").notNull().default(false),
-  verifiedAt: timestamp("verified_at"),
-  expiresAt: timestamp("expires_at"), // Some verifications expire
-  metadata: jsonb("metadata").$type<Record<string, any>>(), // Method-specific data
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertWebsiteVerificationSchema = createInsertSchema(websiteVerifications).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertWebsiteVerification = z.infer<typeof insertWebsiteVerificationSchema>;
-export type WebsiteVerification = typeof websiteVerifications.$inferSelect;
-
-// 9.5: Approval Queue - Actions requiring user approval
-export const approvalQueue = pgTable("approval_queue", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  runId: text("run_id").notNull(), // Associated run that generated this approval
-
-  // What's being approved
-  actionType: text("action_type").notNull(), // publish_content, update_code, fix_technical, etc.
-  actionCategory: text("action_category").notNull(), // content, technical, optimization
-  riskLevel: integer("risk_level").notNull(), // 1-10
-  title: text("title").notNull(), // User-facing title
-  description: text("description").notNull(), // What will happen
-
-  // Preview data
-  diffPreview: text("diff_preview"), // Git-style diff or before/after
-  affectedFiles: jsonb("affected_files").$type<string[]>(), // Files that will change
-  estimatedImpact: text("estimated_impact"), // "Low risk - metadata only" etc.
-
-  // Execution details (stored as JSON for flexibility)
-  executionPayload: jsonb("execution_payload").$type<Record<string, any>>().notNull(), // How to execute if approved
-
-  // Status
-  status: text("status").notNull().default("pending"), // pending, approved, rejected, expired, executed
-  decidedAt: timestamp("decided_at"),
-  decidedBy: integer("decided_by").references(() => users.id),
-  executedAt: timestamp("executed_at"),
-  executionError: text("execution_error"),
-
-  // Learning signals
-  userFeedback: text("user_feedback"), // Optional feedback on why rejected
-
-  expiresAt: timestamp("expires_at").notNull(), // Auto-expire after 7 days
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertApprovalQueueSchema = createInsertSchema(approvalQueue).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertApprovalQueue = z.infer<typeof insertApprovalQueueSchema>;
-export type ApprovalQueue = typeof approvalQueue.$inferSelect;
-
-// 9.6: Run Error Log - Detailed error tracking for supportability
-export const runErrors = pgTable("run_errors", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  runId: text("run_id").notNull(),
-  service: text("service").notNull(), // Which service failed
-
-  // Error details
-  errorType: text("error_type").notNull(), // timeout, auth_failed, rate_limit, unknown
-  errorMessage: text("error_message").notNull(),
-  errorStack: text("error_stack"), // Full stack trace
-
-  // Retry tracking
-  retryCount: integer("retry_count").notNull().default(0),
-  maxRetries: integer("max_retries").notNull().default(3),
-  nextRetryAt: timestamp("next_retry_at"), // When to retry
-  retryStrategy: text("retry_strategy").default("exponential_backoff"), // exponential_backoff, linear, none
-
-  // Resolution
-  resolved: boolean("resolved").notNull().default(false),
-  resolvedAt: timestamp("resolved_at"),
-  resolution: text("resolution"), // auto_retry_success, manual_fix, config_update, etc.
-
-  // User notification
-  userNotified: boolean("user_notified").notNull().default(false),
-  escalated: boolean("escalated").notNull().default(false), // Escalated to support
-  escalatedAt: timestamp("escalated_at"),
-
-  // Context for support
-  context: jsonb("context").$type<Record<string, any>>(), // Full run context snapshot
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertRunErrorSchema = createInsertSchema(runErrors).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertRunError = z.infer<typeof insertRunErrorSchema>;
-export type RunError = typeof runErrors.$inferSelect;
-
-// 9.4: Digest Email Schedule - Track digest generation and delivery
-export const digestSchedule = pgTable("digest_schedule", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-
-  // Schedule
-  frequency: text("frequency").notNull(), // weekly, monthly
-  dayOfWeek: integer("day_of_week"), // 0-6 for weekly (0=Sunday)
-  dayOfMonth: integer("day_of_month"), // 1-31 for monthly
-
-  // Content filters
-  includeOnlyIfChanges: boolean("include_only_if_changes").notNull().default(true), // Don't send if nothing happened
-  minActionsToSend: integer("min_actions_to_send").notNull().default(1), // Minimum actions to trigger email
-
-  // Delivery tracking
-  lastSentAt: timestamp("last_sent_at"),
-  nextScheduledAt: timestamp("next_scheduled_at"),
-  deliveryCount: integer("delivery_count").notNull().default(0),
-
-  // Status
-  enabled: boolean("enabled").notNull().default(true),
-
-  // Alert category preferences (which real-time alerts the user wants)
-  alertPreferences: jsonb("alert_preferences").$type<Record<string, boolean>>(),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertDigestScheduleSchema = createInsertSchema(digestSchedule).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertDigestSchedule = z.infer<typeof insertDigestScheduleSchema>;
-export type DigestSchedule = typeof digestSchedule.$inferSelect;
-
-// 9.4: Digest Sent History - Track what was sent to whom
-export const digestHistory = pgTable("digest_history", {
-  id: serial("id").primaryKey(),
-  digestScheduleId: integer("digest_schedule_id").notNull().references(() => digestSchedule.id, { onDelete: "cascade" }),
-  websiteId: text("website_id").notNull().references(() => websites.id, { onDelete: "cascade" }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-
-  // Period covered
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-
-  // Summary data (stored for reference)
-  summaryData: jsonb("summary_data").$type<{
-    actionsCompleted: number;
-    newPages?: number;
-    blogPosts?: number;
-    technicalFixes?: number;
-    trafficChange?: string;
-    trafficChangeType?: 'positive' | 'negative' | 'neutral';
-    visibilityChange?: string;
-    visibilityChangeType?: 'positive' | 'negative' | 'neutral';
-    topActions?: { type: string; description: string }[];
-  }>(),
-
-  // Delivery
-  sentAt: timestamp("sent_at").notNull(),
-  emailSentTo: text("email_sent_to").notNull(),
-  sendgridMessageId: text("sendgrid_message_id"),
-  opened: boolean("opened").notNull().default(false),
-  clicked: boolean("clicked").notNull().default(false),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertDigestHistorySchema = createInsertSchema(digestHistory).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertDigestHistory = z.infer<typeof insertDigestHistorySchema>;
-export type DigestHistory = typeof digestHistory.$inferSelect;
-
-// 9.2: First Run Results - Track "First Fix" trust moments
-export const firstRunResults = pgTable("first_run_results", {
-  id: serial("id").primaryKey(),
-  websiteId: text("website_id").notNull().unique().references(() => websites.id, { onDelete: "cascade" }),
-  runId: text("run_id").notNull(), // The onboarding run
-
-  // Safe fixes applied
-  fixesApplied: integer("fixes_applied").notNull().default(0),
-  fixTypes: jsonb("fix_types").$type<string[]>().default([]), // [missing_alt_tags, meta_descriptions, etc.]
-  fixDetails: jsonb("fix_details").$type<{ type: string; count: number; description: string }[]>(),
-
-  // Trust signals
-  completedSuccessfully: boolean("completed_successfully").notNull(),
-  durationMs: integer("duration_ms"),
-  userReaction: text("user_reaction"), // positive, neutral, negative, none
-  userReactedAt: timestamp("user_reacted_at"),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertFirstRunResultSchema = createInsertSchema(firstRunResults).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertFirstRunResult = z.infer<typeof insertFirstRunResultSchema>;
-export type FirstRunResult = typeof firstRunResults.$inferSelect;
-
-//═══════════════════════════════════════════════════════════════════════════
-// ENUMS & CONSTANTS FOR STEP 9
-// ═══════════════════════════════════════════════════════════════════════════
-
-export const AutomationModes = {
-  OBSERVE: 'observe',       // Just watch and report
-  RECOMMEND: 'recommend',   // Suggest actions, require approval
-  ASSISTED: 'assisted',     // Auto-apply low-risk, approve medium-risk
-  AUTO: 'auto',            // Fully automated (high trust sites only)
-} as const;
-export type AutomationMode = typeof AutomationModes[keyof typeof AutomationModes];
-
-export const VerificationStatuses = {
-  UNVERIFIED: 'unverified',
-  DNS_VERIFIED: 'dns_verified',
-  FILE_VERIFIED: 'file_verified',
-  GSC_VERIFIED: 'gsc_verified',
-} as const;
-export type VerificationStatus = typeof VerificationStatuses[keyof typeof VerificationStatuses];
-
-export const VerificationMethods = {
-  DNS_TXT: 'dns_txt',
-  META_TAG: 'meta_tag',
-  FILE_UPLOAD: 'file_upload',
-  GSC_PROPERTY: 'gsc_property',
-} as const;
-export type VerificationMethod = typeof VerificationMethods[keyof typeof VerificationMethods];
-
-export const ApprovalStatuses = {
-  PENDING: 'pending',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  EXPIRED: 'expired',
-  EXECUTED: 'executed',
-} as const;
-export type ApprovalStatus = typeof ApprovalStatuses[keyof typeof ApprovalStatuses];
-
-export const ErrorTypes = {
-  TIMEOUT: 'timeout',
-  AUTH_FAILED: 'auth_failed',
-  RATE_LIMIT: 'rate_limit',
-  UNKNOWN: 'unknown',
-} as const;
-export type ErrorType = typeof ErrorTypes[keyof typeof ErrorTypes];
-
-// ============================================
-// Blog Content Tables (Multi-Site Support)
-// ============================================
-
-// Blog posts table - supports multiple sites via siteId
-export const blogPosts = pgTable("blog_posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  siteId: text("site_id").notNull().default("empathy-health-clinic"), // Multi-tenant support
-  title: text("title").notNull(),
-  slug: text("slug").notNull(),
-  excerpt: text("excerpt").notNull(),
-  content: text("content").notNull(),
-  author: text("author").notNull().default("Empathy Health Clinic"),
-  publishedDate: text("published_date").notNull(),
-  category: text("category").notNull().default("Mental Health"),
-  featuredImage: text("featured_image"),
-  isFeatured: boolean("is_featured").notNull().default(false),
-  // Scheduled publishing fields
-  status: text("status").notNull().default("published"), // draft|scheduled|published
-  scheduledPublishAt: text("scheduled_publish_at"),
-  publishedAt: text("published_at"),
-  // SEO fields
-  metaTitle: text("meta_title"),
-  metaDescription: text("meta_description"),
-  keywords: text("keywords").array(),
-  ogImage: text("og_image"),
-  canonicalSlug: text("canonical_slug"),
-  lastUpdated: text("last_updated"),
-  // AggregateRating fields for SERP features
-  averageRating: real("average_rating"),
-  ratingCount: integer("rating_count"),
-  bestRating: integer("best_rating"),
-  worstRating: integer("worst_rating"),
-  order: integer("order").notNull().default(0),
-  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
-export type BlogPost = typeof blogPosts.$inferSelect;
-
-// Blog Image Tracking (for global deduplication across all blogs)
-export const usedBlogImages = pgTable("used_blog_images", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  siteId: text("site_id").notNull().default("empathy-health-clinic"), // Multi-tenant support
-  imageUrl: text("image_url").notNull().unique(),
-  description: text("description").notNull(),
-  altText: text("alt_text").notNull(),
-  source: text("source").notNull().default("unsplash"),
-  usedInBlogPostId: varchar("used_in_blog_post_id"),
-  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const insertUsedBlogImageSchema = createInsertSchema(usedBlogImages).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertUsedBlogImage = z.infer<typeof insertUsedBlogImageSchema>;
-export type UsedBlogImage = typeof usedBlogImages.$inferSelect;
-
-// GSC URL Inspections — per-URL indexing/coverage results
-export const gscUrlInspections = pgTable("gsc_url_inspections", {
-  id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  pageUrl: text("page_url").notNull(),
-  coverageState: text("coverage_state").notNull(),
-  verdict: text("verdict"), // PASS, PARTIAL, FAIL, NEUTRAL
-  robotsTxtState: text("robots_txt_state"), // ALLOWED, DISALLOWED
-  indexingState: text("indexing_state"), // INDEXING_ALLOWED, BLOCKED_BY_META_TAG, etc.
-  pageFetchState: text("page_fetch_state"), // SUCCESSFUL, SOFT_404, BLOCKED_BY_ROBOTS, etc.
-  isIndexed: boolean("is_indexed").notNull().default(false),
-  hasError: boolean("has_error").notNull().default(false),
-  errorCategory: text("error_category"), // robots_blocked, noindex, not_found, server_error, redirect_error, crawl_error
-  rawData: jsonb("raw_data"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertGscUrlInspectionSchema = createInsertSchema(gscUrlInspections).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertGscUrlInspection = z.infer<typeof insertGscUrlInspectionSchema>;
-export type GscUrlInspection = typeof gscUrlInspections.$inferSelect;
-
-// GSC Coverage Daily — aggregate rollup of indexing health
-export const gscCoverageDaily = pgTable("gsc_coverage_daily", {
-  id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  totalInspected: integer("total_inspected").notNull(),
-  totalIndexed: integer("total_indexed").notNull(),
-  totalNotIndexed: integer("total_not_indexed").notNull(),
-  totalErrors: integer("total_errors").notNull(),
-  robotsBlocked: integer("robots_blocked").default(0),
-  noindexDetected: integer("noindex_detected").default(0),
-  crawlErrors: integer("crawl_errors").default(0),
-  redirectErrors: integer("redirect_errors").default(0),
-  serverErrors: integer("server_errors").default(0),
-  notFoundErrors: integer("not_found_errors").default(0),
-  coveragePercent: real("coverage_percent").notNull(),
-  rawData: jsonb("raw_data"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertGscCoverageDailySchema = createInsertSchema(gscCoverageDaily).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertGscCoverageDaily = z.infer<typeof insertGscCoverageDailySchema>;
-export type GscCoverageDaily = typeof gscCoverageDaily.$inferSelect;
-
-// Robots.txt Checks — fetch/parse/validation results
-export const robotsTxtChecks = pgTable("robots_txt_checks", {
-  id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  exists: boolean("exists").notNull(),
-  httpStatus: integer("http_status"),
-  contentHash: text("content_hash"), // SHA-256 for change detection
-  content: text("content"),
-  disallowedPaths: jsonb("disallowed_paths").$type<string[]>(),
-  sitemapUrls: jsonb("sitemap_urls").$type<string[]>(),
-  isValid: boolean("is_valid").notNull().default(true),
-  validationErrors: jsonb("validation_errors").$type<{ line: number; error: string }[]>(),
-  sitemapsMissing: jsonb("sitemaps_missing").$type<string[]>(), // In GSC but not in robots.txt
-  sitemapsExtra: jsonb("sitemaps_extra").$type<string[]>(), // In robots.txt but not in GSC
-  blocksImportantPaths: boolean("blocks_important_paths").default(false),
-  blockedImportantPaths: jsonb("blocked_important_paths").$type<string[]>(),
-  rawData: jsonb("raw_data"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertRobotsTxtCheckSchema = createInsertSchema(robotsTxtChecks).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertRobotsTxtCheck = z.infer<typeof insertRobotsTxtCheckSchema>;
-export type RobotsTxtCheck = typeof robotsTxtChecks.$inferSelect;
-
-// Manual Action Checks — advisory records for API-unavailable data
-export const manualActionChecks = pgTable("manual_action_checks", {
-  id: serial("id").primaryKey(),
-  siteId: text("site_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  checkType: text("check_type").notNull(), // 'manual_actions' | 'security_issues'
-  status: text("status").notNull(), // 'api_unavailable' | 'user_confirmed_clear' | 'user_reported_issue'
-  userNotes: text("user_notes"),
-  lastUserConfirmedAt: timestamp("last_user_confirmed_at"),
-  gscWebUiLink: text("gsc_web_ui_link"),
-  rawData: jsonb("raw_data"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertManualActionCheckSchema = createInsertSchema(manualActionChecks).omit({
-  id: true,
-  createdAt: true,
-});
-export type InsertManualActionCheck = z.infer<typeof insertManualActionCheckSchema>;
-export type ManualActionCheck = typeof manualActionChecks.$inferSelect;

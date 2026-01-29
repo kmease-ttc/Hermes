@@ -46,7 +46,6 @@ import ResetPassword from "@/pages/ResetPassword";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Pricing from "@/pages/Pricing";
-import Contact from "@/pages/Contact";
 import CreateSite from "@/pages/CreateSite";
 import WebsiteGenerator from "@/pages/WebsiteGenerator";
 import SitePreview from "@/pages/SitePreview";
@@ -57,12 +56,11 @@ import SelectSite from "@/pages/SelectSite";
 import Examples from "@/pages/Examples";
 import ExamplePreview from "@/pages/ExamplePreview";
 import SharedReport from "@/pages/SharedReport";
+import WebsiteRegistry from "@/pages/WebsiteRegistry";
+import WebsiteRegistryDetail from "@/pages/WebsiteRegistryDetail";
 import WebsiteReportPage from "@/pages/WebsiteReportPage";
 import DeveloperReportPage from "@/pages/DeveloperReportPage";
 import SettingsIntegrations from "@/pages/SettingsIntegrations";
-import Notifications from "@/pages/Notifications";
-import Websites from "@/pages/Websites";
-import ManagedWebsiteDetail from "@/pages/ManagedWebsiteDetail";
 import { ROUTES, buildRoute, resolveAgentSlug } from "@shared/routes";
 import { useRoute } from "wouter";
 import { useEffect } from "react";
@@ -109,20 +107,8 @@ function ProtectedRoute({ component: Component, lightMode = false }: { component
   );
 }
 
-function ScrollToTop() {
-  const [location] = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location]);
-
-  return null;
-}
-
 function Router() {
   return (
-    <>
-    <ScrollToTop />
     <Switch>
       {/* ============================================ */}
       {/* MARKETING ROUTES - Public funnel pages */}
@@ -152,7 +138,6 @@ function Router() {
       <Route path={ROUTES.FREE_REPORT_SHARE} component={FreeReport} />
       <Route path={ROUTES.FREE_REPORT} component={FreeReport} />
       <Route path={ROUTES.SHARED_REPORT} component={SharedReport} />
-      <Route path={ROUTES.CONTACT} component={Contact} />
       <Route path={ROUTES.MANAGED_SITE} component={ManagedSite} />
       
       {/* ============================================ */}
@@ -187,14 +172,11 @@ function Router() {
       </Route>
       <Route path={ROUTES.SITE_NEW}><ProtectedRoute component={SiteDetail} /></Route>
       <Route path={ROUTES.SITE_DETAIL}><ProtectedRoute component={SiteDetail} /></Route>
-      <Route path={ROUTES.NOTIFICATIONS}><ProtectedRoute component={Notifications} /></Route>
+      <Route path={ROUTES.WEBSITE_REGISTRY_DETAIL}><ProtectedRoute component={WebsiteRegistryDetail} /></Route>
+      <Route path={ROUTES.WEBSITES}><ProtectedRoute component={WebsiteRegistry} /></Route>
       <Route path={ROUTES.HELP}><ProtectedRoute component={Help} /></Route>
       <Route path={ROUTES.DEV_PALETTE}><ProtectedRoute component={CrewPalette} /></Route>
       <Route path={ROUTES.DEV_LINEAGE}><ProtectedRoute component={DevLineage} /></Route>
-      
-      {/* Managed Websites (target sites Hermes can modify) */}
-      <Route path={ROUTES.WEBSITES}><ProtectedRoute component={Websites} /></Route>
-      <Route path={ROUTES.WEBSITE_DETAIL}><ProtectedRoute component={ManagedWebsiteDetail} /></Route>
       
       {/* Report review pages */}
       <Route path={ROUTES.WEBSITE_REPORT}><ProtectedRoute component={WebsiteReportPage} /></Route>
@@ -267,7 +249,6 @@ function Router() {
       {/* 404 catch-all */}
       <Route component={NotFound} />
     </Switch>
-    </>
   );
 }
 

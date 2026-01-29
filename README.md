@@ -47,7 +47,7 @@ ADS_CUSTOMER_ID=123-456-7890
 # Microsoft Clarity (optional, for session recordings)
 CLARITY_PROJECT_ID=your_clarity_project_id
 
-# Database
+# Database (automatically set by Replit)
 DATABASE_URL=postgresql://...
 ```
 
@@ -214,7 +214,7 @@ See `/examples` directory for:
 ## Troubleshooting
 
 **Service won't start:**
-- Ensure `DATABASE_URL` is set in environment variables
+- Ensure `DATABASE_URL` is set (auto-configured in Replit)
 - Check Google OAuth credentials are valid
 
 **No data in dashboard:**
@@ -237,104 +237,68 @@ When deploying to production:
 4. Run `npm run db:push` to sync database schema
 5. Ensure port 5000 is accessible
 
-## Website Registry + Job Publishing
+## Website Registry
 
-Hermes can manage target websites (sites that Hermes is allowed to modify and optimize). This system allows Hermes to orchestrate workers that perform tasks like health checks, SEO audits, and content analysis.
+Hermes includes a **Website Registry** for managing target websites that Hermes orchestrates. Managed websites are distinct from the "sites" used for analytics — they represent external websites that Hermes can dispatch worker jobs against.
 
 ### Adding a Website
 
-**Via UI:**
-1. Navigate to `/app/websites`
-2. Click "Add Website"
-3. Enter the website name (e.g., "Empathy Health Clinic")
-4. Enter the domain (e.g., "empathyhealthclinic.com")
-5. Click "Add Website"
+1. Navigate to `/app/websites` in the Hermes UI (or click "Websites" in the sidebar).
+2. Click **Add Website** and enter a name (e.g., "Empathy Health Clinic") and domain (e.g., `empathyhealthclinic.com`).
+3. The website is created in `active` status with default empty settings.
 
-**Via API:**
+Or via API:
+
 ```bash
 curl -X POST http://localhost:5000/api/websites \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Empathy Health Clinic",
-    "domain": "empathyhealthclinic.com"
-  }'
+  -d '{"name": "Empathy Health Clinic", "domain": "empathyhealthclinic.com"}'
 ```
 
 ### Running Your First Job
 
-**Via UI:**
-1. Go to `/app/websites`
-2. Find your website in the list
-3. Click "Run Health Check" button
+1. Open the website detail page at `/app/websites/<id>`.
+2. Click **Run Health Check** to publish a `health_check` job to the queue.
+3. The job is added to the `job_queue` table with a standardized payload:
+   ```json
+   {
+     "job_type": "health_check",
+     "website_id": "<uuid>",
+     "domain": "empathyhealthclinic.com",
+     "requested_by": "hermes",
+     "requested_at": "2025-01-27T...",
+     "trace_id": "<uuid>"
+   }
+   ```
+4. A worker that polls the `job_queue` table will claim and execute the job.
 
-**Via API:**
+Or via API:
+
 ```bash
-# Get the website ID first
-curl http://localhost:5000/api/websites
-
-# Run a health check job
-curl -X POST http://localhost:5000/api/websites/{website_id}/jobs \
+curl -X POST http://localhost:5000/api/websites/<id>/jobs \
   -H "Content-Type: application/json" \
-  -d '{
-    "job_type": "health_check"
-  }'
+  -d '{"job_type": "health_check"}'
 ```
 
-### Job Types
+### API Endpoints
 
-| Job Type | Description |
-|----------|-------------|
-| `health_check` | Basic site health and availability check |
-| `crawl_technical_seo` | Full technical SEO audit |
-| `content_audit` | Analyze content quality and opportunities |
-| `performance_check` | Core Web Vitals and speed metrics |
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/websites` | Create a managed website |
+| `GET` | `/api/websites` | List all managed websites |
+| `GET` | `/api/websites/:id` | Get website detail + settings |
+| `PATCH` | `/api/websites/:id` | Update name, status, or settings |
+| `POST` | `/api/websites/:id/jobs` | Publish a job to the worker queue |
 
-### Job Payload Format
+### Database Tables
 
-Jobs are published to the `job_queue` table with this standardized payload:
+- `managed_websites` — id (uuid), name, domain (unique), status (active/paused), timestamps
+- `managed_website_settings` — competitors (json), target_services_enabled (json), notes
+- `managed_website_integrations` — integration_type, config (secret key references only)
 
-```json
-{
-  "job_type": "health_check",
-  "website_id": "uuid",
-  "domain": "empathyhealthclinic.com",
-  "requested_by": "hermes",
-  "requested_at": "2026-01-27T10:00:00.000Z",
-  "trace_id": "uuid"
-}
-```
+### Secrets Rule
 
-### Website Settings
-
-Each website can be configured with:
-- **Competitors**: List of competitor domains for comparison
-- **Target Services Enabled**: Which job types are allowed to run
-- **Notes**: Free-form notes about the website
-
-### Secrets Rule (Important!)
-
-**Do NOT store raw secrets in the database.** Website integrations only store secret key NAME references that map to environment variables or Bitwarden at runtime.
-
-Example config in `website_integrations`:
-```json
-{
-  "github_token_key": "EMPATHY_GITHUB_TOKEN",
-  "cms_api_key": "EMPATHY_CMS_KEY"
-}
-```
-
-The actual secrets must be stored in environment variables or a secrets manager.
-
-### API Reference
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/websites` | GET | List all managed websites |
-| `/api/websites` | POST | Create a new website |
-| `/api/websites/:id` | GET | Get website details + settings |
-| `/api/websites/:id` | PATCH | Update website/settings |
-| `/api/websites/:id/jobs` | POST | Publish a job to the queue |
-| `/api/websites/:id/jobs` | GET | Get job history |
+Integration configs store **secret key names** (e.g., `"github_token_key": "EMPATHY_GITHUB_TOKEN"`), never raw secret values. Secrets are resolved at runtime from environment variables or Bitwarden.
 
 ## License
 
