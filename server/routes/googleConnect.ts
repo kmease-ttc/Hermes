@@ -4,6 +4,10 @@
  * Manages per-site Google OAuth credentials for GA4, GSC, and Ads.
  * Each site connects its own Google account via OAuth, storing
  * tokens in the site_google_credentials table.
+ *
+ * NOTE: The OAuth callback is handled in routes.ts at /api/auth/callback
+ * (the registered GOOGLE_REDIRECT_URI). It detects per-site flows via
+ * the state parameter containing { siteId }.
  */
 
 import { Router } from 'express';
@@ -32,52 +36,6 @@ router.post('/sites/:siteId/google/connect', requireAuth, async (req, res) => {
   } catch (error: any) {
     logger.error('GoogleConnect', 'Failed to generate auth URL', { error: error.message });
     res.status(500).json({ ok: false, error: error.message || 'Failed to start Google connection' });
-  }
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// GET /api/google/callback — OAuth callback (handles per-site state)
-// ════════════════════════════════════════════════════════════════════════════
-
-router.get('/google/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-
-    if (!code || typeof code !== 'string') {
-      return res.status(400).json({ ok: false, error: 'Missing authorization code' });
-    }
-
-    // Parse siteId from state parameter
-    let siteId: number | undefined;
-    if (state && typeof state === 'string') {
-      try {
-        const parsed = JSON.parse(state);
-        siteId = parsed.siteId;
-      } catch {
-        // Not JSON state — fall through to legacy flow
-      }
-    }
-
-    if (siteId !== undefined) {
-      // Per-site OAuth flow
-      const creds = await googleAuth.exchangeCodeForSiteTokens(code, siteId);
-      logger.info('GoogleConnect', `Site ${siteId} connected Google account`, {
-        googleEmail: creds.googleEmail,
-      });
-
-      // Redirect back to site settings in the app
-      const appUrl = process.env.APP_URL || 'http://localhost:5000';
-      return res.redirect(`${appUrl}/sites/${siteId}/settings?google=connected`);
-    }
-
-    // Legacy global OAuth flow (no siteId in state)
-    await googleAuth.exchangeCodeForTokens(code);
-    const appUrl = process.env.APP_URL || 'http://localhost:5000';
-    return res.redirect(`${appUrl}/settings?google=connected`);
-  } catch (error: any) {
-    logger.error('GoogleConnect', 'OAuth callback failed', { error: error.message });
-    const appUrl = process.env.APP_URL || 'http://localhost:5000';
-    return res.redirect(`${appUrl}/settings?google=error&message=${encodeURIComponent(error.message)}`);
   }
 });
 

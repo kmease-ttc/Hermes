@@ -6382,17 +6382,40 @@ When answering:
   app.get("/api/auth/callback", async (req, res) => {
     try {
       const code = req.query.code as string;
+      const state = req.query.state as string | undefined;
 
       if (!code) {
         return res.redirect("/dashboard?auth=error&message=Authorization+code+required");
       }
 
+      // Check for per-site OAuth flow (state contains siteId)
+      let siteId: number | undefined;
+      if (state) {
+        try {
+          const parsed = JSON.parse(state);
+          siteId = parsed.siteId;
+        } catch {
+          // Not JSON state — legacy flow
+        }
+      }
+
+      const appUrl = process.env.APP_URL || '';
+
+      if (siteId !== undefined) {
+        // Per-site OAuth flow — save tokens to site_google_credentials
+        const creds = await googleAuth.exchangeCodeForSiteTokens(code, siteId);
+        logger.info("API", `Site ${siteId} connected Google account`, { googleEmail: creds.googleEmail });
+        return res.redirect(`${appUrl}/sites/${siteId}/settings?google=connected`);
+      }
+
+      // Legacy global OAuth flow
       await googleAuth.exchangeCodeForTokens(code);
       logger.info("API", "OAuth authentication successful");
-      res.redirect("/dashboard?auth=success");
+      res.redirect(`${appUrl}/dashboard?auth=success`);
     } catch (error: any) {
       logger.error("API", "OAuth callback failed", { error: error.message });
-      res.redirect("/dashboard?auth=error&message=" + encodeURIComponent(error.message));
+      const appUrl = process.env.APP_URL || '';
+      res.redirect(`${appUrl}/dashboard?auth=error&message=` + encodeURIComponent(error.message));
     }
   });
 
