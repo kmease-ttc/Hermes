@@ -363,7 +363,7 @@ async function runConnectionTestsAsync(jobId: string, services: RunnableService[
             category: svc.mapping.category || 'analysis',
             baseUrl: svc.integration.baseUrl,
             healthEndpoint: healthPath,
-            secretKeyName: svc.mapping.bitwardenSecret || undefined,
+            secretKeyName: svc.mapping.envVar || undefined,
             secretExists: true,
             lastHealthCheckAt: new Date(),
             healthCheckStatus: passed ? 'pass' : 'fail',

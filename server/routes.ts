@@ -2178,8 +2178,7 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
   app.get("/api/system/health", async (req, res) => {
     try {
       const { checkVaultHealth } = await import("./vault");
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      
+
       // Check database
       let dbConnected = false;
       let dbError: string | null = null;
@@ -2190,19 +2189,15 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
         dbError = err.message;
       }
 
-      // Check vault/bitwarden (guard against unconfigured state)
-      let vaultHealth: any = { bitwarden: { connected: false }, env: { connected: true } };
-      let bitwardenStatus: any = { connected: false, lastError: null, secretKeys: [] };
-      
+      // Check vault health (env-based)
+      let vaultHealth: any = { env: { connected: true } };
+
       try {
-        if (process.env.BWS_ACCESS_TOKEN) {
-          vaultHealth = await checkVaultHealth();
-          bitwardenStatus = await bitwardenProvider.getDetailedStatus();
-        }
+        vaultHealth = await checkVaultHealth();
       } catch (vaultErr: any) {
-        bitwardenStatus = { connected: false, lastError: vaultErr.message, secretKeys: [] };
+        vaultHealth = { env: { connected: false, error: vaultErr.message } };
       }
-      
+
       // Check env vars
       const requiredEnvVars = {
         GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
@@ -2210,8 +2205,6 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
         GA4_PROPERTY_ID: !!process.env.GA4_PROPERTY_ID,
         GSC_SITE: !!process.env.GSC_SITE,
         DATABASE_URL: !!process.env.DATABASE_URL,
-        BWS_ACCESS_TOKEN: !!process.env.BWS_ACCESS_TOKEN,
-        BWS_PROJECT_ID: !!process.env.BWS_PROJECT_ID,
       };
       const missingEnvVars = Object.entries(requiredEnvVars)
         .filter(([_, present]) => !present)
@@ -2242,41 +2235,16 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
 
       const sourceStatuses = latestRun?.sourceStatuses as any || {};
 
-      // Build actionable error hints
-      const getVaultHint = () => {
-        if (vaultHealth.bitwarden.connected) return null;
-        if (!process.env.BWS_ACCESS_TOKEN) {
-          return { code: "MISSING_TOKEN", message: "Bitwarden access token not set", hint: "Add BWS_ACCESS_TOKEN to environment variables", keys: ["BWS_ACCESS_TOKEN"] };
-        }
-        if (!process.env.BWS_PROJECT_ID) {
-          return { code: "MISSING_PROJECT", message: "Bitwarden project ID not set", hint: "Add BWS_PROJECT_ID secret", keys: ["BWS_PROJECT_ID"] };
-        }
-        if (bitwardenStatus.lastError?.includes("401") || bitwardenStatus.lastError?.includes("Unauthorized")) {
-          return { code: "UNAUTHORIZED", message: "Bitwarden token invalid or expired", hint: "Generate a new machine account token in Bitwarden", keys: [] };
-        }
-        if (bitwardenStatus.lastError?.includes("403") || bitwardenStatus.lastError?.includes("Forbidden")) {
-          return { code: "FORBIDDEN", message: "Token lacks permission to access project", hint: "Verify machine account has access to the project", keys: [] };
-        }
-        return { code: "CONNECTION_FAILED", message: bitwardenStatus.lastError || "Could not connect to vault", hint: "Check network access and try again", keys: [] };
-      };
-
       res.json({
         serverTime: new Date().toISOString(),
         database: {
           connected: dbConnected,
           error: dbError,
         },
-        bitwarden: {
-          configured: !!process.env.BWS_ACCESS_TOKEN,
-          connected: vaultHealth.bitwarden.connected,
-          secretsFound: bitwardenStatus.secretKeys?.length || 0,
+        vault: {
+          provider: "env",
+          status: vaultHealth.env?.connected ? "active" : "inactive",
           lastCheckedAt: new Date().toISOString(),
-          error: vaultHealth.bitwarden.connected ? null : getVaultHint(),
-          details: {
-            tokenPresent: !!process.env.BWS_ACCESS_TOKEN,
-            projectIdPresent: !!process.env.BWS_PROJECT_ID,
-            orgIdPresent: !!process.env.BWS_ORGANIZATION_ID,
-          },
         },
         google: {
           oauthConfigured: googleAuth.configured,
@@ -2349,7 +2317,8 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
           services: mappings.map(m => ({
             serviceSlug: m.serviceSlug,
             displayName: m.displayName,
-            bitwardenSecret: m.bitwardenSecret,
+            envVar: m.envVar,
+            baseUrlEnvVar: m.baseUrlEnvVar,
             type: m.type,
             requiresBaseUrl: m.requiresBaseUrl,
             category: m.category,
@@ -7572,7 +7541,7 @@ When answering:
       
       if (!kbaseConfig.valid || !kbaseConfig.base_url) {
         return res.status(400).json({ 
-          error: kbaseConfig.error || "SEO_KBASE not configured - add secret to Bitwarden",
+          error: kbaseConfig.error || "SEO_KBASE not configured - set SEO_KBASE_API_KEY and SEO_KBASE_BASE_URL environment variables",
           configured: false,
         });
       }
@@ -7975,29 +7944,18 @@ Return JSON:
 
   app.post("/api/kbase/learnings/upsert", async (req, res) => {
     try {
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      const kbaseSecret = await bitwardenProvider.getSecret("SEO_KBASE");
-      
-      if (!kbaseSecret) {
-        return res.status(500).json({ ok: false, error: "SEO_KBASE secret not found in Bitwarden" });
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
+      const workerConfig = await resolveWorkerConfig("seo_kbase");
+
+      if (!workerConfig.valid || !workerConfig.base_url) {
+        return res.status(500).json({ ok: false, error: "SEO_KBASE not configured - set SEO_KBASE_API_KEY and SEO_KBASE_BASE_URL environment variables" });
       }
-      
-      let workerConfig: { base_url?: string; api_key?: string; write_key?: string };
-      try {
-        workerConfig = JSON.parse(kbaseSecret);
-      } catch (e) {
-        return res.status(500).json({ ok: false, error: "SEO_KBASE secret contains invalid JSON" });
-      }
-      
+
       if (!workerConfig.write_key) {
-        return res.status(400).json({ 
-          ok: false, 
-          error: "Write-back disabled: missing write_key in Bitwarden SEO_KBASE secret" 
+        return res.status(400).json({
+          ok: false,
+          error: "Write-back disabled: missing write_key - set SEO_KBASE_WRITE_KEY environment variable"
         });
-      }
-      
-      if (!workerConfig.base_url) {
-        return res.status(500).json({ ok: false, error: "SEO_KBASE secret missing base_url" });
       }
       
       const learning = req.body;
@@ -8048,7 +8006,7 @@ Return JSON:
           } else if (response.status === 401 || response.status === 403) {
             return res.status(response.status).json({ 
               ok: false, 
-              error: "Invalid API key or wrong header; verify Bitwarden write_key and worker fingerprint",
+              error: "Invalid API key or wrong header; verify write_key and worker fingerprint",
               http_status: response.status 
             });
           } else if (response.status === 404) {
@@ -10510,7 +10468,7 @@ Keep responses concise and actionable.`;
       if (!initialized) {
         return res.status(400).json({ 
           error: "SERP Intelligence service not configured",
-          hint: "Configure SERP_INTELLIGENCE_BASE_URL and add secret to Bitwarden"
+          hint: "Configure SERP_INTELLIGENCE_BASE_URL and set environment variables"
         });
       }
       
@@ -10893,13 +10851,12 @@ Keep responses concise and actionable.`;
 
   // =============== PLATFORM DEPENDENCIES ===============
   
-  // Get platform dependency status (Bitwarden + Postgres)
+  // Get platform dependency status (Env Vars + Postgres)
   app.get("/api/platform/dependencies", async (req, res) => {
     try {
-      const { BitwardenProvider } = await import("./vault/BitwardenProvider");
-      const bitwarden = new BitwardenProvider();
-      const bitwardenStatus = await bitwarden.getDetailedStatus();
-      
+      const { checkVaultHealth } = await import("./vault");
+      const vaultHealth = await checkVaultHealth();
+
       // Check Postgres connection
       let postgresConnected = false;
       let postgresError = null;
@@ -10909,17 +10866,12 @@ Keep responses concise and actionable.`;
       } catch (pgError: any) {
         postgresError = pgError.message;
       }
-      
+
       res.json({
-        bitwarden: {
-          connected: bitwardenStatus.connected,
-          reason: bitwardenStatus.reason,
-          secretsFound: bitwardenStatus.secretsFound,
+        vault: {
+          provider: "env",
+          status: vaultHealth.env?.connected ? "active" : "inactive",
           lastCheckedAt: new Date().toISOString(),
-          httpStatus: bitwardenStatus.connected ? 200 : 
-            (bitwardenStatus.reason === "UNAUTHORIZED" ? 401 : 
-             bitwardenStatus.reason === "FORBIDDEN" ? 403 : null),
-          lastError: bitwardenStatus.lastError,
         },
         postgres: {
           connected: postgresConnected,
@@ -10961,16 +10913,16 @@ Keep responses concise and actionable.`;
     try {
       const { checkVaultHealth } = await import("./vault");
       const healthStatus = await checkVaultHealth();
-      
-      const status = healthStatus.bitwarden.connected ? "connected" : "disconnected";
+
+      const status = healthStatus.env?.connected ? "connected" : "disconnected";
       await storage.saveVaultConfig({
-        provider: "bitwarden",
+        provider: "env",
         status,
         lastHealthCheck: new Date(),
       });
-      
+
       res.json({
-        success: healthStatus.bitwarden.connected,
+        success: healthStatus.env?.connected ?? true,
         health: healthStatus,
       });
     } catch (error: any) {
@@ -11021,18 +10973,15 @@ Keep responses concise and actionable.`;
       const platformIntegrations = await storage.getIntegrations();
       const lastRunMap = await storage.getLastRunPerServiceBySite(siteId);
       
-      // Get platform health and secret list
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      const bitwardenStatus = await bitwardenProvider.getDetailedStatus();
-      const secretKeys = new Set(bitwardenStatus.secretKeys || []);
-      
       // Pre-fetch worker configs for services that need base_url
-      const workerConfigs = new Map<string, { hasBaseUrl: boolean; error: string | null }>();
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
+      const workerConfigs = new Map<string, { hasBaseUrl: boolean; hasEnvVar: boolean; error: string | null }>();
       for (const mapping of SERVICE_SECRET_MAP) {
-        if (mapping.requiresBaseUrl && mapping.bitwardenSecret) {
-          const config = await bitwardenProvider.getWorkerConfig(mapping.bitwardenSecret);
+        if (mapping.requiresBaseUrl && (mapping.envVar || mapping.baseUrlEnvVar)) {
+          const config = await resolveWorkerConfig(mapping.serviceSlug);
           workerConfigs.set(mapping.serviceSlug, {
-            hasBaseUrl: config.valid && !!config.baseUrl,
+            hasBaseUrl: config.valid && !!config.base_url,
+            hasEnvVar: !!(mapping.envVar && process.env[mapping.envVar]) || !!(mapping.baseUrlEnvVar && process.env[mapping.baseUrlEnvVar]),
             error: config.error,
           });
         }
@@ -11062,15 +11011,15 @@ Keep responses concise and actionable.`;
           if (secretMapping.type === 'planned') {
             configState = 'blocked';
             blockingReason = 'Not built yet';
-          } else if (secretMapping.bitwardenSecret && !secretKeys.has(secretMapping.bitwardenSecret)) {
+          } else if ((secretMapping.envVar || secretMapping.baseUrlEnvVar) && !workerConfigs.get(secretMapping.serviceSlug)?.hasEnvVar) {
             configState = 'needs_config';
-            blockingReason = `Bitwarden secret not found: ${secretMapping.bitwardenSecret}`;
+            blockingReason = `Environment variable not set: ${secretMapping.envVar || secretMapping.baseUrlEnvVar}`;
           } else if (secretMapping.requiresBaseUrl) {
             // Worker services need base_url in the secret
             const workerConfig = workerConfigs.get(secretMapping.serviceSlug);
             if (!workerConfig?.hasBaseUrl) {
               configState = 'needs_config';
-              blockingReason = workerConfig?.error || 'Worker base_url missing in Bitwarden secret';
+              blockingReason = workerConfig?.error || 'Worker base_url missing - set the BASE_URL environment variable';
             } else {
               configState = 'ready';
             }
@@ -11134,7 +11083,7 @@ Keep responses concise and actionable.`;
           runState,
           blockingReason,
           missingOutputs,
-          secretPresent: secretMapping?.bitwardenSecret ? secretKeys.has(secretMapping.bitwardenSecret) : true,
+          envVarPresent: secretMapping?.envVar ? !!process.env[secretMapping.envVar] : (secretMapping?.baseUrlEnvVar ? !!process.env[secretMapping.baseUrlEnvVar] : true),
           requiresBaseUrl: secretMapping?.requiresBaseUrl || false,
           lastRun: lastRun ? {
             id: lastRun.runId,
@@ -11231,10 +11180,7 @@ Keep responses concise and actionable.`;
           domain: site.baseUrl?.replace(/^https?:\/\//, '') || site.displayName,
         },
         platform: {
-          bitwarden: {
-            connected: bitwardenStatus.connected,
-            secretsFound: bitwardenStatus.secretsFound || 0,
-          },
+          vault: { provider: "env", status: "active" },
           database: {
             connected: true, // We got this far, DB is working
           },
@@ -11280,10 +11226,6 @@ Keep responses concise and actionable.`;
       const { servicesCatalog, computeMissingOutputs, slugLabels } = await import("@shared/servicesCatalog");
       const platformIntegrations = await storage.getIntegrations();
       const lastRunMap = await storage.getLastRunPerServiceBySite(site.siteId);
-      
-      const { BitwardenProvider } = await import("./vault/BitwardenProvider");
-      const bitwarden = new BitwardenProvider();
-      const bitwardenStatus = await bitwarden.getDetailedStatus();
       
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -11382,7 +11324,7 @@ Keep responses concise and actionable.`;
           domain: site.baseUrl?.replace(/^https?:\/\//, '') || site.displayName,
         },
         platform: {
-          bitwarden: { connected: bitwardenStatus.connected, secretsFound: bitwardenStatus.secretsFound || 0 },
+          vault: { provider: "env", status: "active" },
           database: { connected: true },
         },
         rollups,
@@ -11411,7 +11353,7 @@ Be concise but specific.
 ## Operational Summary for ${operationalSummary.site.domain}
 
 ### Platform Status
-- Bitwarden Secrets Manager: ${operationalSummary.platform.bitwarden.connected ? 'Connected' : 'Disconnected'} (${operationalSummary.platform.bitwarden.secretsFound} secrets found)
+- Environment Variables: ${operationalSummary.platform.vault.status === 'active' ? 'Active' : 'Inactive'}
 - Database: ${operationalSummary.platform.database.connected ? 'Connected' : 'Disconnected'}
 
 ### Service Rollups
@@ -11917,102 +11859,55 @@ When answering:
     }
   });
 
-  // Bitwarden status endpoint - single source of truth for vault connectivity
+  // Vault status endpoint - backward compatible (bitwarden removed, using env vars)
   app.get("/api/integrations/bitwarden/status", async (req, res) => {
     try {
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      const status = await bitwardenProvider.getDetailedStatus();
-      logger.info("API", "Bitwarden status check", { 
-        connected: status.connected, 
-        reason: status.reason,
-        secretsFound: status.secretsFound,
-      });
-      res.json(status);
+      logger.info("API", "Vault status check (env-based)");
+      res.json({ provider: "env", status: "active" });
     } catch (error: any) {
-      logger.error("API", "Failed to check Bitwarden status", { error: error.message });
-      res.status(500).json({ 
-        connected: false, 
-        reason: "API_ERROR", 
-        lastError: error.message,
-        projectId: null,
-        secretsFound: 0,
-      });
+      logger.error("API", "Failed to check vault status", { error: error.message });
+      res.status(500).json({ provider: "env", status: "error", lastError: error.message });
     }
   });
 
-  // Bitwarden debug endpoint (for troubleshooting) - requires API key
+  // Vault debug endpoint (for troubleshooting) - requires API key
   app.get("/api/integrations/bitwarden/debug", async (req, res) => {
     // Require API key for this sensitive endpoint
     const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
     const expectedKey = process.env.TRAFFIC_DOCTOR_API_KEY;
-    
+
     if (!expectedKey || apiKey !== expectedKey) {
       return res.status(401).json({ error: "Unauthorized - API key required" });
     }
-    
+
     try {
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      const status = await bitwardenProvider.getDetailedStatus();
-      
       res.json({
-        tokenPresent: !!process.env.BWS_ACCESS_TOKEN,
-        projectIdPresent: !!process.env.BWS_PROJECT_ID,
-        projectId: status.projectId ? `${status.projectId.slice(0, 4)}...${status.projectId.slice(-4)}` : null,
-        httpStatus: status.httpStatus,
-        secretsCount: status.secretsFound,
-        reason: status.reason,
-        lastError: status.lastError,
+        provider: "env",
+        message: "Bitwarden removed - using environment variables for all secrets",
+        status: "active",
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  // Full refresh: Re-authenticate Bitwarden, fetch secrets, evaluate all services
+  // Full refresh: Evaluate env vars, fetch configs, evaluate all services
   app.post("/api/integrations/refresh", async (req, res) => {
     try {
       const startTime = Date.now();
       logger.info("API", "Starting full integrations refresh");
 
-      // Step 1: Get detailed Bitwarden status
-      const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-      bitwardenProvider.clearCache(); // Force fresh data
-      
-      const vaultStatus = await bitwardenProvider.getDetailedStatus();
-      logger.info("API", `Bitwarden status: ${vaultStatus.reason}`, {
-        connected: vaultStatus.connected,
-        secretsFound: vaultStatus.secretsFound,
-        error: vaultStatus.lastError,
-      });
+      // Step 1: Check vault health (env-based)
+      const { checkVaultHealth } = await import("./vault");
+      const vaultHealth = await checkVaultHealth();
+      logger.info("API", "Vault health (env-based)", { env: vaultHealth.env });
 
-      // Step 2: Fetch all secrets from Bitwarden (if connected)
-      let availableSecrets: string[] = vaultStatus.secretKeys || [];
-      const secretValuesMap: Map<string, string> = new Map();
-      
-      if (vaultStatus.connected && vaultStatus.secretsFound > 0) {
-        const secretsList = await bitwardenProvider.listSecrets();
-        availableSecrets = secretsList.map(s => s.key);
-        logger.info("API", `Bitwarden secrets found: ${availableSecrets.length}`, {
-          secrets: availableSecrets,
-        });
-        
-        // Fetch actual secret values for auth testing
-        for (const secretMeta of secretsList) {
-          if (secretMeta.id) {
-            const secretValue = await bitwardenProvider.getSecret(secretMeta.id);
-            if (secretValue) {
-              secretValuesMap.set(secretMeta.key, secretValue);
-            }
-          }
-        }
-        logger.info("API", `Fetched ${secretValuesMap.size} secret values from Bitwarden`);
-      }
-
-      // Step 3: Get all registered integrations
+      // Step 2: Get all registered integrations
       const integrationsList = await storage.getIntegrations();
       const results: any[] = [];
+      const { resolveWorkerConfig } = await import("./workerConfigResolver");
 
-      // Step 4: Re-evaluate each service
+      // Step 3: Re-evaluate each service
       for (const integration of integrationsList) {
         const serviceStart = Date.now();
         let secretExists = false;
@@ -12023,14 +11918,9 @@ When answering:
         let calledSuccessfully = false;
         let lastError: string | null = null;
 
-        // Check if secret exists in Bitwarden or environment
+        // Check if secret exists in environment variables
         if (integration.secretKeyName) {
-          // Check Bitwarden first
-          secretExists = availableSecrets.includes(integration.secretKeyName);
-          // Fallback to environment variable
-          if (!secretExists) {
-            secretExists = !!process.env[integration.secretKeyName];
-          }
+          secretExists = !!process.env[integration.secretKeyName];
         }
 
         // Run health check if baseUrl is configured
@@ -12076,14 +11966,9 @@ When answering:
               let withKeyPass = false;
               let secretSource = "none";
               if (secretExists && integration.secretKeyName) {
-                // Try to get secret value from Bitwarden first, then fall back to env
-                let secretValue = secretValuesMap.get(integration.secretKeyName) || null;
-                if (secretValue) {
-                  secretSource = "bitwarden";
-                } else {
-                  secretValue = process.env[integration.secretKeyName] || null;
-                  if (secretValue) secretSource = "env";
-                }
+                // Get secret value from environment variables
+                let secretValue = process.env[integration.secretKeyName] || null;
+                if (secretValue) secretSource = "env";
                 
                 if (secretValue) {
                   try {
@@ -12187,12 +12072,8 @@ When answering:
       res.json({
         success: true,
         vaultStatus: {
-          connected: vaultStatus.connected,
-          provider: 'bitwarden',
-          reason: vaultStatus.reason,
-          error: vaultStatus.lastError,
-          secretsCount: availableSecrets.length,
-          projectId: vaultStatus.projectId,
+          provider: 'env',
+          status: 'active',
         },
         summary,
         results,
@@ -12440,7 +12321,7 @@ When answering:
                     hermes_key_fingerprint: workerConfig.api_key_fingerprint,
                     worker_expected_fingerprint: workerFingerprint,
                     failure_bucket: 'api_key_mismatch',
-                    suggested_fix: 'Bitwarden api_key does not match worker expected key. Update one side.',
+                    suggested_fix: 'API key does not match worker expected key. Update one side.',
                   });
                   return;
                 }
@@ -12590,7 +12471,7 @@ When answering:
             if (!crawlConfig.valid || !crawlConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: crawlConfig.error || "Worker not configured - add SEO_Technical_Crawler to Bitwarden or set SEO_TECHNICAL_CRAWLER_BASE_URL env var",
+                summary: crawlConfig.error || "Worker not configured - set SEO_TECHNICAL_CRAWLER_BASE_URL environment variable",
                 metrics: { secret_found: crawlConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -12700,7 +12581,7 @@ When answering:
             if (!vitalsConfig.valid || !vitalsConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: vitalsConfig.error || "Worker not configured - add SEO_Core_Web_Vitals to Bitwarden or set SEO_CORE_WEB_VITALS_BASE_URL env var",
+                summary: vitalsConfig.error || "Worker not configured - set SEO_CORE_WEB_VITALS_BASE_URL environment variable",
                 metrics: { secret_found: vitalsConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -12963,7 +12844,7 @@ When answering:
             if (!genConfig.valid || !genConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: genConfig.error || "Worker not configured - add SEO_Blog_Writer to Bitwarden or set SEO_BLOG_WRITER_BASE_URL env var",
+                summary: genConfig.error || "Worker not configured - set SEO_BLOG_WRITER_BASE_URL environment variable",
                 metrics: { secret_found: genConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13027,7 +12908,7 @@ When answering:
             if (!backlinkConfig.valid || !backlinkConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: backlinkConfig.error || "Worker not configured - add SEO_Backlinks to Bitwarden or set SEO_BACKLINKS_BASE_URL env var",
+                summary: backlinkConfig.error || "Worker not configured - set SEO_BACKLINKS_BASE_URL environment variable",
                 metrics: { secret_found: backlinkConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13091,7 +12972,7 @@ When answering:
             if (!notifyConfig.valid || !notifyConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: notifyConfig.error || "Worker not configured - add SEO_Notifications to Bitwarden or set SEO_NOTIFICATIONS_BASE_URL env var",
+                summary: notifyConfig.error || "Worker not configured - set SEO_NOTIFICATIONS_BASE_URL environment variable",
                 metrics: { secret_found: notifyConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13155,7 +13036,7 @@ When answering:
             if (!qaConfig.valid || !qaConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: qaConfig.error || "Worker not configured - add SEO_Content_QA to Bitwarden or set SEO_CONTENT_QA_BASE_URL env var",
+                summary: qaConfig.error || "Worker not configured - set SEO_CONTENT_QA_BASE_URL environment variable",
                 metrics: { secret_found: qaConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13220,7 +13101,7 @@ When answering:
             if (!kbaseConfig.valid || !kbaseConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: kbaseConfig.error || "Worker not configured - add SEO_KBASE to Bitwarden or set SEO_KBASE_BASE_URL env var",
+                summary: kbaseConfig.error || "Worker not configured - set SEO_KBASE_BASE_URL environment variable",
                 metrics: { secret_found: kbaseConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13232,7 +13113,7 @@ When answering:
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
             } else {
-              // base_url from Bitwarden already includes /api, just append endpoint paths
+              // base_url from env vars already includes /api, just append endpoint paths
               const baseUrl = kbaseConfig.base_url.replace(/\/+$/, '');
               debug.baseUrl = baseUrl;
               const kbaseApiKey = kbaseConfig.api_key;
@@ -13281,7 +13162,7 @@ When answering:
                   if (workerFingerprint && workerFingerprint !== localFingerprint) {
                     checkResult = {
                       status: "fail",
-                      summary: `Bitwarden READ key does not match worker deployment (expected: ${workerFingerprint}, got: ${localFingerprint})`,
+                      summary: `API key does not match worker deployment (expected: ${workerFingerprint}, got: ${localFingerprint})`,
                       metrics: { worker_configured: true, fingerprint_mismatch: true },
                       details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
                     };
@@ -13298,7 +13179,7 @@ When answering:
                       if (smokeRes.status === 401 || smokeRes.status === 403) {
                         checkResult = {
                           status: "fail",
-                          summary: "Invalid API key or wrong header; verify Bitwarden key and worker fingerprint",
+                          summary: "Invalid API key or wrong header; verify API key and worker fingerprint",
                           metrics: { worker_configured: true, worker_reachable: true, auth_failed: true, http_status: smokeRes.status },
                           details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
                         };
@@ -13414,7 +13295,7 @@ When answering:
             if (!decayConfig.valid || !decayConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: decayConfig.error || "Worker not configured - add SEO_Content_Decay to Bitwarden or set SEO_CONTENT_DECAY_BASE_URL env var",
+                summary: decayConfig.error || "Worker not configured - set SEO_CONTENT_DECAY_BASE_URL environment variable",
                 metrics: { secret_found: decayConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13478,7 +13359,7 @@ When answering:
             if (!compConfig.valid || !compConfig.base_url) {
               checkResult = {
                 status: "fail",
-                summary: compConfig.error || "Worker not configured - add SEO_Competitive_Intel to Bitwarden or set SEO_COMPETITIVE_INTEL_BASE_URL env var",
+                summary: compConfig.error || "Worker not configured - set SEO_COMPETITIVE_INTEL_BASE_URL environment variable",
                 metrics: { secret_found: compConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
                 details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
               };
@@ -13527,13 +13408,13 @@ When answering:
             break;
           }
           case "bitwarden_vault": {
-            const { bitwardenProvider } = await import("./vault/BitwardenProvider");
-            const vaultStatus = await bitwardenProvider.getDetailedStatus();
+            const { checkVaultHealth } = await import("./vault");
+            const vaultHealth = await checkVaultHealth();
             checkResult = {
-              status: vaultStatus.connected ? "pass" : "fail",
-              summary: vaultStatus.connected ? `Vault connected, ${vaultStatus.secretsFound} secrets` : `Vault error: ${vaultStatus.reason}`,
-              metrics: { connected: vaultStatus.connected, secrets_count: vaultStatus.secretsFound },
-              details: vaultStatus,
+              status: vaultHealth.env?.connected ? "pass" : "fail",
+              summary: vaultHealth.env?.connected ? "Environment variables configured" : "Environment variable check failed",
+              metrics: { provider: "env", connected: vaultHealth.env?.connected ?? true },
+              details: vaultHealth,
             };
             break;
           }
@@ -13727,16 +13608,16 @@ When answering:
       let healthResult: any = { status: "unknown", response: null, error: null };
       let metaResult: any = { status: "unknown", response: null, error: null };
 
-      // Build headers and get base_url from worker config (Bitwarden)
+      // Build headers and get base_url from worker config (env vars)
       const headers: Record<string, string> = { 'Accept': 'application/json' };
       let baseUrl = integration.baseUrl; // Default to DB value
       
-      // Resolve worker config from Bitwarden for base_url and api_key
+      // Resolve worker config from env vars for base_url and api_key
       try {
         const { resolveWorkerConfig } = await import("./workerConfigResolver");
         const workerConfig = await resolveWorkerConfig(integration.integrationId);
         
-        // Use Bitwarden base_url if available
+        // Use resolved base_url if available
         if (workerConfig.base_url) {
           baseUrl = workerConfig.base_url;
         }
@@ -13982,7 +13863,7 @@ When answering:
       if (!workerConfig.valid || !workerConfig.base_url) {
         return res.status(400).json({
           error: "Service not configured",
-          details: workerConfig.error || "Missing base_url in Bitwarden secret",
+          details: workerConfig.error || "Missing base URL - set the BASE_URL environment variable",
           integrationId,
           expectedOutputs,
           actualOutputs: [],
@@ -14280,7 +14161,7 @@ When answering:
       if (!workerConfig.valid || !workerConfig.base_url) {
         return res.status(400).json({
           error: "Service not configured",
-          details: workerConfig.error || "Missing base_url in Bitwarden secret",
+          details: workerConfig.error || "Missing base URL - set the BASE_URL environment variable",
         });
       }
       
@@ -15204,8 +15085,8 @@ When answering:
         // Infrastructure
         {
           integrationId: "bitwarden_vault",
-          name: "Bitwarden Secrets Manager",
-          description: "Secure credential storage for API keys, OAuth tokens, and service credentials",
+          name: "Environment Variables",
+          description: "Environment-based configuration for API keys, OAuth tokens, and service credentials",
           category: "infrastructure",
           expectedSignals: ["vault_status", "secrets_available"],
         },
@@ -16793,7 +16674,7 @@ Current metrics for the site: ${metricsContext}`;
           ok: false,
           error: "Required integrations not configured",
           blockedBy: missingIntegrations,
-          hint: "Configure these services in Bitwarden Secrets Manager with base_url and api_key",
+          hint: "Configure these services with environment variables (API key + base URL)",
         });
       }
       
@@ -17609,7 +17490,7 @@ Current metrics for the site: ${metricsContext}`;
         return res.status(400).json({
           ok: false,
           error: "Site Change Executor not configured",
-          message: "Set up SEO_DEPLOYER secret in Bitwarden vault or set SEO_DEPLOYER_API_KEY env var to enable PR creation",
+          message: "Set SEO_DEPLOYER_API_KEY and SEO_DEPLOYER_BASE_URL environment variables to enable PR creation",
         });
       }
       
@@ -18294,7 +18175,7 @@ Current metrics for the site: ${metricsContext}`;
       const serviceRuns = await storage.getServiceRunsByService('seo_kbase', 1);
       const lastRun = serviceRuns[0];
 
-      // Check KB service configuration using resolveWorkerConfig (checks Bitwarden, aliases, integrations DB, env fallbacks)
+      // Check KB service configuration using resolveWorkerConfig (checks environment variables and integrations DB)
       const kbaseConfig = await resolveWorkerConfig('seo_kbase');
       const isConfigured = kbaseConfig.valid;
       const configError = kbaseConfig.error || null;
@@ -18389,12 +18270,12 @@ Current metrics for the site: ${metricsContext}`;
       const requestId = (req.headers["x-request-id"] as string) || randomUUID();
       const timestamp = new Date().toISOString();
 
-      // Get KB service configuration using resolveWorkerConfig (checks Bitwarden, aliases, integrations DB)
+      // Get KB service configuration using resolveWorkerConfig (checks environment variables and integrations DB)
       const kbaseConfig = await resolveWorkerConfig('seo_kbase');
       const healthPath = kbaseConfig.health_path || "/health";
 
       if (!kbaseConfig.valid) {
-        const errorMsg = kbaseConfig.error || "Knowledge Base worker not configured. Set up SEO_KBASE secret in Bitwarden (or SEO_KBASE_API_KEY + SEO_KBASE_BASE_URL env vars).";
+        const errorMsg = kbaseConfig.error || "Knowledge Base worker not configured. Set SEO_KBASE_API_KEY and SEO_KBASE_BASE_URL environment variables.";
         logger.info("KB", `KBase status: configured=false, canRead=false, canWrite=false`);
         return res.json({
           ok: true,
