@@ -8,10 +8,10 @@ let sgClientInitialized = false;
 function ensureSendGridClient() {
   if (sgClientInitialized) return;
   
-  const apiKey = process.env.SendGrid;
-  
+  const apiKey = process.env.SENDGRID_API_KEY || process.env.SendGrid;
+
   if (!apiKey) {
-    throw new Error('SendGrid API key not configured. Please add it as a secret named "SendGrid".');
+    throw new Error('SendGrid API key not configured. Set SENDGRID_API_KEY environment variable.');
   }
   
   if (!apiKey.startsWith('SG.')) {

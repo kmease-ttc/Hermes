@@ -12,6 +12,15 @@ import { digestSchedule, digestHistory, serviceEvents, websites, users } from '@
 import { eq, and, gte, desc, sql, count } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { requireAuth } from '../auth/session';
+import {
+  processNotificationEvent,
+  sendTestNotification,
+  getNotificationSettings,
+  getRecentEvents,
+  getRecipients,
+  getRules,
+  isSendGridConfigured,
+} from '../services/notificationService';
 
 const router = Router();
 
@@ -247,6 +256,122 @@ router.put('/sites/:siteId/notifications/preferences', requireAuth, async (req, 
     }
     logger.error('Notifications', 'Failed to update preferences', { error });
     res.status(500).json({ error: 'Failed to update notification preferences' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// NOTIFICATION EVENT PROCESSING (consolidated from Worker-Notification)
+// ════════════════════════════════════════════════════════════════════════════
+
+const notificationEventSchema = z.object({
+  website_id: z.string().min(1),
+  event_type: z.string().min(1),
+  severity: z.enum(["info", "warning", "critical"]),
+  title: z.string().min(1),
+  summary: z.string().optional(),
+  payload: z.record(z.any()).optional(),
+  dedup_key: z.string().optional(),
+});
+
+// POST /api/notifications/events — Process a notification event
+router.post('/notifications/events', async (req, res) => {
+  try {
+    const body = notificationEventSchema.parse(req.body);
+
+    const result = await processNotificationEvent({
+      websiteId: body.website_id,
+      eventType: body.event_type,
+      severity: body.severity,
+      title: body.title,
+      summary: body.summary,
+      payload: body.payload,
+      dedupKey: body.dedup_key,
+    });
+
+    res.json({
+      ok: true,
+      event_id: result.eventId,
+      deliveries_created: result.deliveriesCreated,
+      deliveries_sent: result.deliveriesSent,
+      suppressed: result.suppressed,
+      quiet_hours: result.quietHours,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ ok: false, error: error.errors[0]?.message || 'Validation failed' });
+    }
+    logger.error('Notifications', 'Failed to process notification event', { error });
+    res.status(500).json({ ok: false, error: 'Failed to process notification event' });
+  }
+});
+
+// POST /api/notifications/test — Send a test email
+router.post('/notifications/test', requireAuth, async (req, res) => {
+  try {
+    const { website_id, email } = req.body;
+    if (!website_id || !email) {
+      return res.status(400).json({ ok: false, error: 'website_id and email are required' });
+    }
+
+    const result = await sendTestNotification(website_id, email);
+    res.json({ ok: result.success, message_id: result.messageId, error: result.error });
+  } catch (error) {
+    logger.error('Notifications', 'Failed to send test email', { error });
+    res.status(500).json({ ok: false, error: 'Failed to send test email' });
+  }
+});
+
+// GET /api/notifications/health — Notification service health
+router.get('/notifications/health', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'notifications',
+    sendgrid_configured: isSendGridConfigured(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// GET /api/sites/:siteId/notifications/events — Recent notification events
+router.get('/sites/:siteId/notifications/events', requireAuth, async (req, res) => {
+  try {
+    const events = await getRecentEvents(req.params.siteId, 50);
+    res.json({ ok: true, events });
+  } catch (error) {
+    logger.error('Notifications', 'Failed to fetch events', { error });
+    res.status(500).json({ ok: false, error: 'Failed to fetch events' });
+  }
+});
+
+// GET /api/sites/:siteId/notifications/recipients — Notification recipients
+router.get('/sites/:siteId/notifications/recipients', requireAuth, async (req, res) => {
+  try {
+    const recipients = await getRecipients(req.params.siteId);
+    res.json({ ok: true, recipients });
+  } catch (error) {
+    logger.error('Notifications', 'Failed to fetch recipients', { error });
+    res.status(500).json({ ok: false, error: 'Failed to fetch recipients' });
+  }
+});
+
+// GET /api/sites/:siteId/notifications/rules — Notification rules
+router.get('/sites/:siteId/notifications/rules', requireAuth, async (req, res) => {
+  try {
+    const rules = await getRules(req.params.siteId);
+    res.json({ ok: true, rules });
+  } catch (error) {
+    logger.error('Notifications', 'Failed to fetch rules', { error });
+    res.status(500).json({ ok: false, error: 'Failed to fetch rules' });
+  }
+});
+
+// GET /api/sites/:siteId/notifications/settings — Notification settings
+router.get('/sites/:siteId/notifications/settings', requireAuth, async (req, res) => {
+  try {
+    const settings = await getNotificationSettings(req.params.siteId);
+    res.json({ ok: true, settings });
+  } catch (error) {
+    logger.error('Notifications', 'Failed to fetch settings', { error });
+    res.status(500).json({ ok: false, error: 'Failed to fetch settings' });
   }
 });
 

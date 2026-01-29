@@ -3247,3 +3247,136 @@ export const insertManagedWebsiteIntegrationSchema = createInsertSchema(managedW
 });
 export type InsertManagedWebsiteIntegration = z.infer<typeof insertManagedWebsiteIntegrationSchema>;
 export type ManagedWebsiteIntegration = typeof managedWebsiteIntegrations.$inferSelect;
+
+// ════════════════════════════════════════════════════════════════════════════
+// NOTIFICATION SERVICE (consolidated from Worker-Notification)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Website Notification Settings
+export const notificationSettings = pgTable("notification_settings", {
+  websiteId: text("website_id").primaryKey(),
+  defaultFromName: text("default_from_name"),
+  defaultFromEmail: text("default_from_email"),
+  replyToEmail: text("reply_to_email"),
+  timezone: text("timezone").default("America/Chicago"),
+  quietHoursStart: text("quiet_hours_start").default("21:00"),
+  quietHoursEnd: text("quiet_hours_end").default("07:00"),
+  enabled: boolean("enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationSettingsSchema = createInsertSchema(notificationSettings).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;
+export type NotificationSettings = typeof notificationSettings.$inferSelect;
+
+// Notification Recipients
+export const notificationRecipients = pgTable("notification_recipients", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull(),
+  email: text("email").notNull(),
+  name: text("name"),
+  role: text("role").default("admin"), // owner, admin, dev, marketing, viewer
+  enabled: boolean("enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationRecipientSchema = createInsertSchema(notificationRecipients).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertNotificationRecipient = z.infer<typeof insertNotificationRecipientSchema>;
+export type NotificationRecipient = typeof notificationRecipients.$inferSelect;
+
+// Notification Rules (event routing & throttling)
+export const notificationRules = pgTable("notification_rules", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull(),
+  eventType: text("event_type").notNull(),
+  minSeverity: text("min_severity").default("info"), // info, warning, critical
+  deliveryMode: text("delivery_mode").default("immediate"), // immediate, digest_only, immediate_and_digest
+  throttleMinutes: integer("throttle_minutes").default(30),
+  dedupKeyStrategy: text("dedup_key_strategy").default("by_event_type"), // by_event_type, by_url, by_metric, custom
+  enabled: boolean("enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationRuleSchema = createInsertSchema(notificationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertNotificationRule = z.infer<typeof insertNotificationRuleSchema>;
+export type NotificationRule = typeof notificationRules.$inferSelect;
+
+// Notification Events (incoming events that may trigger notifications)
+export const notificationEvents = pgTable("notification_events", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull(),
+  eventType: text("event_type").notNull(),
+  severity: text("severity").notNull(), // info, warning, critical
+  title: text("title").notNull(),
+  summary: text("summary"),
+  payloadJson: jsonb("payload_json"),
+  dedupKey: text("dedup_key"),
+  source: text("source"),
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationEventSchema = createInsertSchema(notificationEvents).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertNotificationEvent = z.infer<typeof insertNotificationEventSchema>;
+export type NotificationEvent = typeof notificationEvents.$inferSelect;
+
+// Notification Deliveries (delivery audit trail)
+export const notificationDeliveries = pgTable("notification_deliveries", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id"),
+  websiteId: text("website_id").notNull(),
+  channel: text("channel").default("email"), // email, sms_stub, slack_stub
+  recipient: text("recipient").notNull(),
+  subject: text("subject"),
+  templateId: text("template_id"),
+  providerMessageId: text("provider_message_id"),
+  status: text("status").default("queued"), // queued, sent, failed, suppressed, throttled
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  attemptCount: integer("attempt_count").default(0),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationDeliverySchema = createInsertSchema(notificationDeliveries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertNotificationDelivery = z.infer<typeof insertNotificationDeliverySchema>;
+export type NotificationDelivery = typeof notificationDeliveries.$inferSelect;
+
+// Notification Suppressions (throttling state)
+export const notificationSuppressions = pgTable("notification_suppressions", {
+  id: serial("id").primaryKey(),
+  websiteId: text("website_id").notNull(),
+  dedupKey: text("dedup_key").notNull(),
+  suppressedUntil: timestamp("suppressed_until").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSuppressionSchema = createInsertSchema(notificationSuppressions).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertNotificationSuppression = z.infer<typeof insertNotificationSuppressionSchema>;
+export type NotificationSuppression = typeof notificationSuppressions.$inferSelect;

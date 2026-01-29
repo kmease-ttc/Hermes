@@ -1,9 +1,14 @@
 /**
- * Canonical mapping of environment variables to services.
+ * Canonical mapping of services and their configuration.
  * This is the single source of truth for service configuration.
  *
- * All worker config (base URL + API key) is resolved from environment variables
- * set in the Vercel dashboard (or .env.local for development).
+ * Services are either:
+ * - "infrastructure": Internal Hermes modules (consolidated, no external config needed)
+ * - "worker": Remote HTTP services (need BASE_URL + API_KEY env vars in Vercel)
+ * - "planned": Not yet built
+ *
+ * Only 5 external workers remain: crawl_render, core_web_vitals, serp_intel,
+ * backlink_authority, competitive_snapshot. All others are consolidated into Hermes.
  *
  * IMPORTANT: Never use fuzzy matching or string inference.
  * All mappings must be explicit.
@@ -11,7 +16,6 @@
 
 export type ServiceType =
   | "infrastructure"  // Internal Hermes modules (no base_url needed)
-  | "connector"       // Data connectors (Google, etc.)
   | "worker"          // Remote worker services (need base_url + api_key)
   | "planned";        // Not yet built
 
@@ -34,62 +38,36 @@ export interface ServiceSecretMapping {
  * Use the exact catalog slugs, not custom names.
  */
 export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
-  // Infrastructure Services
+  // Infrastructure Services (consolidated into Hermes — no external base_url needed)
   {
     serviceSlug: "audit_log",  // Matches catalog
     displayName: "Audit Log & Observability",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "infrastructure",
-    envVar: "SEO_AUDIT_LOG_API_KEY",
-    baseUrlEnvVar: "SEO_AUDIT_LOG_BASE_URL",
   },
   {
     serviceSlug: "orchestrator",  // Matches catalog
     displayName: "Orchestrator / Job Runner",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "infrastructure",
-    envVar: "SEO_ORCHESTRATOR_API_KEY",
-    baseUrlEnvVar: "SEO_ORCHESTRATOR_BASE_URL",
-    workerEndpoints: {
-      health: "/api/v1/health",
-      smokeTest: "/api/v1/health",
-      capabilities: "/api/v1/services",
-      run: "/api/v1/services"
-    }
   },
   {
     serviceSlug: "notifications",  // Matches catalog
     displayName: "Notifications Service",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "infrastructure",
-    envVar: "SEO_NOTIFICATIONS_API_KEY",
-    baseUrlEnvVar: "SEO_NOTIFICATIONS_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/health",
-      capabilities: "/capabilities",
-      run: "/run"
-    }
   },
 
-  // Google Connectors (worker-based - calls external worker with api_key)
+  // Google Connectors (consolidated — uses per-client OAuth tokens from DB)
   {
     serviceSlug: "google_data_connector",  // Matches catalog
     displayName: "Google Data Connector (GSC + GA4)",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "google",
-    envVar: "SEO_GOOGLE_CONNECTOR_API_KEY",
-    baseUrlEnvVar: "SEO_GOOGLE_CONNECTOR_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/smoke-test",
-      capabilities: "/capabilities",
-      run: "/run"
-    }
   },
 
   // Analysis Workers (need base_url + api_key)
@@ -191,66 +169,34 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
     }
   },
 
-  // Content Workers
+  // Content Workers (consolidated into Hermes)
   {
     serviceSlug: "content_generator",  // Matches catalog
     displayName: "Content Generator",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "content",
-    envVar: "SEO_BLOG_WRITER_API_KEY",
-    baseUrlEnvVar: "SEO_BLOG_WRITER_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/health",
-      capabilities: "/capabilities",
-      run: "/run"
-    }
   },
   {
     serviceSlug: "content_decay",  // Matches catalog
     displayName: "Content Decay Monitor",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "content",
-    envVar: "SEO_CONTENT_DECAY_MONITOR_API_KEY",
-    baseUrlEnvVar: "SEO_CONTENT_DECAY_MONITOR_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/health",
-      capabilities: "/capabilities",
-      run: "/run"
-    }
   },
   {
     serviceSlug: "content_qa",  // Matches catalog
     displayName: "Content QA / Policy Validator",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "content",
-    envVar: "SEO_CONTENT_QA_API_KEY",
-    baseUrlEnvVar: "SEO_CONTENT_QA_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/health",
-      capabilities: "/capabilities",
-      run: "/validate"
-    }
   },
   {
     serviceSlug: "seo_kbase",  // Matches catalog
     displayName: "SEO Knowledge Base",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "analysis",
-    envVar: "SEO_KBASE_API_KEY",
-    baseUrlEnvVar: "SEO_KBASE_BASE_URL",
-    workerEndpoints: {
-      health: "/health",
-      smokeTest: "/smoke-test",
-      capabilities: "/capabilities",
-      run: "/run"
-    }
   },
   {
     serviceSlug: "technical_seo",
@@ -275,19 +221,9 @@ export const SERVICE_SECRET_MAP: ServiceSecretMapping[] = [
   {
     serviceSlug: "site_executor",  // Matches catalog
     displayName: "Site Change Executor",
-    type: "worker",
-    requiresBaseUrl: true,
+    type: "infrastructure",
+    requiresBaseUrl: false,
     category: "execution",
-    envVar: "SEO_DEPLOYER_API_KEY",
-    baseUrlEnvVar: "SEO_DEPLOYER_BASE_URL",
-    workerEndpoints: {
-      health: "/api/health",
-      smokeTest: "/api/smoke-test",
-      capabilities: "/api/capabilities",
-      run: "/api/run",
-      createPr: "/api/pr/create",
-      prStatus: "/api/pr/status"
-    }
   }
 ];
 

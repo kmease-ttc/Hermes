@@ -12957,67 +12957,24 @@ When answering:
             break;
           }
           case "notifications": {
-            // Use workerConfigResolver for aliases and env var fallback
-            const { resolveWorkerConfig } = await import("./workerConfigResolver");
-            const notifyConfig = await resolveWorkerConfig("notifications");
-            
-            const debug: any = { 
-              secretFound: notifyConfig.rawValueType !== "null", 
-              secretName: notifyConfig.secretName,
-              requestedUrls: [], 
-              responses: [] 
+            // Consolidated into Hermes — internal service, no external worker needed
+            const { isSendGridConfigured } = await import("./services/notificationService");
+            const sendgridReady = isSendGridConfigured();
+
+            checkResult = {
+              status: sendgridReady ? "pass" : "partial",
+              summary: sendgridReady
+                ? "Notification service ready (internal, SendGrid configured)"
+                : "Notification service ready (internal, SendGrid NOT configured)",
+              metrics: {
+                internal_service: true,
+                sendgrid_configured: sendgridReady,
+              },
+              details: {
+                type: "infrastructure",
+                note: "Consolidated into Hermes — no external worker needed",
+              },
             };
-            const expectedOutputs = ["notifications_sent", "alert_delivered"];
-            
-            if (!notifyConfig.valid || !notifyConfig.base_url) {
-              checkResult = {
-                status: "fail",
-                summary: notifyConfig.error || "Worker not configured - set SEO_NOTIFICATIONS_BASE_URL environment variable",
-                metrics: { secret_found: notifyConfig.rawValueType !== "null", outputs_missing: expectedOutputs.length },
-                details: { debug, actualOutputs: [], missingOutputs: expectedOutputs },
-              };
-            } else {
-              const baseUrl = notifyConfig.base_url.replace(/\/$/, '');
-              debug.baseUrl = baseUrl;
-              const headers: Record<string, string> = {};
-              if (notifyConfig.api_key) {
-                headers["Authorization"] = `Bearer ${notifyConfig.api_key}`;
-                headers["X-API-Key"] = notifyConfig.api_key;
-              }
-              
-              const healthUrl = `${baseUrl}/health`;
-              debug.requestedUrls.push(healthUrl);
-              
-              try {
-                const res = await fetch(healthUrl, { method: "GET", headers, signal: AbortSignal.timeout(10000) });
-                const bodyText = await res.text().catch(() => "");
-                debug.responses.push({ url: healthUrl, status: res.status, ok: res.ok, bodySnippet: bodyText.slice(0, 200) });
-                
-                if (res.ok) {
-                  checkResult = {
-                    status: "partial",
-                    summary: `Worker connected - send notification to validate outputs`,
-                    metrics: { worker_configured: true, worker_reachable: true, outputs_pending: expectedOutputs.length },
-                    details: { baseUrl, debug, actualOutputs: [], pendingOutputs: expectedOutputs },
-                  };
-                } else {
-                  checkResult = {
-                    status: "fail",
-                    summary: `Worker returned HTTP ${res.status}`,
-                    metrics: { worker_configured: true, worker_reachable: false, http_status: res.status },
-                    details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
-                  };
-                }
-              } catch (err: any) {
-                debug.error = err.message;
-                checkResult = {
-                  status: "fail",
-                  summary: `Worker unreachable: ${err.message}`,
-                  metrics: { worker_configured: true, worker_reachable: false },
-                  details: { baseUrl, debug, actualOutputs: [], missingOutputs: expectedOutputs },
-                };
-              }
-            }
             break;
           }
           case "content_qa": {
