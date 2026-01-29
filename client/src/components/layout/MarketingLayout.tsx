@@ -104,10 +104,10 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
               </span>
             </Link>
             <Link href={ROUTES.WEBSITE_GENERATOR} className="hidden md:block">
-              <Button 
-                variant="outline"
-                size="sm" 
-                className="gap-2 font-medium border-purple text-brand hover:bg-purple-soft"
+              <Button
+                size="sm"
+                className="gap-2 font-medium text-white hover:opacity-90"
+                style={{ background: "#7C3AED" }}
                 data-testid="button-generate-site"
               >
                 <Sparkles className="h-4 w-4" />
@@ -173,10 +173,10 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
             </Link>
             <div className="flex flex-col gap-3 pt-4">
               <Link href={ROUTES.WEBSITE_GENERATOR} onClick={closeMobileMenu}>
-                <Button 
-                  variant="outline"
-                  size="lg" 
-                  className="w-full gap-2 font-medium border-purple text-brand hover:bg-purple-soft"
+                <Button
+                  size="lg"
+                  className="w-full gap-2 font-medium text-white hover:opacity-90"
+                  style={{ background: "#7C3AED" }}
                   data-testid="mobile-button-generate-site"
                 >
                   <Sparkles className="h-4 w-4" />
