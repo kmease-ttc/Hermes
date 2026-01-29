@@ -250,6 +250,9 @@ import {
   manualActionChecks,
   type ManualActionCheck,
   type InsertManualActionCheck,
+  siteGoogleCredentials,
+  type SiteGoogleCredentials,
+  type InsertSiteGoogleCredentials,
 } from "@shared/schema";
 import { eq, desc, and, gte, lte, sql, asc, or, isNull, arrayContains } from "drizzle-orm";
 
@@ -258,7 +261,13 @@ export interface IStorage {
   saveToken(token: InsertOAuthToken): Promise<OAuthToken>;
   getToken(provider: string): Promise<OAuthToken | undefined>;
   updateToken(provider: string, token: Partial<InsertOAuthToken>): Promise<void>;
-  
+
+  // Per-Site Google Credentials
+  getSiteGoogleCredentials(siteId: number): Promise<SiteGoogleCredentials | undefined>;
+  upsertSiteGoogleCredentials(creds: InsertSiteGoogleCredentials): Promise<SiteGoogleCredentials>;
+  updateSiteGoogleCredentials(siteId: number, updates: Partial<InsertSiteGoogleCredentials>): Promise<void>;
+  deleteSiteGoogleCredentials(siteId: number): Promise<void>;
+
   // GA4 Data
   saveGA4Data(data: InsertGA4Daily[]): Promise<void>;
   getGA4DataByDateRange(startDate: string, endDate: string, siteId?: string): Promise<GA4Daily[]>;
@@ -724,6 +733,47 @@ class DBStorage implements IStorage {
       .update(oauthTokens)
       .set({ ...token, updatedAt: new Date() })
       .where(eq(oauthTokens.provider, provider));
+  }
+
+  async getSiteGoogleCredentials(siteId: number): Promise<SiteGoogleCredentials | undefined> {
+    const [creds] = await db
+      .select()
+      .from(siteGoogleCredentials)
+      .where(eq(siteGoogleCredentials.siteId, siteId))
+      .limit(1);
+    return creds;
+  }
+
+  async upsertSiteGoogleCredentials(creds: InsertSiteGoogleCredentials): Promise<SiteGoogleCredentials> {
+    const existing = await this.getSiteGoogleCredentials(creds.siteId);
+
+    if (existing) {
+      const [updated] = await db
+        .update(siteGoogleCredentials)
+        .set({ ...creds, updatedAt: new Date() })
+        .where(eq(siteGoogleCredentials.siteId, creds.siteId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(siteGoogleCredentials)
+        .values(creds)
+        .returning();
+      return created;
+    }
+  }
+
+  async updateSiteGoogleCredentials(siteId: number, updates: Partial<InsertSiteGoogleCredentials>): Promise<void> {
+    await db
+      .update(siteGoogleCredentials)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(siteGoogleCredentials.siteId, siteId));
+  }
+
+  async deleteSiteGoogleCredentials(siteId: number): Promise<void> {
+    await db
+      .delete(siteGoogleCredentials)
+      .where(eq(siteGoogleCredentials.siteId, siteId));
   }
 
   async saveGA4Data(data: InsertGA4Daily[]): Promise<void> {

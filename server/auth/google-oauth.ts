@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { storage } from "../storage";
+import type { SiteGoogleCredentials } from "@shared/schema";
 
 const SCOPES = [
   'https://www.googleapis.com/auth/analytics.readonly',
@@ -27,10 +28,18 @@ export class GoogleOAuthManager {
     this.oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
   }
 
-  getAuthUrl(): string {
+  private ensureConfigured(): void {
     if (!this.isConfigured) {
       throw new Error('OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GLOBAL (legacy) methods — use the single-row oauth_tokens table
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getAuthUrl(): string {
+    this.ensureConfigured();
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
@@ -39,11 +48,9 @@ export class GoogleOAuthManager {
   }
 
   async exchangeCodeForTokens(code: string): Promise<void> {
-    if (!this.isConfigured) {
-      throw new Error('OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
-    }
+    this.ensureConfigured();
     const { tokens } = await this.oauth2Client.getToken(code);
-    
+
     if (!tokens.access_token || !tokens.expiry_date) {
       throw new Error('Failed to obtain access token');
     }
@@ -59,10 +66,8 @@ export class GoogleOAuthManager {
     this.oauth2Client.setCredentials(tokens);
   }
 
-  async getAuthenticatedClient() {
-    if (!this.isConfigured) {
-      throw new Error('OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
-    }
+  async getAuthenticatedClient(): Promise<InstanceType<typeof google.auth.OAuth2>> {
+    this.ensureConfigured();
     const token = await storage.getToken('google');
 
     if (!token) {
@@ -121,7 +126,7 @@ export class GoogleOAuthManager {
     try {
       const token = await storage.getToken('google');
       if (!token) return null;
-      
+
       if (new Date() >= token.expiresAt && token.refreshToken) {
         await this.refreshToken();
         const refreshedToken = await storage.getToken('google');
@@ -132,7 +137,7 @@ export class GoogleOAuthManager {
           };
         }
       }
-      
+
       return {
         access_token: token.accessToken,
         refresh_token: token.refreshToken,
@@ -140,6 +145,156 @@ export class GoogleOAuthManager {
     } catch {
       return null;
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PER-SITE methods — use site_google_credentials table
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Generate OAuth URL with site ID encoded in state parameter.
+   */
+  getAuthUrlForSite(siteId: number): string {
+    this.ensureConfigured();
+    return this.oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: SCOPES,
+      prompt: 'consent',
+      state: JSON.stringify({ siteId }),
+    });
+  }
+
+  /**
+   * Exchange authorization code and save tokens to site_google_credentials.
+   */
+  async exchangeCodeForSiteTokens(code: string, siteId: number): Promise<SiteGoogleCredentials> {
+    this.ensureConfigured();
+    const { tokens } = await this.oauth2Client.getToken(code);
+
+    if (!tokens.access_token || !tokens.expiry_date) {
+      throw new Error('Failed to obtain access token');
+    }
+
+    if (!tokens.refresh_token) {
+      throw new Error('No refresh token received. User may need to revoke access and re-authorize.');
+    }
+
+    // Fetch the Google email associated with this token
+    const tempClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+    tempClient.setCredentials(tokens);
+    const oauth2 = google.oauth2({ version: 'v2', auth: tempClient });
+    let googleEmail: string | undefined;
+    try {
+      const userInfo = await oauth2.userinfo.get();
+      googleEmail = userInfo.data.email || undefined;
+    } catch {
+      // Non-fatal: email is informational
+    }
+
+    return storage.upsertSiteGoogleCredentials({
+      siteId,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenExpiry: new Date(tokens.expiry_date),
+      scopes: SCOPES,
+      googleEmail: googleEmail || null,
+    });
+  }
+
+  /**
+   * Get an authenticated OAuth2Client for a specific site.
+   * Automatically refreshes expired tokens.
+   */
+  async getAuthenticatedClientForSite(siteId: number): Promise<InstanceType<typeof google.auth.OAuth2>> {
+    this.ensureConfigured();
+    const creds = await storage.getSiteGoogleCredentials(siteId);
+
+    if (!creds) {
+      throw new Error(`No Google credentials found for site ${siteId}. Connect Google first.`);
+    }
+
+    if (new Date() >= creds.tokenExpiry) {
+      console.log(`[OAuth] Site ${siteId} token expired, refreshing...`);
+      await this.refreshSiteToken(siteId, creds);
+      return this.getAuthenticatedClientForSite(siteId);
+    }
+
+    const client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+    client.setCredentials({
+      access_token: creds.accessToken,
+      refresh_token: creds.refreshToken,
+    });
+
+    return client;
+  }
+
+  /**
+   * Get raw tokens for a specific site (used by Ads connector).
+   */
+  async getTokensForSite(siteId: number): Promise<{ access_token: string; refresh_token: string } | null> {
+    try {
+      const creds = await storage.getSiteGoogleCredentials(siteId);
+      if (!creds) return null;
+
+      if (new Date() >= creds.tokenExpiry) {
+        await this.refreshSiteToken(siteId, creds);
+        const refreshed = await storage.getSiteGoogleCredentials(siteId);
+        if (refreshed) {
+          return {
+            access_token: refreshed.accessToken,
+            refresh_token: refreshed.refreshToken,
+          };
+        }
+      }
+
+      return {
+        access_token: creds.accessToken,
+        refresh_token: creds.refreshToken,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Check if a site has Google credentials connected.
+   */
+  async isSiteAuthenticated(siteId: number): Promise<boolean> {
+    try {
+      const creds = await storage.getSiteGoogleCredentials(siteId);
+      return !!creds;
+    } catch {
+      return false;
+    }
+  }
+
+  private async refreshSiteToken(siteId: number, creds: SiteGoogleCredentials): Promise<void> {
+    const client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+    client.setCredentials({
+      refresh_token: creds.refreshToken,
+    });
+
+    const { credentials } = await client.refreshAccessToken();
+
+    if (!credentials.access_token || !credentials.expiry_date) {
+      throw new Error(`Failed to refresh access token for site ${siteId}`);
+    }
+
+    await storage.updateSiteGoogleCredentials(siteId, {
+      accessToken: credentials.access_token,
+      tokenExpiry: new Date(credentials.expiry_date),
+    });
+
+    console.log(`[OAuth] Site ${siteId} token refreshed successfully`);
   }
 }
 

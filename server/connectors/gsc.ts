@@ -31,17 +31,26 @@ export interface IndexingStatus {
 
 export class GSCConnector {
   private siteUrl: string;
+  private siteId?: number;
 
-  constructor() {
-    this.siteUrl = process.env.GSC_SITE || '';
+  constructor(siteUrl?: string, siteId?: number) {
+    this.siteUrl = siteUrl || process.env.GSC_SITE || '';
+    this.siteId = siteId;
     if (!this.siteUrl) {
-      logger.warn('GSC', 'GSC_SITE not set');
+      logger.warn('GSC', 'GSC site URL not set');
     }
+  }
+
+  private async getAuth() {
+    if (this.siteId !== undefined) {
+      return googleAuth.getAuthenticatedClientForSite(this.siteId);
+    }
+    return googleAuth.getAuthenticatedClient();
   }
 
   async fetchDailyData(startDate: string, endDate: string): Promise<InsertGSCDaily[]> {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     logger.info('GSC', `Fetching data from ${startDate} to ${endDate}`);
@@ -50,7 +59,7 @@ export class GSCConnector {
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         
         const url = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(this.siteUrl)}/searchAnalytics/query`;
         
@@ -107,7 +116,7 @@ export class GSCConnector {
 
   async fetchSitemaps(): Promise<SitemapInfo[]> {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     logger.info('GSC', 'Fetching sitemaps list');
@@ -116,7 +125,7 @@ export class GSCConnector {
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const searchConsole = google.searchconsole('v1');
 
         const response = await searchConsole.sitemaps.list({
@@ -146,7 +155,7 @@ export class GSCConnector {
 
   async fetchUrlInspection(pageUrl: string): Promise<IndexingStatus | null> {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     logger.info('GSC', `Inspecting URL: ${pageUrl}`);
@@ -154,7 +163,7 @@ export class GSCConnector {
     await rateLimiter.acquire();
 
     try {
-      const auth = await googleAuth.getAuthenticatedClient();
+      const auth = await this.getAuth();
       const searchConsole = google.searchconsole('v1');
 
       const response = await searchConsole.urlInspection.index.inspect({
@@ -182,14 +191,14 @@ export class GSCConnector {
 
   async getPerformanceByPage(startDate: string, endDate: string, limit: number = 50) {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const searchConsole = google.searchconsole('v1');
 
         const response = await searchConsole.searchanalytics.query({
@@ -218,14 +227,14 @@ export class GSCConnector {
 
   async getPerformanceByQuery(startDate: string, endDate: string, limit: number = 100) {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const searchConsole = google.searchconsole('v1');
 
         const response = await searchConsole.searchanalytics.query({
@@ -258,7 +267,7 @@ export class GSCConnector {
 
   async testConnection(): Promise<{ success: boolean; message: string; sampleCount?: number }> {
     if (!this.siteUrl) {
-      return { success: false, message: 'GSC_SITE not configured' };
+      return { success: false, message: 'GSC site URL not configured' };
     }
 
     try {
@@ -324,7 +333,7 @@ export class GSCConnector {
     results: InspectionResult[];
   }> {
     if (!this.siteUrl) {
-      throw new Error('GSC_SITE environment variable is required');
+      throw new Error('GSC site URL is required');
     }
 
     const capped = urls.slice(0, GSC_INSPECTION_DAILY_LIMIT);
@@ -420,4 +429,19 @@ export interface InspectionResult {
   rawData: any;
 }
 
+/** Global singleton (legacy — uses env var + global oauth_tokens row) */
 export const gscConnector = new GSCConnector();
+
+/**
+ * Factory: create a GSCConnector for a specific site using per-site credentials.
+ */
+export async function createGSCConnector(siteId: number): Promise<GSCConnector> {
+  const creds = await storage.getSiteGoogleCredentials(siteId);
+  if (!creds) {
+    throw new Error(`No Google credentials found for site ${siteId}`);
+  }
+  if (!creds.gscSiteUrl) {
+    throw new Error(`No GSC site URL configured for site ${siteId}`);
+  }
+  return new GSCConnector(creds.gscSiteUrl, siteId);
+}

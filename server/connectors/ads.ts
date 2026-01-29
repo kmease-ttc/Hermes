@@ -52,16 +52,18 @@ export class AdsConnector {
   private customerId: string;
   private developerToken: string;
   private loginCustomerId: string;
+  private siteId?: number;
   private client: GoogleAdsApi | null = null;
 
-  constructor() {
-    const rawId = process.env.ADS_CUSTOMER_ID || '';
+  constructor(customerId?: string, loginCustomerId?: string, siteId?: number) {
+    const rawId = customerId || process.env.ADS_CUSTOMER_ID || '';
     this.customerId = rawId.replace(/-/g, '');
     this.developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '';
-    this.loginCustomerId = (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '').replace(/-/g, '');
-    
+    this.loginCustomerId = (loginCustomerId || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '').replace(/-/g, '');
+    this.siteId = siteId;
+
     if (!this.customerId) {
-      logger.warn('Ads', 'ADS_CUSTOMER_ID not set');
+      logger.warn('Ads', 'Ads customer ID not set');
     }
     if (!this.developerToken) {
       logger.warn('Ads', 'GOOGLE_ADS_DEVELOPER_TOKEN not set - using placeholder data');
@@ -74,7 +76,10 @@ export class AdsConnector {
     }
 
     try {
-      const tokens = await googleAuth.getTokens();
+      const tokens = this.siteId !== undefined
+        ? await googleAuth.getTokensForSite(this.siteId)
+        : await googleAuth.getTokens();
+
       if (!tokens || !tokens.refresh_token) {
         logger.warn('Ads', 'No refresh token available for Google Ads API');
         return null;
@@ -101,7 +106,7 @@ export class AdsConnector {
 
   async fetchDailyData(startDate: string, endDate: string): Promise<InsertAdsDaily[]> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', `Fetching data from ${startDate} to ${endDate}`);
@@ -238,7 +243,7 @@ export class AdsConnector {
 
   async getCampaignStatuses(): Promise<CampaignStatus[]> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', 'Fetching campaign statuses');
@@ -301,7 +306,7 @@ export class AdsConnector {
 
   async getPolicyIssues(): Promise<PolicyIssue[]> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', 'Fetching policy issues');
@@ -349,7 +354,7 @@ export class AdsConnector {
 
   async getChangeHistory(startDate: string, endDate: string): Promise<ChangeHistoryEvent[]> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', `Fetching change history from ${startDate} to ${endDate}`);
@@ -392,7 +397,7 @@ export class AdsConnector {
 
   async getConversionActions(): Promise<ConversionAction[]> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', 'Fetching conversion actions');
@@ -441,7 +446,7 @@ export class AdsConnector {
 
   async checkBillingStatus(): Promise<{ status: string; message: string }> {
     if (!this.customerId) {
-      throw new Error('ADS_CUSTOMER_ID environment variable is required');
+      throw new Error('Ads customer ID is required');
     }
 
     logger.info('Ads', 'Checking billing status');
@@ -491,7 +496,7 @@ export class AdsConnector {
 
   async testConnection(): Promise<{ success: boolean; message: string; sampleCount?: number }> {
     if (!this.customerId) {
-      return { success: false, message: 'ADS_CUSTOMER_ID not configured' };
+      return { success: false, message: 'Ads customer ID not configured' };
     }
 
     try {
@@ -505,4 +510,19 @@ export class AdsConnector {
   }
 }
 
+/** Global singleton (legacy — uses env var + global oauth_tokens row) */
 export const adsConnector = new AdsConnector();
+
+/**
+ * Factory: create an AdsConnector for a specific site using per-site credentials.
+ */
+export async function createAdsConnector(siteId: number): Promise<AdsConnector> {
+  const creds = await storage.getSiteGoogleCredentials(siteId);
+  if (!creds) {
+    throw new Error(`No Google credentials found for site ${siteId}`);
+  }
+  if (!creds.adsCustomerId) {
+    throw new Error(`No Ads customer ID configured for site ${siteId}`);
+  }
+  return new AdsConnector(creds.adsCustomerId, creds.adsLoginCustomerId || undefined, siteId);
+}

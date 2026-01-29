@@ -40,26 +40,35 @@ export interface LandingPagePerformance {
 
 export class GA4Connector {
   private propertyId: string;
+  private siteId?: number;
 
-  constructor() {
-    this.propertyId = process.env.GA4_PROPERTY_ID || '';
+  constructor(propertyId?: string, siteId?: number) {
+    this.propertyId = propertyId || process.env.GA4_PROPERTY_ID || '';
+    this.siteId = siteId;
     if (!this.propertyId) {
-      logger.warn('GA4', 'GA4_PROPERTY_ID not set');
+      logger.warn('GA4', 'GA4 property ID not set');
     }
+  }
+
+  private async getAuth() {
+    if (this.siteId !== undefined) {
+      return googleAuth.getAuthenticatedClientForSite(this.siteId);
+    }
+    return googleAuth.getAuthenticatedClient();
   }
 
   async fetchDailyData(startDate: string, endDate: string): Promise<InsertGA4Daily[]> {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     logger.info('GA4', `Fetching data from ${startDate} to ${endDate}`);
-    
+
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -115,7 +124,7 @@ export class GA4Connector {
 
   async checkRealtimeHealth(): Promise<RealtimeData> {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     logger.info('GA4', 'Checking realtime tag health');
@@ -124,7 +133,7 @@ export class GA4Connector {
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runRealtimeReport({
@@ -162,14 +171,14 @@ export class GA4Connector {
 
   async getEngagementMetrics(startDate: string, endDate: string): Promise<EngagementMetrics> {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -204,14 +213,14 @@ export class GA4Connector {
 
   async getChannelPerformance(startDate: string, endDate: string): Promise<ChannelPerformance[]> {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -246,14 +255,14 @@ export class GA4Connector {
 
   async getLandingPagePerformance(startDate: string, endDate: string, limit: number = 50): Promise<LandingPagePerformance[]> {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -288,14 +297,14 @@ export class GA4Connector {
 
   async getDeviceBreakdown(startDate: string, endDate: string) {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -326,14 +335,14 @@ export class GA4Connector {
 
   async getGeoBreakdown(startDate: string, endDate: string, limit: number = 20) {
     if (!this.propertyId) {
-      throw new Error('GA4_PROPERTY_ID environment variable is required');
+      throw new Error('GA4 property ID is required');
     }
 
     await rateLimiter.acquire();
 
     return withRetry(
       async () => {
-        const auth = await googleAuth.getAuthenticatedClient();
+        const auth = await this.getAuth();
         const analyticsData = google.analyticsdata('v1beta');
 
         const response = await analyticsData.properties.runReport({
@@ -370,7 +379,7 @@ export class GA4Connector {
 
   async testConnection(): Promise<{ success: boolean; message: string; sampleCount?: number }> {
     if (!this.propertyId) {
-      return { success: false, message: 'GA4_PROPERTY_ID not configured' };
+      return { success: false, message: 'GA4 property ID not configured' };
     }
 
     try {
@@ -384,4 +393,19 @@ export class GA4Connector {
   }
 }
 
+/** Global singleton (legacy — uses env var + global oauth_tokens row) */
 export const ga4Connector = new GA4Connector();
+
+/**
+ * Factory: create a GA4Connector for a specific site using per-site credentials.
+ */
+export async function createGA4Connector(siteId: number): Promise<GA4Connector> {
+  const creds = await storage.getSiteGoogleCredentials(siteId);
+  if (!creds) {
+    throw new Error(`No Google credentials found for site ${siteId}`);
+  }
+  if (!creds.ga4PropertyId) {
+    throw new Error(`No GA4 property configured for site ${siteId}`);
+  }
+  return new GA4Connector(creds.ga4PropertyId, siteId);
+}

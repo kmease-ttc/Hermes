@@ -3380,3 +3380,31 @@ export const insertNotificationSuppressionSchema = createInsertSchema(notificati
 });
 export type InsertNotificationSuppression = z.infer<typeof insertNotificationSuppressionSchema>;
 export type NotificationSuppression = typeof notificationSuppressions.$inferSelect;
+
+// ════════════════════════════════════════════════════════════════════════════
+// PER-SITE GOOGLE CREDENTIALS (Phase 3: Per-Client OAuth)
+// ════════════════════════════════════════════════════════════════════════════
+
+export const siteGoogleCredentials = pgTable("site_google_credentials", {
+  id: serial("id").primaryKey(),
+  siteId: integer("site_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  tokenExpiry: timestamp("token_expiry").notNull(),
+  scopes: text("scopes").array().notNull(),
+  ga4PropertyId: text("ga4_property_id"),
+  gscSiteUrl: text("gsc_site_url"),
+  adsCustomerId: text("ads_customer_id"),
+  adsLoginCustomerId: text("ads_login_customer_id"),
+  googleEmail: text("google_email"),
+  connectedAt: timestamp("connected_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteGoogleCredentialsSchema = createInsertSchema(siteGoogleCredentials).omit({
+  id: true,
+  connectedAt: true,
+  updatedAt: true,
+});
+export type InsertSiteGoogleCredentials = z.infer<typeof insertSiteGoogleCredentialsSchema>;
+export type SiteGoogleCredentials = typeof siteGoogleCredentials.$inferSelect;
