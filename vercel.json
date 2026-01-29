@@ -1,12 +1,18 @@
 {
+  "framework": null,
   "buildCommand": "npx vite build",
+  "installCommand": "npm install",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/**/*.ts": {
-      "includeFiles": "api/_lib/**"
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*).html",
+      "headers": [
+        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
+      ]
     }
-  },
+  ],
   "rewrites": [
-    { "source": "/((?!api).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
