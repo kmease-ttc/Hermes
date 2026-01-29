@@ -15,8 +15,8 @@ export function BottomCTA() {
         </p>
         
         <Link href={ROUTES.WEBSITE_GENERATOR}>
-          <BrandButton 
-            variant="accent"
+          <BrandButton
+            variant="primary"
             size="lg"
             className="gap-2"
             data-testid="button-bottom-cta"
