@@ -2722,13 +2722,15 @@ export interface FreeReportKeywordTarget {
   keyword: string;
   intent: "high_intent" | "informational";
   volume_range: { min: number; max: number } | null;
-  current_bucket: "top_3" | "4_10" | "11_30" | "not_ranking";
+  current_bucket: "rank_1" | "top_3" | "4_10" | "11_30" | "not_ranking";
+  position: number | null;
   winner_domain: string | null;
 }
 
 export interface FreeReportKeywords {
   targets: FreeReportKeywordTarget[];
   bucket_counts: {
+    rank_1: number;
     top_3: number;
     "4_10": number;
     "11_30": number;

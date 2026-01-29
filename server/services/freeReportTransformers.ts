@@ -150,8 +150,11 @@ function calculateEstimatedOpportunity(
       ctrMultiplier = 0.05;
     } else if (kw.current_bucket === "4_10") {
       ctrMultiplier = 0.08;
-    } else {
+    } else if (kw.current_bucket === "top_3") {
       ctrMultiplier = 0.02;
+    } else {
+      // rank_1 — already captured
+      ctrMultiplier = 0.01;
     }
 
     totalMinTraffic += kw.volume_range.min * ctrMultiplier;
@@ -246,6 +249,7 @@ export function transformToKeywords(
   rankingsData: RankingsDataInput[]
 ): FreeReportKeywords {
   const bucketCounts = {
+    rank_1: 0,
     top_3: 0,
     "4_10": 0,
     "11_30": 0,
@@ -253,12 +257,14 @@ export function transformToKeywords(
   };
 
   const targets: FreeReportKeywordTarget[] = rankingsData
-    .slice(0, 20)
+    .slice(0, 25)
     .map((r) => {
       let currentBucket: FreeReportKeywordTarget["current_bucket"];
 
       if (r.position === null || r.position > 100) {
         currentBucket = "not_ranking";
+      } else if (r.position === 1) {
+        currentBucket = "rank_1";
       } else if (r.position <= 3) {
         currentBucket = "top_3";
       } else if (r.position <= 10) {
@@ -281,6 +287,7 @@ export function transformToKeywords(
         intent,
         volume_range: r.volume ? { min: r.volume * 0.8, max: r.volume * 1.2 } : null,
         current_bucket: currentBucket,
+        position: r.position,
         winner_domain: r.winnerDomain || null,
       };
     });
@@ -298,18 +305,18 @@ function generateKeywordsInsight(
   buckets: FreeReportKeywords["bucket_counts"],
   targets: FreeReportKeywordTarget[]
 ): string {
-  const total = buckets.top_3 + buckets["4_10"] + buckets["11_30"] + buckets.not_ranking;
+  const total = buckets.rank_1 + buckets.top_3 + buckets["4_10"] + buckets["11_30"] + buckets.not_ranking;
   if (total === 0) return "No keyword data available.";
 
-  const onPage1 = buckets.top_3 + buckets["4_10"];
+  const onPage1 = buckets.rank_1 + buckets.top_3 + buckets["4_10"];
   const page1Percent = Math.round((onPage1 / total) * 100);
 
-  if (page1Percent >= 50) {
+  if (buckets.not_ranking > 0) {
+    return `${buckets.not_ranking} of ${total} keywords are not ranking at all — this is your biggest opportunity. Each unranked keyword represents potential traffic and revenue you're currently leaving on the table.`;
+  } else if (page1Percent >= 50) {
     return `Strong keyword presence: ${page1Percent}% of tracked keywords are on page 1. Focus on maintaining positions and targeting new opportunities.`;
-  } else if (buckets["11_30"] > buckets.not_ranking) {
-    return `${buckets["11_30"]} keywords are close to page 1 (positions 11-30). Targeted optimization could quickly improve visibility.`;
   } else {
-    return `Opportunity to improve: ${buckets.not_ranking} tracked keywords are not ranking. Consider creating content targeting these terms.`;
+    return `${buckets["11_30"]} keywords are close to page 1 (positions 11-30). Targeted optimization could quickly improve visibility.`;
   }
 }
 

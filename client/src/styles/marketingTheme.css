@@ -94,6 +94,17 @@
 
 .arclo-input::placeholder{ color: rgba(11,18,32,.45); }
 
+.arclo-location-row{
+  display: flex;
+  gap: 10px;
+  width: min(420px, 100%);
+}
+
+.arclo-input-half{
+  flex: 1;
+  width: auto;
+}
+
 .arclo-primary-cta{
   height: 54px;
   padding: 0 22px;
@@ -209,6 +220,10 @@
     width: 100%;
   }
 
+  .arclo-location-row{
+    width: 100%;
+  }
+
   .arclo-primary-cta{
     height: 52px;
     border-radius: 14px;
@@ -226,5 +241,30 @@
 
   .arclo-hairline{
     margin-top: 32px;
+  }
+}
+
+/* Print styles for Arclo report PDF download */
+@media print {
+  header, footer, nav,
+  [data-testid="btn-download-pdf"],
+  [data-testid="btn-share"],
+  [data-testid="share-url-card"],
+  [data-testid="cta-create-account"],
+  [data-testid="section-account-cta"],
+  [data-testid="section-feature-teasers"],
+  .arclo-nav,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #arclo-report {
+    padding: 0;
+    max-width: 100%;
   }
 }

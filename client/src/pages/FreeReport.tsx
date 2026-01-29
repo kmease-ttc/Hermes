@@ -27,6 +27,13 @@ import {
   Link2,
   FileText,
   Gauge,
+  Download,
+  Rocket,
+  BarChart3,
+  PenTool,
+  Layout,
+  Brain,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -92,13 +99,15 @@ interface KeywordTarget {
   keyword: string;
   intent: "high_intent" | "informational";
   volume_range: { min: number; max: number } | null;
-  current_bucket: "top_3" | "4_10" | "11_30" | "not_ranking";
+  current_bucket: "rank_1" | "top_3" | "4_10" | "11_30" | "not_ranking";
+  position: number | null;
   winner_domain: string | null;
 }
 
 interface KeywordData {
   targets: KeywordTarget[];
   bucket_counts: {
+    rank_1: number;
     top_3: number;
     "4_10": number;
     "11_30": number;
@@ -284,14 +293,16 @@ function IntentBadge({ intent }: { intent: "high_intent" | "informational" }) {
   );
 }
 
-function BucketBadge({ bucket }: { bucket: "top_3" | "4_10" | "11_30" | "not_ranking" }) {
+function BucketBadge({ bucket }: { bucket: "rank_1" | "top_3" | "4_10" | "11_30" | "not_ranking" }) {
   const styles: Record<string, string> = {
+    rank_1: "bg-emerald-100 text-emerald-800 border-emerald-300",
     top_3: "bg-semantic-success-soft text-semantic-success border-semantic-success-border",
     "4_10": "bg-semantic-info-soft text-semantic-info border-semantic-info-border",
     "11_30": "bg-semantic-warning-soft text-semantic-warning border-semantic-warning-border",
     not_ranking: "bg-muted text-muted-foreground border-border",
   };
   const labels: Record<string, string> = {
+    rank_1: "#1",
     top_3: "Top 3",
     "4_10": "4-10",
     "11_30": "11-30",
@@ -561,15 +572,28 @@ function KeywordSection({ keywords, missingReason }: { keywords?: KeywordData; m
     );
   }
 
+  const totalKeywords = keywords.targets.length;
+  const topTenCount = (keywords.bucket_counts.rank_1 || 0) + (keywords.bucket_counts.top_3 || 0) + (keywords.bucket_counts["4_10"] || 0);
+
   return (
     <section data-testid="section-keywords" className="space-y-4">
       <div className="flex items-center gap-3">
         <Search className="w-6 h-6 text-primary" />
-        <h2 className="text-2xl font-bold text-foreground">Keyword Opportunity & Ranking</h2>
+        <h2 className="text-2xl font-bold text-foreground">Ranking Snapshot</h2>
       </div>
 
+      <p className="text-muted-foreground">
+        <span className="font-semibold text-foreground">{totalKeywords} target keywords</span> identified for your business and location.
+      </p>
+
       {keywords.bucket_counts && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="bg-emerald-50 border-emerald-300">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-700" data-testid="bucket-rank-1">{keywords.bucket_counts.rank_1 || 0}</p>
+              <p className="text-sm text-muted-foreground">Ranking #1</p>
+            </CardContent>
+          </Card>
           <Card className="bg-semantic-success-soft border-semantic-success-border">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-semantic-success" data-testid="bucket-top-3">{keywords.bucket_counts.top_3}</p>
@@ -578,8 +602,8 @@ function KeywordSection({ keywords, missingReason }: { keywords?: KeywordData; m
           </Card>
           <Card className="bg-semantic-info-soft border-semantic-info-border">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-semantic-info" data-testid="bucket-4-10">{keywords.bucket_counts["4_10"]}</p>
-              <p className="text-sm text-muted-foreground">Pos 4-10</p>
+              <p className="text-2xl font-bold text-semantic-info" data-testid="bucket-top-10">{topTenCount}</p>
+              <p className="text-sm text-muted-foreground">Top 10</p>
             </CardContent>
           </Card>
           <Card className="bg-semantic-warning-soft border-semantic-warning-border">
@@ -588,10 +612,11 @@ function KeywordSection({ keywords, missingReason }: { keywords?: KeywordData; m
               <p className="text-sm text-muted-foreground">Pos 11-30</p>
             </CardContent>
           </Card>
-          <Card className="bg-muted border-border">
+          <Card className="bg-red-50 border-red-300 ring-2 ring-red-200">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-muted-foreground" data-testid="bucket-not-ranking">{keywords.bucket_counts.not_ranking}</p>
-              <p className="text-sm text-muted-foreground">Not Ranking</p>
+              <p className="text-2xl font-bold text-red-600" data-testid="bucket-not-ranking">{keywords.bucket_counts.not_ranking}</p>
+              <p className="text-sm font-semibold text-red-600">Not Ranking</p>
+              <p className="text-xs text-red-500 mt-1">Biggest Opportunity</p>
             </CardContent>
           </Card>
         </div>
@@ -612,19 +637,23 @@ function KeywordSection({ keywords, missingReason }: { keywords?: KeywordData; m
                   <TableHead>Keyword</TableHead>
                   <TableHead>Intent</TableHead>
                   <TableHead>Volume</TableHead>
-                  <TableHead>Position</TableHead>
+                  <TableHead>Google Position</TableHead>
+                  <TableHead>Ranking</TableHead>
                   <TableHead>Winner</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {keywords.targets.map((kw, idx) => (
-                  <TableRow key={idx} data-testid={`keyword-row-${idx}`}>
+                  <TableRow key={idx} data-testid={`keyword-row-${idx}`} className={kw.current_bucket === "not_ranking" ? "bg-red-50/50" : undefined}>
                     <TableCell className="font-medium">{kw.keyword}</TableCell>
                     <TableCell>
                       <IntentBadge intent={kw.intent} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {kw.volume_range ? `${kw.volume_range.min.toLocaleString()} - ${kw.volume_range.max.toLocaleString()}` : "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {kw.position !== null && kw.position !== undefined ? kw.position : "—"}
                     </TableCell>
                     <TableCell>
                       <BucketBadge bucket={kw.current_bucket} />
@@ -1186,33 +1215,53 @@ export default function FreeReport() {
 
   return (
     <MarketingLayout>
-      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-5xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground" data-testid="report-title">
-              Free SEO Report
-            </h1>
-            <p className="text-muted-foreground mt-1" data-testid="report-url">
-              {report.inputs?.target_url}
-            </p>
-          </div>
-          {!shareToken && (
-            <Button
-              variant="outline"
-              onClick={() => shareMutation.mutate()}
-              disabled={shareMutation.isPending}
-              data-testid="btn-share"
-            >
-              {shareMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : shareCopied ? (
-                <Check className="w-4 h-4 mr-2" />
-              ) : (
-                <Share2 className="w-4 h-4 mr-2" />
+      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-5xl" id="arclo-report">
+        {/* Arclo-branded report header */}
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 text-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <svg width="36" height="36" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M24 4l19 36h-8l-3.2-6.2H16.2L13 40H5L24 4zm-4.8 23h9.6L24 17.7 19.2 27z" fill="white" />
+              </svg>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold" data-testid="report-title">
+                  Arclo Pro — Ranking Snapshot
+                </h1>
+                <p className="text-white/80 text-sm mt-1" data-testid="report-url">
+                  {report.inputs?.target_url}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.print()}
+                data-testid="btn-download-pdf"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Report
+              </Button>
+              {!shareToken && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => shareMutation.mutate()}
+                  disabled={shareMutation.isPending}
+                  data-testid="btn-share"
+                >
+                  {shareMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : shareCopied ? (
+                    <Check className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Share2 className="w-4 h-4 mr-2" />
+                  )}
+                  {shareCopied ? "Link Copied!" : "Share Report"}
+                </Button>
               )}
-              {shareCopied ? "Link Copied!" : "Share Report"}
-            </Button>
-          )}
+            </div>
+          </div>
         </div>
 
         {shareUrl && (
@@ -1272,12 +1321,119 @@ export default function FreeReport() {
           <NextStepsSection nextSteps={report.next_steps} onCtaClick={handleCtaClick} scanId={report.source_scan_id} />
 
           <ImplementationPlanSection plan={report.next_steps?.implementation_plan} onCopy={handleCopyImplementationPlan} />
+
+          {/* Premium Feature Teasers */}
+          <section data-testid="section-feature-teasers" className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Rocket className="w-6 h-6 text-primary" />
+              <h2 className="text-2xl font-bold text-foreground">What Arclo Pro Can Do Next</h2>
+            </div>
+            <p className="text-muted-foreground">
+              This snapshot shows where you stand today. Here's how Arclo Pro actively improves your rankings over time:
+            </p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <TrendingUp className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Automated Ranking Improvement</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Arclo Pro identifies what's holding your rankings back and deploys targeted fixes — week by week, automatically.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <BarChart3 className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Domain Authority Signals</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Build and strengthen the backlink and authority signals that Google uses to decide who ranks on page 1.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <PenTool className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Blog Creation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    SEO-optimized blog content written and published to target the keywords your competitors are winning.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <Layout className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Web Page Creation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Generate new landing pages and service pages designed to capture high-intent search traffic in your market.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <Brain className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Learning Model</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Arclo Pro learns from every ranking change and optimization result, improving its decisions over time for your site.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-primary/20 hover:border-primary/40 transition-colors">
+                <CardContent className="pt-6 space-y-2">
+                  <ShieldAlert className="w-8 h-8 text-primary" />
+                  <h3 className="font-semibold text-foreground">Ranking Decay Detection</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Continuous monitoring detects when rankings start slipping, so fixes are applied before you lose traffic.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          {/* Account Creation Transition */}
+          <section data-testid="section-account-cta" className="space-y-4">
+            <Card className="bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 text-white border-0">
+              <CardContent className="py-10 text-center space-y-4">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true" className="mx-auto">
+                  <path d="M24 4l19 36h-8l-3.2-6.2H16.2L13 40H5L24 4zm-4.8 23h9.6L24 17.7 19.2 27z" fill="white" />
+                </svg>
+                <h2 className="text-2xl md:text-3xl font-bold">Ready to Improve These Rankings?</h2>
+                <p className="text-white/80 max-w-xl mx-auto">
+                  Create your free Arclo Pro account and let us start applying fixes, building authority, and pushing your rankings upward — automatically.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button
+                    size="lg"
+                    className="bg-white text-violet-700 hover:bg-white/90 shadow-lg font-semibold"
+                    onClick={() => {
+                      const signupUrl = report.source_scan_id
+                        ? `/signup?scanId=${report.source_scan_id}`
+                        : '/signup';
+                      window.location.href = signupUrl;
+                    }}
+                    data-testid="cta-create-account"
+                  >
+                    Create Free Account
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Report generated on {new Date(report.created_at).toLocaleDateString()}
-            {report.report_version > 1 && ` (Version ${report.report_version})`}
+        {/* Point-in-time snapshot disclaimer + footer */}
+        <div className="mt-12 pt-8 border-t border-border text-center space-y-4">
+          <div className="bg-muted/50 rounded-lg p-4 max-w-2xl mx-auto" data-testid="snapshot-disclaimer">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">Point-in-time snapshot.</span>{" "}
+              This report reflects ranking data captured on {new Date(report.created_at).toLocaleDateString()}.
+              Google rankings are dynamic and change frequently based on algorithm updates, competitor activity, and content changes.
+              For continuous tracking, create an Arclo Pro account.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Powered by Arclo Pro
+            {report.report_version > 1 && ` · Version ${report.report_version}`}
           </p>
           <Button variant="outline" onClick={() => (window.location.href = "/")}>
             Run Another Scan

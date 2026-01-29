@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X, Loader2 } from "lucide-react";
 import { ROUTES } from "@shared/routes";
+import { BrandButton } from "@/components/marketing/BrandButton";
 
 /**
  * White Hero (high-contrast) — matches the approved "clean white" mock.
@@ -23,6 +24,8 @@ export default function WhiteHero() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toggleMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
   const [url, setUrl] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
@@ -46,22 +49,33 @@ export default function WhiteHero() {
       return;
     }
 
+    const trimmedCity = city.trim();
+    const trimmedState = state.trim();
+    if (!trimmedCity || !trimmedState) {
+      setError("Please enter your target city and state.");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizedUrl }),
+        body: JSON.stringify({
+          url: normalizedUrl,
+          geoLocation: { city: trimmedCity, state: trimmedState },
+        }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to start scan");
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.message || "Failed to start scan. Please try again.");
       }
 
       const data = await res.json();
       navigate(`/scan/preview/${data.scanId || data.id}`);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Please try again.");
       setLoading(false);
     }
   };
@@ -96,8 +110,8 @@ export default function WhiteHero() {
           </nav>
 
           <div className="arclo-nav-right">
-            <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-btn arclo-btn-secondary arclo-hide-mobile">
-              Generate My Site
+            <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-hide-mobile">
+              <BrandButton variant="blue" size="sm">Generate My Site</BrandButton>
             </Link>
             <Link href={ROUTES.SCAN} className="arclo-btn arclo-btn-primary">
               Analyze My Website
@@ -120,7 +134,9 @@ export default function WhiteHero() {
               <Link href="/pricing" onClick={toggleMenu}>Pricing</Link>
               <Link href="/login" onClick={toggleMenu}>Log In</Link>
               <div className="arclo-mobile-menu-cta">
-                <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-btn arclo-btn-secondary">Generate My Site</Link>
+                <Link href={ROUTES.WEBSITE_GENERATOR}>
+                  <BrandButton variant="blue" className="w-full">Generate My Site</BrandButton>
+                </Link>
                 <Link href={ROUTES.SCAN} className="arclo-btn arclo-btn-primary">Analyze My Website</Link>
               </div>
             </div>
@@ -159,6 +175,20 @@ export default function WhiteHero() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
+            <div className="arclo-location-row">
+              <input
+                className="arclo-input arclo-input-half"
+                placeholder="City (e.g. Austin)"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+              <input
+                className="arclo-input arclo-input-half"
+                placeholder="State (e.g. TX)"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+              />
+            </div>
             <button
               type="submit"
               className="arclo-btn arclo-btn-primary arclo-primary-cta"
@@ -179,7 +209,12 @@ export default function WhiteHero() {
 
           <div className="arclo-micro">Free scan • No credit card • Takes ~60 seconds</div>
 
-          <button className="arclo-btn arclo-btn-secondary arclo-secondary-cta">Generate a Free Website</button>
+          <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-secondary-cta">
+            <BrandButton variant="blue">
+              <Sparkles className="w-4 h-4" />
+              Generate My Site
+            </BrandButton>
+          </Link>
 
           <div className="arclo-pill-row" aria-label="Trust factors">
             {TRUST_PILLS.map((pill) => (

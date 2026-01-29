@@ -19243,9 +19243,65 @@ Return JSON in this exact format:
   // ============================================================
   // SCAN API - Marketing Funnel
   // ============================================================
-  
+
+  // Ensure scan_requests table exists (defensive — avoids 42P01 if migrations haven't run)
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS scan_requests (
+        id SERIAL PRIMARY KEY,
+        scan_id TEXT NOT NULL UNIQUE,
+        target_url TEXT NOT NULL,
+        normalized_url TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued',
+        email TEXT,
+        preview_findings JSONB,
+        full_report JSONB,
+        score_summary JSONB,
+        geo_scope TEXT,
+        geo_location JSONB,
+        error_message TEXT,
+        started_at TIMESTAMP,
+        completed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+  } catch (e: any) {
+    logger.warn("Scan", "Could not verify scan_requests table", { error: e.message });
+  }
+
+  // Ensure free_reports table exists
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS free_reports (
+        id SERIAL PRIMARY KEY,
+        report_id TEXT NOT NULL UNIQUE,
+        scan_id TEXT NOT NULL,
+        website_url TEXT NOT NULL,
+        website_domain TEXT NOT NULL,
+        report_version INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'generating',
+        summary JSONB,
+        competitors JSONB,
+        keywords JSONB,
+        technical JSONB,
+        performance JSONB,
+        next_steps JSONB,
+        meta JSONB,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+  } catch (e: any) {
+    logger.warn("Scan", "Could not verify free_reports table", { error: e.message });
+  }
+
   const scanStartSchema = z.object({
     url: z.string().url("Valid URL is required"),
+    geoLocation: z.object({
+      city: z.string().min(1, "City is required"),
+      state: z.string().min(1, "State is required"),
+    }).optional(),
   });
 
   app.post("/api/scan", async (req, res) => {
@@ -19259,19 +19315,22 @@ Return JSON in this exact format:
         });
       }
 
-      const { url } = parsed.data;
+      const { url, geoLocation } = parsed.data;
       const scanId = `scan_${Date.now()}_${randomUUID().slice(0, 8)}`;
-      
-      logger.info("Analytics", "Free scan started", { eventType: "free_scan_started", scanId, url, requestId });
-      
+
+      logger.info("Analytics", "Free scan started", { eventType: "free_scan_started", scanId, url, geoLocation, requestId });
+
       let normalizedUrl = url.trim();
       if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
         normalizedUrl = `https://${normalizedUrl}`;
       }
 
+      const geoScope = geoLocation ? "local" : null;
+      const geoLocationJson = geoLocation ? JSON.stringify(geoLocation) : null;
+
       await db.execute(sql`
-        INSERT INTO scan_requests (scan_id, target_url, normalized_url, status, created_at, updated_at)
-        VALUES (${scanId}, ${url}, ${normalizedUrl}, 'queued', NOW(), NOW())
+        INSERT INTO scan_requests (scan_id, target_url, normalized_url, status, geo_scope, geo_location, created_at, updated_at)
+        VALUES (${scanId}, ${url}, ${normalizedUrl}, 'queued', ${geoScope}, ${geoLocationJson}::jsonb, NOW(), NOW())
       `);
 
       setTimeout(async () => {
@@ -19386,7 +19445,7 @@ Return JSON in this exact format:
             callWorker<any>(
               serpConfig,
               "/api/serp/summary",
-              { site_domain: targetDomain },
+              { site_domain: targetDomain, location: geoLocation ? `${geoLocation.city}, ${geoLocation.state}` : undefined },
               "SERP Intel"
             ),
             callWorker<any>(

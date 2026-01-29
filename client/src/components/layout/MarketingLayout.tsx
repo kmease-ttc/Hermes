@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
 import { Button } from "@/components/ui/button";
+import { BrandButton } from "@/components/marketing/BrandButton";
 import { Sparkles, Search, Menu, X } from "lucide-react";
 import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -104,15 +105,9 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
               </span>
             </Link>
             <Link href={ROUTES.WEBSITE_GENERATOR} className="hidden md:block">
-              <Button
-                size="sm"
-                className="gap-2 font-medium text-white hover:opacity-90"
-                style={{ background: "linear-gradient(90deg, #2563EB, #0EA5E9, #06B6D4)" }}
-                data-testid="button-generate-site"
-              >
-                <Sparkles className="h-4 w-4" />
+              <BrandButton variant="blue" size="sm" icon={Sparkles} data-testid="button-generate-site">
                 Generate My Site
-              </Button>
+              </BrandButton>
             </Link>
             <Link href={ROUTES.SCAN} className="hidden md:block">
               <Button 
@@ -173,15 +168,9 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
             </Link>
             <div className="flex flex-col gap-3 pt-4">
               <Link href={ROUTES.WEBSITE_GENERATOR} onClick={closeMobileMenu}>
-                <Button
-                  size="lg"
-                  className="w-full gap-2 font-medium text-white hover:opacity-90"
-                  style={{ background: "linear-gradient(90deg, #2563EB, #0EA5E9, #06B6D4)" }}
-                  data-testid="mobile-button-generate-site"
-                >
-                  <Sparkles className="h-4 w-4" />
+                <BrandButton variant="blue" size="lg" icon={Sparkles} className="w-full" data-testid="mobile-button-generate-site">
                   Generate My Site
-                </Button>
+                </BrandButton>
               </Link>
               <Link href={ROUTES.SCAN} onClick={closeMobileMenu}>
                 <Button 
