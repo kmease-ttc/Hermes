@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { useLocation } from "wouter";
-import { Building2, CalendarX, ClipboardList, Loader2, Sparkles } from "lucide-react";
+import React, { useState, useCallback } from "react";
+import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X } from "lucide-react";
 
 /**
  * White Hero (high-contrast) — matches the approved "clean white" mock.
@@ -8,6 +7,7 @@ import { Building2, CalendarX, ClipboardList, Loader2, Sparkles } from "lucide-r
  * - Subtle cosmic glow in the background
  * - Reduced copy (no redundant paragraph)
  * - Clear primary vs secondary CTAs
+ * - Mobile hamburger menu for small screens
  */
 
 const TRUST_PILLS = [
@@ -18,80 +18,8 @@ const TRUST_PILLS = [
 ];
 
 export default function WhiteHero() {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [, navigate] = useLocation();
-
-  const normalizeUrl = (input: string): string => {
-    let normalized = input.trim().toLowerCase();
-    if (!normalized) return "";
-    if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
-      normalized = "https://" + normalized;
-    }
-    return normalized;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    const trimmed = url.trim();
-    if (!trimmed) {
-      setError("Please enter a website URL.");
-      return;
-    }
-
-    const normalizedUrl = normalizeUrl(trimmed);
-    if (!normalizedUrl.includes(".")) {
-      setError("Please enter a valid domain (e.g. example.com).");
-      return;
-    }
-
-    // Basic domain format check
-    try {
-      new URL(normalizedUrl);
-    } catch {
-      setError("That doesn't look like a valid URL. Try something like example.com.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalizedUrl }),
-      });
-
-      let data: any;
-      try {
-        data = await res.json();
-      } catch {
-        setError("Unexpected server response. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data?.message || "Failed to start scan. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const id = data.scanId || data.id;
-      if (!id) {
-        setError("Scan started but no ID was returned. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      navigate(`/scan/preview/${id}`);
-    } catch {
-      setError("Could not reach the server. Please check your connection and try again.");
-      setLoading(false);
-    }
-  };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const toggleMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
 
   return (
     <div className="arclo-hero-wrap">
@@ -101,7 +29,6 @@ export default function WhiteHero() {
         <header className="arclo-nav">
           <div className="arclo-nav-left">
             <a className="arclo-logo" href="/">
-              {/* Swap this SVG for your real logo component if you already have one */}
               <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
                 <defs>
                   <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
@@ -124,13 +51,35 @@ export default function WhiteHero() {
           </nav>
 
           <div className="arclo-nav-right">
-            <a className="arclo-btn arclo-btn-secondary" href="/generate">
+            <a className="arclo-btn arclo-btn-secondary arclo-hide-mobile" href="/generate">
               Generate My Site
             </a>
-            <a className="arclo-btn arclo-btn-primary" href="#analyze">
+            <a className="arclo-btn arclo-btn-primary" href="/analyze">
               Analyze My Website
             </a>
+            <button
+              className="arclo-hamburger"
+              onClick={toggleMenu}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+
+          {/* Mobile slide-down menu */}
+          {mobileMenuOpen && (
+            <div className="arclo-mobile-menu" role="navigation" aria-label="Mobile navigation">
+              <a href="/examples" onClick={toggleMenu}>Examples</a>
+              <a href="/how-it-works" onClick={toggleMenu}>How It Works</a>
+              <a href="/pricing" onClick={toggleMenu}>Pricing</a>
+              <a href="/login" onClick={toggleMenu}>Log In</a>
+              <div className="arclo-mobile-menu-cta">
+                <a className="arclo-btn arclo-btn-secondary" href="/generate">Generate My Site</a>
+                <a className="arclo-btn arclo-btn-primary" href="/analyze">Analyze My Website</a>
+              </div>
+            </div>
+          )}
         </header>
 
         <main className="arclo-hero">
@@ -158,31 +107,10 @@ export default function WhiteHero() {
             </div>
           </div>
 
-          <form id="analyze" className="arclo-cta" onSubmit={handleSubmit}>
-            <input
-              className="arclo-input"
-              placeholder="Enter your website (example.com)"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              aria-label="Website URL"
-            />
-            <button
-              className="arclo-btn arclo-btn-primary arclo-primary-cta"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="arclo-spinner" size={16} />
-                  Analyzing…
-                </>
-              ) : (
-                "Analyze My Website"
-              )}
-            </button>
-          </form>
-
-          {error && <div className="arclo-error">{error}</div>}
+          <div className="arclo-cta">
+            <input className="arclo-input" placeholder="Enter your website (example.com)" />
+            <button className="arclo-btn arclo-btn-primary arclo-primary-cta">Analyze My Website</button>
+          </div>
 
           <div className="arclo-micro">Free scan • No credit card • Takes ~60 seconds</div>
 

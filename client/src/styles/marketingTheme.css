@@ -139,9 +139,92 @@
   background: rgba(15,23,42,.08);
 }
 
+/* ===== Responsive: Tablet (≤768px) ===== */
+@media (max-width: 768px){
+  .arclo-hero{
+    padding: 64px 0 10px;
+  }
+
+  .arclo-sub{
+    font-size: 16px;
+    margin-bottom: 20px;
+    padding: 0 8px;
+  }
+
+  .arclo-steps{
+    font-size: 14px;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .arclo-steps .arrow{
+    display: none;
+  }
+
+  .arclo-steps .step{
+    gap: 8px;
+  }
+}
+
+/* ===== Responsive: Small mobile (≤520px) ===== */
 @media (max-width: 520px){
-  .arclo-steps{ gap: 10px; }
-  .arclo-cta{ gap: 10px; }
-  .arclo-input{ height: 52px; border-radius: 14px; }
-  .arclo-primary-cta{ height: 52px; border-radius: 14px; width: 100%; }
+  .arclo-hero{
+    padding: 48px 0 10px;
+  }
+
+  .arclo-h1{
+    font-size: clamp(28px, 8vw, 40px);
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  .arclo-h1 br{
+    display: none;
+  }
+
+  .arclo-sub{
+    font-size: 15px;
+    margin-bottom: 18px;
+  }
+
+  .arclo-steps{
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .arclo-steps .arrow{
+    display: none;
+  }
+
+  .arclo-cta{
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 4px;
+  }
+
+  .arclo-input{
+    height: 52px;
+    border-radius: 14px;
+    width: 100%;
+  }
+
+  .arclo-primary-cta{
+    height: 52px;
+    border-radius: 14px;
+    width: 100%;
+  }
+
+  .arclo-micro{
+    font-size: 13px;
+  }
+
+  .arclo-secondary-cta{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .arclo-hairline{
+    margin-top: 32px;
+  }
 }

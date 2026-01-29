@@ -28,6 +28,7 @@ html, body {
   padding: 0 24px 40px;
 }
 
+/* ===== Navigation ===== */
 .arclo-nav{
   position: sticky;
   top: 0;
@@ -35,6 +36,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   height: 72px;
   padding: 0 24px;
@@ -50,7 +52,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
+  min-width: 120px;
 }
 
 .arclo-logo{
@@ -82,10 +84,35 @@ html, body {
   display:flex;
   align-items:center;
   gap: 10px;
-  min-width: 260px;
   justify-content: flex-end;
 }
 
+/* Hamburger button — hidden on desktop */
+.arclo-hamburger{
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgba(15,23,42,0.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  color: var(--arclo-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.arclo-hamburger:hover{
+  background: rgba(255,255,255,1);
+}
+
+/* Mobile slide-down menu — hidden on desktop */
+.arclo-mobile-menu{
+  display: none;
+}
+
+/* ===== Buttons ===== */
 .arclo-btn{
   height: 42px;
   padding: 0 16px;
@@ -124,6 +151,7 @@ html, body {
 
 .arclo-btn-secondary:hover{ background: rgba(59,130,246,0.16); transform: translateY(-1px); }
 
+/* ===== Trust pills ===== */
 .arclo-pill-row{
   display:flex;
   gap: 12px;
@@ -158,13 +186,89 @@ html, body {
   color: #6D28D9;
 }
 
+/* ===== Responsive: Tablet (≤920px) ===== */
 @media (max-width: 920px){
   .arclo-nav-center{ display:none; }
   .arclo-nav-left{ min-width: 0; }
   .arclo-nav-right{ min-width: 0; }
+
+  .arclo-hamburger{
+    display: flex;
+  }
+
+  .arclo-hide-mobile{
+    display: none;
+  }
+
+  .arclo-mobile-menu{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    order: 10;
+    padding: 16px 0 20px;
+    border-top: 1px solid rgba(15,23,42,0.08);
+    animation: arclo-menu-slide 0.2s ease;
+  }
+
+  .arclo-mobile-menu a:not(.arclo-btn){
+    display: block;
+    padding: 12px 4px;
+    color: var(--arclo-text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.06);
+    transition: color 0.15s ease;
+  }
+
+  .arclo-mobile-menu a:not(.arclo-btn):hover{
+    color: var(--arclo-purple);
+  }
+
+  .arclo-mobile-menu-cta{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .arclo-mobile-menu-cta .arclo-btn{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* When mobile menu is open, allow nav to expand height */
+  .arclo-nav:has(.arclo-mobile-menu){
+    height: auto;
+    min-height: 72px;
+    padding-bottom: 0;
+  }
+
+  @keyframes arclo-menu-slide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
+/* ===== Responsive: Small mobile (≤520px) ===== */
 @media (max-width: 520px){
-  .arclo-btn{ height: 40px; padding: 0 14px; border-radius: 12px; }
-  .arclo-hero-container{ padding-top: 56px; }
+  .arclo-btn{ height: 40px; padding: 0 14px; border-radius: 12px; font-size: 14px; }
+  .arclo-hero-container{ padding: 0 16px 32px; }
+  .arclo-nav{ padding: 0 16px; margin: 0 -16px; }
+
+  .arclo-pill-row{
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .arclo-trust-pill{
+    padding: 10px 14px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .arclo-trust-icon{
+    width: 22px;
+    height: 22px;
+  }
 }

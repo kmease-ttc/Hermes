@@ -2,10 +2,10 @@ import { Quote } from "lucide-react";
 
 export function FounderNote() {
   return (
-    <section className="px-5 md:px-6 py-12 md:py-16">
+    <section className="px-4 sm:px-5 md:px-6 py-12 md:py-16">
       <div className="max-w-3xl mx-auto">
-        <div 
-          className="rounded-2xl p-8 md:p-10 relative"
+        <div
+          className="rounded-2xl p-5 sm:p-8 md:p-10 relative"
           style={{
             background: "linear-gradient(180deg, #FFFFFF, #F8FAFC)",
             border: "1px solid rgba(15, 23, 42, 0.08)",
@@ -19,19 +19,19 @@ export function FounderNote() {
           </div>
           
           <div className="pt-2">
-            <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-              "We built Arclo after getting burned by agencies and overwhelmed by tools. 
-              For years, we paid monthly retainers with little visibility into what was actually being done. 
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6">
+              "We built Arclo after getting burned by agencies and overwhelmed by tools.
+              For years, we paid monthly retainers with little visibility into what was actually being done.
               Reports were confusing. Results were inconsistent. And we were always waiting on someone else."
             </p>
-            
-            <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-              "So we built what we wished existed: a system that handles SEO automatically, 
-              shows you exactly what it's doing, and actually improves over time — without meetings, 
+
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6">
+              "So we built what we wished existed: a system that handles SEO automatically,
+              shows you exactly what it's doing, and actually improves over time — without meetings,
               without reports to review, and without depending on an agency's availability."
             </p>
-            
-            <p className="text-muted-foreground mb-6">
+
+            <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
               Arclo started as an internal tool for a real medical practice. It replaced two agencies, 
               increased organic leads by 40%, and freed up hours every week. Now we're making it 
               available to every local business.
