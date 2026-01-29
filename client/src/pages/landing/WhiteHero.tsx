@@ -96,7 +96,7 @@ export default function WhiteHero() {
             <a className="arclo-btn arclo-btn-secondary" href="/generate">
               Generate My Site
             </a>
-            <a className="arclo-btn arclo-btn-primary" href="/analyze">
+            <a className="arclo-btn arclo-btn-primary" href="#analyze">
               Analyze My Website
             </a>
           </div>
@@ -127,7 +127,7 @@ export default function WhiteHero() {
             </div>
           </div>
 
-          <form className="arclo-cta" onSubmit={handleSubmit}>
+          <form id="analyze" className="arclo-cta" onSubmit={handleSubmit}>
             <input
               className="arclo-input"
               placeholder="Enter your website (example.com)"

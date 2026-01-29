@@ -101,6 +101,14 @@
   font-size: 16px;
 }
 
+.arclo-error{
+  margin-top: -16px;
+  margin-bottom: 12px;
+  color: #DC2626;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .arclo-micro{
   margin-top: 12px;
   color: var(--arclo-text-3);
