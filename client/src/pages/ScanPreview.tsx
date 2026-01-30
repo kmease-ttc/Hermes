@@ -25,11 +25,61 @@ const STAGE_MESSAGES = [
 
 export default function ScanPreview() {
   const params = useParams<{ scanId: string }>();
-  const scanId = params.scanId;
+  const paramScanId = params.scanId;
   const [, navigate] = useLocation();
   const reportTriggered = useRef(false);
   const [reportError, setReportError] = useState("");
   const reportRetries = useRef(0);
+
+  // If scanId is "pending", fire the scan API and resolve to a real scanId
+  const [resolvedScanId, setResolvedScanId] = useState<string | null>(
+    paramScanId && paramScanId !== "pending" ? paramScanId : null
+  );
+  const [pendingError, setPendingError] = useState("");
+  const scanFired = useRef(false);
+
+  useEffect(() => {
+    if (paramScanId !== "pending" || scanFired.current) return;
+    scanFired.current = true;
+
+    const payloadStr = sessionStorage.getItem("arclo_scan_payload");
+    if (!payloadStr) {
+      setPendingError("No scan data found. Please start a new analysis.");
+      return;
+    }
+    sessionStorage.removeItem("arclo_scan_payload");
+
+    (async () => {
+      try {
+        const res = await fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payloadStr,
+        });
+
+        if (!res.ok) {
+          let errMsg = `Server returned ${res.status}`;
+          try {
+            const errData = await res.json();
+            errMsg = errData?.message || errData?.error || errMsg;
+          } catch {}
+          throw new Error(errMsg);
+        }
+
+        const data = await res.json();
+        const id = data.scanId || data.id;
+        if (!id) throw new Error("Server did not return a scan ID");
+
+        setResolvedScanId(id);
+        window.history.replaceState(null, "", `/scan/preview/${id}`);
+      } catch (err: any) {
+        console.error("[ScanPreview] Scan API failed:", err);
+        setPendingError(err?.message || "Failed to start scan. Please try again.");
+      }
+    })();
+  }, [paramScanId]);
+
+  const scanId = resolvedScanId;
 
   const statusQuery = useQuery<ScanStatus>({
     queryKey: ["scan-status", scanId],
@@ -56,18 +106,20 @@ export default function ScanPreview() {
     enabled: !!scanId,
   });
 
+  // Show scanning state while waiting for API call to return OR while scan is running
   const isScanning =
+    !scanId ||
     statusQuery.data?.status === "queued" ||
     statusQuery.data?.status === "running";
   const isReady =
     statusQuery.data?.status === "preview_ready" ||
     statusQuery.data?.status === "completed";
   const isFailed = statusQuery.data?.status === "failed";
-  const isNetworkError = statusQuery.isError && !statusQuery.data;
+  const isNetworkError = !pendingError && statusQuery.isError && !statusQuery.data;
 
   // Auto-generate report and navigate to results when scan completes
   useEffect(() => {
-    if (!isReady || reportTriggered.current) return;
+    if (!isReady || !scanId || reportTriggered.current) return;
     reportTriggered.current = true;
     setReportError("");
 
@@ -100,20 +152,19 @@ export default function ScanPreview() {
             err?.message || "Could not generate your report after multiple attempts."
           );
         }
-        // Otherwise the effect will auto-retry on next render since reportTriggered is reset
       }
     })();
   }, [isReady, scanId, navigate]);
 
   // Rotate through stage messages while scanning
-  const progress = statusQuery.data?.progress || 30;
+  const progress = statusQuery.data?.progress || (scanId ? 30 : 10);
   const stageIndex = Math.min(
     Math.floor((progress / 100) * STAGE_MESSAGES.length),
     STAGE_MESSAGES.length - 1,
   );
 
-  // No scanId in URL
-  if (!scanId) {
+  // No scanId in URL at all
+  if (!paramScanId) {
     return (
       <MarketingLayout>
         <div className="min-h-screen bg-gradient-to-b from-muted via-background to-muted/50">
@@ -150,8 +201,32 @@ export default function ScanPreview() {
         <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
 
+            {/* Pending error — scan API call failed */}
+            {pendingError && (
+              <div className="text-center space-y-8">
+                <div className="w-20 h-20 rounded-full bg-semantic-danger-soft flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-10 h-10 text-semantic-danger" />
+                </div>
+                <div className="space-y-4">
+                  <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                    Scan Failed
+                  </h1>
+                  <p className="text-xl text-muted-foreground">
+                    {pendingError}
+                  </p>
+                </div>
+                <Button
+                  variant="primaryGradient"
+                  onClick={() => navigate(ROUTES.LANDING)}
+                  size="lg"
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+
             {/* Scanning / Generating State */}
-            {(isScanning || (isReady && !reportError)) && (
+            {!pendingError && (isScanning || (isReady && !reportError)) && (
               <div className="text-center space-y-8">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-soft to-purple-soft flex items-center justify-center mx-auto shadow-lg shadow-purple-glow">
                   <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -163,7 +238,9 @@ export default function ScanPreview() {
                   <p className="text-xl text-muted-foreground">
                     {isReady
                       ? "Preparing your SEO analysis..."
-                      : statusQuery.data?.message || STAGE_MESSAGES[stageIndex]}
+                      : !scanId
+                        ? "Starting your scan..."
+                        : statusQuery.data?.message || STAGE_MESSAGES[stageIndex]}
                   </p>
                 </div>
                 <div className="max-w-md mx-auto">
@@ -176,7 +253,7 @@ export default function ScanPreview() {
             )}
 
             {/* Failed State — scan itself failed */}
-            {isFailed && (
+            {!pendingError && isFailed && (
               <div className="text-center space-y-8">
                 <div className="w-20 h-20 rounded-full bg-semantic-danger-soft flex items-center justify-center mx-auto">
                   <AlertTriangle className="w-10 h-10 text-semantic-danger" />

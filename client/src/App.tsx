@@ -123,7 +123,14 @@ function DebugLocation() {
 function Router() {
   const [location] = useLocation();
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-muted via-background to-muted/50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
     <DebugLocation />
     <Switch location={location}>
       {/* ============================================ */}

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X, Loader2, MapPin, ChevronDown } from "lucide-react";
+import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X, MapPin, ChevronDown } from "lucide-react";
 import { ROUTES } from "@shared/routes";
 import { BrandButton } from "@/components/marketing/BrandButton";
 
@@ -100,7 +100,6 @@ export default function WhiteHero() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toggleMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
   const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
 
@@ -135,57 +134,32 @@ export default function WhiteHero() {
     }
 
     setNormalizedUrlForModal(normalized);
-    setSelectedState("");
+    setSelectedState("NATIONAL");
     setSelectedCity("");
     setShowLocationModal(true);
   };
 
   const handleLocationSubmit = async () => {
-    if (!selectedState || !selectedCity) {
-      setError("Please select your state and city.");
+    const isNational = selectedState === "NATIONAL";
+
+    if (!isNational && (!selectedState || !selectedCity)) {
+      setError("Please select your state and city, or choose National.");
       return;
     }
 
     setError("");
-    setLoading(true);
     setShowLocationModal(false);
 
-    const stateName = US_STATES.find((s) => s.abbr === selectedState)?.name || selectedState;
-    const scanPayload = {
-      url: normalizedUrlForModal,
-      geoLocation: { city: selectedCity, state: stateName },
-    };
-
-    try {
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scanPayload),
-      });
-
-      if (!res.ok) {
-        let errMsg = `Server returned ${res.status}`;
-        try {
-          const errData = await res.json();
-          errMsg = errData?.message || errData?.error || errMsg;
-        } catch {
-          // response wasn't JSON
-        }
-        throw new Error(errMsg);
-      }
-
-      const data = await res.json();
-      const id = data.scanId || data.id;
-      if (!id) {
-        throw new Error("Server did not return a scan ID");
-      }
-
-      navigate(`/scan/preview/${id}`);
-    } catch (err: any) {
-      console.error("[Arclo] Scan submission failed:", err);
-      setError(err?.message || "Failed to start scan. Please try again.");
-      setLoading(false);
+    // Build scan payload
+    const scanPayload: any = { url: normalizedUrlForModal };
+    if (!isNational) {
+      const stateName = US_STATES.find((s) => s.abbr === selectedState)?.name || selectedState;
+      scanPayload.geoLocation = { city: selectedCity, state: stateName };
     }
+
+    // Store payload and navigate to loading screen immediately
+    sessionStorage.setItem("arclo_scan_payload", JSON.stringify(scanPayload));
+    navigate("/scan/preview/pending");
   };
 
   return (
@@ -286,16 +260,8 @@ export default function WhiteHero() {
             <button
               type="submit"
               className="arclo-btn arclo-btn-primary arclo-primary-cta"
-              disabled={loading}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="arclo-spinner" size={16} />
-                  Analyzing…
-                </>
-              ) : (
-                "Analyze My Website"
-              )}
+              Analyze My Website
             </button>
           </form>
 
@@ -303,9 +269,10 @@ export default function WhiteHero() {
 
           <div className="arclo-micro">Free scan • No credit card • Takes ~60 seconds</div>
 
-          <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-secondary-cta">
-            <Sparkles className="w-4 h-4" />
-            Generate My Site
+          <Link href={ROUTES.WEBSITE_GENERATOR}>
+            <BrandButton variant="blue" size="sm" icon={Sparkles}>
+              Generate My Site
+            </BrandButton>
           </Link>
 
           <div className="arclo-pill-row" aria-label="Trust factors">
@@ -346,7 +313,7 @@ export default function WhiteHero() {
 
             <div className="arclo-modal-fields">
               <label className="arclo-modal-label">
-                State
+                Scope
                 <div className="arclo-select-wrap">
                   <select
                     className="arclo-select"
@@ -356,7 +323,7 @@ export default function WhiteHero() {
                       setSelectedCity("");
                     }}
                   >
-                    <option value="">Select a state</option>
+                    <option value="NATIONAL">National (United States)</option>
                     {US_STATES.map((s) => (
                       <option key={s.abbr} value={s.abbr}>
                         {s.name}
@@ -367,31 +334,33 @@ export default function WhiteHero() {
                 </div>
               </label>
 
-              <label className="arclo-modal-label">
-                City
-                <div className="arclo-select-wrap">
-                  <select
-                    className="arclo-select"
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    disabled={!selectedState}
-                  >
-                    <option value="">{selectedState ? "Select a city" : "Select a state first"}</option>
-                    {cityOptions.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="arclo-select-icon" />
-                </div>
-              </label>
+              {selectedState !== "NATIONAL" && (
+                <label className="arclo-modal-label">
+                  City
+                  <div className="arclo-select-wrap">
+                    <select
+                      className="arclo-select"
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      disabled={!selectedState}
+                    >
+                      <option value="">Select a city</option>
+                      {cityOptions.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="arclo-select-icon" />
+                  </div>
+                </label>
+              )}
             </div>
 
             <button
               className="arclo-btn arclo-btn-primary arclo-modal-submit"
               onClick={handleLocationSubmit}
-              disabled={!selectedState || !selectedCity}
+              disabled={selectedState !== "NATIONAL" && (!selectedState || !selectedCity)}
             >
               Start Analysis
             </button>
