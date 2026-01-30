@@ -19304,7 +19304,8 @@ Return JSON in this exact format:
     }).optional(),
   });
 
-  app.post("/api/scan", async (req, res) => {
+  // Scan handler — shared between /api/scan and /api/analyze (alias)
+  async function handleScanPost(req: any, res: any) {
     const requestId = randomUUID();
     try {
       const parsed = scanStartSchema.safeParse(req.body);
@@ -19905,7 +19906,11 @@ Return JSON in this exact format:
         : "Failed to start scan. Please try again.";
       res.status(500).json({ ok: false, message });
     }
-  });
+  }
+
+  // Register scan handler on both paths (ad blockers may block "/scan")
+  app.post("/api/scan", handleScanPost);
+  app.post("/api/analyze", handleScanPost);
 
   app.get("/api/scan/:scanId/status", async (req, res) => {
     const { scanId } = req.params;

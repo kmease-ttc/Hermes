@@ -76,6 +76,7 @@ const DASHBOARD_POST_PATHS = [
   "/api/achievements",
   "/api/popular",
   "/api/scan",
+  "/api/analyze",
   "/api/report/free",
 ];
 
