@@ -36,6 +36,8 @@ import {
   ShieldAlert,
   UserPlus,
   LogIn,
+  Target,
+  Calendar,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -386,13 +388,104 @@ function LimitedVisibilityBanner({ reason, steps }: { reason?: string; steps?: s
   );
 }
 
-function ExecutiveSummarySection({ summary }: { summary: Summary }) {
+function ExecutiveSummarySection({
+  summary,
+  keywords,
+  authenticated,
+  scanId,
+  hasCompetitors,
+}: {
+  summary: Summary;
+  keywords?: KeywordData;
+  authenticated: boolean;
+  scanId?: string;
+  hasCompetitors: boolean;
+}) {
+  const notRankingCount = keywords?.bucket_counts?.not_ranking ?? 0;
+  const totalKeywords = keywords?.targets?.length ?? 0;
+  const hasSerpIssue = keywords && totalKeywords > 0 && notRankingCount > 0;
+
+  const scrollToRankingSnapshot = () => {
+    const el = document.querySelector('[data-testid="section-keywords"]');
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToTopIssues = () => {
+    const el = document.querySelector('[data-testid="top-issues-list"]');
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const signupUrl = scanId ? `/signup?scanId=${scanId}` : "/signup";
+
   return (
     <section data-testid="section-executive-summary" className="space-y-6">
       <div className="flex items-center gap-3">
         <Gauge className="w-6 h-6 text-primary" />
         <h2 className="text-2xl font-bold text-foreground">Executive Summary</h2>
       </div>
+
+      {/* Actions CTA Panel */}
+      <Card className="border-primary/20 bg-primary/[0.02]" data-testid="actions-panel">
+        <CardContent className="py-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground text-base mb-1">Recommended Actions</h3>
+              <p className="text-sm text-muted-foreground">
+                {authenticated
+                  ? "Apply the fixes below to start improving your rankings."
+                  : "Save this report and start fixing issues automatically."}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0 print:hidden">
+              {authenticated ? (
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 text-white"
+                  onClick={scrollToTopIssues}
+                  data-testid="cta-apply-fixes"
+                >
+                  <Wrench className="w-4 h-4 mr-1.5" />
+                  Fix Top Issues
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 text-white"
+                  onClick={() => { window.location.href = signupUrl; }}
+                  data-testid="cta-save-report"
+                >
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Save &amp; Run More Scans
+                </Button>
+              )}
+              {!authenticated && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { window.location.href = "/pricing"; }}
+                  data-testid="cta-unlock-full"
+                >
+                  Unlock Full Report
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { window.location.href = "/contact"; }}
+                data-testid="cta-book-call"
+              >
+                <Calendar className="w-4 h-4 mr-1.5" />
+                Book a Call
+              </Button>
+            </div>
+          </div>
+          {/* Print-friendly fallback: render CTAs as text links */}
+          <div className="hidden print:block mt-3 text-sm text-muted-foreground space-y-1">
+            <p>Next steps: Visit {window.location.origin}/signup to create an account and apply fixes.</p>
+            <p>Or book a call at {window.location.origin}/contact</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1 flex flex-col items-center justify-center py-6">
@@ -407,7 +500,32 @@ function ExecutiveSummarySection({ summary }: { summary: Summary }) {
                 <AlertTriangle className="w-4 h-4 text-semantic-danger" />
                 Top Issues
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3" data-testid="top-issues-list">
+                {/* SERP Not Ranking issue — injected first when data exists */}
+                {hasSerpIssue && (
+                  <button
+                    type="button"
+                    onClick={scrollToRankingSnapshot}
+                    className="w-full text-left p-3 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100/70 transition-colors cursor-pointer"
+                    data-testid="issue-serp-not-ranking"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="font-medium text-foreground flex items-center gap-1.5">
+                        <Target className="w-4 h-4 text-red-500 shrink-0" />
+                        Not ranking for high-intent keywords
+                      </span>
+                      <SeverityBadge severity="high" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      You're not ranking for {notRankingCount} of {totalKeywords} target keywords.
+                    </p>
+                    {hasCompetitors && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Competitors are capturing this demand. See the Ranking Snapshot &darr;
+                      </p>
+                    )}
+                  </button>
+                )}
                 {summary.top_issues.map((issue, idx) => (
                   <div key={idx} className="p-3 bg-semantic-danger-soft border border-semantic-danger-border rounded-lg" data-testid={`issue-${idx}`}>
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -1175,6 +1293,7 @@ const trackAnalyticsEvent = async (
 export default function FreeReport() {
   const params = useParams<{ reportId: string; shareToken?: string }>();
   const { reportId, shareToken } = params;
+  const { authenticated } = useAuth();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [hasTrackedView, setHasTrackedView] = useState(false);
@@ -1437,7 +1556,13 @@ export default function FreeReport() {
             />
           )}
           
-          <ExecutiveSummarySection summary={report.summary} />
+          <ExecutiveSummarySection
+            summary={report.summary}
+            keywords={report.keywords}
+            authenticated={authenticated}
+            scanId={report.source_scan_id}
+            hasCompetitors={!!report.competitors?.items?.length}
+          />
 
           <TopCompetitorsBlock
             competitors={report.competitors}
