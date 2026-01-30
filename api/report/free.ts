@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getPool } from "../_lib/db";
+import { getPool } from "../_lib/db.js";
 import { randomUUID } from "crypto";
 
 function setCorsHeaders(res: VercelResponse) {
@@ -10,27 +10,21 @@ function setCorsHeaders(res: VercelResponse) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res);
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, message: "Method not allowed" });
-  }
-
   try {
+    setCorsHeaders(res);
+
+    if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method === "GET") return res.json({ ok: true, fn: "report/free", ts: Date.now() });
+    if (req.method !== "POST") return res.status(405).json({ ok: false, message: "Method not allowed" });
+
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const scanId = body?.scanId;
-
     if (!scanId || typeof scanId !== "string") {
       return res.status(400).json({ ok: false, message: "scanId is required" });
     }
 
     const pool = getPool();
 
-    // Get scan data
     const scanResult = await pool.query(
       `SELECT scan_id, target_url, normalized_url, status, preview_findings, full_report, score_summary
        FROM scan_requests WHERE scan_id = $1`,
@@ -42,24 +36,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const scan = scanResult.rows[0];
-
     if (scan.status !== "preview_ready" && scan.status !== "completed") {
       return res.status(400).json({ ok: false, message: "Scan is not ready yet" });
     }
 
     const reportId = `fr_${Date.now()}_${randomUUID().slice(0, 8)}`;
+
     let domain: string;
-    try {
-      domain = new URL(scan.normalized_url || scan.target_url).hostname;
-    } catch {
-      domain = (scan.normalized_url || scan.target_url).replace(/^https?:\/\//, "").split("/")[0];
-    }
+    try { domain = new URL(scan.normalized_url || scan.target_url).hostname; }
+    catch { domain = (scan.normalized_url || scan.target_url).replace(/^https?:\/\//, "").split("/")[0]; }
 
     const previewFindings = scan.preview_findings || [];
     const scoreSummary = scan.score_summary || {};
     const fullReport = scan.full_report || {};
 
-    // Build technical buckets from findings
+    // Build technical buckets
     const bucketMap: Record<string, any[]> = {};
     for (const f of previewFindings) {
       const cat = f.category || (f.title?.toLowerCase().includes("meta") ? "meta" : "errors");
@@ -72,40 +63,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         evidence: [],
       });
     }
+
     const technicalBuckets = Object.entries(bucketMap).map(([name, findings]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " "),
-      status: findings.some(f => f.severity === "high") ? "critical" : findings.some(f => f.severity === "medium") ? "warning" : "ok",
+      status: findings.some((f: any) => f.severity === "high") ? "critical" : findings.some((f: any) => f.severity === "medium") ? "warning" : "ok",
       findings,
     }));
+
     if (technicalBuckets.length === 0) {
       technicalBuckets.push({ name: "General", status: "ok", findings: [{ id: "f_none", title: "No major issues detected", severity: "low", description: "Initial scan looks good.", evidence: [] }] });
     }
 
-    const allFindings = technicalBuckets.flatMap(b => b.findings);
-
     // Performance
-    const cwvFromScan = fullReport.performance || {};
-    let performanceUrls: any[] = [];
-    if (cwvFromScan && cwvFromScan.ok && cwvFromScan.lab) {
-      const lcpMs = cwvFromScan.lab?.lcp_ms;
-      const cls = cwvFromScan.lab?.cls;
+    const cwv = fullReport.performance || {};
+    let performanceUrls: any[];
+    if (cwv?.ok && cwv?.lab) {
+      const lcpMs = cwv.lab.lcp_ms;
+      const cls = cwv.lab.cls;
       const lcpStatus = lcpMs && lcpMs > 4000 ? "poor" : lcpMs && lcpMs > 2500 ? "needs_work" : "good";
       const clsStatus = cls !== null && cls > 0.25 ? "poor" : cls !== null && cls > 0.1 ? "needs_work" : "good";
-      const overall = lcpStatus === "poor" || clsStatus === "poor" ? "critical" :
-        lcpStatus === "needs_work" || clsStatus === "needs_work" ? "needs_attention" : "good";
-      performanceUrls = [{ url: cwvFromScan.url || scan.normalized_url, lcp_status: lcpStatus, cls_status: clsStatus, inp_status: "not_available", overall }];
+      const overall = lcpStatus === "poor" || clsStatus === "poor" ? "critical" : lcpStatus === "needs_work" || clsStatus === "needs_work" ? "needs_attention" : "good";
+      performanceUrls = [{ url: cwv.url || scan.normalized_url, lcp_status: lcpStatus, cls_status: clsStatus, inp_status: "not_available", overall }];
     } else {
       performanceUrls = [{ url: scan.normalized_url, lcp_status: "good", cls_status: "good", inp_status: "not_available", overall: "good" }];
     }
 
-    // Keywords
+    // Keywords (placeholder)
     const keywordTargets = [
       { keyword: `${domain.replace("www.", "")} services`, intent: "high_intent", rank: null, volume: 500, winner_domain: null },
       { keyword: `best ${domain.split(".")[0]}`, intent: "informational", rank: null, volume: 1200, winner_domain: null },
       { keyword: `${domain.split(".")[0]} near me`, intent: "high_intent", rank: null, volume: 800, winner_domain: null },
     ];
 
-    // Competitors
+    // Competitors (placeholder)
     const competitorItems = [
       { domain: `competitor1-${domain.split(".")[0]}.com`, overlap_pct: 0, shared_keywords: 0, example_pages: [] },
       { domain: `competitor2-${domain.split(".")[0]}.com`, overlap_pct: 0, shared_keywords: 0, example_pages: [] },
@@ -113,17 +103,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Summary
     const healthScore = scoreSummary.overall ?? 65;
-    const topIssues = previewFindings.filter((f: any) => f.severity === "high" || f.severity === "medium").slice(0, 3).map((f: any) => f.title || f.summary || "Issue found");
-    const topOpportunities = ["Optimize meta descriptions", "Improve page speed", "Build quality backlinks"].slice(0, 3);
+    const topIssues = previewFindings
+      .filter((f: any) => f.severity === "high" || f.severity === "medium")
+      .slice(0, 3)
+      .map((f: any) => f.title || f.summary || "Issue found");
 
     const summary = {
       health_score: healthScore,
       top_issues: topIssues.length > 0 ? topIssues : ["Review site SEO fundamentals"],
-      top_opportunities: topOpportunities,
+      top_opportunities: ["Optimize meta descriptions", "Improve page speed", "Build quality backlinks"],
       one_liner: `Your site scores ${healthScore}/100. ${topIssues.length > 0 ? `Key issue: ${topIssues[0]}.` : "Looking solid overall."}`,
     };
 
-    // Next steps
     const nextSteps = {
       ctas: [
         { id: "cta_1", label: "Fix Technical Issues", action: "signup", description: "Address the technical SEO issues found in your scan" },
@@ -132,7 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ],
     };
 
-    // Meta
     const meta = {
       generation_status: "partial",
       missing: { keywords: "Requires Search Console", competitors: "Requires SERP API" },
@@ -147,9 +137,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       costOfInaction: scoreSummary.costOfInaction || null,
     };
 
-    const scanVisibilityMode = fullReport.visibilityMode || "full";
+    const visMode = fullReport.visibilityMode || "full";
 
-    // Insert report
     await pool.query(
       `INSERT INTO free_reports (
         report_id, scan_id, website_url, website_domain, report_version, status,
@@ -164,11 +153,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         JSON.stringify(summary),
         JSON.stringify({ items: competitorItems, insight: "Competitor data requires SERP API integration." }),
         JSON.stringify({ targets: keywordTargets, bucket_counts: { rank_1: 0, top_3: 0, "4_10": 0, "11_30": 0, not_ranking: keywordTargets.length }, insight: "Keyword data requires Search Console integration." }),
-        scanVisibilityMode === "limited" ? null : JSON.stringify({ buckets: technicalBuckets }),
+        visMode === "limited" ? null : JSON.stringify({ buckets: technicalBuckets }),
         JSON.stringify({ urls: performanceUrls, global_insight: "Connect Google Search Console for detailed Core Web Vitals data." }),
         JSON.stringify(nextSteps),
         JSON.stringify(meta),
-        scanVisibilityMode,
+        visMode,
         fullReport.limitedVisibilityReason || null,
         JSON.stringify(fullReport.limitedVisibilitySteps || []),
       ]
@@ -177,6 +166,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ ok: true, reportId });
   } catch (error: any) {
     console.error("[FreeReport] Failed:", error?.message, error?.stack);
-    return res.status(500).json({ ok: false, message: error?.message || "Failed to create free report" });
+    if (!res.headersSent) {
+      return res.status(500).json({ ok: false, message: error?.message || "Failed to create free report" });
+    }
   }
 }
