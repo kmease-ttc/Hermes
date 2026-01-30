@@ -124,17 +124,9 @@ export default function AppShell({ children, lightMode = false }: AppShellProps)
       return;
     }
     
-    if (!activeWebsiteId && location !== "/app/select-site") {
-      if (sites && sites.length === 0) {
-        return;
-      }
-      if (sites && sites.length === 1) {
+    if (!activeWebsiteId) {
+      if (sites && sites.length > 0) {
         selectWebsite(sites[0].siteId);
-        return;
-      }
-      if (sites && sites.length > 1) {
-        navigate("/app/select-site");
-        return;
       }
     }
   }, [loading, authenticated, activeWebsiteId, location, navigate, sites, selectWebsite]);

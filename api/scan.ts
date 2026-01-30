@@ -97,6 +97,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       )
     `);
 
+    // Ensure columns exist on pre-existing tables
+    await pool.query(`ALTER TABLE scan_requests ADD COLUMN IF NOT EXISTS idempotency_key TEXT`);
+    await pool.query(`ALTER TABLE scan_requests ADD COLUMN IF NOT EXISTS domain TEXT`);
+    await pool.query(`ALTER TABLE scan_requests ADD COLUMN IF NOT EXISTS scan_mode TEXT DEFAULT 'light'`);
+    await pool.query(`ALTER TABLE scan_requests ADD COLUMN IF NOT EXISTS agent_summary JSONB`);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS free_reports (
         id SERIAL PRIMARY KEY,
