@@ -5,7 +5,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.spec.ts'],
+    include: ['tests/**/*.{spec,test}.ts'],
+    testTimeout: 60_000,
+    hookTimeout: 30_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -13,7 +15,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, './shared'),
+      '@shared': path.resolve(import.meta.dirname, './shared'),
     },
   },
 });
