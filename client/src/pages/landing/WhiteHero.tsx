@@ -1,8 +1,10 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Building2, CalendarX, ClipboardList, Sparkles, Menu, X, MapPin, ChevronDown } from "lucide-react";
+import { Building2, CalendarX, ClipboardList, Sparkles, Search, Menu, X, MapPin, ChevronDown } from "lucide-react";
 import { ROUTES } from "@shared/routes";
+import { Button } from "@/components/ui/button";
 import { BrandButton } from "@/components/marketing/BrandButton";
+import arcloLogo from "@assets/A_small_logo_1765393189114.png";
 
 /**
  * White Hero (high-contrast) — matches the approved "clean white" mock.
@@ -98,10 +100,53 @@ const STATE_CITIES: Record<string, string[]> = {
 
 export default function WhiteHero() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const toggleMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [, navigate] = useLocation();
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    menuButtonRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileMenuOpen) closeMobileMenu();
+    };
+    if (mobileMenuOpen) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen, closeMobileMenu]);
+
+  useEffect(() => {
+    if (mobileMenuOpen && menuRef.current) {
+      const focusable = menuRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const handleTab = (e: KeyboardEvent) => {
+        if (e.key !== "Tab") return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first?.focus(); }
+        }
+      };
+      document.addEventListener("keydown", handleTab);
+      first?.focus();
+      return () => document.removeEventListener("keydown", handleTab);
+    }
+  }, [mobileMenuOpen]);
 
   // Location modal state
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -167,63 +212,92 @@ export default function WhiteHero() {
       <div className="arclo-hero-glow" />
 
       <div className="arclo-hero-container">
-        <header className="arclo-nav">
-          <div className="arclo-nav-left">
-            <Link href="/" className="arclo-logo">
-              <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
-                <defs>
-                  <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-                    <stop offset="0" stopColor="#7c3aed" />
-                    <stop offset="0.55" stopColor="#ec4899" />
-                    <stop offset="1" stopColor="#f59e0b" />
-                  </linearGradient>
-                </defs>
-                <path d="M24 4l19 36h-8l-3.2-6.2H16.2L13 40H5L24 4zm-4.8 23h9.6L24 17.7 19.2 27z" fill="url(#g)" />
-              </svg>
-              <span>Arclo</span>
-            </Link>
-          </div>
-
-          <nav className="arclo-nav-center" aria-label="Primary navigation">
-            <Link href="/examples">Examples</Link>
-            <Link href="/how-it-works">How It Works</Link>
-            <Link href="/pricing">Pricing</Link>
-            <Link href="/login">Log In</Link>
-          </nav>
-
-          <div className="arclo-nav-right">
-            <Link href={ROUTES.WEBSITE_GENERATOR} className="arclo-hide-mobile">
-              <BrandButton variant="blue" size="sm">Generate My Site</BrandButton>
-            </Link>
-            <Link href={ROUTES.SCAN} className="arclo-btn arclo-btn-primary">
-              Analyze My Website
-            </Link>
-            <button
-              className="arclo-hamburger"
-              onClick={toggleMenu}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-
-          {/* Mobile slide-down menu */}
-          {mobileMenuOpen && (
-            <div className="arclo-mobile-menu" role="navigation" aria-label="Mobile navigation">
-              <Link href="/examples" onClick={toggleMenu}>Examples</Link>
-              <Link href="/how-it-works" onClick={toggleMenu}>How It Works</Link>
-              <Link href="/pricing" onClick={toggleMenu}>Pricing</Link>
-              <Link href="/login" onClick={toggleMenu}>Log In</Link>
-              <div className="arclo-mobile-menu-cta">
-                <Link href={ROUTES.WEBSITE_GENERATOR}>
-                  <BrandButton variant="blue" className="w-full">Generate My Site</BrandButton>
-                </Link>
-                <Link href={ROUTES.SCAN} className="arclo-btn arclo-btn-primary">Analyze My Website</Link>
+        <header className="sticky top-0 z-50 w-full border-b border-[#CBD5E1] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
+          <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+            <Link href={ROUTES.LANDING}>
+              <div className="flex items-center cursor-pointer">
+                <img src={arcloLogo} alt="Arclo" className="h-10 w-auto" fetchPriority="high" />
               </div>
-            </div>
-          )}
+            </Link>
+
+            <nav className="flex items-center gap-4 md:gap-6">
+              <Link href={ROUTES.EXAMPLES} className="hidden md:block">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium">Examples</span>
+              </Link>
+              <Link href={ROUTES.HOW_IT_WORKS} className="hidden md:block">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium">How It Works</span>
+              </Link>
+              <Link href={ROUTES.PRICING} className="hidden md:block">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium">Pricing</span>
+              </Link>
+              <Link href="/login" className="hidden md:block">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium">Log In</span>
+              </Link>
+              <Link href={ROUTES.WEBSITE_GENERATOR} className="hidden md:block">
+                <BrandButton variant="blue" size="sm" icon={Sparkles}>Generate My Site</BrandButton>
+              </Link>
+              <Link href={ROUTES.SCAN} className="hidden md:block">
+                <Button
+                  size="sm"
+                  className="gap-2 text-white font-medium"
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
+                >
+                  <Search className="h-4 w-4" />
+                  Analyze My Website
+                </Button>
+              </Link>
+              <button
+                ref={menuButtonRef}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </nav>
+          </div>
         </header>
+
+        {mobileMenuOpen && (
+          <div
+            ref={menuRef}
+            className="fixed inset-0 top-16 z-40 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation menu"
+          >
+            <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
+              <Link href={ROUTES.EXAMPLES} onClick={closeMobileMenu}>
+                <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border">Examples</span>
+              </Link>
+              <Link href={ROUTES.HOW_IT_WORKS} onClick={closeMobileMenu}>
+                <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border">How It Works</span>
+              </Link>
+              <Link href={ROUTES.PRICING} onClick={closeMobileMenu}>
+                <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border">Pricing</span>
+              </Link>
+              <Link href="/login" onClick={closeMobileMenu}>
+                <span className="block py-3 text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-medium border-b border-border">Log In</span>
+              </Link>
+              <div className="flex flex-col gap-3 pt-4">
+                <Link href={ROUTES.WEBSITE_GENERATOR} onClick={closeMobileMenu}>
+                  <BrandButton variant="blue" size="lg" icon={Sparkles} className="w-full">Generate My Site</BrandButton>
+                </Link>
+                <Link href={ROUTES.SCAN} onClick={closeMobileMenu}>
+                  <Button
+                    size="lg"
+                    className="w-full gap-2 text-white font-medium"
+                    style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
+                  >
+                    <Search className="h-4 w-4" />
+                    Analyze My Website
+                  </Button>
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
 
         <main className="arclo-hero">
           <h1 className="arclo-h1">
