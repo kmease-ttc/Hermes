@@ -16,15 +16,16 @@ import {
   MapPin, 
   Mail, 
   Phone, 
-  Sparkles, 
-  CheckCircle2, 
+  Sparkles,
+  CheckCircle2,
   Loader2,
   Globe,
   ArrowLeft,
   ArrowRight,
   Upload,
   Image,
-  Palette
+  Palette,
+  Wand2
 } from "lucide-react";
 
 const BUSINESS_CATEGORIES = [
@@ -99,8 +100,47 @@ export default function WebsiteGenerator() {
     heroImageUrl: "",
   });
 
+  const [isGeneratingServices, setIsGeneratingServices] = useState(false);
+
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateServicesWithAI = async () => {
+    if (!formData.businessName.trim() || !formData.businessCategory) {
+      setError("Please enter business name and category first");
+      return;
+    }
+
+    setIsGeneratingServices(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/ai/generate-services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: formData.businessName,
+          businessCategory: formData.businessCategory,
+          description: formData.description,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to generate services");
+      }
+
+      const data = await res.json();
+      if (data.success && data.services) {
+        updateField("services", data.services);
+      } else {
+        throw new Error(data.message || "Failed to generate services");
+      }
+    } catch (err) {
+      setError("Could not generate services. Please try again or enter manually.");
+    } finally {
+      setIsGeneratingServices(false);
+    }
   };
 
   const validateStep1 = (): boolean => {
