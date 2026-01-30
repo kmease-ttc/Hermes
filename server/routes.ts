@@ -14,6 +14,7 @@ import { websiteChecker } from "./website_checks";
 import { analysisEngine } from "./analysis";
 import { runFullDiagnostic } from "./analysis/orchestrator";
 import { runWorkerOrchestration, getAggregatedDashboardMetrics, runTechnicalSeoAgent } from "./workerOrchestrator";
+import { pushFindingsToKbase } from "./services/kbaseLearningPush";
 import { logger } from "./utils/logger";
 import { apiKeyAuth, internalApiAuth } from "./middleware/apiAuth";
 import crypto, { randomUUID, scrypt, timingSafeEqual } from "crypto";
@@ -1460,6 +1461,16 @@ Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
             surfacedAt: new Date(),
           }));
           await storage.saveCrewFindings(findingRecords);
+
+          // Push findings to Knowledge Base as articles (non-blocking)
+          const site = await storage.getSiteById(siteId);
+          const domain = site?.baseUrl?.replace(/^https?:\/\//, "").replace(/\/+$/, "") || siteId;
+          pushFindingsToKbase(domain, crewId, findingRecords).catch((err) => {
+            logger.warn("CrewRun", "KB findings push failed (non-blocking)", {
+              error: err?.message,
+              crewId,
+            });
+          });
         }
         
         res.json({

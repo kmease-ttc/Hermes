@@ -341,6 +341,78 @@ async function computeDailyAchievements() {
   }
 }
 
+async function runWeeklySiteScans() {
+  try {
+    logger.info('Scheduler', 'Starting weekly site scans');
+    const { db } = await import('./db');
+    const { sql } = await import('drizzle-orm');
+
+    // Find all sites with weekly scan enabled and due
+    const result = await db.execute(sql`
+      SELECT wa.site_id, wa.domain, wa.user_id
+      FROM website_automation wa
+      WHERE wa.weekly_scan_enabled = true
+        AND (wa.next_scheduled_at IS NULL OR wa.next_scheduled_at <= NOW())
+    `);
+
+    const rows = result.rows as Array<{ site_id: string; domain: string; user_id: number }>;
+
+    if (rows.length === 0) {
+      logger.info('Scheduler', 'No sites due for weekly scan');
+      return;
+    }
+
+    for (const row of rows) {
+      try {
+        logger.info('Scheduler', 'scan_started', { websiteId: row.site_id, domain: row.domain });
+
+        // Trigger scan via internal fetch to the scan API
+        const scanUrl = `https://${row.domain}`;
+        const scanRes = await fetch(`${process.env.APP_URL || 'http://localhost:3000'}/api/scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: scanUrl }),
+        });
+
+        if (scanRes.ok) {
+          const scanData = await scanRes.json();
+          logger.info('Scheduler', 'scan_completed', {
+            websiteId: row.site_id,
+            scanId: scanData.scanId,
+          });
+        } else {
+          logger.error('Scheduler', 'scan_failed', {
+            websiteId: row.site_id,
+            status: scanRes.status,
+          });
+        }
+
+        // Update next scheduled time (7 days from now)
+        const nextScheduled = new Date();
+        nextScheduled.setDate(nextScheduled.getDate() + 7);
+        nextScheduled.setHours(7, 0, 0, 0);
+
+        await db.execute(sql`
+          UPDATE website_automation
+          SET last_weekly_scan_at = NOW(),
+              next_scheduled_at = ${nextScheduled},
+              updated_at = NOW()
+          WHERE site_id = ${row.site_id}
+        `);
+      } catch (siteErr: any) {
+        logger.error('Scheduler', 'scan_failed', {
+          websiteId: row.site_id,
+          error: siteErr.message,
+        });
+      }
+    }
+
+    logger.info('Scheduler', 'Weekly site scans completed', { count: rows.length });
+  } catch (error: any) {
+    logger.error('Scheduler', 'Weekly site scans failed', { error: error.message });
+  }
+}
+
 export function startScheduler() {
   cron.schedule('0 7 * * *', runDailyDiagnostics, {
     scheduled: true,
@@ -357,5 +429,11 @@ export function startScheduler() {
     timezone: 'America/Chicago',
   });
 
-  logger.info('Scheduler', 'Schedulers started: Daily diagnostics (7am), Weekly KBase synthesis (Mondays 8am), Daily achievements (9am)');
+  // Weekly site scans - Mondays at 6 AM (before other jobs)
+  cron.schedule('0 6 * * 1', runWeeklySiteScans, {
+    scheduled: true,
+    timezone: 'America/Chicago',
+  });
+
+  logger.info('Scheduler', 'Schedulers started: Daily diagnostics (7am), Weekly KBase synthesis (Mondays 8am), Daily achievements (9am), Weekly site scans (Mondays 6am)');
 }

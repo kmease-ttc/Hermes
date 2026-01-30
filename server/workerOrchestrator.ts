@@ -6,6 +6,7 @@ import { InsertSeoWorkerResult, InsertSeoSuggestion, InsertSeoKbaseInsight, Inse
 import { createHash } from "crypto";
 import { socratesLogger } from "./services/socratesLogger";
 import { runInfrastructureWorker } from "./services/infrastructureDispatch";
+import { pushSuggestionsToKbase } from "./services/kbaseLearningPush";
 
 const TIMEOUT_MS = 30000;
 const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -1262,7 +1263,16 @@ async function runWorkerOrchestrationInternal(
   if (insights.length > 0) {
     await storage.saveSeoKbaseInsights(insights);
   }
-  
+
+  // Push high-severity suggestions to Knowledge Base as articles (non-blocking)
+  if (suggestions.length > 0) {
+    pushSuggestionsToKbase(siteId, resolvedDomain!, suggestions).catch((err) => {
+      logger.warn("WorkerOrchestrator", "KB learning push failed (non-blocking)", {
+        error: err?.message,
+      });
+    });
+  }
+
   // Generate tickets from suggestions
   const tickets = generateTicketsFromSuggestions(runId, suggestions);
   if (tickets.length > 0) {

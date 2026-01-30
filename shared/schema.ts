@@ -99,6 +99,15 @@ export const scanRequests = pgTable("scan_requests", {
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
+  scanMode: text("scan_mode").default("light"), // light | full
+  domain: text("domain"), // extracted domain for lookups
+  idempotencyKey: text("idempotency_key"), // domain-mode-date dedupe key
+  agentSummary: jsonb("agent_summary").$type<{
+    agents_run: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -3853,6 +3862,57 @@ export const manualActionChecks = pgTable("manual_action_checks", {
 export const insertManualActionCheckSchema = createInsertSchema(manualActionChecks).omit({ id: true, createdAt: true });
 export type InsertManualActionCheck = z.infer<typeof insertManualActionCheckSchema>;
 export type ManualActionCheck = typeof manualActionChecks.$inferSelect;
+
+// Agent Runs — per-agent job tracking within a scan
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  scanId: text("scan_id").notNull(),
+  crewId: text("crew_id").notNull(), // scotty, speedster, lookout, natasha, atlas
+  agentStep: text("agent_step").notNull(), // technical_crawl, cwv, serp, competitive, atlas_ai
+  status: text("status").notNull().default("pending"), // pending, running, completed, failed, skipped
+  scanMode: text("scan_mode").notNull().default("light"), // light, full
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  durationMs: integer("duration_ms"),
+  rowsWritten: integer("rows_written").default(0),
+  resultSummary: jsonb("result_summary"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgentRunSchema = createInsertSchema(agentRuns).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
+export type AgentRun = typeof agentRuns.$inferSelect;
+
+// Scan Rollups — website-level aggregation across scans
+export const scanRollups = pgTable("scan_rollups", {
+  id: serial("id").primaryKey(),
+  domain: text("domain").notNull().unique(),
+  latestScanId: text("latest_scan_id").notNull(),
+  scanMode: text("scan_mode").notNull(),
+  overallScore: integer("overall_score"),
+  technicalScore: integer("technical_score"),
+  performanceScore: integer("performance_score"),
+  serpScore: integer("serp_score"),
+  contentScore: integer("content_score"),
+  aiScore: integer("ai_score"),
+  findingsCount: integer("findings_count"),
+  scanCount: integer("scan_count").default(1),
+  firstScanAt: timestamp("first_scan_at"),
+  latestScanAt: timestamp("latest_scan_at").defaultNow().notNull(),
+  scoreTrend: jsonb("score_trend").$type<Array<{ date: string; score: number }>>(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertScanRollupSchema = createInsertSchema(scanRollups).omit({
+  id: true,
+  updatedAt: true,
+});
+export type InsertScanRollup = z.infer<typeof insertScanRollupSchema>;
+export type ScanRollup = typeof scanRollups.$inferSelect;
 
 // Verification methods constant
 export const VerificationMethods = {

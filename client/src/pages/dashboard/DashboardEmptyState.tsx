@@ -32,22 +32,33 @@ export function DashboardEmptyState() {
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
+        let errBody: any = null;
+        try { errBody = JSON.parse(text); } catch {}
+
+        // 409 = site already exists — return the conflict data so onSuccess can route
+        if (res.status === 409 && errBody?.siteId) {
+          return {
+            siteId: errBody.siteId,
+            hasExistingReport: errBody.hasExistingReport || false,
+            latestReportId: errBody.latestReportId || null,
+            domain: cleanDomain,
+            _wasConflict: true,
+          };
+        }
+
         let message = `Failed to add site (${res.status})`;
-        try {
-          const errBody = JSON.parse(text);
-          if (errBody?.details && Array.isArray(errBody.details)) {
+        if (errBody) {
+          if (errBody.details && Array.isArray(errBody.details)) {
             message = errBody.details.join(", ");
-          } else if (typeof errBody?.error === "string") {
+          } else if (typeof errBody.error === "string") {
             message = errBody.error;
-          } else if (errBody?.error?.message) {
+          } else if (errBody.error?.message) {
             message = errBody.error.message;
-          } else if (errBody?.message) {
+          } else if (errBody.message) {
             message = errBody.message;
           }
-        } catch {
-          if (text && text.length < 200) {
-            message = text;
-          }
+        } else if (text && text.length < 200) {
+          message = text;
         }
         throw new Error(message);
       }
@@ -56,6 +67,21 @@ export function DashboardEmptyState() {
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["sites"] });
       setSelectedSiteId(data.siteId);
+
+      // Case 2: Site already has a report — go directly to it
+      if (data.hasExistingReport && data.latestReportId) {
+        navigate(`/report/free/${data.latestReportId}`);
+        return;
+      }
+
+      // Case 1: No prior scan — kick off a scan and route to loading page
+      const domain = data.domain || siteDomain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+      const scanUrl = `https://${domain}`;
+      sessionStorage.setItem(
+        "arclo_scan_payload",
+        JSON.stringify({ url: scanUrl })
+      );
+      navigate("/scan/preview/pending");
     },
   });
 
