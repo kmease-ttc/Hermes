@@ -156,81 +156,36 @@ export default function WhiteHero() {
       geoLocation: { city: selectedCity, state: stateName },
     };
 
-    // Try multiple endpoints and methods to ensure scan starts
-    const endpoints = ["/api/scan", "/api/analyze"];
-    let lastError = "";
-
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(scanPayload),
-          credentials: "same-origin",
-        });
-
-        if (!res.ok) {
-          const errText = await res.text().catch(() => "");
-          let errMsg: string;
-          try {
-            const errJson = JSON.parse(errText);
-            errMsg = errJson?.message || errJson?.error || `Server error ${res.status}`;
-          } catch {
-            errMsg = errText || `Server error ${res.status}`;
-          }
-          lastError = `${endpoint}: ${errMsg}`;
-          continue; // Try next endpoint
-        }
-
-        const data = await res.json();
-        if (!data.scanId && !data.id) {
-          lastError = `${endpoint}: No scanId in response`;
-          continue;
-        }
-
-        // Success — navigate to scan preview
-        navigate(`/scan/preview/${data.scanId || data.id}`);
-        return;
-      } catch (err: any) {
-        lastError = `${endpoint}: ${err?.message || "Network error"}`;
-        // Try next endpoint
-      }
-    }
-
-    // All endpoints failed — try XMLHttpRequest as last resort
     try {
-      const data: any = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/api/scan");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onload = () => {
-          try {
-            const json = JSON.parse(xhr.responseText);
-            if (xhr.status >= 200 && xhr.status < 300 && json.scanId) {
-              resolve(json);
-            } else {
-              reject(new Error(json?.message || `XHR status ${xhr.status}`));
-            }
-          } catch {
-            reject(new Error(`XHR parse error: ${xhr.status}`));
-          }
-        };
-        xhr.onerror = () => reject(new Error("XHR network error"));
-        xhr.send(JSON.stringify(scanPayload));
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scanPayload),
       });
 
-      navigate(`/scan/preview/${data.scanId || data.id}`);
-      return;
-    } catch (xhrErr: any) {
-      lastError += ` | XHR: ${xhrErr?.message}`;
-    }
+      if (!res.ok) {
+        let errMsg = `Server returned ${res.status}`;
+        try {
+          const errData = await res.json();
+          errMsg = errData?.message || errData?.error || errMsg;
+        } catch {
+          // response wasn't JSON
+        }
+        throw new Error(errMsg);
+      }
 
-    // Everything failed
-    const detail = window.location.hostname === "localhost"
-      ? `All attempts failed: ${lastError}`
-      : "Failed to start scan. Please try again.";
-    setError(detail);
-    setLoading(false);
+      const data = await res.json();
+      const id = data.scanId || data.id;
+      if (!id) {
+        throw new Error("Server did not return a scan ID");
+      }
+
+      navigate(`/scan/preview/${id}`);
+    } catch (err: any) {
+      console.error("[Arclo] Scan submission failed:", err);
+      setError(err?.message || "Failed to start scan. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -345,12 +300,6 @@ export default function WhiteHero() {
           </form>
 
           {error && <div className="arclo-error">{error}</div>}
-
-          {window.location.hostname === "localhost" && (
-            <div style={{ background: "#22c55e", color: "#fff", padding: "4px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, marginBottom: "8px" }}>
-              DEV SERVER — localhost:{window.location.port}
-            </div>
-          )}
 
           <div className="arclo-micro">Free scan • No credit card • Takes ~60 seconds</div>
 
