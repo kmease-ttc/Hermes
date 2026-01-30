@@ -1568,7 +1568,8 @@ function TasksOverviewSection({
               </div>
               
               <Button 
-                className="bg-semantic-success hover:bg-semantic-success/90 text-white rounded-xl shadow-md px-5 flex-shrink-0"
+                className="bg-semantic-success hover:bg-semantic-success/90 rounded-xl shadow-md px-5 flex-shrink-0"
+                style={{ color: "#FFFFFF" }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onReview?.(featuredTask);
@@ -1787,7 +1788,7 @@ function PrimaryActionCardRow({
         <CardContent className="p-6 relative">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center shadow-lg">
-              <Zap className="w-6 h-6 text-white" />
+              <Zap className="w-6 h-6" style={{ color: "#FFFFFF" }} />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Fix Everything For Me</h3>
@@ -1800,7 +1801,8 @@ function PrimaryActionCardRow({
           <Button 
             onClick={onFixEverything}
             disabled={isExecuting || autoFixableCount === 0}
-            className="w-full text-white rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-primary via-pink-500 to-gold hover:opacity-90"
+            className="w-full rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-primary via-pink-500 to-gold hover:opacity-90"
+            style={{ color: "#FFFFFF" }}
             data-testid="button-fix-everything-primary"
           >
             {isExecuting ? (
@@ -1885,7 +1887,8 @@ function PrimaryActionCardRow({
           <Button 
             onClick={onRunDiagnostics}
             disabled={isRunningDiagnostics}
-            className="w-full rounded-xl bg-semantic-success hover:bg-semantic-success/90 text-white"
+            className="w-full rounded-xl bg-semantic-success hover:bg-semantic-success/90"
+            style={{ color: "#FFFFFF" }}
             data-testid="button-run-diagnostics-card"
           >
             {isRunningDiagnostics ? (
@@ -2255,7 +2258,8 @@ export default function MissionControl() {
               size="sm" 
               onClick={() => runDiagnostics.mutate()}
               disabled={runDiagnostics.isPending}
-              className="text-white rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-semantic-success hover:bg-semantic-success/90"
+              className="rounded-xl shadow-purple hover:-translate-y-0.5 active:translate-y-0 transition-all bg-semantic-success hover:bg-semantic-success/90"
+              style={{ color: "#FFFFFF" }}
               data-testid="button-run-diagnostics"
             >
               {runDiagnostics.isPending ? (

@@ -161,11 +161,12 @@ export function ConfigureOverlay({ domain, onClose }: ConfigureOverlayProps) {
                   onClose();
                 }
               }}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
               style={{
                 background: "linear-gradient(90deg, #6D28D9 0%, #D946EF 40%, #F59E0B 100%)",
                 boxShadow: "0 8px 16px rgba(124,58,237,.15)",
                 textShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                color: "#FFFFFF",
               }}
             >
               {currentStep < WIZARD_STEPS.length - 1 ? "Continue" : "Finish Setup"}

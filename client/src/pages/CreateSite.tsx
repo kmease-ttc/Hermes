@@ -115,12 +115,14 @@ export default function CreateSite() {
       
       const data = await res.json();
       if (data.success && data.services) {
-        updateField("services", data.services);
+        const serviceStr = Array.isArray(data.services) ? data.services.join(", ") : data.services;
+        updateField("services", serviceStr);
       } else {
         throw new Error(data.message || "Failed to generate services");
       }
-    } catch (err) {
-      setError("Could not generate services. Please try again or enter manually.");
+    } catch (err: any) {
+      console.error("AI service generation failed:", err);
+      setError(err.message || "We couldn't generate services automatically. You can enter them manually or try again.");
     } finally {
       setIsGeneratingServices(false);
     }

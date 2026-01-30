@@ -37,7 +37,7 @@ export function ConfigureOverlay({
         <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4">
           <Settings className="w-6 h-6 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold mb-2" style={{ color: "#FFFFFF" }}>
           Configure {integration}
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
@@ -47,7 +47,8 @@ export function ConfigureOverlay({
           onClick={onConfigure}
           variant="outline"
           size="sm"
-          className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+          className="bg-white/10 border-white/20 hover:bg-white/20"
+          style={{ color: "#FFFFFF" }}
           data-testid={`configure-button-${integration.toLowerCase().replace(/\s+/g, '-')}`}
         >
           Configure

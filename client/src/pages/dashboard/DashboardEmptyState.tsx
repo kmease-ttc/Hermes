@@ -68,9 +68,9 @@ export function DashboardEmptyState() {
       await queryClient.invalidateQueries({ queryKey: ["sites"] });
       setSelectedSiteId(data.siteId);
 
-      // Case 2: Site already has a report — go directly to it
-      if (data.hasExistingReport && data.latestReportId) {
-        navigate(`/report/free/${data.latestReportId}`);
+      // Case 2: Site already has a report — go directly to dashboard
+      if (data.hasExistingReport) {
+        navigate("/app/dashboard");
         return;
       }
 
@@ -81,6 +81,8 @@ export function DashboardEmptyState() {
         "arclo_scan_payload",
         JSON.stringify({ url: scanUrl })
       );
+      // Mark source so ScanPreview routes back to dashboard, not /report/free/*
+      sessionStorage.setItem("arclo_scan_source", "add_website");
       navigate("/scan/preview/pending");
     },
   });
@@ -158,11 +160,12 @@ export function DashboardEmptyState() {
           <button
             type="submit"
             disabled={!siteName.trim() || !siteDomain.trim() || addSite.isPending}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:-translate-y-0.5"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:-translate-y-0.5"
             style={{
               background: "linear-gradient(90deg, #6D28D9 0%, #D946EF 40%, #F59E0B 100%)",
               boxShadow: "0 14px 26px rgba(124,58,237,.18), 0 10px 18px rgba(245,158,11,.12)",
               textShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              color: "#FFFFFF",
             }}
           >
             {addSite.isPending ? (

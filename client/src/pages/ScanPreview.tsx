@@ -124,6 +124,10 @@ export default function ScanPreview() {
     reportTriggered.current = true;
     setReportError("");
 
+    const scanSource = sessionStorage.getItem("arclo_scan_source");
+    const isAddWebsiteFlow = scanSource === "add_website";
+    if (scanSource) sessionStorage.removeItem("arclo_scan_source");
+
     (async () => {
       try {
         const res = await fetch("/api/report/free", {
@@ -140,7 +144,11 @@ export default function ScanPreview() {
         }
 
         if (data.ok && data.reportId) {
-          navigate(buildRoute.freeReport(data.reportId));
+          if (isAddWebsiteFlow) {
+            navigate(ROUTES.DASHBOARD);
+          } else {
+            navigate(buildRoute.freeReport(data.reportId));
+          }
         } else {
           throw new Error(data?.message || "Report generation failed.");
         }

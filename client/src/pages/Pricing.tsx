@@ -152,9 +152,10 @@ export default function Pricing() {
                 >
                   {plan.popular && (
                     <div 
-                      className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-white text-xs font-medium"
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium"
                       style={{
-                        background: "linear-gradient(135deg, #8B5CF6, #EC4899)"
+                        background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                        color: "#FFFFFF"
                       }}
                     >
                       Most Popular
@@ -169,7 +170,7 @@ export default function Pricing() {
                           : plan.iconBg
                       }`}
                     >
-                      <plan.icon className={`w-5 h-5 ${plan.iconColor}`} />
+                      <plan.icon className={`w-5 h-5 ${plan.iconBg === "gradient" ? "" : plan.iconColor}`} style={plan.iconBg === "gradient" ? { color: "#FFFFFF" } : undefined} />
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-slate-900">
@@ -226,7 +227,7 @@ export default function Pricing() {
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-500 via-pink-500 to-amber-500"
                 >
-                  <Sparkles className="w-7 h-7 text-white" />
+                  <Sparkles className="w-7 h-7" style={{ color: "#FFFFFF" }} />
                 </div>
                 <div className="text-center md:text-left flex-1">
                   <h3 className="text-xl font-bold text-slate-900 mb-2">

@@ -78,7 +78,7 @@ export function BrandButton({
       onClick={onClick}
       disabled={disabled}
       className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
-      style={variant === "primary" || variant === "accent" || variant === "blue" ? { textShadow: "0 1px 2px rgba(0,0,0,0.15)" } : undefined}
+      style={variant === "primary" || variant === "accent" || variant === "blue" ? { color: "#FFFFFF", textShadow: "0 1px 2px rgba(0,0,0,0.15)" } : undefined}
       data-testid={testId}
     >
       {Icon && <Icon className={size === "lg" ? "w-5 h-5" : "w-4 h-4"} />}

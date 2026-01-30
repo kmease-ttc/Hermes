@@ -89,7 +89,7 @@ export function ComparisonSection() {
                   <span className="text-right text-muted-foreground max-w-[55%]">{row.agency}</span>
                 </div>
                 <div className="flex justify-between items-start pt-2 border-t border-border">
-                  <span className="font-semibold text-white text-xs px-2 py-0.5 rounded-full" style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}>Arclo</span>
+                  <span className="font-semibold text-xs px-2 py-0.5 rounded-full" style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)", color: "#FFFFFF" }}>Arclo</span>
                   <span className="text-right font-medium text-brand max-w-[55%]">{row.arclo}</span>
                 </div>
               </div>

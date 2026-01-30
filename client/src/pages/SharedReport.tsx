@@ -215,9 +215,10 @@ export default function SharedReport() {
                 <Link href={ROUTES.SCAN}>
                   <Button 
                     size="lg" 
-                    className="gap-2 text-white font-medium"
+                    className="gap-2 font-medium"
                     style={{
-                      background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
+                      background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                      color: "#FFFFFF"
                     }}
                     data-testid="button-analyze-own"
                   >
@@ -347,9 +348,10 @@ export default function SharedReport() {
                 <Link href={ROUTES.SCAN}>
                   <Button 
                     size="lg" 
-                    className="gap-2 text-white font-medium mt-4"
+                    className="gap-2 font-medium mt-4"
                     style={{
-                      background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
+                      background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                      color: "#FFFFFF"
                     }}
                     data-testid="button-cta-analyze"
                   >

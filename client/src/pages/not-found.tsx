@@ -48,9 +48,10 @@ export default function NotFound() {
             <Link href={ROUTES.LANDING}>
               <Button 
                 size="lg"
-                className="w-full sm:w-auto gap-2 text-white font-medium"
+                className="w-full sm:w-auto gap-2 font-medium"
                 style={{
-                  background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)"
+                  background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                  color: "#FFFFFF"
                 }}
                 data-testid="button-go-homepage"
               >

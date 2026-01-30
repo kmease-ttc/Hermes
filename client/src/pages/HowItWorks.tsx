@@ -62,7 +62,7 @@ export default function HowItWorks() {
                 <div 
                   className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-primary via-pink-500 to-gold"
                 >
-                  <CheckCircle2 className="w-7 h-7 text-white" />
+                  <CheckCircle2 className="w-7 h-7" style={{ color: "#FFFFFF" }} />
                 </div>
                 <div>
                   <h3 className="font-bold text-foreground text-xl mb-1">No work required</h3>
@@ -156,7 +156,7 @@ export default function HowItWorks() {
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-pink-500">
-                  <Zap className="w-6 h-6 text-white" />
+                  <Zap className="w-6 h-6" style={{ color: "#FFFFFF" }} />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What Arclo does automatically</h2>
               </div>
@@ -191,7 +191,7 @@ export default function HowItWorks() {
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-500 to-gold">
-                  <ShieldCheck className="w-6 h-6 text-white" />
+                  <ShieldCheck className="w-6 h-6" style={{ color: "#FFFFFF" }} />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What you control</h2>
               </div>
@@ -231,7 +231,7 @@ export default function HowItWorks() {
             <div className="mb-20">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-gold to-progress">
-                  <Clock className="w-6 h-6 text-white" />
+                  <Clock className="w-6 h-6" style={{ color: "#FFFFFF" }} />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">What results to expect</h2>
               </div>

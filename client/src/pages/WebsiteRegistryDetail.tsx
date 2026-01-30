@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
-import { Globe, Play, CheckCircle, Clock, Pause, ArrowLeft, Save } from "lucide-react";
+import { Globe, Play, CheckCircle, Clock, Pause, ArrowLeft, Save, Wand2, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { ROUTES } from "@shared/routes";
 
@@ -57,6 +57,7 @@ export default function WebsiteRegistryDetail() {
   const [competitors, setCompetitors] = useState("");
   const [services, setServices] = useState("");
   const [notes, setNotes] = useState("");
+  const [isGeneratingServices, setIsGeneratingServices] = useState(false);
 
   const { data, isLoading } = useQuery<WebsiteDetailResponse>({
     queryKey: [`/api/websites/${websiteId}`],
@@ -120,6 +121,49 @@ export default function WebsiteRegistryDetail() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
+
+  const generateServicesWithAI = async () => {
+    if (!data?.website) return;
+
+    setIsGeneratingServices(true);
+
+    try {
+      const res = await fetch("/api/ai/generate-services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          websiteName: data.website.name,
+          domain: data.website.domain,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to generate services");
+      }
+
+      const result = await res.json();
+      if (result.success && result.services) {
+        const serviceStr = Array.isArray(result.services)
+          ? result.services.join(", ")
+          : result.services;
+        setServices(serviceStr);
+        toast({ title: "Services Generated", description: `Generated ${Array.isArray(result.services) ? result.services.length : "several"} services with AI.` });
+      } else {
+        throw new Error(result.message || "Failed to generate services");
+      }
+    } catch (err: any) {
+      console.error("AI service generation failed:", err);
+      toast({
+        title: "Generation Failed",
+        description: err.message || "We couldn't generate services automatically. You can enter them manually or try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingServices(false);
+    }
+  };
 
   const handleSaveSettings = () => {
     updateWebsite.mutate({
@@ -259,10 +303,30 @@ export default function WebsiteRegistryDetail() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="services">Enabled Services (comma-separated)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="services">Primary Services (comma-separated)</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateServicesWithAI}
+                  disabled={isGeneratingServices}
+                >
+                  {isGeneratingServices ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-3 h-3 mr-1.5" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+              </div>
               <Input
                 id="services"
-                placeholder="health_check, crawl_technical_seo, rank_tracker"
+                placeholder="Drain cleaning, water heater repair, emergency plumbing"
                 value={services}
                 onChange={(e) => setServices(e.target.value)}
               />

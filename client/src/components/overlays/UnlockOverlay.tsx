@@ -42,7 +42,7 @@ export function UnlockOverlay({
         <div className="w-12 h-12 rounded-full bg-purple-soft flex items-center justify-center mx-auto mb-4 ring-2 ring-purple-border">
           <Lock className="w-5 h-5 text-purple" />
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
+        <h3 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2" style={{ color: "#FFFFFF" }}>
           <Sparkles className="w-4 h-4 text-purple" />
           Unlock {feature}
         </h3>

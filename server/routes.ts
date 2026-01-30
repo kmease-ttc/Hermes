@@ -548,15 +548,17 @@ export async function registerRoutes(
     }
   });
 
-  // Generate services using AI based on business name/category/description
+  // Generate services using AI based on business/website context
   app.post("/api/ai/generate-services", async (req, res) => {
     try {
-      const { businessName, businessCategory, description } = req.body;
-      
-      if (!businessName || !businessCategory) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Business name and category are required" 
+      const { businessName, businessCategory, description, websiteName, domain, location } = req.body;
+
+      // Accept either businessName or websiteName as the primary identifier
+      const name = businessName || websiteName;
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: "Business name or website name is required"
         });
       }
 
@@ -564,9 +566,10 @@ export async function registerRoutes(
       const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
 
       if (!openaiKey) {
-        return res.status(500).json({ 
-          success: false, 
-          message: "AI service not configured" 
+        logger.error("AI", "OpenAI API key not configured. Set AI_INTEGRATIONS_OPENAI_API_KEY or OPENAI_API_KEY env var.");
+        return res.status(500).json({
+          success: false,
+          message: "AI service not configured. Please set the OpenAI API key in environment variables."
         });
       }
 
@@ -575,35 +578,66 @@ export async function registerRoutes(
         baseURL: openaiBaseUrl,
       });
 
-      const prompt = `Generate a comma-separated list of 5-7 specific services for this business:
+      // Build context lines from all available inputs
+      const contextLines = [`Business/Website Name: ${name}`];
+      if (domain) contextLines.push(`Domain: ${domain}`);
+      if (businessCategory) contextLines.push(`Business Category: ${businessCategory}`);
+      if (description) contextLines.push(`Description: ${description}`);
+      if (location) contextLines.push(`Location: ${location}`);
 
-Business Name: ${businessName}
-Business Category: ${businessCategory}
-${description ? `Description: ${description}` : ''}
+      const prompt = `You are a marketing expert. Based on the following business information, generate a JSON array of 5–12 primary services this business likely offers. Each service should be a short, commercial-intent phrase (2–5 words). No branding fluff, no numbering.
 
-Return ONLY a comma-separated list of services, nothing else. Be specific and relevant to the business type.
-Example format: Service 1, Service 2, Service 3, Service 4, Service 5`;
+${contextLines.join("\n")}
+
+Respond with ONLY valid JSON in this exact format, no other text:
+{"services":["service one","service two","service three"]}`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 150,
+        max_tokens: 300,
         temperature: 0.7,
       });
 
-      const services = completion.choices[0]?.message?.content?.trim() || "";
+      const raw = completion.choices[0]?.message?.content?.trim() || "";
 
-      logger.info("AI", "Generated services for business", { businessName, services });
+      // Parse JSON response, falling back to comma-separated parsing
+      let servicesList: string[] = [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.services)) {
+          servicesList = parsed.services.map((s: string) => s.trim()).filter(Boolean);
+        } else if (Array.isArray(parsed)) {
+          servicesList = parsed.map((s: string) => s.trim()).filter(Boolean);
+        }
+      } catch {
+        // Fallback: treat as comma-separated string
+        servicesList = raw.split(",").map((s: string) => s.trim()).filter(Boolean);
+      }
 
-      return res.json({ 
-        success: true, 
-        services 
+      if (servicesList.length === 0) {
+        logger.warn("AI", "LLM returned empty services list", { name, raw });
+        return res.status(500).json({
+          success: false,
+          message: "AI returned an empty response. Please try again or enter services manually."
+        });
+      }
+
+      logger.info("AI", "Generated services", { name, count: servicesList.length, services: servicesList });
+
+      return res.json({
+        success: true,
+        services: servicesList
       });
     } catch (error: any) {
-      logger.error("AI", "Failed to generate services", { error: error.message });
-      return res.status(500).json({ 
-        success: false, 
-        message: "Failed to generate services" 
+      logger.error("AI", "Failed to generate services", {
+        error: error.message,
+        status: error.status,
+        code: error.code
+      });
+      return res.status(500).json({
+        success: false,
+        message: "We couldn't generate services automatically. You can enter them manually or try again."
       });
     }
   });

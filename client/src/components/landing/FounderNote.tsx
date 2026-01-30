@@ -14,7 +14,7 @@ export function FounderNote() {
         >
           <div className="absolute -top-4 left-8">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary via-pink-500 to-gold flex items-center justify-center">
-              <Quote className="w-4 h-4 text-white" />
+              <Quote className="w-4 h-4" style={{ color: "#FFFFFF" }} />
             </div>
           </div>
           

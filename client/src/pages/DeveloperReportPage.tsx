@@ -243,7 +243,8 @@ export default function DeveloperReportPage() {
                 <Button 
                   onClick={handleSend}
                   disabled={sending}
-                  className="w-full bg-gradient-to-r from-primary via-pink-500 to-gold text-white hover:opacity-90"
+                  className="w-full bg-gradient-to-r from-primary via-pink-500 to-gold hover:opacity-90"
+                  style={{ color: "#FFFFFF" }}
                   data-testid="button-send-dev-report"
                 >
                   {sending ? (

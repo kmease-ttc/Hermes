@@ -236,7 +236,8 @@ function MissionRow({
             type="button"
             variant="default"
             size="sm"
-            className="bg-semantic-success hover:bg-semantic-success/90 text-white shadow-sm"
+            className="bg-semantic-success hover:bg-semantic-success/90 shadow-sm"
+            style={{ color: "#FFFFFF" }}
             onClick={(e) => {
               e.preventDefault();
               onAction?.("approve");
