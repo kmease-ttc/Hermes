@@ -216,8 +216,58 @@ export default function ScanPreview() {
 
   return (
     <MarketingLayout>
-      <div className="min-h-screen bg-gradient-to-b from-muted via-background to-muted/50">
-        <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
+      {/* Cosmic lavender background with decorative bubbles */}
+      <div style={{
+        minHeight: "100vh",
+        position: "relative",
+        overflow: "hidden",
+        background: "linear-gradient(180deg, #EDE9FE 0%, #F3E8FF 25%, #FAF5FF 50%, #F5F3FF 75%, #EDE9FE 100%)",
+      }}>
+        {/* Decorative bubble elements */}
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+          {/* Large top-right bubble */}
+          <div style={{
+            position: "absolute", top: "-5%", right: "-8%",
+            width: 500, height: 500, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(196,181,253,0.25) 0%, rgba(196,181,253,0.08) 50%, transparent 70%)",
+            border: "1px solid rgba(196,181,253,0.15)",
+          }} />
+          {/* Medium left bubble */}
+          <div style={{
+            position: "absolute", top: "20%", left: "-6%",
+            width: 350, height: 350, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(216,180,254,0.2) 0%, rgba(216,180,254,0.06) 50%, transparent 70%)",
+            border: "1px solid rgba(216,180,254,0.12)",
+          }} />
+          {/* Bottom-right bubble */}
+          <div style={{
+            position: "absolute", bottom: "5%", right: "5%",
+            width: 280, height: 280, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(196,181,253,0.18) 0%, rgba(196,181,253,0.05) 50%, transparent 70%)",
+            border: "1px solid rgba(196,181,253,0.1)",
+          }} />
+          {/* Small top-left bubble */}
+          <div style={{
+            position: "absolute", top: "8%", left: "15%",
+            width: 120, height: 120, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(233,213,255,0.3) 0%, transparent 70%)",
+            border: "1px solid rgba(233,213,255,0.15)",
+          }} />
+          {/* Small bottom-left bubble */}
+          <div style={{
+            position: "absolute", bottom: "15%", left: "8%",
+            width: 160, height: 160, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(233,213,255,0.22) 0%, transparent 70%)",
+            border: "1px solid rgba(233,213,255,0.12)",
+          }} />
+          {/* Tiny scattered dots */}
+          <div style={{ position: "absolute", top: "30%", right: "20%", width: 8, height: 8, borderRadius: "50%", background: "rgba(196,181,253,0.4)" }} />
+          <div style={{ position: "absolute", top: "55%", left: "25%", width: 6, height: 6, borderRadius: "50%", background: "rgba(216,180,254,0.35)" }} />
+          <div style={{ position: "absolute", top: "15%", right: "35%", width: 5, height: 5, borderRadius: "50%", background: "rgba(196,181,253,0.3)" }} />
+          <div style={{ position: "absolute", bottom: "30%", right: "30%", width: 7, height: 7, borderRadius: "50%", background: "rgba(233,213,255,0.4)" }} />
+        </div>
+
+        <div style={{ position: "relative", zIndex: 1 }} className="container mx-auto px-4 md:px-6 py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
 
             {/* Pending error — scan API call failed */}
@@ -246,65 +296,81 @@ export default function ScanPreview() {
 
             {/* Scanning / Generating State */}
             {!pendingError && (isScanning || (isReady && !reportError)) && (
-              <div style={{ textAlign: "center", paddingTop: "3rem" }}>
-                {/* Animated spinner */}
+              <div style={{ textAlign: "center", paddingTop: "4rem" }}>
+                <style>{`
+@keyframes arclo-spin { to { transform: rotate(360deg) } }
+@keyframes arclo-fade { 0%,100% { opacity: 0; transform: translateY(8px); } 15%,85% { opacity: 1; transform: translateY(0); } }
+@keyframes arclo-glow-pulse { 0%,100% { box-shadow: 0 0 40px rgba(168,85,247,0.35), 0 0 80px rgba(236,72,153,0.15); } 50% { box-shadow: 0 0 60px rgba(168,85,247,0.45), 0 0 100px rgba(236,72,153,0.2); } }
+                `}</style>
+
+                {/* Animated gradient spinner orb */}
                 <div style={{
-                  width: 80, height: 80, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                  width: 120, height: 120, borderRadius: "50%",
+                  background: "conic-gradient(from 0deg, #8B5CF6, #A78BFA, #D946EF, #EC4899, #F472B6, #C084FC, #8B5CF6)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 2rem",
-                  boxShadow: "0 0 40px rgba(139,92,246,0.3)",
+                  margin: "0 auto 2.5rem",
+                  animation: "arclo-glow-pulse 3s ease-in-out infinite",
                 }}>
                   <div style={{
-                    width: 40, height: 40, border: "4px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "#fff", borderRadius: "50%",
-                    animation: "arclo-spin 1s linear infinite",
-                  }} />
+                    width: 88, height: 88, borderRadius: "50%",
+                    background: "linear-gradient(180deg, #EDE9FE 0%, #F5F3FF 100%)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <div style={{
+                      width: 40, height: 40, border: "4px solid rgba(139,92,246,0.2)",
+                      borderTopColor: "#fff", borderRadius: "50%",
+                      animation: "arclo-spin 1s linear infinite",
+                    }} />
+                  </div>
                 </div>
-                <style>{`@keyframes arclo-spin { to { transform: rotate(360deg) } }
-@keyframes arclo-fade { 0%,100% { opacity: 0; transform: translateY(8px); } 15%,85% { opacity: 1; transform: translateY(0); } }`}</style>
 
                 {/* Title */}
-                <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem", letterSpacing: "-0.01em" }}>
                   {isReady ? "Generating Your Report" : "Analyzing Your Site"}
                 </h1>
-                <p style={{ color: "#64748B", marginBottom: "2rem", fontSize: "1rem" }}>
+                <p style={{ color: "#64748B", marginBottom: "2.5rem", fontSize: "1.05rem" }}>
                   This usually takes 15–30 seconds
                 </p>
 
                 {/* Progress bar */}
-                <div style={{ maxWidth: 400, margin: "0 auto 2.5rem" }}>
+                <div style={{ maxWidth: 440, margin: "0 auto 2.5rem" }}>
                   <div style={{
-                    height: 8, borderRadius: 4, background: "#E2E8F0", overflow: "hidden",
+                    height: 10, borderRadius: 5, background: "rgba(203,213,225,0.5)", overflow: "hidden",
+                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.06)",
                   }}>
                     <div style={{
-                      height: "100%", borderRadius: 4,
-                      background: "linear-gradient(90deg, #8B5CF6, #EC4899, #F59E0B)",
+                      height: "100%", borderRadius: 5,
+                      background: "linear-gradient(90deg, #6D28D9, #8B5CF6, #EC4899, #F59E0B)",
                       width: `${progress}%`,
                       transition: "width 0.8s ease",
+                      boxShadow: "0 0 12px rgba(139,92,246,0.3)",
                     }} />
                   </div>
-                  <p style={{ color: "#94A3B8", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+                  <p style={{ color: "#94A3B8", fontSize: "0.875rem", marginTop: "0.75rem" }}>
                     {progress}% complete
                   </p>
                 </div>
 
                 {/* Rotating value prop card */}
                 <div style={{
-                  maxWidth: 480, margin: "0 auto",
-                  background: "#F8FAFC", border: "1px solid #E2E8F0",
-                  borderRadius: 12, padding: "1.5rem 2rem",
+                  maxWidth: 520, margin: "0 auto",
+                  background: "rgba(255,255,255,0.85)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid rgba(226,232,240,0.8)",
+                  borderRadius: 16, padding: "1.75rem 2.25rem",
                   minHeight: 100,
+                  boxShadow: "0 8px 32px rgba(139,92,246,0.08), 0 2px 8px rgba(0,0,0,0.04)",
                 }}>
                   <p key={vpIndex} style={{
-                    fontSize: "1.125rem", fontWeight: 600, color: "#0F172A",
+                    fontSize: "1.2rem", fontWeight: 700, color: "#0F172A",
                     marginBottom: "0.5rem",
                     animation: "arclo-fade 4s ease-in-out",
                   }}>
                     {VALUE_PROPS[vpIndex].headline}
                   </p>
                   <p key={`d-${vpIndex}`} style={{
-                    fontSize: "0.9375rem", color: "#475569", lineHeight: 1.5,
+                    fontSize: "1rem", color: "#475569", lineHeight: 1.6,
                     animation: "arclo-fade 4s ease-in-out",
                   }}>
                     {VALUE_PROPS[vpIndex].detail}
@@ -312,12 +378,14 @@ export default function ScanPreview() {
                 </div>
 
                 {/* Step dots */}
-                <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: "1.25rem" }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: "1.5rem" }}>
                   {VALUE_PROPS.map((_, i) => (
                     <div key={i} style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: i === vpIndex ? "#8B5CF6" : "#CBD5E1",
-                      transition: "background 0.3s",
+                      width: 10, height: 10, borderRadius: "50%",
+                      background: i === vpIndex ? "#7C3AED" : "rgba(203,213,225,0.6)",
+                      transition: "background 0.3s, transform 0.3s",
+                      transform: i === vpIndex ? "scale(1.2)" : "scale(1)",
+                      boxShadow: i === vpIndex ? "0 0 8px rgba(124,58,237,0.3)" : "none",
                     }} />
                   ))}
                 </div>
