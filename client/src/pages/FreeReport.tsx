@@ -208,6 +208,15 @@ interface FreeReportData {
   visibilityMode?: "full" | "limited";
   limitedVisibilityReason?: string;
   limitedVisibilitySteps?: string[];
+  scan_mode?: "light" | "full";
+  ai_search?: {
+    ai_visibility_score: number;
+    structured_data_coverage: number;
+    entity_coverage: number;
+    llm_answerability: number;
+    checklist: { title: string; status: "pass" | "fail" | "warning"; detail: string; category: string }[];
+    findings: { finding_type: string; severity: string; category: string; description: string; recommended_action: string }[];
+  };
 }
 
 function HealthScoreRing({ score }: { score: number }) {
@@ -1410,9 +1419,16 @@ export default function FreeReport() {
                 <path d="M24 4l19 36h-8l-3.2-6.2H16.2L13 40H5L24 4zm-4.8 23h9.6L24 17.7 19.2 27z" fill="white" />
               </svg>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold" data-testid="report-title">
-                  Arclo Pro — Ranking Snapshot
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl md:text-3xl font-bold" data-testid="report-title">
+                    Arclo Pro — Ranking Snapshot
+                  </h1>
+                  {report.scan_mode === "light" && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white">
+                      Light Scan
+                    </span>
+                  )}
+                </div>
                 <p className="text-white/80 text-sm mt-1" data-testid="report-url">
                   {report.inputs?.target_url}
                 </p>

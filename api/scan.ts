@@ -5,6 +5,7 @@ import { scanHomepageServices, type HomepageScanResult } from "./_lib/homepageSe
 import { buildSerpKeywords, buildFallbackKeywords, type SerpKeyword } from "./_lib/serpKeywordBuilder.js";
 import { runAgent, skipAgent, finalizeAgentSummary } from "./_lib/agentRunner.js";
 import { isNatashaConfigured, runNatashaCompetitors, type NatashaResult } from "./_lib/natashaClient.js";
+import { analyzePageForAtlas, type AtlasResult } from "./_lib/atlasAnalyzer.js";
 
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -337,20 +338,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Agent: Natasha (Competitive Intelligence) ───────────────────
-    // Placeholder — wired up in Phase 4 (natashaClient.ts)
-    await skipAgent(
-      { scanId, crewId: "natasha", agentStep: "competitive", scanMode },
-      pool,
-      "Not yet integrated"
-    );
+    let natashaResult: NatashaResult | null = null;
+    if (isNatashaConfigured()) {
+      const natashaRun = await runAgent(
+        { scanId, crewId: "natasha", agentStep: "competitive", scanMode },
+        pool,
+        async () => {
+          const keywords = serpKeywordList.slice(0, 5).map(k => k.keyword);
+          return runNatashaCompetitors({
+            targetDomain: domain,
+            focusKeywords: keywords,
+            websiteId: `free_${domain}`,
+            runId: scanId,
+          });
+        }
+      );
+      natashaResult = natashaRun.result;
+    } else {
+      await skipAgent(
+        { scanId, crewId: "natasha", agentStep: "competitive", scanMode },
+        pool,
+        "NATASHA_BASE_URL not configured"
+      );
+    }
 
     // ── Agent: Atlas (AI Search Optimization) ───────────────────────
-    // Placeholder — wired up in Phase 5 (atlasAnalyzer.ts)
-    await skipAgent(
-      { scanId, crewId: "atlas", agentStep: "atlas_ai", scanMode },
-      pool,
-      "Not yet integrated"
-    );
+    let atlasResult: AtlasResult | null = null;
+    if (technicalOk && rawHtml) {
+      const atlasRun = await runAgent(
+        { scanId, crewId: "atlas", agentStep: "atlas_ai", scanMode },
+        pool,
+        async () => analyzePageForAtlas(rawHtml, `https://${domain}`)
+      );
+      atlasResult = atlasRun.result;
+    } else {
+      await skipAgent(
+        { scanId, crewId: "atlas", agentStep: "atlas_ai", scanMode },
+        pool,
+        "No HTML available (technical crawl failed)"
+      );
+    }
 
     // ════════════════════════════════════════════════════════════════
     // Post-scan: scoring, findings, report assembly
@@ -435,7 +462,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       technical: technicalOk ? { ok: true, pages_crawled: 1, findings: findings.filter(f => f.title !== "Performance Analysis Limited" && f.title !== "Slow Page Speed" && f.title !== "Layout Shifts Detected") } : null,
       performance: psiOk ? { ok: true, performance_score: performanceScore, lab: { lcp_ms: lcpMs, cls: clsValue }, url: `https://${domain}` } : null,
       serp: serpRunOk ? { ok: true, results: serpResults } : null,
-      competitive: null,
+      competitive: natashaResult ? { ok: true, findings: natashaResult.findings, findings_count: natashaResult.findings_count } : null,
       backlinks: null,
       keywords: serpRunOk
         ? { quickWins: serpResults.filter(r => r.position !== null && r.position <= 20).map(r => ({ keyword: r.keyword, position: r.position })), declining: [] }
@@ -447,6 +474,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       serp_keywords: serpKeywordList.map(k => ({ keyword: k.keyword, intent: k.intent, source: k.source })),
       serp_results: serpResults,
       serviceDetectionWarning,
+      ai_search: atlasResult ? {
+        ai_visibility_score: atlasResult.ai_visibility_score,
+        structured_data_coverage: atlasResult.structured_data_coverage,
+        entity_coverage: atlasResult.entity_coverage,
+        llm_answerability: atlasResult.llm_answerability,
+        checklist: atlasResult.checklist,
+        findings: atlasResult.findings,
+      } : null,
     };
 
     // Finalize agent summary
