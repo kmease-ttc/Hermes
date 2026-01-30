@@ -20,6 +20,6 @@
   "rewrites": [
     { "source": "/api/scan/:scanId/status", "destination": "/api/scan-status?scanId=:scanId" },
     { "source": "/api/report/free/:reportId", "destination": "/api/report-free?reportId=:reportId" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
