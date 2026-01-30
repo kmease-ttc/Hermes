@@ -163,12 +163,14 @@ export default function WhiteHero() {
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => null);
+        console.error("[WhiteHero] Scan API error:", res.status, errBody);
         throw new Error(errBody?.message || "Failed to start scan. Please try again.");
       }
 
       const data = await res.json();
       navigate(`/scan/preview/${data.scanId || data.id}`);
     } catch (err: any) {
+      console.error("[WhiteHero] Scan error:", err, "message:", err?.message);
       setError(err?.message || "Something went wrong. Please try again.");
       setLoading(false);
     }
