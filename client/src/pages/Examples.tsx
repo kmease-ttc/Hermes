@@ -173,8 +173,8 @@ export default function Examples() {
                     </Link>
                     <Link href={ROUTES.WEBSITE_GENERATOR}>
                       <span
-                        className="w-full flex items-center justify-center gap-1 text-sm font-medium text-white h-10 rounded-lg transition-colors cursor-pointer"
-                        style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
+                        className="w-full flex items-center justify-center gap-1 text-sm font-medium h-10 rounded-lg transition-colors cursor-pointer"
+                        style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)", color: "#FFFFFF" }}
                         data-testid={`button-generate-like-${example.id}`}
                       >
                         <Sparkles className="h-3 w-3" />

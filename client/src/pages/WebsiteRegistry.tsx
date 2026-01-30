@@ -98,10 +98,7 @@ export default function WebsiteRegistry() {
   };
 
   return (
-    <DashboardLayout
-      title="Website Registry"
-      subtitle="Manage target websites that Hermes orchestrates"
-    >
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">

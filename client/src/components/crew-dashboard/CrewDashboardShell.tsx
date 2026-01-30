@@ -163,7 +163,7 @@ function InlinePrompt({
             handleSubmit();
           }}
           disabled={!question.trim() || config.isLoading}
-          style={{ backgroundColor: question.trim() ? buttonBg : undefined }}
+          style={{ backgroundColor: question.trim() ? buttonBg : undefined, color: question.trim() ? "#FFFFFF" : undefined }}
           className="h-9 px-3"
           data-testid="button-submit-mission-prompt"
         >

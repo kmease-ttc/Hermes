@@ -361,8 +361,8 @@ function MetricCard({ metric, highlighted = false }: { metric: MetricCardData; h
             <Link href={buildRoute.agent(metric.requiredCrew!.serviceId)}>
               <Button 
                 size="sm" 
-                className="text-xs text-white hover:opacity-90"
-                style={{ backgroundColor: crewColor }}
+                className="text-xs hover:opacity-90"
+                style={{ backgroundColor: crewColor, color: "#FFFFFF" }}
                 data-testid={`button-${metric.id}-enable`}
               >
                 <Zap className="w-3 h-3 mr-1.5" />
@@ -1287,9 +1287,9 @@ function AgentSummaryCard({ agent, enabled = true, needsConfig = false }: { agen
                       className="w-12 h-12 object-contain flex-shrink-0"
                     />
                   ) : (
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                      style={{ backgroundColor: crew.color }}
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{ backgroundColor: crew.color, color: "#FFFFFF" }}
                     >
                       {crew.nickname.slice(0, 2)}
                     </div>
@@ -1349,9 +1349,9 @@ function AgentSummaryCard({ agent, enabled = true, needsConfig = false }: { agen
               className="w-10 h-10 object-contain flex-shrink-0"
             />
           ) : (
-            <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-              style={{ backgroundColor: crew.color }}
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+              style={{ backgroundColor: crew.color, color: "#FFFFFF" }}
             >
               {crew.nickname.slice(0, 2)}
             </div>

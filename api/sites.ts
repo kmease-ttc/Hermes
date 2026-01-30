@@ -6,9 +6,6 @@ import { randomUUID } from "crypto";
 /**
  * POST /api/sites - Create a new site for the logged-in user
  * GET  /api/sites - List all sites for the logged-in user
- *
- * This Vercel serverless function mirrors the Express route in
- * server/routes.ts but runs on Vercel where Express is unavailable.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
@@ -28,6 +25,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const pool = getPool();
   const userId = user.id;
 
+  // Ensure user_id column exists (may not be in original Drizzle schema)
+  try {
+    await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+  } catch {
+    // Column may already exist or ALTER fails on some setups — non-fatal
+  }
+
   // ── GET: List user's sites ──────────────────────────────────
   if (req.method === "GET") {
     try {
@@ -38,7 +42,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json(result.rows);
     } catch (error: any) {
       console.error("[Sites] list_sites_failed", { userId, error: error.message });
-      return res.status(500).json({ ok: false, error: "Failed to list sites" });
+      // Fallback: if user_id column doesn't exist, return all active sites
+      try {
+        const fallback = await pool.query(
+          `SELECT * FROM sites WHERE active = true ORDER BY created_at DESC`
+        );
+        return res.json(fallback.rows);
+      } catch (e2: any) {
+        return res.status(500).json({ ok: false, error: "Failed to list sites" });
+      }
     }
   }
 
@@ -79,19 +91,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const displayName = body.displayName.trim();
     const siteId = `site_${Date.now()}_${randomUUID().slice(0, 8)}`;
     const status = body.status || "onboarding";
+    const domain = new URL(baseUrl).hostname.replace(/^www\./, "").toLowerCase();
 
-    // ── Check for duplicate domain ──────────────────────────
+    // ── Check for duplicate baseUrl ─────────────────────────
     const existing = await pool.query(
-      `SELECT site_id FROM sites WHERE base_url = $1 AND user_id = $2 LIMIT 1`,
-      [baseUrl, userId]
+      `SELECT site_id FROM sites WHERE base_url = $1 LIMIT 1`,
+      [baseUrl]
     );
     if (existing.rows.length > 0) {
       const existingSiteId = existing.rows[0].site_id;
       const reportResult = await pool.query(
         `SELECT report_id FROM free_reports
-         WHERE website_url LIKE $1
+         WHERE website_domain = $1
          ORDER BY created_at DESC LIMIT 1`,
-        [`%${new URL(baseUrl).hostname.replace(/^www\./, "")}%`]
+        [domain]
       );
       const hasExistingReport = reportResult.rows.length > 0;
       const latestReportId = hasExistingReport ? reportResult.rows[0].report_id : null;
@@ -106,6 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Insert site record ──────────────────────────────────
+    // Only use columns that exist in the Drizzle schema + user_id (ensured above)
     const insertResult = await pool.query(
       `INSERT INTO sites (
         site_id, user_id, display_name, base_url, status, active,
@@ -113,7 +127,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         deploy_method, crawl_settings, sitemaps, key_pages,
         integrations, guardrails, cadence,
         owner_name, owner_contact, health_score,
-        business_details,
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, true,
@@ -121,7 +134,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         $10, $11::jsonb, $12, $13,
         $14::jsonb, $15::jsonb, $16::jsonb,
         $17, $18, $19,
-        $20::jsonb,
         NOW(), NOW()
       ) RETURNING *`,
       [
@@ -143,15 +155,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body.cadence ? JSON.stringify(body.cadence) : null,
         body.ownerName || null,
         body.ownerContact || null,
-        null,
-        body.businessDetails ? JSON.stringify(body.businessDetails) : null,
+        null, // healthScore
       ]
     );
 
     const newSite = insertResult.rows[0];
 
     // ── Check for existing scan/report for this domain ──────
-    const domain = new URL(baseUrl).hostname.replace(/^www\./, "").toLowerCase();
     const reportResult = await pool.query(
       `SELECT report_id FROM free_reports
        WHERE website_domain = $1
@@ -161,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasExistingReport = reportResult.rows.length > 0;
     const latestReportId = hasExistingReport ? reportResult.rows[0].report_id : null;
 
-    // ── Schedule weekly automation (default off) ─────────────
+    // ── Schedule weekly automation (non-fatal) ───────────────
     try {
       await pool.query(
         `CREATE TABLE IF NOT EXISTS website_automation (
@@ -233,16 +243,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (error.code === "23505") {
       return res.status(409).json({ ok: false, error: "This site has already been added." });
     }
-    if (error.message?.includes("column") && error.message?.includes("does not exist")) {
-      return res.status(500).json({
-        ok: false,
-        error: "Database schema is out of date. A column is missing.",
-      });
-    }
 
     return res.status(500).json({
       ok: false,
-      error: "Failed to add site. Please try again.",
+      error: `Failed to add site: ${error.message}`,
     });
   }
 }

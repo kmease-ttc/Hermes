@@ -170,10 +170,7 @@ export default function WebsiteRegistryDetail() {
   const { website, settings, integrations } = data;
 
   return (
-    <DashboardLayout
-      title={website.name}
-      subtitle={website.domain}
-    >
+    <DashboardLayout className="dashboard-light">
       <div className="space-y-6">
         {/* Back link + status */}
         <div className="flex items-center justify-between">

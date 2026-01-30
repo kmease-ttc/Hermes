@@ -311,19 +311,19 @@ function ProgressIndicator({ currentStep }: { currentStep: WizardStep }) {
   return (
     <div className="flex items-center justify-center gap-3">
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-        currentStep === 1 
-          ? "bg-gradient-to-r from-primary via-pink-500 to-gold text-white shadow-lg"
+        currentStep === 1
+          ? "bg-gradient-to-r from-primary via-pink-500 to-gold shadow-lg"
           : "bg-muted text-muted-foreground"
-      }`}>
+      }`} style={currentStep === 1 ? { color: "#FFFFFF" } : undefined}>
         <span className="text-sm font-semibold">1</span>
         <span className="text-sm font-medium">Business Info</span>
       </div>
       <div className="w-8 h-0.5 bg-border" />
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-        currentStep === 2 
-          ? "bg-gradient-to-r from-primary via-pink-500 to-gold text-white shadow-lg"
+        currentStep === 2
+          ? "bg-gradient-to-r from-primary via-pink-500 to-gold shadow-lg"
           : "bg-muted text-muted-foreground"
-      }`}>
+      }`} style={currentStep === 2 ? { color: "#FFFFFF" } : undefined}>
         <span className="text-sm font-semibold">2</span>
         <span className="text-sm font-medium">Branding</span>
       </div>

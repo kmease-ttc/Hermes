@@ -585,8 +585,8 @@ export default function Report() {
 
             <Button
               size="lg"
-              className="w-full text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)" }}
+              className="w-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)", color: "#FFFFFF" }}
               onClick={handleDeployClick}
               disabled={selectedFixCount === 0}
               data-testid="btn-fix-selected"
@@ -671,8 +671,8 @@ export default function Report() {
             </div>
             <Button
               size="lg"
-              className="flex-1 sm:flex-none text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)" }}
+              className="flex-1 sm:flex-none font-semibold shadow-lg"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)", color: "#FFFFFF" }}
               onClick={handleDeployClick}
               data-testid="btn-sticky-fix"
             >

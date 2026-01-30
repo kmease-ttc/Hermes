@@ -47,7 +47,7 @@ export function ComparisonSection() {
                 <th className="p-3 sm:p-4 text-center text-xs sm:text-sm font-semibold text-foreground">DIY Tools</th>
                 <th className="p-3 sm:p-4 text-center text-xs sm:text-sm font-semibold text-foreground">SEO Agencies</th>
                 <th className="p-3 sm:p-4 text-center">
-                  <span className="inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-semibold text-white" style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}>
+                  <span className="inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-semibold" style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)", color: "#FFFFFF" }}>
                     Arclo
                   </span>
                 </th>

@@ -239,8 +239,8 @@ export default function WhiteHero() {
               <Link href={ROUTES.SCAN} className="hidden md:block">
                 <Button
                   size="sm"
-                  className="gap-2 text-white font-medium"
-                  style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
+                  className="gap-2 font-medium"
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)", color: "#FFFFFF" }}
                 >
                   <Search className="h-4 w-4" />
                   Analyze My Website
@@ -287,8 +287,8 @@ export default function WhiteHero() {
                 <Link href={ROUTES.SCAN} onClick={closeMobileMenu}>
                   <Button
                     size="lg"
-                    className="w-full gap-2 text-white font-medium"
-                    style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)" }}
+                    className="w-full gap-2 font-medium"
+                    style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)", color: "#FFFFFF" }}
                   >
                     <Search className="h-4 w-4" />
                     Analyze My Website

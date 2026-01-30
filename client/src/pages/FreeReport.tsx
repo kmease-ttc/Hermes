@@ -448,7 +448,8 @@ function ExecutiveSummarySection({
               {authenticated ? (
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 text-white"
+                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90"
+                  style={{ color: "#FFFFFF" }}
                   onClick={scrollToTopIssues}
                   data-testid="cta-apply-fixes"
                 >
@@ -458,7 +459,8 @@ function ExecutiveSummarySection({
               ) : (
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 text-white"
+                  className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90"
+                  style={{ color: "#FFFFFF" }}
                   onClick={() => { window.location.href = signupUrl; }}
                   data-testid="cta-save-report"
                 >
@@ -1089,7 +1091,8 @@ function NextStepsSection({ nextSteps, onCtaClick, scanId }: { nextSteps: NextSt
       <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
         <Button
           size="lg"
-          className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 text-white shadow-lg"
+          className="bg-gradient-to-r from-primary to-purple hover:from-primary/90 hover:to-purple/90 shadow-lg"
+          style={{ color: "#FFFFFF" }}
           onClick={() => {
             const signupUrl = scanId ? `/signup?scanId=${scanId}` : '/signup';
             window.location.href = signupUrl;
@@ -1480,7 +1483,7 @@ export default function FreeReport() {
     <MarketingLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-5xl" id="arclo-report">
         {/* Arclo-branded report header */}
-        <div className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 text-white">
+        <div className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500" style={{ color: "#FFFFFF" }}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <svg width="36" height="36" viewBox="0 0 48 48" aria-hidden="true">
@@ -1685,13 +1688,13 @@ export default function FreeReport() {
 
           {/* Account Creation Transition */}
           <section data-testid="section-account-cta" className="space-y-4">
-            <Card className="bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 text-white border-0">
+            <Card className="bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 border-0" style={{ color: "#FFFFFF" }}>
               <CardContent className="py-10 text-center space-y-4">
                 <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true" className="mx-auto">
                   <path d="M24 4l19 36h-8l-3.2-6.2H16.2L13 40H5L24 4zm-4.8 23h9.6L24 17.7 19.2 27z" fill="white" />
                 </svg>
-                <h2 className="text-2xl md:text-3xl font-bold">Ready to Improve These Rankings?</h2>
-                <p className="text-white/80 max-w-xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-bold" style={{ color: "#FFFFFF" }}>Ready to Improve These Rankings?</h2>
+                <p className="max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.8)" }}>
                   Create your free Arclo Pro account and let us start applying fixes, building authority, and pushing your rankings upward — automatically.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">

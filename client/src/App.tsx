@@ -223,8 +223,8 @@ function Router() {
       </Route>
       <Route path={ROUTES.SITE_NEW}><ProtectedRoute component={SiteDetail} /></Route>
       <Route path={ROUTES.SITE_DETAIL}><ProtectedRoute component={SiteDetail} /></Route>
-      <Route path={ROUTES.WEBSITE_REGISTRY_DETAIL}><ProtectedRoute component={WebsiteRegistryDetail} /></Route>
-      <Route path={ROUTES.WEBSITES}><ProtectedRoute component={WebsiteRegistry} /></Route>
+      <Route path={ROUTES.WEBSITE_REGISTRY_DETAIL}><ProtectedRoute component={WebsiteRegistryDetail} lightMode /></Route>
+      <Route path={ROUTES.WEBSITES}><ProtectedRoute component={WebsiteRegistry} lightMode /></Route>
       <Route path={ROUTES.HELP}><ProtectedRoute component={Help} /></Route>
       <Route path={ROUTES.DEV_PALETTE}><ProtectedRoute component={CrewPalette} /></Route>
       <Route path={ROUTES.DEV_LINEAGE}><ProtectedRoute component={DevLineage} /></Route>
