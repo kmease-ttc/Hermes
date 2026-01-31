@@ -9,7 +9,7 @@ interface KeyMetricCardProps {
   value: number | string;
   icon?: LucideIcon;
   iconNode?: ReactNode;
-  status?: "primary" | "good" | "warning" | "neutral" | "inactive";
+  status?: "primary" | "good" | "warning" | "neutral" | "inactive" | string;
   accentColor?: string;
   className?: string;
   delta?: number | null;

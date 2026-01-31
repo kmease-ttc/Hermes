@@ -96,6 +96,7 @@ interface Competitor {
   topKeywords: string[];
   lastUpdated: string;
   deltaScore?: number;
+  position?: number | null;
 }
 
 interface ContentGap {

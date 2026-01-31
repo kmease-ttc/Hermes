@@ -4,15 +4,18 @@ export type WidgetState = "loading" | "ready" | "empty" | "unavailable";
 
 export interface KpiDescriptor {
   id: string;
+  key?: string;
   label: string;
   value: string | number | null;
+  format?: string;
+  suffix?: string;
   delta?: number | null;
   deltaLabel?: string;
   deltaIsGood?: boolean;
   tooltip?: string;
   unit?: string;
   icon?: ReactNode;
-  status?: WidgetState;
+  status?: WidgetState | "neutral" | "good" | "warning" | "inactive";
   sparklineData?: number[];
   trendIsGood?: "up" | "down";
 }
@@ -22,9 +25,9 @@ export interface MissionItem {
   title: string;
   reason?: string;
   expectedOutcome?: string;
-  status: "pending" | "in_progress" | "done" | "blocked";
+  status: "pending" | "in_progress" | "done" | "blocked" | "complete";
   impact?: "high" | "medium" | "low";
-  effort?: "S" | "M" | "L";
+  effort?: "S" | "M" | "L" | string;
   agents?: string[];
   category?: string;
   actions?: MissionAction[];
@@ -58,6 +61,7 @@ export interface MissionStatusState {
   blockerCount: number;
   missingIntegrations?: number;
   autoFixableCount: number;
+  performanceScore?: number | null;
   status?: WidgetState;
   score?: { value: number | null; status: 'ok' | 'unknown' };
   missions?: { open: number; total: number; completedThisWeek: number };
@@ -68,7 +72,7 @@ export interface InspectorTab {
   id: string;
   label: string;
   icon?: ReactNode;
-  content: ReactNode;
+  content?: ReactNode;
   state?: WidgetState;
   badge?: string | number;
 }
@@ -93,8 +97,10 @@ export interface MissionPromptConfig {
 
 export interface HeaderAction {
   id: string;
+  label?: string;
   icon: ReactNode;
   tooltip: string;
+  variant?: string;
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;

@@ -675,22 +675,30 @@ export default function SentinelContent() {
 
   const kpiDescriptors: KpiDescriptor[] = [
     {
+      id: "decayingPages",
       key: "decayingPages",
+      value: null,
       label: "Decaying Pages",
       tooltip: "Number of URLs showing statistically significant ranking or traffic decline",
     },
     {
+      id: "keywordsAtRisk",
       key: "keywordsAtRisk",
+      value: null,
       label: "Keywords at Risk",
       tooltip: "Count of keywords that dropped ≥5 positions or exited Top 20 in the last period",
     },
     {
+      id: "trafficLossRisk",
       key: "trafficLossRisk",
+      value: null,
       label: "Traffic Loss Risk",
       tooltip: "Estimated monthly traffic at risk from decaying pages",
     },
     {
+      id: "avgDecaySeverity",
       key: "avgDecaySeverity",
+      value: null,
       label: "Avg Decay Severity",
       tooltip: "Average severity score across all decaying pages (0-100)",
     },
@@ -727,6 +735,39 @@ export default function SentinelContent() {
     },
   ], [metrics]);
 
+  const missions = useMemo(() => [
+    {
+      id: "detect-decay",
+      label: "Detect Content Decay",
+      description: "Scan for ranking drops and traffic decline patterns",
+      icon: <Search className="w-4 h-4" />,
+      action: () => detectDecayMutation.mutate(),
+      disabled: detectDecayMutation.isPending,
+      isLoading: detectDecayMutation.isPending,
+      badge: undefined,
+    },
+    {
+      id: "prioritize",
+      label: "Prioritize by Impact",
+      description: "Re-rank decaying content by traffic impact and fix potential",
+      icon: <BarChart3 className="w-4 h-4" />,
+      action: () => prioritizeMutation.mutate(),
+      disabled: prioritizeMutation.isPending || decayingContent.length === 0,
+      isLoading: prioritizeMutation.isPending,
+      badge: undefined,
+    },
+    {
+      id: "bulk-refresh",
+      label: "Auto-Refresh Critical Pages",
+      description: "Queue all critical pages for content refresh and re-optimization",
+      icon: <Zap className="w-4 h-4" />,
+      action: () => bulkRefreshMutation.mutate(),
+      disabled: bulkRefreshMutation.isPending || criticalCount === 0,
+      isLoading: bulkRefreshMutation.isPending,
+      badge: criticalCount > 0 ? `${criticalCount} critical` : undefined,
+    },
+  ], [detectDecayMutation, prioritizeMutation, bulkRefreshMutation, decayingContent.length, criticalCount]);
+
   return (
     <CrewPageLayout crewId="sentinel">
       <CrewDashboardShell
@@ -738,7 +779,6 @@ export default function SentinelContent() {
         headerActions={headerActions}
         customMetrics={<KeyMetricsGrid metrics={keyMetrics} accentColor={crewIdentity.accentColor} />}
         onRefresh={() => detectDecayMutation.mutate()}
-        isLoading={isLoading}
         isRefreshing={crewIsRefreshing}
         dataUpdatedAt={crewDataUpdatedAt}
       >

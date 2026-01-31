@@ -151,6 +151,12 @@ function MissionRow({
       bg: "bg-semantic-success-soft",
       label: "Done",
     },
+    complete: {
+      icon: CheckCircle2,
+      color: "text-semantic-success",
+      bg: "bg-semantic-success-soft",
+      label: "Done",
+    },
     blocked: {
       icon: AlertTriangle,
       color: "text-semantic-warning",

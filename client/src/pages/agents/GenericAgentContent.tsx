@@ -40,7 +40,7 @@ interface GenericAgentContentProps {
 export default function GenericAgentContent({ agentId }: GenericAgentContentProps) {
   const crew = getCrewMember(agentId);
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || "default";
+  const siteId = activeSite?.siteId || "default";
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const crewId = SERVICE_TO_CREW[agentId] || agentId;

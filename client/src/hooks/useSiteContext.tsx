@@ -7,6 +7,7 @@ interface Site {
   siteId: string;
   displayName: string;
   baseUrl: string;
+  domain: string;
   category: string | null;
   techStack: string | null;
   status: string;
@@ -101,5 +102,6 @@ export function useSiteContext() {
     ...context,
     siteId,
     siteDomain,
+    activeSite: context.selectedSite,
   };
 }

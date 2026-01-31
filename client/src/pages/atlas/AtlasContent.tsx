@@ -843,7 +843,7 @@ function TrendChart({
 export default function AtlasContent() {
   const crew = getCrewMember("ai_optimization");
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || "default";
+  const siteId = activeSite?.siteId || "default";
   const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'atlas' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);

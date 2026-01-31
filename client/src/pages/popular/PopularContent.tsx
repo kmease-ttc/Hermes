@@ -1017,7 +1017,7 @@ export default function PopularContent() {
       id: "actions",
       label: "Actions",
       icon: <ListChecks className="w-4 h-4" />,
-      badge: autoFixableCount > 0 ? autoFixableCount : undefined,
+      badge: undefined,
       content: <ActionsTab issues={issues} />,
     },
     {

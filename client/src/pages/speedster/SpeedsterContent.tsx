@@ -240,7 +240,7 @@ interface FixPlanData {
 
 export default function SpeedsterContent() {
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || 'site_empathy_health_clinic';
+  const siteId = activeSite?.siteId || 'site_empathy_health_clinic';
   
   const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({
     siteId,

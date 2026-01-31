@@ -401,7 +401,7 @@ function TrendChart({ data, dataKey, label, color }: { data: any[]; dataKey: str
 export default function ScottyContent() {
   const crew = getCrewMember("crawl_render");
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || "default";
+  const siteId = activeSite?.siteId || "default";
   const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'scotty' });
   const queryClient = useQueryClient();
   const [fixingIssue, setFixingIssue] = useState<string | null>(null);

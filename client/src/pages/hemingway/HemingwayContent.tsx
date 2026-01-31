@@ -736,7 +736,7 @@ function IssuesBreakdown({ issues }: { issues: { issue: string; percent: number 
 export default function HemingwayContent() {
   const crew = getCrewMember("content_generator");
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || "default";
+  const siteId = activeSite?.siteId || "default";
   const { score: unifiedScore, isRefreshing: crewIsRefreshing, dataUpdatedAt: crewDataUpdatedAt } = useCrewStatus({ siteId, crewId: 'hemingway' });
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();

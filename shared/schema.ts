@@ -257,6 +257,9 @@ export const reports = pgTable("reports", {
   summary: text("summary").notNull(),
   dropDates: jsonb("drop_dates"), // Array of detected drop dates
   rootCauses: jsonb("root_causes"), // Ranked list of hypotheses
+  topLosingPages: jsonb("top_losing_pages"),
+  topLosingQueries: jsonb("top_losing_queries"),
+  clusterLosses: jsonb("cluster_losses"),
   markdownReport: text("markdown_report").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -281,6 +284,9 @@ export const tickets = pgTable("tickets", {
   expectedImpact: text("expected_impact").notNull(), // 'high', 'medium', 'low'
   impactEstimate: jsonb("impact_estimate"), // { affected_pages_count, recoverable_clicks_est }
   evidence: jsonb("evidence"), // Links and metrics
+  description: text("description"),
+  category: text("category"),
+  assignee: text("assignee"),
   hypothesisKey: text("hypothesis_key"), // Link to hypothesis
   reportId: integer("report_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -945,7 +951,11 @@ export const serviceRuns = pgTable("service_runs", {
   outputsJson: jsonb("outputs_json"), // { expectedOutputs: [...], actualOutputs: [...], missingOutputs: [...], metrics: {...}, debug: {...} }
   errorCode: text("error_code"),
   errorDetail: text("error_detail"),
+  errorMessage: text("error_message"),
+  findingsJson: jsonb("findings_json"),
+  summaryText: text("summary_text"),
   artifactLinks: jsonb("artifact_links"), // [{ type: "report", url: "...", label: "..." }, ...]
+  requiredOutputFields: text("required_output_fields").array(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -1730,6 +1740,13 @@ export const seoWorkerResults = pgTable("seo_worker_results", {
   
   // Timing
   durationMs: integer("duration_ms"),
+  serpResultsJson: jsonb("serp_results_json"),
+  domainRating: real("domain_rating"),
+  competitors: jsonb("competitors"),
+  contentGaps: jsonb("content_gaps"),
+  data: jsonb("data"),
+  shareOfVoice: real("share_of_voice"),
+  referringDomains: integer("referring_domains"),
   startedAt: timestamp("started_at"),
   finishedAt: timestamp("finished_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1874,9 +1891,13 @@ export const seoSuggestions = pgTable("seo_suggestions", {
   category: text("category").notNull(), // authority, technical, serp, content, performance
   
   // Evidence and context
+  evidence: jsonb("evidence"),
   evidenceJson: jsonb("evidence_json"), // { metrics: {}, urls: [], keywords: [], workerResults: [] }
+  affectedUrls: jsonb("affected_urls").$type<string[]>(),
+  affectedQueries: jsonb("affected_queries").$type<string[]>(),
   impactedUrls: text("impacted_urls").array(), // URLs affected by this suggestion
   impactedKeywords: text("impacted_keywords").array(), // Keywords related to this suggestion
+  sourceAgentId: text("source_agent_id"),
   
   // Recommended actions
   actionsJson: jsonb("actions_json"), // [{ step: 1, action: "...", priority: "high" }]
@@ -2291,6 +2312,7 @@ export const seoAgentCompetitors = pgTable("seo_agent_competitors", {
   domain: text("domain").notNull(),
   name: text("name"),
   type: text("type").default("direct"), // direct, indirect, serp-only
+  position: integer("position"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -2945,9 +2967,12 @@ export const crewKpis = pgTable("crew_kpis", {
   crewId: text("crew_id").notNull(),
   metricKey: text("metric_key").notNull(),
   value: real("value"),
+  metricValue: real("metric_value"),
   unit: text("unit"),
+  context: jsonb("context"),
   trendDelta: real("trend_delta"),
   measuredAt: timestamp("measured_at").defaultNow().notNull(),
+  capturedAt: timestamp("captured_at"),
 });
 
 export const insertCrewKpiSchema = createInsertSchema(crewKpis).omit({
@@ -2966,6 +2991,8 @@ export const crewFindings = pgTable("crew_findings", {
   title: text("title").notNull(),
   description: text("description"),
   category: text("category"),
+  affectedUrl: text("affected_url"),
+  recommendation: text("recommendation"),
   meta: jsonb("meta"),
   surfacedAt: timestamp("surfaced_at").defaultNow().notNull(),
 });
@@ -3194,6 +3221,8 @@ export const jobQueue = pgTable("job_queue", {
   errorMessage: text("error_message"), // error details if failed
   attempts: integer("attempts").default(0), // retry tracking
   maxAttempts: integer("max_attempts").default(3),
+  lockExpiresAt: timestamp("lock_expires_at"),
+  lockVersion: integer("lock_version").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"), // when worker started processing
   completedAt: timestamp("completed_at"), // when job finished (success or failure)
@@ -3217,6 +3246,7 @@ export const managedWebsites = pgTable("managed_websites", {
   id: text("id").primaryKey(), // UUID
   name: text("name").notNull(),
   domain: text("domain").notNull().unique(),
+  publishedUrl: text("published_url"),
   status: text("status").notNull().default("active"), // active | paused
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -3506,6 +3536,11 @@ export const websiteTrustLevels = pgTable("website_trust_levels", {
   trustLevel: integer("trust_level").notNull().default(1),
   successCount: integer("success_count").notNull().default(0),
   failureCount: integer("failure_count").notNull().default(0),
+  confidence: real("confidence"),
+  minTrustLevel: integer("min_trust_level"),
+  riskLevel: text("risk_level"),
+  lastSuccessAt: timestamp("last_success_at"),
+  lastFailureAt: timestamp("last_failure_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -3643,11 +3678,14 @@ export type VerificationStatus = typeof VerificationStatuses[keyof typeof Verifi
 
 export const achievementMilestones = pgTable("achievement_milestones", {
   id: serial("id").primaryKey(),
+  siteId: text("site_id"),
   trackId: integer("track_id").notNull(),
   tier: text("tier").notNull(),
   label: text("label").notNull(),
   threshold: integer("threshold").notNull(),
   reachedAt: timestamp("reached_at"),
+  achievedAt: timestamp("achieved_at"),
+  notifiedAt: timestamp("notified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type AchievementMilestone = typeof achievementMilestones.$inferSelect;
@@ -3857,12 +3895,15 @@ export type ActionRiskRegistry = typeof actionRiskRegistry.$inferSelect;
 // Interventions table
 export const interventions = pgTable("interventions", {
   id: serial("id").primaryKey(),
+  interventionId: text("intervention_id"),
+  siteId: text("site_id"),
   websiteId: text("website_id").notNull(),
   runId: text("run_id"),
   type: text("type").notNull(),
   status: text("status").notNull().default("pending"),
   payload: jsonb("payload").$type<Record<string, any>>(),
   result: jsonb("result").$type<Record<string, any>>(),
+  startedAt: timestamp("started_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -189,7 +189,7 @@ export default function WebsiteRegistryDetail() {
 
   if (!websiteId) {
     return (
-      <DashboardLayout title="Website Not Found">
+      <DashboardLayout>
         <p className="text-muted-foreground">Invalid website ID.</p>
       </DashboardLayout>
     );
@@ -197,7 +197,7 @@ export default function WebsiteRegistryDetail() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Loading...">
+      <DashboardLayout>
         <p className="text-muted-foreground">Loading website details...</p>
       </DashboardLayout>
     );
@@ -205,7 +205,7 @@ export default function WebsiteRegistryDetail() {
 
   if (!data?.website) {
     return (
-      <DashboardLayout title="Not Found">
+      <DashboardLayout>
         <p className="text-muted-foreground">Website not found.</p>
       </DashboardLayout>
     );

@@ -9,7 +9,7 @@ interface MetricConfig {
   value: number | string;
   icon?: LucideIcon;
   iconNode?: ReactNode;
-  status?: "good" | "warning" | "neutral" | "inactive";
+  status?: "primary" | "good" | "warning" | "neutral" | "inactive" | string;
   delta?: number | null;
   deltaLabel?: string;
   trendIsGood?: "up" | "down";

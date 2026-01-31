@@ -5,8 +5,10 @@ export type CrewTier = "looking_good" | "doing_okay" | "needs_attention";
 export type CrewStatusValue = "looking_good" | "doing_okay" | "needs_attention";
 
 export interface MissionsData {
+  open: number;
   total: number;
   completed: number;
+  completedThisWeek?: number;
   pending: number;
   highPriority: number;
   autoFixable: number;

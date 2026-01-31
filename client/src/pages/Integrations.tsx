@@ -349,7 +349,7 @@ function getStatusBadge(status: string | null | undefined) {
   }
 }
 
-function StatusCell({ status, label }: { status: string | null | undefined; label?: string }) {
+function StatusCell({ status, label }: { status: string | boolean | null | undefined; label?: string }) {
   if (status === "pass" || status === true) {
     return (
       <div className="flex items-center gap-1">
@@ -2063,14 +2063,14 @@ export default function Integrations() {
               </DialogHeader>
               
               <div className="space-y-6 mt-4">
-                {selectedIntegration.descriptionMd && (
+                {(selectedIntegration as any).descriptionMd && (
                   <div className="p-4 bg-muted rounded-lg border">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
                       <Info className="w-3 h-3" />
                       What this service is
                     </p>
                     <div className="text-sm prose prose-sm dark:prose-invert max-w-none whitespace-pre-line">
-                      {selectedIntegration.descriptionMd}
+                      {(selectedIntegration as any).descriptionMd}
                     </div>
                   </div>
                 )}
@@ -2083,8 +2083,8 @@ export default function Integrations() {
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Last Run</p>
                     <p className="font-medium">
-                      {selectedIntegration.recentRuns?.length > 0 
-                        ? formatTimeAgo(selectedIntegration.recentRuns[0].finishedAt || selectedIntegration.recentRuns[0].startedAt)
+                      {(selectedIntegration as any).recentRuns?.length > 0
+                        ? formatTimeAgo((selectedIntegration as any).recentRuns[0].finishedAt || (selectedIntegration as any).recentRuns[0].startedAt)
                         : "Never"}
                     </p>
                   </div>
@@ -2101,7 +2101,7 @@ export default function Integrations() {
                   </div>
                   <div className="p-3 border rounded-lg">
                     <p className="text-xs text-muted-foreground mb-1">Secret Exists</p>
-                    <StatusCell status={selectedIntegration.secretExists} label={selectedIntegration.secretExists ? "Yes" : "No"} />
+                    <StatusCell status={selectedIntegration.secretExists} label={selectedIntegration.secretExists !== null ? (selectedIntegration.secretExists ? "Yes" : "No") : "—"} />
                   </div>
                 </div>
                 
@@ -2745,8 +2745,8 @@ export default function Integrations() {
                           // Check both lastRun.missingOutputs and top-level missingOutputs (from SiteSummaryService)
                           const missingFromLastRun = selectedCatalogService.lastRun?.missingOutputs || [];
                           const missingFromService = (selectedCatalogService as any).missingOutputs || [];
-                          const allMissing = [...new Set([...missingFromLastRun, ...missingFromService])];
-                          
+                          const allMissing = Array.from(new Set([...missingFromLastRun, ...missingFromService]));
+
                           if (allMissing.length > 0) {
                             return (
                               <div className="space-y-1">

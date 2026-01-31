@@ -91,10 +91,10 @@ export default function DevLineage() {
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
                     style={{ backgroundColor: crew.color + '30', border: `2px solid ${crew.color}` }}
                   >
-                    {crew.avatar}
+                    {""}
                   </div>
                   <div>
-                    <span className="text-xl">{crew.name}</span>
+                    <span className="text-xl">{crew.nickname}</span>
                     <span className="text-sm text-muted-foreground ml-2">({crewId})</span>
                   </div>
                   <Badge 
@@ -119,7 +119,7 @@ export default function DevLineage() {
                       <div key={serviceId} className="border border-border rounded-lg p-4 ml-12">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">{service.name}</span>
+                            <span className="font-semibold text-foreground">{service.displayName}</span>
                             <span className="text-xs text-muted-foreground">{serviceId}</span>
                           </div>
                           {sourceTimestamp ? (

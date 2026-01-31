@@ -440,7 +440,7 @@ function MetricCard({ metric, highlighted = false }: { metric: MetricCardData; h
 
 function MetricCardsRow() {
   const { activeSite } = useSiteContext();
-  const siteId = activeSite?.id || 'default';
+  const siteId = activeSite?.siteId || 'default';
   const { isHired } = useHiredCrews();
   
   // Check if required crews are hired for each metric type
@@ -1657,7 +1657,7 @@ function TasksOverviewSection({
 
 function AgentSummaryGrid({ agents, crewSummaries, kbStatus, agentStatus }: { 
   agents: Array<{ serviceId: string; score: number | null; missionsOpen?: number; status: 'good' | 'watch' | 'bad' }>; 
-  crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null }>;
+  crewSummaries?: Array<{ crewId: string; nickname: string; pendingCount: number; lastCompletedAt: string | null; status: 'looking_good' | 'doing_okay' | 'needs_attention'; primaryMetric?: string; primaryMetricValue?: number; deltaPercent?: number | null; deltaLabel?: string; hasNoData?: boolean; emptyStateReason?: string | null; missions?: { open: number; total: number; completedThisWeek: number }; score?: { value: number | null; status: string }; delta?: { percent: number | null; label: string } }>;
   kbStatus?: { totalLearnings?: number; configured?: boolean; status?: string; isRealData?: boolean };
   agentStatus?: Record<string, { health: string; needsConfig: boolean; lastRun: string | null }>;
 }) {
