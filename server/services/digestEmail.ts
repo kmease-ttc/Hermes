@@ -263,8 +263,8 @@ export async function sendDigestForSchedule(scheduleId: number): Promise<boolean
   // Send email
   const sent = await sendMonthlySummaryEmail(user.email, {
     displayName: user.displayName || undefined,
-    siteName: website.name,
-    siteUrl: website.domain,
+    siteName: website.name || '',
+    siteUrl: website.domain || '',
     period: schedule.frequency === 'weekly' ? 'This Week' : 'This Month',
     ...digestData,
   });
@@ -413,8 +413,8 @@ export async function sendManualDigest(
 
   return await sendMonthlySummaryEmail(user.email, {
     displayName: user.displayName || undefined,
-    siteName: website.name,
-    siteUrl: website.domain,
+    siteName: website.name || '',
+    siteUrl: website.domain || '',
     period: `Last ${daysBack} Days`,
     ...digestData,
   });

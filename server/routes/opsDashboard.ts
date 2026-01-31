@@ -159,7 +159,7 @@ router.get('/:siteId/metrics', async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error('[OpsDashboard] metrics error', error);
+    logger.error('[OpsDashboard] metrics error', error as string);
     res.status(500).json({ error: 'Failed to fetch metrics' });
   }
 });
@@ -279,7 +279,7 @@ router.get('/:siteId/serp-snapshot', async (req, res) => {
       lastChecked,
     });
   } catch (error) {
-    logger.error('[OpsDashboard] serp-snapshot error', error);
+    logger.error('[OpsDashboard] serp-snapshot error', error as string);
     res.status(500).json({ error: 'Failed to fetch SERP snapshot' });
   }
 });
@@ -380,7 +380,7 @@ router.get('/:siteId/serp-keywords', async (req, res) => {
 
     res.json({ keywords, hasData: true });
   } catch (error) {
-    logger.error('[OpsDashboard] serp-keywords error', error);
+    logger.error('[OpsDashboard] serp-keywords error', error as string);
     res.status(500).json({ error: 'Failed to fetch SERP keywords' });
   }
 });
@@ -461,7 +461,7 @@ router.get('/:siteId/content-status', async (req, res) => {
       hasContent: upcoming.length > 0 || recentlyPublished.length > 0 || contentUpdates.length > 0,
     });
   } catch (error) {
-    logger.error('[OpsDashboard] content-status error', error);
+    logger.error('[OpsDashboard] content-status error', error as string);
     res.status(500).json({ error: 'Failed to fetch content status' });
   }
 });
@@ -552,7 +552,7 @@ router.get('/:siteId/changes-log', async (req, res) => {
       hasHistory: entries.length > 0,
     });
   } catch (error) {
-    logger.error('[OpsDashboard] changes-log error', error);
+    logger.error('[OpsDashboard] changes-log error', error as string);
     res.status(500).json({ error: 'Failed to fetch changes log' });
   }
 });
@@ -664,7 +664,7 @@ router.get('/:siteId/system-state', async (req, res) => {
       } : null,
     });
   } catch (error) {
-    logger.error('[OpsDashboard] system-state error', error);
+    logger.error('[OpsDashboard] system-state error', error as string);
     res.status(500).json({ error: 'Failed to fetch system state' });
   }
 });
@@ -903,7 +903,7 @@ router.get('/:siteId/insights', async (req, res) => {
     const tips = generateInsights(input);
     res.json({ tips });
   } catch (error) {
-    logger.error('[OpsDashboard] insights error', error);
+    logger.error('[OpsDashboard] insights error', error as string);
     res.status(500).json({ error: 'Failed to generate insights' });
   }
 });

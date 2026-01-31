@@ -72,7 +72,7 @@ export function KeyMetricCard({
   const crewTheme = useOptionalCrewTheme();
   const isZero = value === 0 || value === "0";
   const effectiveStatus = isZero ? "inactive" : status;
-  const effectiveStyles = statusStyles[effectiveStatus];
+  const effectiveStyles = statusStyles[effectiveStatus as keyof typeof statusStyles] || statusStyles.neutral;
 
   const dynamicStyles = (crewTheme || accentColor) && !isZero ? {
     border: { borderColor: crewTheme ? "var(--crew-ring)" : `${accentColor}30` },

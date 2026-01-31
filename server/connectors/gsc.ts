@@ -367,7 +367,7 @@ export class GSCConnector {
       results.push(result);
 
       inspectionRows.push({
-        siteId,
+        websiteId: siteId,
         date: today,
         pageUrl,
         coverageState: status.coverageState,
@@ -393,7 +393,7 @@ export class GSCConnector {
 
     const coverageData: InsertGscCoverageDaily = {
       siteId,
-      date: today,
+      date: new Date(today),
       totalInspected: inspected,
       totalIndexed: indexed,
       totalNotIndexed: inspected - indexed,

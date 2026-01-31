@@ -305,8 +305,8 @@ async function computeDailyAchievements() {
               const cat = ACHIEVEMENT_CATEGORIES[m.categoryId as keyof typeof ACHIEVEMENT_CATEGORIES];
               return {
                 trackName: m.trackKey || m.label || '',
-                categoryLabel: cat?.label || m.categoryId || '',
-                categoryColor: cat?.color || '#6b7280',
+                categoryLabel: (cat as any)?.label || m.categoryId || '',
+                categoryColor: (cat as any)?.color || '#6b7280',
                 newTier: m.tier,
                 newLevel: m.level || m.threshold || 0,
                 headline: m.headline || m.label || '',

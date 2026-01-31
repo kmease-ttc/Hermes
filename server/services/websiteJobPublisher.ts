@@ -92,7 +92,7 @@ export async function publishWebsiteJob(
     requestedBy,
     traceId,
     status: 'queued',
-  });
+  } as any);
 
   // Insert into job_queue for worker consumption
   // Map job_type to service name for the worker system
@@ -166,7 +166,7 @@ export async function updateWebsiteJobStatus(
       ...(errorMessage && { errorMessage }),
       ...(status === 'completed' || status === 'failed' ? { completedAt: new Date() } : {}),
     })
-    .where(eq(websiteJobs.jobId, jobId));
+    .where(eq((websiteJobs as any).jobId, jobId));
 
   logger.info("WebsiteJobPublisher", `Job status updated: jobId=${jobId}, status=${status}`);
 }

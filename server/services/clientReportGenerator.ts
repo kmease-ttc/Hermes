@@ -255,7 +255,7 @@ function createStyledParagraph(text: string, options: {
   });
 }
 
-function createHeading(text: string, level: HeadingLevel): Paragraph {
+function createHeading(text: string, level: typeof HeadingLevel[keyof typeof HeadingLevel]): Paragraph {
   return new Paragraph({
     text,
     heading: level,
@@ -481,7 +481,7 @@ function createKeywordRankingSection(data: ReportData): Paragraph[] {
     sections.push(new Table({
       rows: tableRows,
       width: { size: 100, type: WidthType.PERCENTAGE },
-    }));
+    }) as any);
 
     sections.push(createHeading("Keyword Optimization Strategies", HeadingLevel.HEADING_2));
     
@@ -548,7 +548,7 @@ function createTrafficAnalysisSection(data: ReportData): Paragraph[] {
     width: { size: 100, type: WidthType.PERCENTAGE },
   });
   
-  sections.push(metricsTable);
+  sections.push(metricsTable as any);
 
   sections.push(createHeading("Traffic Insights", HeadingLevel.HEADING_2));
   
@@ -595,7 +595,7 @@ function createBenchmarksSection(data: ReportData): Paragraph[] {
       width: { size: 100, type: WidthType.PERCENTAGE },
     });
     
-    sections.push(benchmarkTable);
+    sections.push(benchmarkTable as any);
   } else {
     sections.push(createStyledParagraph("Benchmark data is not yet available for comparison."));
   }

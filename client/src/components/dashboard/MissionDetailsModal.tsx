@@ -22,7 +22,7 @@ import {
   Lightbulb,
   Zap
 } from "lucide-react";
-import { AGENT_CONFIGS, getCrewMember } from "@/config/agents";
+import { AGENTS, getCrewMember } from "@/config/agents";
 import { toast } from "sonner";
 
 interface MissionDetailsModalProps {
@@ -377,9 +377,9 @@ export function MissionDetailsModal({
                         <p className="text-xs text-muted-foreground mt-1">{rec.rationale}</p>
                       )}
                     </div>
-                    {rec.impact && (
+                    {(rec as any).impact && (
                       <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {rec.impact}
+                        {(rec as any).impact}
                       </Badge>
                     )}
                   </div>

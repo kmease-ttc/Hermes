@@ -61,7 +61,7 @@ async function markJobRunning(jobId: number): Promise<boolean> {
     .set({
       status: "running",
       startedAt: new Date(),
-      attempts: db.$with("increment", (qb) => 
+      attempts: (db as any).$with("increment", (qb: any) =>
         qb.select({ val: siteGenerationJobs.attempts }).from(siteGenerationJobs).where(eq(siteGenerationJobs.id, jobId))
       ) as any,
       updatedAt: new Date(),

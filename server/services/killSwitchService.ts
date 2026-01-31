@@ -208,7 +208,7 @@ export async function setSystemMode(
  */
 export async function isObserveOnlyMode(): Promise<boolean> {
   const mode = await getSystemMode();
-  return mode === SystemModes.OBSERVE_ONLY;
+  return mode === 'observe_only';
 }
 
 /**
@@ -216,7 +216,7 @@ export async function isObserveOnlyMode(): Promise<boolean> {
  */
 export async function isSafeMode(): Promise<boolean> {
   const mode = await getSystemMode();
-  return mode === SystemModes.SAFE_MODE;
+  return mode === 'safe_mode';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -1254,7 +1254,7 @@ async function runWorkerOrchestrationInternal(
         id: s.suggestionId,
         type: s.suggestionType,
         title: s.title,
-        severity: s.severity,
+        severity: s.severity || 'info',
       }))
     );
   }

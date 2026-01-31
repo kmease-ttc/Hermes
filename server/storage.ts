@@ -1290,7 +1290,7 @@ class DBStorage implements IStorage {
   }
 
   async createSite(site: InsertSite): Promise<Site> {
-    const [newSite] = await db.insert(sites).values(site).returning();
+    const [newSite] = await db.insert(sites).values(site as any).returning();
     return newSite;
   }
 
@@ -1327,7 +1327,7 @@ class DBStorage implements IStorage {
 
     const [updated] = await db
       .update(sites)
-      .set({ ...mergedUpdates, updatedAt: new Date() })
+      .set({ ...mergedUpdates, updatedAt: new Date() } as any)
       .where(eq(sites.siteId, siteId))
       .returning();
     return updated;

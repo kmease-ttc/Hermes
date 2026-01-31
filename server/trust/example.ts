@@ -141,8 +141,8 @@ async function runExample() {
   const history = await storage.getActionExecutionHistory(websiteId, "tech-seo", 5);
   console.log("  Found", history.length, "recent executions:");
   history.forEach((record, i) => {
-    const date = record.executedAt.toISOString();
-    console.log("  " + (i + 1) + ".", record.actionCode, "-", record.outcome, "-", date);
+    const date = record.executedAt!.toISOString();
+    console.log("  " + (i + 1) + ".", record.actionType, "-", record.status, "-", date);
   });
   console.log();
 

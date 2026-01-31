@@ -682,7 +682,7 @@ function AccomplishmentsSection() {
     const iconClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.emerald;
     const bgClass = bgClasses[color as keyof typeof bgClasses] || bgClasses.emerald;
 
-    const icons: Record<string, JSX.Element> = {
+    const icons: Record<string, React.JSX.Element> = {
       leads: <Users className={cn("w-5 h-5", iconClass)} />,
       rank: <TrendingUp className={cn("w-5 h-5", iconClass)} />,
       shield: <CheckCircle2 className={cn("w-5 h-5", iconClass)} />,
@@ -1966,7 +1966,7 @@ function ConsolidatedMissionWidget({
     performanceScore: missionScore,
     autoFixableCount: autoFixableItems.length,
     priorityCount: priorities.length,
-    missions: { open: openCount },
+    missions: { open: openCount, total: totalMissions, completedThisWeek: 0 },
   };
 
   const missions: MissionItem[] = priorities.map((p, idx) => ({
@@ -2376,7 +2376,7 @@ export default function MissionControl() {
 
         <CapabilitiesSection 
           agents={userAgents} 
-          crewSummaries={dashboard?.crewSummaries}
+          crewSummaries={dashboard?.crewSummaries as any}
           kbStatus={kbStatus}
           agentStatus={agentStatus}
         />

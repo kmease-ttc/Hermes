@@ -91,7 +91,7 @@ router.post('/websites', async (req, res) => {
       competitors: [],
       targetServicesEnabled: ['health_check', 'crawl_technical_seo'],
       notes: '',
-    });
+    } as any);
 
     logger.info("Websites", "Website created", { id, name, domain });
 
@@ -124,7 +124,7 @@ router.get('/websites', async (req, res) => {
       allWebsites.map(async (website) => {
         const [lastJob] = await db
           .select({
-            jobId: websiteJobs.jobId,
+            jobId: websiteJobs.id,
             jobType: websiteJobs.jobType,
             status: websiteJobs.status,
             createdAt: websiteJobs.createdAt,
@@ -251,7 +251,7 @@ router.patch('/websites/:id', async (req, res) => {
           competitors: settings.competitors || [],
           targetServicesEnabled: settings.targetServicesEnabled || [],
           notes: settings.notes || '',
-        });
+        } as any);
       }
     }
 
