@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMetricCards, useSystemState } from "@/hooks/useOpsDashboard";
 import { GlassCard, GlassCardContent } from "@/components/ui/GlassCard";
 import {
@@ -9,6 +10,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLocation } from "wouter";
+import { useSiteContext } from "@/hooks/useSiteContext";
+import { GAConfigWizard } from "@/components/integrations/GAConfigWizard";
+import { GSCConfigWizard } from "@/components/integrations/GSCConfigWizard";
 
 // ── Card type definitions ──────────────────────────────────────
 
@@ -24,6 +28,7 @@ interface SetupCardDef {
   buttonLabel: string;
   helperText: string;
   route: string;
+  wizardAction?: "ga4" | "gsc";
 }
 
 // ── Static card catalogue ──────────────────────────────────────
@@ -38,6 +43,7 @@ const GA4_CARD: SetupCardDef = {
   buttonLabel: "Connect",
   helperText: "Takes about 2 minutes",
   route: "/app/settings/integrations",
+  wizardAction: "ga4",
 };
 
 const GSC_CARD: SetupCardDef = {
@@ -50,6 +56,7 @@ const GSC_CARD: SetupCardDef = {
   buttonLabel: "Connect",
   helperText: "No site changes required",
   route: "/app/settings/integrations",
+  wizardAction: "gsc",
 };
 
 const AI_VISIBILITY_CARD: SetupCardDef = {
@@ -120,7 +127,7 @@ function useSetupCards(siteId: string) {
 
 // ── Individual setup card ──────────────────────────────────────
 
-function SetupCard({ card }: { card: SetupCardDef }) {
+function SetupCard({ card, onWizardAction }: { card: SetupCardDef; onWizardAction?: (action: "ga4" | "gsc") => void }) {
   const [, navigate] = useLocation();
 
   const typeBadge: Record<CardType, { label: string; color: string; bg: string }> = {
@@ -168,7 +175,13 @@ function SetupCard({ card }: { card: SetupCardDef }) {
         {/* Action row */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate(card.route)}
+            onClick={() => {
+              if (card.wizardAction && onWizardAction) {
+                onWizardAction(card.wizardAction);
+              } else {
+                navigate(card.route);
+              }
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5"
             style={{
               color: "#FFFFFF",
@@ -196,6 +209,14 @@ interface SetupCardsSectionProps {
 
 export function SetupCardsSection({ siteId }: SetupCardsSectionProps) {
   const { cards, isLoading } = useSetupCards(siteId);
+  const { siteDomain } = useSiteContext();
+  const [gaWizardOpen, setGaWizardOpen] = useState(false);
+  const [gscWizardOpen, setGscWizardOpen] = useState(false);
+
+  const handleWizardAction = (action: "ga4" | "gsc") => {
+    if (action === "ga4") setGaWizardOpen(true);
+    if (action === "gsc") setGscWizardOpen(true);
+  };
 
   // Nothing to show — all configured
   if (!isLoading && cards.length === 0) {
@@ -208,18 +229,34 @@ export function SetupCardsSection({ siteId }: SetupCardsSectionProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <p
-        className="text-xs font-semibold uppercase tracking-wide"
-        style={{ color: "#94A3B8" }}
-      >
-        Recommended setup
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <SetupCard key={card.id} card={card} />
-        ))}
+    <>
+      <div className="space-y-3">
+        <p
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: "#94A3B8" }}
+        >
+          Recommended setup
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {cards.map((card) => (
+            <SetupCard key={card.id} card={card} onWizardAction={handleWizardAction} />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Wizard dialogs */}
+      <GAConfigWizard
+        open={gaWizardOpen}
+        onOpenChange={setGaWizardOpen}
+        siteId={siteId}
+        siteDomain={siteDomain || undefined}
+      />
+      <GSCConfigWizard
+        open={gscWizardOpen}
+        onOpenChange={setGscWizardOpen}
+        siteId={siteId}
+        siteDomain={siteDomain || undefined}
+      />
+    </>
   );
 }

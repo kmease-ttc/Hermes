@@ -244,7 +244,16 @@ export default function SharedReport() {
                 </p>
               </div>
               <Link href={ROUTES.SCAN}>
-                <Button size="lg" data-testid="button-try-again">
+                <Button
+                  size="lg"
+                  className="gap-2 font-medium"
+                  style={{
+                    background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                    color: "#FFFFFF"
+                  }}
+                  data-testid="button-try-again"
+                >
+                  <Search className="h-4 w-4" />
                   Analyze Your Website
                 </Button>
               </Link>

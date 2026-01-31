@@ -61,10 +61,13 @@ export default function NotFound() {
             </Link>
             
             <Link href={ROUTES.LANDING + "#analyze"}>
-              <Button 
-                variant="outline"
+              <Button
                 size="lg"
-                className="w-full sm:w-auto gap-2 font-medium border-border text-foreground hover:bg-muted"
+                className="w-full sm:w-auto gap-2 font-medium"
+                style={{
+                  background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                  color: "#FFFFFF"
+                }}
                 data-testid="button-analyze-website"
               >
                 <Search className="w-4 h-4" />

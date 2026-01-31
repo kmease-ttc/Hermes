@@ -138,6 +138,24 @@ export interface SystemStateData {
   } | null;
 }
 
+export type TipCategory = "rankings" | "traffic" | "content" | "technical" | "system" | "win";
+export type TipSentiment = "positive" | "neutral" | "action";
+
+export interface DashboardTip {
+  id: string;
+  title: string;
+  body: string;
+  category: TipCategory;
+  priority: number;
+  sentiment: TipSentiment;
+  actionLabel?: string;
+  actionRoute?: string;
+}
+
+export interface InsightsData {
+  tips: DashboardTip[];
+}
+
 // ============================================================
 // Hooks
 // ============================================================
@@ -185,6 +203,14 @@ export function useChangesLog(siteId: string | null | undefined) {
 export function useSystemState(siteId: string | null | undefined) {
   return useQuery<SystemStateData>({
     queryKey: ["/api/ops-dashboard", siteId, "system-state"],
+    enabled: !!siteId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInsights(siteId: string | null | undefined) {
+  return useQuery<InsightsData>({
+    queryKey: ["/api/ops-dashboard", siteId, "insights"],
     enabled: !!siteId,
     staleTime: 5 * 60 * 1000,
   });

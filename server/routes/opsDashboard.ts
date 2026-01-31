@@ -14,6 +14,7 @@ import {
   websites,
   sites,
   users,
+  seoSuggestions,
   type GA4Daily,
   type GSCDaily,
   type SerpKeyword,
@@ -23,6 +24,7 @@ import {
   type ChangeProposal,
   type WebsiteTrustLevel,
 } from '@shared/schema';
+import { generateInsights, type InsightsInput } from '../services/insightsTransformer';
 import { eq, desc, and, gte, lte, sql, inArray, isNotNull, count } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
@@ -664,6 +666,245 @@ router.get('/:siteId/system-state', async (req, res) => {
   } catch (error) {
     logger.error('[OpsDashboard] system-state error', error);
     res.status(500).json({ error: 'Failed to fetch system state' });
+  }
+});
+
+// ============================================================
+// 7. GET /api/ops-dashboard/:siteId/insights
+// Actionable tips derived from cached dashboard data
+// ============================================================
+router.get('/:siteId/insights', async (req, res) => {
+  try {
+    const { siteId } = req.params;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const sevenDaysAgo = daysAgo(7);
+    const fourteenDaysAgo = daysAgo(14);
+
+    // ── 1. Metrics (GA4 + GSC) ──────────────────────────────
+    const ga4Data = await db
+      .select()
+      .from(ga4Daily)
+      .where(and(eq(ga4Daily.siteId, siteId), gte(ga4Daily.date, fourteenDaysAgo)))
+      .orderBy(ga4Daily.date);
+
+    const gscData = await db
+      .select()
+      .from(gscDaily)
+      .where(and(eq(gscDaily.siteId, siteId), gte(gscDaily.date, fourteenDaysAgo)))
+      .orderBy(gscDaily.date);
+
+    const ga4Connected = ga4Data.length > 0;
+    const gscConnected = gscData.length > 0;
+
+    const ga4Current = ga4Data.filter(d => d.date >= sevenDaysAgo);
+    const ga4Previous = ga4Data.filter(d => d.date < sevenDaysAgo);
+
+    function avg(rows: GA4Daily[], field: 'bounceRate' | 'avgSessionDuration' | 'pagesPerSession'): number | null {
+      const valid = rows.filter(r => r[field] != null);
+      if (valid.length === 0) return null;
+      return valid.reduce((sum, r) => sum + (r[field] as number), 0) / valid.length;
+    }
+
+    function convRate(rows: GA4Daily[]): number | null {
+      const s = rows.reduce((sum, r) => sum + r.sessions, 0);
+      const c = rows.reduce((sum, r) => sum + r.conversions, 0);
+      return s === 0 ? null : (c / s) * 100;
+    }
+
+    function delta(cur: number | null, prev: number | null): number | null {
+      if (cur == null || prev == null || prev === 0) return null;
+      return ((cur - prev) / Math.abs(prev)) * 100;
+    }
+
+    const gscCurrent = gscData.filter(d => d.date >= sevenDaysAgo);
+    const gscPrevious = gscData.filter(d => d.date < sevenDaysAgo);
+
+    function avgCtr(rows: GSCDaily[]): number | null {
+      const valid = rows.filter(r => r.ctr != null);
+      if (valid.length === 0) return null;
+      return valid.reduce((sum, r) => sum + r.ctr, 0) / valid.length;
+    }
+
+    const bounceRateCur = avg(ga4Current, 'bounceRate');
+    const bounceRatePrev = avg(ga4Previous, 'bounceRate');
+    const convCur = convRate(ga4Current);
+    const convPrev = convRate(ga4Previous);
+    const ctrCur = avgCtr(gscCurrent);
+    const ctrPrev = avgCtr(gscPrevious);
+    const sessionDurCur = avg(ga4Current, 'avgSessionDuration');
+    const sessionDurPrev = avg(ga4Previous, 'avgSessionDuration');
+
+    // ── 2. SERP snapshot ────────────────────────────────────
+    const activeKeywords = await db
+      .select()
+      .from(serpKeywords)
+      .where(eq(serpKeywords.active, true));
+
+    const totalTracked = activeKeywords.length;
+    let position1 = 0, top3 = 0, top10 = 0, top100 = 0;
+    let gained = 0, lost = 0, improved = 0, declined = 0, netChange = 0;
+    let hasBaseline = false;
+
+    if (totalTracked > 0) {
+      const keywordIds = activeKeywords.map(k => k.id);
+
+      const latestRankings = await db
+        .select()
+        .from(serpRankings)
+        .where(and(inArray(serpRankings.keywordId, keywordIds), gte(serpRankings.date, daysAgo(3))))
+        .orderBy(desc(serpRankings.date));
+
+      const latestByKw = new Map<number, typeof latestRankings[0]>();
+      for (const r of latestRankings) {
+        if (!latestByKw.has(r.keywordId)) latestByKw.set(r.keywordId, r);
+      }
+
+      const previousRankings = await db
+        .select()
+        .from(serpRankings)
+        .where(and(inArray(serpRankings.keywordId, keywordIds), gte(serpRankings.date, daysAgo(10)), lte(serpRankings.date, daysAgo(5))))
+        .orderBy(desc(serpRankings.date));
+
+      const prevByKw = new Map<number, typeof previousRankings[0]>();
+      for (const r of previousRankings) {
+        if (!prevByKw.has(r.keywordId)) prevByKw.set(r.keywordId, r);
+      }
+
+      for (const [, r] of latestByKw) {
+        if (r.position != null) {
+          if (r.position === 1) position1++;
+          if (r.position <= 3) top3++;
+          if (r.position <= 10) top10++;
+          if (r.position <= 100) top100++;
+        }
+      }
+
+      for (const kw of activeKeywords) {
+        const cur = latestByKw.get(kw.id);
+        const prev = prevByKw.get(kw.id);
+        if (cur?.position != null && prev?.position == null) gained++;
+        else if (cur?.position == null && prev?.position != null) lost++;
+        else if (cur?.position != null && prev?.position != null) {
+          const diff = prev.position - cur.position;
+          netChange += diff;
+          if (diff > 0) improved++;
+          if (diff < 0) declined++;
+        }
+      }
+
+      hasBaseline = prevByKw.size > 0;
+    }
+
+    // ── 3. Content status ───────────────────────────────────
+    const websiteId = await resolveWebsiteId(siteId);
+    let upcomingCount = 0;
+    let recentlyPublishedCount = 0;
+    let staleDraftCount = 0;
+
+    if (websiteId) {
+      const upcoming = await db
+        .select({ cnt: count() })
+        .from(contentDrafts)
+        .where(and(
+          eq(contentDrafts.websiteId, websiteId),
+          inArray(contentDrafts.state, ['drafted', 'qa_passed', 'approved', 'generating', 'revision_needed'])
+        ));
+      upcomingCount = upcoming[0]?.cnt ?? 0;
+
+      const published = await db
+        .select({ cnt: count() })
+        .from(contentDrafts)
+        .where(and(
+          eq(contentDrafts.websiteId, websiteId),
+          eq(contentDrafts.state, 'published'),
+          gte(contentDrafts.updatedAt, new Date(sevenDaysAgo))
+        ));
+      recentlyPublishedCount = published[0]?.cnt ?? 0;
+
+      const stale = await db
+        .select({ cnt: count() })
+        .from(contentDrafts)
+        .where(and(
+          eq(contentDrafts.websiteId, websiteId),
+          inArray(contentDrafts.state, ['drafted', 'revision_needed']),
+          lte(contentDrafts.updatedAt, new Date(fourteenDaysAgo))
+        ));
+      staleDraftCount = stale[0]?.cnt ?? 0;
+    }
+
+    // ── 4. Changes log ──────────────────────────────────────
+    let recentChangeCount = 0;
+    let hasSuccessfulActions = false;
+
+    if (websiteId) {
+      const audits = await db
+        .select()
+        .from(actionExecutionAudit)
+        .where(and(
+          eq(actionExecutionAudit.websiteId, websiteId),
+          gte(actionExecutionAudit.executedAt, new Date(sevenDaysAgo))
+        ));
+      recentChangeCount = audits.length;
+      hasSuccessfulActions = audits.some(a => a.outcome === 'success');
+    }
+
+    // ── 5. Suggestions ──────────────────────────────────────
+    const highSev = await db
+      .select({ cnt: count() })
+      .from(seoSuggestions)
+      .where(and(
+        eq(seoSuggestions.siteId, siteId),
+        eq(seoSuggestions.status, 'open'),
+        inArray(seoSuggestions.severity, ['high', 'critical'])
+      ));
+
+    const catRows = await db
+      .selectDistinct({ category: seoSuggestions.category })
+      .from(seoSuggestions)
+      .where(and(
+        eq(seoSuggestions.siteId, siteId),
+        eq(seoSuggestions.status, 'open')
+      ));
+
+    // ── Assemble input & generate ───────────────────────────
+
+    const input: InsightsInput = {
+      metrics: {
+        ga4Connected,
+        gscConnected,
+        bounceRate: { value: bounceRateCur, change7d: delta(bounceRateCur, bounceRatePrev) },
+        conversionRate: { value: convCur, change7d: delta(convCur, convPrev) },
+        organicCtr: { value: ctrCur, change7d: delta(ctrCur, ctrPrev) },
+        avgSessionDuration: { value: sessionDurCur, change7d: delta(sessionDurCur, sessionDurPrev) },
+      },
+      serp: {
+        totalTracked,
+        hasBaseline,
+        rankingCounts: { position1, top3, top10, top100 },
+        weekOverWeek: { netChange, gained, lost, improved, declined },
+      },
+      content: {
+        upcomingCount,
+        recentlyPublishedCount,
+        staleDraftCount,
+      },
+      changes: {
+        recentCount: recentChangeCount,
+        hasSuccessfulActions,
+      },
+      suggestions: {
+        highSeverityCount: highSev[0]?.cnt ?? 0,
+        categories: catRows.map(r => r.category),
+      },
+    };
+
+    const tips = generateInsights(input);
+    res.json({ tips });
+  } catch (error) {
+    logger.error('[OpsDashboard] insights error', error);
+    res.status(500).json({ error: 'Failed to generate insights' });
   }
 });
 

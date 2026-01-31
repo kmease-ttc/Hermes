@@ -10,6 +10,7 @@ import { ContentStatusSection } from "./dashboard/ContentStatusSection";
 import { ChangesLogSection } from "./dashboard/ChangesLogSection";
 import { SystemStateSection } from "./dashboard/SystemStateSection";
 import { SetupCardsSection } from "./dashboard/SetupCardsSection";
+import { InsightsSection } from "./dashboard/InsightsSection";
 
 const DASHBOARD_BG = {
   background: `radial-gradient(1200px circle at 10% 0%, rgba(139, 92, 246, 0.06), transparent 40%),
@@ -40,6 +41,9 @@ export default function Dashboard() {
 
         {/* Section 1: Configuration-Aware Metric Cards */}
         <MetricCardsSection siteId={siteId} />
+
+        {/* Actionable Insights — tips derived from cached worker data */}
+        <InsightsSection siteId={siteId} />
 
         {/* Setup / Configure Cards — shown only when something needs attention */}
         <SetupCardsSection siteId={siteId} />

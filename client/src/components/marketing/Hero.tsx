@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 /**
  * Marketing Hero — high contrast, matches arclo.pro.
@@ -49,7 +49,15 @@ export function Hero() {
                 className="h-12 w-full rounded-2xl border border-surface-border bg-surface-primary px-4 text-sm text-text-primary shadow-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
                 placeholder="Enter your website (example.com)"
               />
-              <Button variant="primary" size="lg" className="h-12 whitespace-nowrap">
+              <Button
+                variant="primary"
+                size="lg"
+                className="h-12 whitespace-nowrap"
+                style={{
+                  background: "linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B)",
+                  color: "#FFFFFF"
+                }}
+              >
                 Analyze My Website
               </Button>
             </div>
