@@ -60,12 +60,13 @@ function getTrendIcon(trend: string) {
 }
 
 function getPositionBadge(position: number | null) {
+  const base = "h-6 inline-flex items-center";
   if (position === null) {
-    return <Badge variant="outline" className="text-muted-foreground">Not Ranking</Badge>;
+    return <Badge className={`${base} bg-destructive text-white`}>N/R</Badge>;
   }
   if (position === 1) {
     return (
-      <Badge className="bg-gold text-foreground flex items-center gap-1">
+      <Badge className={`${base} bg-gold text-white gap-1`}>
         <Crown className="h-3 w-3" />
         {position}
       </Badge>
@@ -73,24 +74,22 @@ function getPositionBadge(position: number | null) {
   }
   if (position <= 3) {
     return (
-      <Badge className="bg-secondary text-foreground flex items-center gap-1">
+      <Badge className={`${base} bg-blue-500 text-white gap-1`}>
         <Trophy className="h-3 w-3" />
         {position}
       </Badge>
     );
   }
   if (position <= 10) {
-    return (
-      <Badge className="bg-gold text-foreground flex items-center gap-1">
-        <Trophy className="h-3 w-3" />
-        {position}
-      </Badge>
-    );
+    return <Badge className={`${base} bg-emerald-500 text-white`}>{position}</Badge>;
   }
   if (position <= 20) {
-    return <Badge className="bg-semantic-warning text-black">{position}</Badge>;
+    return <Badge className={`${base} bg-amber-500 text-white`}>{position}</Badge>;
   }
-  return <Badge variant="outline">{position}</Badge>;
+  if (position <= 50) {
+    return <Badge className={`${base} bg-muted text-foreground`}>{position}</Badge>;
+  }
+  return <Badge className={`${base} bg-destructive/10 text-destructive`}>{position}</Badge>;
 }
 
 function formatAvg(avg: number | null): string {

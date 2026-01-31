@@ -275,7 +275,7 @@ export default function ScanPreview() {
           <div style={{ position: "absolute", bottom: "30%", right: "30%", width: 7, height: 7, borderRadius: "50%", background: "rgba(233,213,255,0.4)" }} />
         </div>
 
-        <div style={{ position: "relative", zIndex: 1 }} className="container mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div style={{ position: "relative", zIndex: 1 }} className="container mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="max-w-3xl mx-auto">
 
             {/* Pending error — scan API call failed */}
@@ -304,7 +304,7 @@ export default function ScanPreview() {
 
             {/* Scanning / Generating State */}
             {!pendingError && (isScanning || (isReady && !reportError)) && (
-              <div style={{ textAlign: "center", paddingTop: "4rem" }}>
+              <div style={{ textAlign: "center", paddingTop: "1.5rem" }}>
                 <style>{`
 @keyframes arclo-spin { to { transform: rotate(360deg) } }
 @keyframes arclo-fade { 0%,100% { opacity: 0; transform: translateY(8px); } 15%,85% { opacity: 1; transform: translateY(0); } }

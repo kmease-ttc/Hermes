@@ -68,7 +68,8 @@ const Contact = lazy(() => import("@/pages/Contact"));
 const WebsiteRegistry = lazy(() => import("@/pages/WebsiteRegistry"));
 const WebsiteRegistryDetail = lazy(() => import("@/pages/WebsiteRegistryDetail"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
-const Pages = lazy(() => import("@/pages/Pages"));
+const ContentDashboard = lazy(() => import("@/pages/ContentDashboard"));
+const AISearchDashboard = lazy(() => import("@/pages/AISearchDashboard"));
 const WebsiteReportPage = lazy(() => import("@/pages/WebsiteReportPage"));
 const DeveloperReportPage = lazy(() => import("@/pages/DeveloperReportPage"));
 const SettingsIntegrations = lazy(() => import("@/pages/SettingsIntegrations"));
@@ -195,30 +196,37 @@ function Router() {
       {/* APP ROUTES - Website-centric views */}
       {/* ============================================ */}
       <Route path={ROUTES.OVERVIEW}><ProtectedRoute component={Dashboard} lightMode /></Route>
+      <Route path={ROUTES.COMPETITIVE_ANALYSIS}><ProtectedRoute component={Benchmarks} /></Route>
       <Route path={ROUTES.RANKINGS}><ProtectedRoute component={KeywordRankings} /></Route>
-      <Route path={ROUTES.SITE_HEALTH}><ProtectedRoute component={Audit} /></Route>
-      <Route path={ROUTES.PAGES}><ProtectedRoute component={Pages} lightMode /></Route>
-      <Route path={ROUTES.COMPETITORS}><ProtectedRoute component={Benchmarks} /></Route>
+      <Route path={ROUTES.PERFORMANCE}><ProtectedRoute component={Speedster} /></Route>
+      <Route path={ROUTES.TECHNICAL_SEO}><ProtectedRoute component={Audit} /></Route>
+      <Route path={ROUTES.CONTENT}><ProtectedRoute component={ContentDashboard} lightMode /></Route>
+      <Route path={ROUTES.AI_SEARCH}><ProtectedRoute component={AISearchDashboard} lightMode /></Route>
+      <Route path={ROUTES.LINK_BUILDING}><ProtectedRoute component={Authority} /></Route>
+      <Route path={ROUTES.AUTOMATION}><ProtectedRoute component={Crew} /></Route>
 
-      {/* Legacy route aliases (redirect to new website-centric routes) */}
+      {/* Legacy route redirects */}
+      <Route path={ROUTES.SITE_HEALTH}><LegacyRedirect to={ROUTES.TECHNICAL_SEO} /></Route>
+      <Route path={ROUTES.PAGES}><LegacyRedirect to={ROUTES.CONTENT} /></Route>
+      <Route path={ROUTES.COMPETITORS}><LegacyRedirect to={ROUTES.COMPETITIVE_ANALYSIS} /></Route>
       <Route path={ROUTES.DASHBOARD}><LegacyRedirect to={ROUTES.OVERVIEW} /></Route>
       <Route path={ROUTES.MISSION_CONTROL}><LegacyRedirect to={ROUTES.OVERVIEW} /></Route>
       <Route path={ROUTES.SELECT_SITE} component={SelectSite} />
       <Route path={ROUTES.CREW}>
-        <Redirect to={ROUTES.AGENTS} />
+        <Redirect to={ROUTES.AUTOMATION} />
       </Route>
-      <Route path={ROUTES.AGENTS}><ProtectedRoute component={Crew} /></Route>
+      <Route path={ROUTES.AGENTS}><LegacyRedirect to={ROUTES.AUTOMATION} /></Route>
       <Route path={ROUTES.AGENT_DETAIL}><ProtectedRoute component={AgentDetail} /></Route>
       <Route path={ROUTES.KEYWORDS}><LegacyRedirect to={ROUTES.RANKINGS} /></Route>
-      <Route path={ROUTES.AUTHORITY}><ProtectedRoute component={Authority} /></Route>
-      <Route path={ROUTES.SPEEDSTER}><ProtectedRoute component={Speedster} /></Route>
+      <Route path={ROUTES.AUTHORITY}><LegacyRedirect to={ROUTES.LINK_BUILDING} /></Route>
+      <Route path={ROUTES.SPEEDSTER}><LegacyRedirect to={ROUTES.PERFORMANCE} /></Route>
       <Route path={ROUTES.SOCRATES}><ProtectedRoute component={Socrates} /></Route>
       <Route path={ROUTES.TICKETS}><ProtectedRoute component={Tickets} /></Route>
       <Route path={ROUTES.CHANGES}><ProtectedRoute component={SuggestedChanges} /></Route>
       <Route path={ROUTES.RUNS}><ProtectedRoute component={Runs} /></Route>
       <Route path={ROUTES.RUN_DETAIL}><ProtectedRoute component={RunDetail} /></Route>
-      <Route path={ROUTES.AUDIT}><LegacyRedirect to={ROUTES.SITE_HEALTH} /></Route>
-      <Route path={ROUTES.BENCHMARKS}><LegacyRedirect to={ROUTES.COMPETITORS} /></Route>
+      <Route path={ROUTES.AUDIT}><LegacyRedirect to={ROUTES.TECHNICAL_SEO} /></Route>
+      <Route path={ROUTES.BENCHMARKS}><LegacyRedirect to={ROUTES.COMPETITIVE_ANALYSIS} /></Route>
       <Route path={ROUTES.ACHIEVEMENTS}><LegacyRedirect to={ROUTES.OVERVIEW} /></Route>
       <Route path={ROUTES.INTEGRATIONS}><ProtectedRoute component={Integrations} /></Route>
       <Route path={ROUTES.NOTIFICATIONS}><ProtectedRoute component={Notifications} /></Route>
@@ -257,19 +265,19 @@ function Router() {
       </Route>
       <Route path="/crew/:agentId" component={CrewRedirect} />
       <Route path="/crew">
-        <LegacyRedirect to={ROUTES.AGENTS} />
+        <LegacyRedirect to={ROUTES.AUTOMATION} />
       </Route>
       <Route path="/agents">
-        <LegacyRedirect to={ROUTES.AGENTS} />
+        <LegacyRedirect to={ROUTES.AUTOMATION} />
       </Route>
       <Route path="/keywords">
         <LegacyRedirect to={ROUTES.RANKINGS} />
       </Route>
       <Route path="/authority">
-        <LegacyRedirect to={ROUTES.AUTHORITY} />
+        <LegacyRedirect to={ROUTES.LINK_BUILDING} />
       </Route>
       <Route path="/speedster">
-        <LegacyRedirect to={ROUTES.SPEEDSTER} />
+        <LegacyRedirect to={ROUTES.PERFORMANCE} />
       </Route>
       <Route path="/socrates">
         <LegacyRedirect to={ROUTES.SOCRATES} />
@@ -284,10 +292,10 @@ function Router() {
         <LegacyRedirect to={ROUTES.RUNS} />
       </Route>
       <Route path="/audit">
-        <LegacyRedirect to={ROUTES.SITE_HEALTH} />
+        <LegacyRedirect to={ROUTES.TECHNICAL_SEO} />
       </Route>
       <Route path="/benchmarks">
-        <LegacyRedirect to={ROUTES.COMPETITORS} />
+        <LegacyRedirect to={ROUTES.COMPETITIVE_ANALYSIS} />
       </Route>
       <Route path="/achievements">
         <LegacyRedirect to={ROUTES.OVERVIEW} />

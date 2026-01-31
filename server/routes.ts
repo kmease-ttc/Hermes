@@ -10658,6 +10658,19 @@ Keep responses concise and actionable.`;
       }
 
       const data = parseResult.data;
+
+      // Check for duplicate baseUrl before creating
+      const allSites = await storage.getSites(false);
+      const existingSite = allSites.find(s => s.baseUrl === data.baseUrl);
+      if (existingSite) {
+        return res.status(409).json({
+          error: "This site has already been added.",
+          siteId: existingSite.siteId,
+          hasExistingReport: true,
+          domain: data.baseUrl.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
+        });
+      }
+
       const siteId = `site_${Date.now()}_${randomUUID().slice(0, 8)}`;
 
       let newSite;
@@ -10705,7 +10718,11 @@ Keep responses concise and actionable.`;
       }).catch((e: any) => logger.warn("API", "Audit log failed (non-fatal)", { error: e.message }));
 
       logger.info("API", "Site added to dashboard", { siteId: newSite.siteId, displayName: data.displayName });
-      res.status(201).json(newSite);
+      res.status(201).json({
+        ...newSite,
+        domain: data.baseUrl.replace(/^https?:\/\//, "").replace(/\/+$/, ""),
+        hasExistingReport: false,
+      });
     } catch (error: any) {
       logger.error("API", "Failed to add site to dashboard", { error: error.message, stack: error.stack });
       res.status(500).json({ error: `Failed to add site to dashboard: ${error.message}` });

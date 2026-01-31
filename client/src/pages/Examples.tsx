@@ -154,7 +154,7 @@ export default function Examples() {
                     {example.services.map((service) => (
                       <span
                         key={service}
-                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full"
+                        className="text-xs px-2 py-1 border border-border text-foreground rounded-full"
                       >
                         {service}
                       </span>
